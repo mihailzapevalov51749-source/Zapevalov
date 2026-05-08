@@ -1,0 +1,71 @@
+:root {
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #fff;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #aa3bff;
+
+  font: 18px/145% system-ui, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* 🔴 ПРОСТАЯ И СТАБИЛЬНАЯ СХЕМА */
+html {
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden; /* чтобы не было горизонтального скролла */
+}
+
+/* 🔴 ROOT БЕЗ ФИКСИРОВАННОЙ ВЫСОТЫ */
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* 🔴 КОНТЕНТ ЦЕНТРИРУЕМ */
+.page-container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding: 28px 36px 40px;
+}
+
+/* Заголовки */
+h1,
+h2 {
+  color: var(--text-h);
+  font-weight: 500;
+}
+
+h1 {
+  font-size: 56px;
+  margin: 32px 0;
+}
+
+h2 {
+  font-size: 24px;
+  margin: 0 0 8px;
+}
+
+p {
+  margin: 0;
+}
+
+code {
+  font-family: monospace;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--code-bg);
+}

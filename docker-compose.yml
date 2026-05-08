@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:15
+    container_name: portal_constructor_v2_db
+    restart: always
+    environment:
+      POSTGRES_DB: portal_constructor_v2
+      POSTGRES_USER: portal_user
+      POSTGRES_PASSWORD: portal_pass
+    ports:
+      - "5434:5432"
+    volumes:
+      - portal_constructor_v2_pgdata:/var/lib/postgresql/data
+
+volumes:
+  portal_constructor_v2_pgdata:

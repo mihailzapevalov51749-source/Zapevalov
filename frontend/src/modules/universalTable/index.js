@@ -1,0 +1,1 @@
+export { default as UniversalTableView } from "./components/UniversalTableView";
