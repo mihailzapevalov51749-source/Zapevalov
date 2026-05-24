@@ -1,7 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, JSON
 from sqlalchemy.sql import func
 from sqlalchemy.ext.mutable import MutableDict
-from sqlalchemy.orm import relationship
 
 from app.db.base import Base
 
@@ -27,13 +26,6 @@ class Block(Base):
 
     settings = Column(MutableDict.as_mutable(JSON), default=dict)
     content = Column(MutableDict.as_mutable(JSON), default=dict)
-
-    table = relationship(
-        "Table",
-        backref="block",
-        uselist=False,
-        cascade="all, delete-orphan",
-    )
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

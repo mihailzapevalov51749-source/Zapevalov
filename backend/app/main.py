@@ -49,7 +49,6 @@ from app.modules.chats.router import router as chats_router
 
 # важно для регистрации модели в SQLAlchemy
 from app.modules.universal_views import models as universal_views_models  # noqa: F401
-from app.modules.tables import models as tables_models  # noqa: F401
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
