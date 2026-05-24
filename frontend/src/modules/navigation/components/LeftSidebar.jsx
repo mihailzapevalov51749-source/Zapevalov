@@ -269,45 +269,49 @@ export default function LeftSidebar({
       return;
     }
 
-    const navigationItem = findNavigationItemById(navigation, itemId);
-    const nextTitle = String(data?.title || "").trim();
+    try {
+      const navigationItem = findNavigationItemById(items, itemId);
+      const nextTitle = String(data?.title || "").trim();
 
-    if (
-      navigationItem &&
-      nextTitle &&
-      isUniversalTableNavigationItem(navigationItem) &&
-      navigationItem.page_id
-    ) {
-      try {
-        const linkedPage = await getPageFull(navigationItem.page_id);
-        const tableId = await resolvePrimaryTableIdForPage(linkedPage);
+      if (
+        navigationItem &&
+        nextTitle &&
+        isUniversalTableNavigationItem(navigationItem) &&
+        navigationItem.page_id
+      ) {
+        try {
+          const linkedPage = await getPageFull(navigationItem.page_id);
+          const tableId = await resolvePrimaryTableIdForPage(linkedPage);
 
-        if (tableId) {
-          const updatedTable = await updateTable(tableId, {
-            title: nextTitle,
-          });
+          if (tableId) {
+            const updatedTable = await updateTable(tableId, {
+              title: nextTitle,
+            });
 
-          const syncedTitle = updatedTable?.title || nextTitle;
+            const syncedTitle = updatedTable?.title || nextTitle;
 
-          dispatchUniversalTableTitleChanged({
-            tableId,
-            title: syncedTitle,
-            dedicatedPageId: navigationItem.page_id,
-          });
+            dispatchUniversalTableTitleChanged({
+              tableId,
+              title: syncedTitle,
+              dedicatedPageId: navigationItem.page_id,
+            });
 
-          await editor.updateItem(itemId, {
-            ...data,
-            title: syncedTitle,
-          });
+            await editor.updateItem(itemId, {
+              ...data,
+              title: syncedTitle,
+            });
 
-          return;
+            return;
+          }
+        } catch (renameError) {
+          console.error("Failed to save universal table menu item:", renameError);
         }
-      } catch (renameError) {
-        console.error(renameError);
       }
-    }
 
-    await editor.updateItem(itemId, data);
+      await editor.updateItem(itemId, data);
+    } catch (saveError) {
+      console.error("Failed to save menu item:", saveError);
+    }
   };
 
   const handleDeleteItem = async (itemId) => {
