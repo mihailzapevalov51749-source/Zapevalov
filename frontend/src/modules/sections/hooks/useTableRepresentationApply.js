@@ -44,7 +44,25 @@ export default function useTableRepresentationApply({
   dispatchChangeFilter,
 }) {
   const hasAppliedInitialViewRef = useRef(false);
+  const appliedRepresentationsCountRef = useRef(0);
   const previousTableBlockIdRef = useRef(null);
+
+  const getRepresentationsCount = (items = []) => {
+    return Array.isArray(items) ? items.length : 0;
+  };
+
+  const shouldApplyAfterLateHydration = (representationsCount) => {
+    return (
+      hasAppliedInitialViewRef.current &&
+      appliedRepresentationsCountRef.current === 0 &&
+      representationsCount > 0
+    );
+  };
+
+  const markInitialViewApplied = (representationsCount) => {
+    hasAppliedInitialViewRef.current = true;
+    appliedRepresentationsCountRef.current = representationsCount;
+  };
 
   const resetTableToAllItems = () => {
     const emptyState = createEmptyTableViewState();
@@ -235,6 +253,8 @@ export default function useTableRepresentationApply({
       hasAppliedInitialViewRef.current =
         false;
 
+      appliedRepresentationsCountRef.current = 0;
+
       setActiveQuickFilterId?.(null);
 
       clearDirty?.();
@@ -251,8 +271,18 @@ export default function useTableRepresentationApply({
   useEffect(() => {
     if (!tableBlock?.id) return;
     if (!isRepresentationsHydrated) return;
-    if (hasAppliedInitialViewRef.current)
+
+    const representationsCount =
+      getRepresentationsCount(representations);
+
+    if (
+      hasAppliedInitialViewRef.current &&
+      !shouldApplyAfterLateHydration(
+        representationsCount
+      )
+    ) {
       return;
+    }
 
     const defaultRepresentation =
       activeRepresentation ||
@@ -263,11 +293,9 @@ export default function useTableRepresentationApply({
       representations[0] ||
       null;
 
-    hasAppliedInitialViewRef.current =
-      true;
-
     if (!defaultRepresentation) {
       resetTableToAllItems();
+      markInitialViewApplied(0);
       return;
     }
 
@@ -283,6 +311,8 @@ export default function useTableRepresentationApply({
           defaultQuickFilter,
       }
     );
+
+    markInitialViewApplied(representationsCount);
   }, [
     tableBlock?.id,
     isRepresentationsHydrated,
