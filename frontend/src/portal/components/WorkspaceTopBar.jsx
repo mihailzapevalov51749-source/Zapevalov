@@ -49,6 +49,10 @@ export default function WorkspaceTopBar({
   searchQuery,
   onChangeSearchQuery,
   isEditMode,
+  isPageTitleEditable = false,
+  pageTitleDraft = "",
+  onChangePageTitleDraft,
+  onSavePageTitle,
   onEnterEditMode,
   onExitEditMode,
   showBackButton = false,
@@ -108,7 +112,7 @@ const effectiveShowBackButton =
 
   return (
     <>
-      <div style={topBarStyle}>
+      <div style={topBarStyle} data-page-top-bar="true">
         <div style={leftSideStyle}>
           {effectiveShowBackButton ? (
             <button
@@ -122,7 +126,23 @@ const effectiveShowBackButton =
           ) : null}
 
           <div style={titleBlockStyle}>
-            {title ? <div style={pageTitleStyle}>{title}</div> : null}
+            {isPageTitleEditable ? (
+              <input
+                value={pageTitleDraft}
+                onChange={(event) => onChangePageTitleDraft?.(event.target.value)}
+                onBlur={() => onSavePageTitle?.()}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    onSavePageTitle?.();
+                  }
+                }}
+                style={pageTitleInputStyle}
+                placeholder="Название страницы"
+              />
+            ) : title ? (
+              <div style={pageTitleStyle}>{title}</div>
+            ) : null}
             {subtitle ? <div style={pageSubtitleStyle}>{subtitle}</div> : null}
           </div>
         </div>
@@ -171,8 +191,8 @@ const effectiveShowBackButton =
             onClick={isEditMode ? onExitEditMode : onEnterEditMode}
             title={
               isEditMode
-                ? "Сохранить настройки страницы"
-                : "Настройки страницы"
+                ? "Выйти из режима редактирования"
+                : "Режим редактирования страницы"
             }
             style={{
               ...settingsButtonStyle,
@@ -267,6 +287,21 @@ const pageTitleStyle = {
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
+};
+
+const pageTitleInputStyle = {
+  width: "100%",
+  maxWidth: 420,
+  height: 32,
+  padding: "0 10px",
+  border: "1px solid #93C5FD",
+  borderRadius: 8,
+  outline: "none",
+  fontSize: 16,
+  fontWeight: 800,
+  color: "#0F172A",
+  background: "#F8FAFC",
+  boxSizing: "border-box",
 };
 
 const pageSubtitleStyle = {

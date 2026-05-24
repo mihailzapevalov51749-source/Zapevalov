@@ -67,7 +67,13 @@ export default function BlockWrapper({
 
   return (
     <div
+      data-block-host-id={block?.id}
       draggable={Boolean(draggable)}
+      onContextMenu={(event) => {
+        if (isEditMode) {
+          event.stopPropagation();
+        }
+      }}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDrop={onDrop}

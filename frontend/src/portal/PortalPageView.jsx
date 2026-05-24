@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
-import { getPageFull } from "../api/pagesApi";
+import { getPageFull, updatePage } from "../api/pagesApi";
+import { updateNavigationItem } from "../api/navigationApi";
 import { createSection } from "../api/sectionsApi";
 import { createBlock } from "../api/blocksApi";
 
@@ -27,12 +28,20 @@ import LibraryPageView from "../modules/documentLibraries/components/LibraryPage
 import { UniversalTableView } from "../modules/universalTable";
 
 import PortalLayout from "../layouts/PortalLayout";
-import EditorLayout from "../layouts/EditorLayout";
 
 import WorkspaceTopBar from "./components/WorkspaceTopBar";
 import DeleteSectionModal from "./components/DeleteSectionModal";
 import EmptyDropZone from "./components/EmptyDropZone";
+import PageCanvasContextMenu from "./components/PageCanvasContextMenu";
+import CanvasInlineEditor from "./components/CanvasInlineEditor";
+import PageSettingsPopover from "./components/PageSettingsPopover";
 import SystemMessage from "../system/SystemMessage";
+
+import usePageCanvasContextMenu from "./hooks/usePageCanvasContextMenu";
+import {
+  findSectionIdFromPoint,
+  shouldSuppressCanvasContextMenu,
+} from "./utils/pageCanvasContextMenuUtils";
 
 import AdminUsersPage from "../modules/admin/users/AdminUsersPage";
 import AdminOrgStructurePage from "../modules/admin/orgStructure/AdminOrgStructurePage";
@@ -49,7 +58,6 @@ import {
   calculateDropPosition,
 } from "./utils/portalPageUtils";
 
-const BASE_SIDEBAR_WIDTH = 260;
 const CORPORATE_CHAT_PAGE_ID = 35;
 
 const EMPTY_DELETE_SECTION_STATE = {
@@ -304,7 +312,8 @@ export default function PortalPageView() {
     return saved ? Number(saved) : 1;
   });
 
-  const sidebarWidth = Math.round(BASE_SIDEBAR_WIDTH * menuScale);
+  const [pageTitleDraft, setPageTitleDraft] = useState("");
+  const [pageSettingsAnchor, setPageSettingsAnchor] = useState(null);
 
   const { navigation, navigationError, reloadNavigation } =
     useNavigationTree(portalId);
@@ -327,6 +336,17 @@ export default function PortalPageView() {
     isDocumentLibraryPage,
     activeNavigationItem,
     pageData,
+  });
+
+  const isCanvasEditPage =
+    !isUniversalTablePage &&
+    !isAdminPage &&
+    !isCorporateChatPage &&
+    !isDocumentLibraryPage &&
+    Boolean(pageId);
+
+  const canvasContextMenu = usePageCanvasContextMenu({
+    isEnabled: isEditMode && isCanvasEditPage,
   });
 
   const changeMenuScale = (nextScale) => {
@@ -370,6 +390,10 @@ export default function PortalPageView() {
     isUniversalTablePage,
     isCorporateChatPage,
   ]);
+
+  useEffect(() => {
+    setPageTitleDraft(pageData?.page?.title || topBarMeta.title || "");
+  }, [pageData?.page?.title, topBarMeta.title]);
 
   const sections = pageData?.sections || [];
 
@@ -703,34 +727,155 @@ export default function PortalPageView() {
     onMoveSection: handleMoveSection,
   });
 
-  const Layout =
-    isEditMode && !isAdminPage && !isUniversalTablePage && !isCorporateChatPage
-      ? EditorLayout
-      : PortalLayout;
+  const exitEditMode = () => {
+    setSelectedBlock(null);
+    setSelectedSection(null);
+    setPageSettingsAnchor(null);
+    canvasContextMenu.closeMenu();
+    setIsEditMode(false);
+  };
+
+  const handleSavePageTitle = async () => {
+    if (!pageId || !pageData?.page) return;
+
+    const nextTitle = pageTitleDraft.trim();
+
+    if (!nextTitle || nextTitle === pageData.page.title) {
+      return;
+    }
+
+    try {
+      setError("");
+      const savedPage = await updatePage(pageId, {
+        ...pageData.page,
+        title: nextTitle,
+      });
+
+      setPageData((current) =>
+        current
+          ? {
+              ...current,
+              page: {
+                ...current.page,
+                ...savedPage,
+              },
+            }
+          : current
+      );
+
+      if (activeNavigationItem?.id) {
+        await updateNavigationItem(activeNavigationItem.id, {
+          title: nextTitle,
+        });
+        await reloadNavigation();
+      }
+    } catch (e) {
+      console.error(e);
+      setError("Ошибка сохранения названия страницы");
+    }
+  };
+
+  const handleSavePageSettings = async ({ title, description, is_visible }) => {
+    if (!pageId || !pageData?.page) return;
+
+    try {
+      setError("");
+
+      const savedPage = await updatePage(pageId, {
+        ...pageData.page,
+        title,
+        description,
+      });
+
+      setPageData((current) =>
+        current
+          ? {
+              ...current,
+              page: {
+                ...current.page,
+                ...savedPage,
+              },
+            }
+          : current
+      );
+
+      setPageTitleDraft(title);
+
+      if (activeNavigationItem?.id) {
+        await updateNavigationItem(activeNavigationItem.id, {
+          title,
+          is_visible,
+        });
+        await reloadNavigation();
+      }
+    } catch (e) {
+      console.error(e);
+      setError("Ошибка сохранения настроек страницы");
+    }
+  };
+
+  const handleCanvasContextMenu = (event) => {
+    if (!isEditMode || !isCanvasEditPage) return;
+
+    if (shouldSuppressCanvasContextMenu(event)) {
+      return;
+    }
+
+    canvasContextMenu.openMenu(event);
+  };
+
+  const handleContextMenuSelect = async (blockType) => {
+    const menuPoint = canvasContextMenu.menuState;
+
+    if (!menuPoint) return;
+
+    canvasContextMenu.closeMenu();
+
+    const dropPoint = {
+      clientX: menuPoint.clientX,
+      clientY: menuPoint.clientY,
+    };
+
+    if (blockType === "page_settings") {
+      setPageSettingsAnchor({ x: menuPoint.clientX, y: menuPoint.clientY });
+      return;
+    }
+
+    if (blockType === "section") {
+      await handleAddSection();
+      return;
+    }
+
+    const sectionId = findSectionIdFromPoint(dropPoint);
+
+    if (!sectionId) {
+      setError("Блоки можно добавлять только внутрь раздела");
+      return;
+    }
+
+    const isTableWidget = [
+      "table",
+      "universal_table",
+      "tableBlock",
+      "table_block",
+    ].includes(blockType);
+
+    if (isTableWidget && !isFlexibleSection(sectionId)) {
+      setError("Таблицу можно добавлять только в гибкий раздел");
+      return;
+    }
+
+    await handleAddBlockToSection(sectionId, blockType, dropPoint);
+  };
 
   return (
-    <Layout
+    <PortalLayout
       navigation={navigation}
       activePageId={isUniversalTablePage ? "system-universal-table" : pageId}
       onSelectPage={handleSelectPage}
-      onEnterEditMode={() => setIsEditMode(true)}
-      onExitEditMode={() => {
-        setSelectedBlock(null);
-        setSelectedSection(null);
-        setIsEditMode(false);
-      }}
       reloadNavigation={reloadNavigation}
-      sidebarWidth={sidebarWidth}
       menuScale={menuScale}
       onChangeMenuScale={changeMenuScale}
-      onAddSection={handleAddSection}
-      onAddBlock={handleAddBlockToSection}
-      selectedBlock={selectedBlock}
-      onSaveBlock={handleSaveBlock}
-      onCloseBlockEditor={() => setSelectedBlock(null)}
-      selectedSection={selectedSection}
-      onSaveSection={handleSaveSection}
-      onCloseSectionEditor={() => setSelectedSection(null)}
     >
     
 <div
@@ -770,17 +915,19 @@ export default function PortalPageView() {
     searchQuery={searchQuery}
     onChangeSearchQuery={setSearchQuery}
     isEditMode={isEditMode}
+    isPageTitleEditable={isEditMode && isCanvasEditPage}
+    pageTitleDraft={pageTitleDraft}
+    onChangePageTitleDraft={setPageTitleDraft}
+    onSavePageTitle={handleSavePageTitle}
     showBackButton={isAdminPage && location.pathname !== "/admin"}
     onBack={() => navigate(-1)}
     onEnterEditMode={() => setIsEditMode(true)}
-    onExitEditMode={() => {
-      setSelectedBlock(null);
-      setSelectedSection(null);
-      setIsEditMode(false);
-    }}
+    onExitEditMode={exitEditMode}
   />
 
   <div
+    data-page-canvas
+    onContextMenu={handleCanvasContextMenu}
     style={{
       flex: 1,
       minHeight: 0,
@@ -794,6 +941,9 @@ export default function PortalPageView() {
           ? 0
           : "10px 16px 16px",
       boxSizing: "border-box",
+      outline: isEditMode && isCanvasEditPage ? "2px dashed #93C5FD" : "none",
+      outlineOffset: isEditMode && isCanvasEditPage ? -2 : 0,
+      borderRadius: isEditMode && isCanvasEditPage ? 8 : 0,
     }}
   >
     {navigationError && <SystemMessage>{navigationError}</SystemMessage>}
@@ -930,6 +1080,29 @@ export default function PortalPageView() {
         </div>
       )}
   </div>
+
+  <PageCanvasContextMenu
+    menuState={canvasContextMenu.menuState}
+    menuRef={canvasContextMenu.menuRef}
+    onSelect={handleContextMenuSelect}
+  />
+
+  <CanvasInlineEditor
+    selectedBlock={selectedBlock}
+    selectedSection={selectedSection}
+    onSaveBlock={handleSaveBlock}
+    onCloseBlockEditor={() => setSelectedBlock(null)}
+    onSaveSection={handleSaveSection}
+    onCloseSectionEditor={() => setSelectedSection(null)}
+  />
+
+  <PageSettingsPopover
+    anchor={pageSettingsAnchor}
+    page={pageData?.page}
+    navigationItem={activeNavigationItem}
+    onSavePage={handleSavePageSettings}
+    onClose={() => setPageSettingsAnchor(null)}
+  />
 </div>
       <DeleteSectionModal
         isOpen={deleteSectionState.isOpen}
@@ -940,6 +1113,6 @@ export default function PortalPageView() {
         onDeleteEmpty={confirmDeleteEmptySection}
         onDeleteWithBlocks={confirmDeleteSectionWithBlocks}
       />
-    </Layout>
+    </PortalLayout>
   );
 }
