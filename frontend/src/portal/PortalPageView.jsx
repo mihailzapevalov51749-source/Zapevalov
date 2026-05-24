@@ -35,7 +35,14 @@ import EmptyDropZone from "./components/EmptyDropZone";
 import PageCanvasContextMenu from "./components/PageCanvasContextMenu";
 import CanvasInlineEditor from "./components/CanvasInlineEditor";
 import PageSettingsPopover from "./components/PageSettingsPopover";
+import PageCanvasErrorBanner from "./components/PageCanvasErrorBanner";
 import SystemMessage from "../system/SystemMessage";
+
+import {
+  findBlockInPageData,
+  mergeBlockUpdate,
+  supportsInlineBlockEdit,
+} from "./utils/blockEditUtils";
 
 import usePageCanvasContextMenu from "./hooks/usePageCanvasContextMenu";
 import {
@@ -357,7 +364,7 @@ export default function PortalPageView() {
     localStorage.setItem("leftMenuScale", String(rounded));
   };
 
-  const loadCurrentPage = async () => {
+  const loadCurrentPage = async ({ keepPrevious = false } = {}) => {
     if (
       isUniversalTablePage ||
       isAdminPage ||
@@ -370,8 +377,10 @@ export default function PortalPageView() {
     }
 
     try {
-      setError("");
-      setPageData(null);
+      if (!keepPrevious) {
+        setError("");
+        setPageData(null);
+      }
 
       const result = await getPageFull(pageId);
       setPageData(result);
@@ -409,7 +418,7 @@ export default function PortalPageView() {
     const scrollElement = document.querySelector("[data-page-scroll]");
     const previousScrollTop = scrollElement?.scrollTop || 0;
 
-    await loadCurrentPage();
+    await loadCurrentPage({ keepPrevious: true });
 
     requestAnimationFrame(() => {
       const nextScrollElement = document.querySelector("[data-page-scroll]");
@@ -458,47 +467,53 @@ export default function PortalPageView() {
     });
   };
 
-  const handleBlockUpdated = async (updatedBlock) => {
+  const applyBlockToPageState = (savedBlock) => {
+    setPageData((currentPageData) => {
+      if (!currentPageData?.sections || !savedBlock?.id) return currentPageData;
+
+      return {
+        ...currentPageData,
+        sections: currentPageData.sections.map((item) => {
+          const nextBlocks = (item.blocks || []).map((block) => {
+            if (String(block.id) !== String(savedBlock.id)) {
+              return block;
+            }
+
+            const existingBlock = block;
+            return mergeBlockUpdate(existingBlock, savedBlock);
+          });
+
+          return {
+            ...item,
+            blocks: nextBlocks,
+          };
+        }),
+      };
+    });
+  };
+
+  const handleBlockUpdated = async (updatedBlock, options = {}) => {
     if (!updatedBlock?.id) return;
+
+    const existingBlock = findBlockInPageData(pageData, updatedBlock.id);
+    const mergedBlock = mergeBlockUpdate(existingBlock, updatedBlock);
+
+    applyBlockToPageState(mergedBlock);
+
+    if (options.localOnly || options.alreadyPersisted) {
+      return;
+    }
 
     try {
       setError("");
 
-      const savedBlock = await updateBlock(updatedBlock.id, {
-        ...updatedBlock,
-        settings: {
-          ...(updatedBlock.settings || {}),
-        },
+      const savedBlock = await updateBlock(mergedBlock.id, {
+        title: mergedBlock.title,
+        content: mergedBlock.content,
+        settings: mergedBlock.settings,
       });
 
-      setPageData((currentPageData) => {
-        if (!currentPageData?.sections) return currentPageData;
-
-        return {
-          ...currentPageData,
-          sections: currentPageData.sections.map((item) => {
-            const nextBlocks = (item.blocks || []).map((block) => {
-              if (String(block.id) !== String(savedBlock.id)) {
-                return block;
-              }
-
-              return {
-                ...block,
-                ...savedBlock,
-                settings: {
-                  ...(block.settings || {}),
-                  ...(savedBlock.settings || {}),
-                },
-              };
-            });
-
-            return {
-              ...item,
-              blocks: nextBlocks,
-            };
-          }),
-        };
-      });
+      applyBlockToPageState(savedBlock);
     } catch (e) {
       console.error(e);
       setError("Ошибка сохранения блока");
@@ -644,6 +659,10 @@ export default function PortalPageView() {
   };
 
   const handleEditBlock = (block) => {
+    if (supportsInlineBlockEdit(block?.type)) {
+      return;
+    }
+
     setSelectedBlock(block);
     setSelectedSection(null);
   };
@@ -941,15 +960,17 @@ export default function PortalPageView() {
           ? 0
           : "10px 16px 16px",
       boxSizing: "border-box",
-      outline: isEditMode && isCanvasEditPage ? "2px dashed #93C5FD" : "none",
-      outlineOffset: isEditMode && isCanvasEditPage ? -2 : 0,
-      borderRadius: isEditMode && isCanvasEditPage ? 8 : 0,
     }}
   >
     {navigationError && <SystemMessage>{navigationError}</SystemMessage>}
-    {error && <SystemMessage>{error}</SystemMessage>}
+    {error && (
+      <PageCanvasErrorBanner
+        message={error}
+        onDismiss={() => setError("")}
+      />
+    )}
 
-    {!error && isUniversalTablePage && (
+    {isUniversalTablePage && (
       <div
         style={{
           flex: 1,
@@ -964,26 +985,23 @@ export default function PortalPageView() {
       </div>
     )}
 
-    {!error && !isUniversalTablePage && isCorporateChatPage && (
+    {!isUniversalTablePage && isCorporateChatPage && (
       <CorporateChatPage />
     )}
 
-    {!error &&
-      !isUniversalTablePage &&
+    {!isUniversalTablePage &&
       !isCorporateChatPage &&
       isAdminPage &&
       adminPageContent}
 
-    {!error &&
-      !isUniversalTablePage &&
+    {!isUniversalTablePage &&
       !isCorporateChatPage &&
       isAdminPage &&
       !adminPageContent && (
         <SystemMessage>Раздел администрирования не найден</SystemMessage>
       )}
 
-    {!error &&
-      !isUniversalTablePage &&
+    {!isUniversalTablePage &&
       !isAdminPage &&
       !isCorporateChatPage &&
       isDocumentLibraryPage &&
@@ -1000,16 +1018,14 @@ export default function PortalPageView() {
         </SystemMessage>
       ))}
 
-    {!error &&
-      !isUniversalTablePage &&
+    {!isUniversalTablePage &&
       !isAdminPage &&
       !isCorporateChatPage &&
       !isDocumentLibraryPage &&
       !pageData &&
       pageId && <SystemMessage>Загрузка...</SystemMessage>}
 
-    {!error &&
-      !isUniversalTablePage &&
+    {!isUniversalTablePage &&
       !isAdminPage &&
       !isCorporateChatPage &&
       !isDocumentLibraryPage &&
@@ -1017,8 +1033,7 @@ export default function PortalPageView() {
       sections.length === 0 &&
       isEditMode && <EmptyDropZone />}
 
-    {!error &&
-      !isUniversalTablePage &&
+    {!isUniversalTablePage &&
       !isAdminPage &&
       !isCorporateChatPage &&
       !isDocumentLibraryPage &&
@@ -1088,7 +1103,11 @@ export default function PortalPageView() {
   />
 
   <CanvasInlineEditor
-    selectedBlock={selectedBlock}
+    selectedBlock={
+      selectedBlock && !supportsInlineBlockEdit(selectedBlock.type)
+        ? selectedBlock
+        : null
+    }
     selectedSection={selectedSection}
     onSaveBlock={handleSaveBlock}
     onCloseBlockEditor={() => setSelectedBlock(null)}

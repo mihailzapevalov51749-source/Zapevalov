@@ -121,7 +121,7 @@ export default function BlocksList({
             onDrop={(event) =>
               blockDragAndDrop?.handleBlockDrop(event, block, sectionId, blocks)
             }
-            onDragEnd={blockDragAndDrop?.resetDrag}
+            onDragEnd={blockDragAndDrop?.handleBlockDragEnd}
             isDropBefore={isCurrentTarget && dropTarget?.position === "before"}
             isDropAfter={isCurrentTarget && dropTarget?.position === "after"}
             isDragTarget={isCurrentTarget}

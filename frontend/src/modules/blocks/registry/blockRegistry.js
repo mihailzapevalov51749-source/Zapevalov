@@ -2,6 +2,7 @@ import TextBlockView from "../../blockTypes/text/TextBlockView";
 import ImageBlockView from "../../blockTypes/image/ImageBlockView";
 import DocumentsBlockView from "../../blockTypes/documents/DocumentsBlockView";
 import ButtonBlockView from "../../blockTypes/button/ButtonBlockView";
+import LinkBlockView from "../../blockTypes/link/LinkBlockView";
 import CardsBlockView from "../../blockTypes/cards/CardsBlockView";
 
 import { UniversalTableView } from "../../universalTable";
@@ -15,6 +16,7 @@ export const blockViewRegistry = {
   document: DocumentsBlockView,
   documents: DocumentsBlockView,
   button: ButtonBlockView,
+  link: LinkBlockView,
   cards: CardsBlockView,
 
   admin_dashboard: AdminDashboardBlock,

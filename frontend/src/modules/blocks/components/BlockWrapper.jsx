@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import BlockToolbar from "./BlockToolbar";
 
@@ -20,6 +20,8 @@ export default function BlockWrapper({
   children,
 }) {
   const [isHovered, setIsHovered] = useState(false);
+  const suppressClickRef = useRef(false);
+  const pointerRef = useRef({ x: 0, y: 0, moved: false });
 
   const isTableBlock =
     block?.type === "universal_table" ||
@@ -41,7 +43,7 @@ export default function BlockWrapper({
 
     overflow: "hidden",
 
-    cursor: isEditMode ? "pointer" : "default",
+    cursor: isEditMode && onEdit ? "pointer" : "default",
 
     opacity: isDragged ? 0.35 : 1,
 
@@ -65,6 +67,47 @@ export default function BlockWrapper({
         transform: "scale(1)",
       };
 
+  const handleDragStart = (event) => {
+    suppressClickRef.current = true;
+    onDragStart?.(event);
+  };
+
+  const handleDragEnd = (event) => {
+    onDragEnd?.(event);
+
+    window.setTimeout(() => {
+      suppressClickRef.current = false;
+    }, 0);
+  };
+
+  const handlePointerDown = (event) => {
+    if (!isEditMode) return;
+
+    pointerRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+      moved: false,
+    };
+  };
+
+  const handlePointerMove = (event) => {
+    if (!isEditMode) return;
+
+    const deltaX = Math.abs(event.clientX - pointerRef.current.x);
+    const deltaY = Math.abs(event.clientY - pointerRef.current.y);
+
+    if (deltaX > 4 || deltaY > 4) {
+      pointerRef.current.moved = true;
+    }
+  };
+
+  const handleClick = () => {
+    if (!isEditMode || !onEdit) return;
+    if (suppressClickRef.current || pointerRef.current.moved) return;
+
+    onEdit();
+  };
+
   return (
     <div
       data-block-host-id={block?.id}
@@ -74,13 +117,13 @@ export default function BlockWrapper({
           event.stopPropagation();
         }
       }}
-      onDragStart={onDragStart}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onDragStart={handleDragStart}
       onDragOver={onDragOver}
       onDrop={onDrop}
-      onDragEnd={onDragEnd}
-      onClick={() => {
-        if (isEditMode) onEdit?.();
-      }}
+      onDragEnd={handleDragEnd}
+      onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{

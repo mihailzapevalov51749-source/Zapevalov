@@ -1,18 +1,30 @@
+import { useEffect, useState } from "react";
+
+import { updateBlock } from "../../blocks/services/blockService";
+
 const API_BASE_URL = "http://127.0.0.1:8010";
 
-export default function ButtonBlockView({ block, isEditMode, onEdit }) {
+export default function ButtonBlockView({ block, isEditMode, onBlockUpdated }) {
   const settings = block.settings || {};
+  const content = block.content || {};
 
   const showTitle = settings.show_title !== false;
-  const label = showTitle ? block.title || "Кнопка" : "Кнопка";
+  const initialLabel =
+    (showTitle ? block.title : null) ||
+    content.label ||
+    "Кнопка";
+  const initialUrl = content.url || "";
 
-  const url = block.content?.url || "#";
-  const target = block.content?.target || "_self";
+  const [label, setLabel] = useState(initialLabel);
+  const [url, setUrl] = useState(initialUrl);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const variant = settings.buttonVariant || settings.variant || "primary";
   const align = settings.align || "left";
   const fullWidth = settings.fullWidth === true;
   const size = settings.size || "md";
+  const target = content.target || "_self";
 
   const icon = settings.icon || "";
   const iconUrl = settings.iconUrl || "";
@@ -21,30 +33,109 @@ export default function ButtonBlockView({ block, isEditMode, onEdit }) {
 
   const customStyle = getCustomStyle(settings, variant);
 
-  const handleEdit = (event) => {
-    if (!isEditMode) return;
+  useEffect(() => {
+    setLabel(initialLabel);
+    setUrl(initialUrl);
+  }, [initialLabel, initialUrl]);
 
-    event.preventDefault();
-    event.stopPropagation();
+  const saveButton = async () => {
+    if (!block?.id || isSaving) return;
 
-    onEdit?.(block);
+    const nextLabel = label.trim() || "Кнопка";
+    const nextUrl = url.trim();
+
+    try {
+      setIsSaving(true);
+
+      const savedBlock = await updateBlock(block.id, {
+        title: showTitle ? nextLabel : block.title,
+        content: {
+          ...(block.content || {}),
+          label: nextLabel,
+          url: nextUrl,
+          target,
+        },
+        settings: {
+          ...(block.settings || {}),
+          show_title: showTitle,
+        },
+      });
+
+      onBlockUpdated?.(
+        {
+          ...block,
+          ...savedBlock,
+          title: showTitle ? nextLabel : block.title,
+          content: {
+            ...(block.content || {}),
+            ...(savedBlock?.content || {}),
+            label: nextLabel,
+            url: nextUrl,
+            target,
+          },
+        },
+        { alreadyPersisted: true }
+      );
+
+      setLabel(nextLabel);
+      setUrl(nextUrl);
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Ошибка сохранения кнопки", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleViewClick = (event) => {
-    if (isEditMode) {
-      handleEdit(event);
-      return;
-    }
-
-    if (!url || url === "#") {
-      event.preventDefault();
-    }
+  const cancelEdit = () => {
+    setLabel(initialLabel);
+    setUrl(initialUrl);
+    setIsEditing(false);
   };
+
+  if (isEditMode && isEditing) {
+    return (
+      <div
+        data-inline-editor="true"
+        data-button-block-content="true"
+        onMouseDown={(event) => event.stopPropagation()}
+        style={{
+          width: "100%",
+          display: "grid",
+          gap: 8,
+          padding: 8,
+          boxSizing: "border-box",
+        }}
+      >
+        <input
+          value={label}
+          onChange={(event) => setLabel(event.target.value)}
+          placeholder="Текст кнопки"
+          style={fieldStyle}
+        />
+        <input
+          value={url}
+          onChange={(event) => setUrl(event.target.value)}
+          placeholder="https://..."
+          style={fieldStyle}
+        />
+        <div style={{ display: "flex", gap: 8 }}>
+          <button type="button" onClick={saveButton} style={primaryButtonStyle}>
+            {isSaving ? "Сохранение..." : "Сохранить"}
+          </button>
+          <button type="button" onClick={cancelEdit} style={secondaryButtonStyle}>
+            Отмена
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const displayLabel = showTitle ? label : label || "Кнопка";
 
   return (
     <div
       data-button-block-content="true"
-      onClick={handleEdit}
       style={{
         width: "100%",
         height: "100%",
@@ -54,7 +145,6 @@ export default function ButtonBlockView({ block, isEditMode, onEdit }) {
         position: "relative",
         paddingLeft: isEditMode ? 16 : 0,
         boxSizing: "border-box",
-        cursor: isEditMode ? "pointer" : "default",
       }}
     >
       {isEditMode && <DragHandle />}
@@ -64,7 +154,13 @@ export default function ButtonBlockView({ block, isEditMode, onEdit }) {
         target={isEditMode ? undefined : target}
         rel={target === "_blank" ? "noreferrer" : undefined}
         title={tooltip || undefined}
-        onClick={handleViewClick}
+        onClick={(event) => {
+          if (!isEditMode) return;
+
+          event.preventDefault();
+          event.stopPropagation();
+          setIsEditing(true);
+        }}
         draggable={false}
         style={{
           display: "inline-flex",
@@ -86,7 +182,7 @@ export default function ButtonBlockView({ block, isEditMode, onEdit }) {
           textOverflow: "ellipsis",
           userSelect: "none",
           boxSizing: "border-box",
-          cursor: "pointer",
+          cursor: isEditMode ? "text" : "pointer",
           transition:
             "background 0.15s ease, color 0.15s ease, border 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease",
           ...getVariantStyle(variant),
@@ -103,7 +199,7 @@ export default function ButtonBlockView({ block, isEditMode, onEdit }) {
             textOverflow: "ellipsis",
           }}
         >
-          {label}
+          {displayLabel}
         </span>
 
         {iconPosition === "right" && (
@@ -268,3 +364,33 @@ function normalizeUrl(url) {
   if (url.startsWith("/")) return `${API_BASE_URL}${url}`;
   return url;
 }
+
+const fieldStyle = {
+  width: "100%",
+  padding: "8px 10px",
+  border: "1px solid #CBD5E1",
+  borderRadius: 8,
+  fontSize: 13,
+  boxSizing: "border-box",
+};
+
+const primaryButtonStyle = {
+  padding: "6px 10px",
+  borderRadius: 8,
+  border: "1px solid #2563EB",
+  background: "#2563EB",
+  color: "#FFFFFF",
+  cursor: "pointer",
+  fontSize: 12,
+  fontWeight: 700,
+};
+
+const secondaryButtonStyle = {
+  padding: "6px 10px",
+  borderRadius: 8,
+  border: "1px solid #CBD5E1",
+  background: "#FFFFFF",
+  color: "#334155",
+  cursor: "pointer",
+  fontSize: 12,
+};

@@ -13,4 +13,4 @@ export const PAGE_CANVAS_BLOCK_TYPES = [
 ];
 
 export const PAGE_CANVAS_INTERACTIVE_SELECTOR =
-  "button, input, textarea, select, a, [contenteditable='true'], [data-inline-editor='true'], [data-text-block-content='true'], [data-document-block-content='true'], [data-button-block-content='true'], [data-section-resize-handle='true'], [data-block-resize-handle='true']";
+  "button, input, textarea, select, a, [contenteditable='true'], [data-inline-editor='true'], [data-text-block-content='true'], [data-document-block-content='true'], [data-button-block-content='true'], [data-link-block-content='true'], [data-section-resize-handle='true'], [data-block-resize-handle='true']";

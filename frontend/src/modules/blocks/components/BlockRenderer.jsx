@@ -2,6 +2,7 @@ import {
   getBlockTypeTitle,
   getBlockViewComponent,
 } from "../registry/blockRegistry";
+import { supportsInlineBlockEdit } from "../../../portal/utils/blockEditUtils";
 import BlockWrapper from "./BlockWrapper";
 
 export default function BlockRenderer({
@@ -44,6 +45,8 @@ export default function BlockRenderer({
     Boolean(block?.content?.imageUrl) ||
     Boolean(block?.content?.url);
 
+  const usePanelEditor = isEditMode && !supportsInlineBlockEdit(block?.type);
+
   const wrapperStyle = getWrapperStyle({
     isAdminSystemBlock,
     isTableBlock,
@@ -58,7 +61,7 @@ export default function BlockRenderer({
       isEditMode={isEditMode}
       wrapperStyle={wrapperStyle}
       isResizable={false}
-      onEdit={() => onEdit?.(block)}
+      onEdit={usePanelEditor ? () => onEdit?.(block) : undefined}
       onDelete={() => onDelete?.(block)}
       draggable={draggable}
       onDragStart={onDragStart}

@@ -28,6 +28,10 @@ export default function FreeLayoutSection({
 }) {
   const gridRef = useRef(null);
   const blockContentRefs = useRef({});
+  const manualHeightRef = useRef(
+    Number(section?.settings?.freeHeight) || DEFAULT_FREE_HEIGHT
+  );
+  const suppressClickRef = useRef({ blockId: null, until: 0 });
 
   const [height, setHeight] = useState(
     Number(section?.settings?.freeHeight) || DEFAULT_FREE_HEIGHT
@@ -38,7 +42,9 @@ export default function FreeLayoutSection({
   const [blockedBlockId, setBlockedBlockId] = useState(null);
 
   useEffect(() => {
-    setHeight(Number(section?.settings?.freeHeight) || DEFAULT_FREE_HEIGHT);
+    const savedHeight = Number(section?.settings?.freeHeight) || DEFAULT_FREE_HEIGHT;
+    manualHeightRef.current = savedHeight;
+    setHeight(savedHeight);
   }, [section?.settings?.freeHeight]);
 
   useEffect(() => {
@@ -46,7 +52,13 @@ export default function FreeLayoutSection({
     setLocalPositions(positions);
 
     const requiredHeight = calculateRequiredSectionHeight(positions, blocks);
-    setHeight(requiredHeight);
+    const nextHeight = Math.max(
+      manualHeightRef.current || MIN_FREE_HEIGHT,
+      requiredHeight,
+      MIN_FREE_HEIGHT
+    );
+
+    setHeight(nextHeight);
   }, [blocks, measuredSizes]);
 
   useEffect(() => {
@@ -69,14 +81,23 @@ export default function FreeLayoutSection({
 
         setMeasuredSizes((current) => {
           const currentSize = current[block.id];
+          const savedPosition = getSavedBlockPosition(block);
 
-          if (currentSize?.w === nextSize.w && currentSize?.h === nextSize.h) {
+          const mergedSize = {
+            w: Math.max(nextSize.w, savedPosition?.w || 0, currentSize?.w || 0),
+            h: Math.max(nextSize.h, savedPosition?.h || 0, currentSize?.h || 0),
+          };
+
+          if (
+            currentSize?.w === mergedSize.w &&
+            currentSize?.h === mergedSize.h
+          ) {
             return current;
           }
 
           return {
             ...current,
-            [block.id]: nextSize,
+            [block.id]: mergedSize,
           };
         });
       });
@@ -99,7 +120,15 @@ export default function FreeLayoutSection({
 
   const recalculateSectionHeight = (positions) => {
     const requiredHeight = calculateRequiredSectionHeight(positions, blocks);
-    setHeight(requiredHeight);
+
+    setHeight((current) =>
+      Math.max(
+        manualHeightRef.current || MIN_FREE_HEIGHT,
+        requiredHeight,
+        current,
+        MIN_FREE_HEIGHT
+      )
+    );
   };
 
   const saveBlockPosition = async (block, position) => {
@@ -143,7 +172,7 @@ export default function FreeLayoutSection({
     const dragHandle = event.target.closest?.("[data-block-drag-handle='true']");
 
     const ignored = event.target.closest?.(
-      "button, input, textarea, select, a, [contenteditable='true'], [data-inline-editor='true'], [data-text-block-content='true'], [data-document-block-content='true'], [data-button-block-content='true'], [data-section-resize-handle='true'], [data-block-resize-handle='true']"
+      "button, input, textarea, select, a, [contenteditable='true'], [data-inline-editor='true'], [data-text-block-content='true'], [data-document-block-content='true'], [data-button-block-content='true'], [data-link-block-content='true'], [data-section-resize-handle='true'], [data-block-resize-handle='true']"
     );
 
     if (ignored && !dragHandle) return;
@@ -161,12 +190,17 @@ export default function FreeLayoutSection({
     const startPosition = getPosition(block, index);
 
     let finalPosition = startPosition;
+    let didMove = false;
 
     const handlePointerMove = (moveEvent) => {
       moveEvent.preventDefault();
 
       const deltaX = moveEvent.clientX - startMouseX;
       const deltaY = moveEvent.clientY - startMouseY;
+
+      if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
+        didMove = true;
+      }
 
       const deltaColumns = Math.round(deltaX / (columnWidth + GRID_GAP));
       const deltaRows = Math.round(deltaY / (GRID_ROW_HEIGHT + GRID_GAP));
@@ -204,6 +238,13 @@ export default function FreeLayoutSection({
       document.removeEventListener("pointerup", handlePointerUp);
 
       setBlockedBlockId(null);
+
+      if (didMove) {
+        suppressClickRef.current = {
+          blockId: block.id,
+          until: Date.now() + 250,
+        };
+      }
 
       try {
         const elementUnderCursor = document.elementFromPoint(
@@ -319,11 +360,14 @@ export default function FreeLayoutSection({
     event.preventDefault();
     event.stopPropagation();
 
+    const resizeHandle = event.currentTarget;
+    resizeHandle.setPointerCapture?.(event.pointerId);
+
     const startY = event.clientY;
     const startHeight = height;
     let finalHeight = startHeight;
 
-    const handleMouseMove = (moveEvent) => {
+    const handlePointerMove = (moveEvent) => {
       moveEvent.preventDefault();
 
       const delta = moveEvent.clientY - startY;
@@ -333,12 +377,15 @@ export default function FreeLayoutSection({
       );
 
       finalHeight = nextHeight;
+      manualHeightRef.current = nextHeight;
       setHeight(nextHeight);
     };
 
-    const handleMouseUp = async () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+    const handlePointerUp = async () => {
+      resizeHandle.releasePointerCapture?.(event.pointerId);
+      resizeHandle.removeEventListener("pointermove", handlePointerMove);
+      resizeHandle.removeEventListener("pointerup", handlePointerUp);
+      resizeHandle.removeEventListener("pointercancel", handlePointerUp);
 
       try {
         const savedSection = await updateSection(sectionId, {
@@ -358,6 +405,7 @@ export default function FreeLayoutSection({
           },
         };
 
+        manualHeightRef.current = finalHeight;
         setHeight(finalHeight);
         onSectionUpdated?.(normalizedSection);
       } catch (error) {
@@ -365,8 +413,9 @@ export default function FreeLayoutSection({
       }
     };
 
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
+    resizeHandle.addEventListener("pointermove", handlePointerMove);
+    resizeHandle.addEventListener("pointerup", handlePointerUp);
+    resizeHandle.addEventListener("pointercancel", handlePointerUp);
   };
 
   return (
@@ -414,6 +463,15 @@ export default function FreeLayoutSection({
             onClickCapture={(event) => {
               if (!isEditMode) return;
 
+              if (
+                String(suppressClickRef.current.blockId) === String(block.id) &&
+                Date.now() < suppressClickRef.current.until
+              ) {
+                event.preventDefault();
+                event.stopPropagation();
+                return;
+              }
+
               const link = event.target.closest?.("a");
 
               const documentContent = event.target.closest?.(
@@ -424,7 +482,11 @@ export default function FreeLayoutSection({
                 "[data-button-block-content='true']"
               );
 
-              if (link && !documentContent && !buttonContent) {
+              const linkContent = event.target.closest?.(
+                "[data-link-block-content='true']"
+              );
+
+              if (link && !documentContent && !buttonContent && !linkContent) {
                 event.preventDefault();
                 event.stopPropagation();
               }
@@ -509,7 +571,7 @@ export default function FreeLayoutSection({
       {isEditMode && (
         <div
           data-section-resize-handle="true"
-          onMouseDown={handleSectionResizeStart}
+          onPointerDown={handleSectionResizeStart}
           draggable={false}
           title="Изменить высоту раздела"
           style={{

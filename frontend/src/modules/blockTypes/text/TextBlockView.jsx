@@ -142,16 +142,19 @@ export default function TextBlockView({ block, isEditMode, onBlockUpdated }) {
 
     if (nextRows === currentRows) return;
 
-    onBlockUpdated?.({
-      ...block,
-      settings: {
-        ...(block.settings || {}),
-        position: {
-          ...(position || {}),
-          h: nextRows,
+    onBlockUpdated?.(
+      {
+        ...block,
+        settings: {
+          ...(block.settings || {}),
+          position: {
+            ...(position || {}),
+            h: nextRows,
+          },
         },
       },
-    });
+      { localOnly: true }
+    );
   };
 
   const saveText = async () => {
@@ -204,7 +207,7 @@ export default function TextBlockView({ block, isEditMode, onBlockUpdated }) {
 
       setSavedText(nextText);
       setDraftText(nextText);
-      onBlockUpdated?.(updatedBlock);
+      onBlockUpdated?.(updatedBlock, { alreadyPersisted: true });
       setIsEditingText(false);
     } catch (error) {
       console.error("Ошибка сохранения текста", error);
@@ -265,24 +268,27 @@ export default function TextBlockView({ block, isEditMode, onBlockUpdated }) {
         settings: nextSettings,
       });
 
-      onBlockUpdated?.({
-        ...block,
-        ...savedBlock,
-        content: {
-          ...(block.content || {}),
-          ...(savedBlock?.content || {}),
-          text: draftText,
-        },
-        settings: {
-          ...(block.settings || {}),
-          ...(savedBlock?.settings || {}),
-          ...nextPartialSettings,
-          position: {
-            ...(block.settings?.position || {}),
-            ...(savedBlock?.settings?.position || {}),
+      onBlockUpdated?.(
+        {
+          ...block,
+          ...savedBlock,
+          content: {
+            ...(block.content || {}),
+            ...(savedBlock?.content || {}),
+            text: draftText,
+          },
+          settings: {
+            ...(block.settings || {}),
+            ...(savedBlock?.settings || {}),
+            ...nextPartialSettings,
+            position: {
+              ...(block.settings?.position || {}),
+              ...(savedBlock?.settings?.position || {}),
+            },
           },
         },
-      });
+        { alreadyPersisted: true }
+      );
 
       setTimeout(() => {
         const element = isEditingText ? textareaRef.current : textViewRef.current;

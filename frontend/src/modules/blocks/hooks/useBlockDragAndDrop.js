@@ -26,6 +26,19 @@ export default function useBlockDragAndDrop({ onMoveBlock }) {
     event.dataTransfer.setData("drag/type", "block");
     event.dataTransfer.setData("block/id", blockId);
     event.dataTransfer.setData("block/sourceSectionId", sectionId);
+
+    if (event.dataTransfer.setDragImage) {
+      const dragGhost = document.createElement("div");
+      dragGhost.style.cssText =
+        "position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;";
+      document.body.appendChild(dragGhost);
+      event.dataTransfer.setDragImage(dragGhost, 0, 0);
+      window.setTimeout(() => dragGhost.remove(), 0);
+    }
+  };
+
+  const handleBlockDragEnd = () => {
+    resetDrag();
   };
 
   const handleBlockDragOver = (event, targetBlock, targetSectionId) => {
@@ -147,6 +160,7 @@ export default function useBlockDragAndDrop({ onMoveBlock }) {
     handleBlockDragStart,
     handleBlockDragOver,
     handleBlockDrop,
+    handleBlockDragEnd,
     handleSectionDragOver,
     handleSectionDrop,
     resetDrag,
@@ -170,7 +184,15 @@ function calculateTargetOrderIndex({
   }
 
   if (isSameSection) {
-    return originalTargetIndex;
+    const workingBlocks = originalBlocks.filter(
+      (block) => String(block.id) !== String(draggedBlockId)
+    );
+
+    const targetIndex = workingBlocks.findIndex(
+      (block) => String(block.id) === String(targetBlockId)
+    );
+
+    return targetIndex === -1 ? workingBlocks.length : targetIndex;
   }
 
   return originalTargetIndex;
