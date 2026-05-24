@@ -43,6 +43,27 @@ const safeNormalizeLookup = (lookup) => {
 
 export default function useTableBlock({ block, onBlockUpdated }) {
   const draggedColumnIdRef = useRef(null);
+  const loadRequestRef = useRef({ key: "", seq: 0 });
+
+  const beginLoadRequest = (blockId) => {
+    const key =
+      blockId != null && blockId !== "" ? `block:${blockId}` : "";
+    const nextSeq = loadRequestRef.current.seq + 1;
+
+    loadRequestRef.current = { key, seq: nextSeq };
+
+    return { key, seq: nextSeq };
+  };
+
+  const isStaleLoadRequest = (request) => {
+    if (!request?.key) {
+      return true;
+    }
+
+    const current = loadRequestRef.current;
+
+    return current.key !== request.key || current.seq !== request.seq;
+  };
 
   const [table, setTable] = useState(null);
   const [columns, setColumns] = useState([]);
@@ -111,12 +132,16 @@ export default function useTableBlock({ block, onBlockUpdated }) {
     );
   };
 
-  const normalizeTable = async (tableData) => {
+  const normalizeTable = async (tableData, request) => {
     const rawColumns = Array.isArray(tableData?.columns)
       ? tableData.columns
       : [];
 
     const enrichedColumns = await enrichColumnsWithLookupDisplayMap(rawColumns);
+
+    if (isStaleLoadRequest(request)) {
+      return;
+    }
 
     setTable(tableData);
     setColumns(enrichedColumns);
@@ -126,19 +151,36 @@ export default function useTableBlock({ block, onBlockUpdated }) {
   const loadTable = async () => {
     if (!block?.id) return;
 
+    const request = beginLoadRequest(block.id);
+
     try {
       setIsLoading(true);
       setError("");
+      setTable(null);
+      setColumns([]);
+      setRows([]);
 
       let tableData;
 
       try {
         tableData = await getTableByBlock(block.id);
       } catch {
+        if (isStaleLoadRequest(request)) {
+          return;
+        }
+
         tableData = await createTableForBlock(block.id);
       }
 
-      await normalizeTable(tableData);
+      if (isStaleLoadRequest(request)) {
+        return;
+      }
+
+      await normalizeTable(tableData, request);
+
+      if (isStaleLoadRequest(request)) {
+        return;
+      }
 
       if (tableData?.id && block?.content?.table_id !== tableData.id) {
         onBlockUpdated?.({
@@ -150,10 +192,16 @@ export default function useTableBlock({ block, onBlockUpdated }) {
         });
       }
     } catch (err) {
+      if (isStaleLoadRequest(request)) {
+        return;
+      }
+
       console.error("Ошибка загрузки таблицы:", err);
       setError("Не удалось загрузить таблицу");
     } finally {
-      setIsLoading(false);
+      if (!isStaleLoadRequest(request)) {
+        setIsLoading(false);
+      }
     }
   };
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   getTable,
@@ -157,6 +157,39 @@ export default function useUniversalTable({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const loadRequestRef = useRef({ key: "", seq: 0 });
+
+  const getLoadKey = () => {
+    if (tableId != null && tableId !== "") {
+      return `table:${tableId}`;
+    }
+
+    if (blockId != null && blockId !== "") {
+      return `block:${blockId}`;
+    }
+
+    return "";
+  };
+
+  const beginLoadRequest = () => {
+    const key = getLoadKey();
+    const nextSeq = loadRequestRef.current.seq + 1;
+
+    loadRequestRef.current = { key, seq: nextSeq };
+
+    return { key, seq: nextSeq };
+  };
+
+  const isStaleLoadRequest = (request) => {
+    if (!request?.key) {
+      return true;
+    }
+
+    const current = loadRequestRef.current;
+
+    return current.key !== request.key || current.seq !== request.seq;
+  };
+
   const [isAddColumnOpen, setIsAddColumnOpen] = useState(false);
 
   const handleToggleAddColumn = () => {
@@ -208,9 +241,19 @@ export default function useUniversalTable({
   };
 
   const loadTable = async () => {
+    const request = beginLoadRequest();
+
+    if (!request.key) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError("");
+      setTable(null);
+      setColumns([]);
+      setRows([]);
 
       let tableData = null;
 
@@ -220,21 +263,44 @@ export default function useUniversalTable({
         try {
           tableData = await getTableByBlock(blockId);
         } catch {
+          if (isStaleLoadRequest(request)) {
+            return;
+          }
+
           tableData = await createTableForBlock(blockId);
         }
       }
 
+      if (isStaleLoadRequest(request)) {
+        return;
+      }
+
       tableData = await applyInitialTableTitleIfNeeded(tableData);
+
+      if (isStaleLoadRequest(request)) {
+        return;
+      }
+
       tableData = normalizeTable(tableData);
+
+      if (isStaleLoadRequest(request)) {
+        return;
+      }
 
       setTable(tableData);
       setColumns(tableData?.columns || []);
       setRows(tableData?.rows || []);
     } catch (err) {
+      if (isStaleLoadRequest(request)) {
+        return;
+      }
+
       console.error(err);
       setError("Ошибка загрузки таблицы");
     } finally {
-      setIsLoading(false);
+      if (!isStaleLoadRequest(request)) {
+        setIsLoading(false);
+      }
     }
   };
 
