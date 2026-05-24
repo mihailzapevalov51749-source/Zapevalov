@@ -17,9 +17,6 @@ from app.modules.document_libraries.router import (
     router as document_libraries_router,
 )
 
-# LEGACY TABLES (disabled)
-# from app.modules.tables.router import router as tables_router
-
 from app.modules.universal_tables.router import (
     router as universal_tables_router,
 )
@@ -96,9 +93,6 @@ app.include_router(blocks_router)
 app.include_router(files_router)
 app.include_router(document_libraries_router)
 
-# TABLES
-# LEGACY TABLES (disabled)
-# app.include_router(tables_router)
 app.include_router(universal_tables_router)
 app.include_router(universal_views_router)
 
