@@ -11,6 +11,15 @@ import chevronRightIcon from "../../../assets/icons/Chevronright.png";
 import MenuTree from "./MenuTree";
 import CreateMenuItemModal from "./CreateMenuItemModal";
 
+import { getPageFull } from "../../../api/pagesApi";
+import { updateTable } from "../../universalTable/services/tableApi";
+import { dispatchUniversalTableTitleChanged } from "../../universalTable/utils/universalTableTitleEvents";
+import {
+  isUniversalTableNavigationItem,
+  resolvePrimaryTableIdForPage,
+} from "../../universalTable/utils/resolvePrimaryTableId";
+import { findNavigationItemById } from "../../../portal/utils/portalPageUtils";
+
 import useMenuEditor from "../hooks/useMenuEditor";
 import useMenuDragAndDrop from "../hooks/useMenuDragAndDrop";
 
@@ -258,6 +267,44 @@ export default function LeftSidebar({
       saveSystemMenuSettings(nextSettings);
 
       return;
+    }
+
+    const navigationItem = findNavigationItemById(navigation, itemId);
+    const nextTitle = String(data?.title || "").trim();
+
+    if (
+      navigationItem &&
+      nextTitle &&
+      isUniversalTableNavigationItem(navigationItem) &&
+      navigationItem.page_id
+    ) {
+      try {
+        const linkedPage = await getPageFull(navigationItem.page_id);
+        const tableId = await resolvePrimaryTableIdForPage(linkedPage);
+
+        if (tableId) {
+          const updatedTable = await updateTable(tableId, {
+            title: nextTitle,
+          });
+
+          const syncedTitle = updatedTable?.title || nextTitle;
+
+          dispatchUniversalTableTitleChanged({
+            tableId,
+            title: syncedTitle,
+            dedicatedPageId: navigationItem.page_id,
+          });
+
+          await editor.updateItem(itemId, {
+            ...data,
+            title: syncedTitle,
+          });
+
+          return;
+        }
+      } catch (renameError) {
+        console.error(renameError);
+      }
     }
 
     await editor.updateItem(itemId, data);

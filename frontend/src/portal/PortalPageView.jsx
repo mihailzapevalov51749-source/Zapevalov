@@ -33,16 +33,13 @@ import WorkspaceTopBar from "./components/WorkspaceTopBar";
 import DeleteSectionModal from "./components/DeleteSectionModal";
 import EmptyDropZone from "./components/EmptyDropZone";
 import PageCanvasContextMenu from "./components/PageCanvasContextMenu";
-import CanvasInlineEditor from "./components/CanvasInlineEditor";
+import BlockSettingsModal from "./components/BlockSettingsModal";
+import TableBlockAddModal from "./components/TableBlockAddModal";
 import PageSettingsPopover from "./components/PageSettingsPopover";
-import PageCanvasErrorBanner from "./components/PageCanvasErrorBanner";
+import PageCanvasToast from "./components/PageCanvasToast";
 import SystemMessage from "../system/SystemMessage";
 
-import {
-  findBlockInPageData,
-  mergeBlockUpdate,
-  supportsInlineBlockEdit,
-} from "./utils/blockEditUtils";
+import { findBlockInPageData, mergeBlockUpdate } from "./utils/blockEditUtils";
 
 import usePageCanvasContextMenu from "./hooks/usePageCanvasContextMenu";
 import {
@@ -61,9 +58,21 @@ import CorporateChatPage from "../modules/chats/pages/CorporateChatPage";
 
 import {
   findNavigationItemByPageId,
+  findNavigationItemsByPageId,
   getSectionItemById,
   calculateDropPosition,
 } from "./utils/portalPageUtils";
+
+import { updateTable } from "../modules/universalTable/services/tableApi";
+import {
+  dispatchUniversalTableTitleChanged,
+  UNIVERSAL_TABLE_TITLE_CHANGED_EVENT,
+} from "../modules/universalTable/utils/universalTableTitleEvents";
+import {
+  isUniversalTableNavigationItem,
+  resolvePrimaryTableIdForPage,
+} from "../modules/universalTable/utils/resolvePrimaryTableId";
+import { syncUniversalTableTitleAcrossUi } from "../modules/universalTable/utils/syncUniversalTableTitle";
 
 const CORPORATE_CHAT_PAGE_ID = 35;
 
@@ -115,6 +124,28 @@ function collectBlockTableIds(block) {
     .filter(Boolean);
 
   return Array.from(new Set(possibleTableIds));
+}
+
+function pageDataContainsTable(pageData, tableId) {
+  const normalizedTableId = normalizeId(tableId);
+
+  if (!normalizedTableId || !Array.isArray(pageData?.sections)) {
+    return false;
+  }
+
+  for (const sectionItem of pageData.sections) {
+    const blocks = Array.isArray(sectionItem?.blocks) ? sectionItem.blocks : [];
+
+    for (const block of blocks) {
+      const tableIds = collectBlockTableIds(block);
+
+      if (tableIds.includes(normalizedTableId)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 function collectBlockFileUrls(block) {
@@ -302,6 +333,7 @@ export default function PortalPageView() {
 
   const [pageData, setPageData] = useState(null);
   const [error, setError] = useState("");
+  const [errorToast, setErrorToast] = useState({ message: "", anchor: null });
   const [isEditMode, setIsEditMode] = useState(false);
 
   const [selectedSection, setSelectedSection] = useState(null);
@@ -321,6 +353,7 @@ export default function PortalPageView() {
 
   const [pageTitleDraft, setPageTitleDraft] = useState("");
   const [pageSettingsAnchor, setPageSettingsAnchor] = useState(null);
+  const [tableBlockAddState, setTableBlockAddState] = useState(null);
 
   const { navigation, navigationError, reloadNavigation } =
     useNavigationTree(portalId);
@@ -413,6 +446,59 @@ export default function PortalPageView() {
 
     registerPageEntities(sections, pageId);
   }, [sections, pageId, isCorporateChatPage]);
+
+  useEffect(() => {
+    const handleTableTitleChanged = async (event) => {
+      const { tableId, title, dedicatedPageId } = event.detail || {};
+      const normalizedTitle = String(title || "").trim();
+
+      if (!tableId || !normalizedTitle) return;
+
+      try {
+        await syncUniversalTableTitleAcrossUi({
+          tableId,
+          title: normalizedTitle,
+          pageId,
+          pageData,
+          navigation,
+          updateNavigationItem,
+          updatePage,
+          activeNavigationItem,
+          dedicatedPageId,
+          onPageTitleDraft: setPageTitleDraft,
+          onPageDataUpdate: (savedPage) => {
+            setPageData((previous) =>
+              previous
+                ? {
+                    ...previous,
+                    page: {
+                      ...previous.page,
+                      ...savedPage,
+                    },
+                  }
+                : previous
+            );
+          },
+        });
+
+        await reloadNavigation();
+      } catch (syncError) {
+        console.error(syncError);
+      }
+    };
+
+    window.addEventListener(
+      UNIVERSAL_TABLE_TITLE_CHANGED_EVENT,
+      handleTableTitleChanged
+    );
+
+    return () => {
+      window.removeEventListener(
+        UNIVERSAL_TABLE_TITLE_CHANGED_EVENT,
+        handleTableTitleChanged
+      );
+    };
+  }, [navigation, pageId, pageData, activeNavigationItem, reloadNavigation]);
 
   const preserveScrollAndReload = async () => {
     const scrollElement = document.querySelector("[data-page-scroll]");
@@ -636,8 +722,51 @@ export default function PortalPageView() {
     }
   };
 
+  const isUniversalTableBlockType = (blockType) =>
+    ["table", "universal_table", "tableBlock", "table_block"].includes(
+      blockType
+    );
+
+  const createUniversalTableBlock = async (
+    sectionId,
+    dropPoint,
+    { existingTableId = null } = {}
+  ) => {
+    const sectionItem = getSectionItemById(pageData?.sections, sectionId);
+    const position = calculateDropPosition({
+      sectionId,
+      blockType: "universal_table",
+      dropPoint,
+      blocks: sectionItem?.blocks || [],
+    });
+
+    const createdBlock = await createBlock(
+      sectionId,
+      "universal_table",
+      position
+    );
+
+    if (existingTableId) {
+      await updateBlock(createdBlock.id, {
+        title: createdBlock.title,
+        content: {
+          ...(createdBlock.content || {}),
+          table_id: Number(existingTableId),
+        },
+        settings: createdBlock.settings,
+      });
+    }
+
+    await preserveScrollAndReload();
+  };
+
   const handleAddBlockToSection = async (sectionId, blockType, dropPoint) => {
     if (isUniversalTablePage || isAdminPage || isCorporateChatPage) return;
+
+    if (isUniversalTableBlockType(blockType)) {
+      setTableBlockAddState({ sectionId, dropPoint });
+      return;
+    }
 
     try {
       setError("");
@@ -658,8 +787,17 @@ export default function PortalPageView() {
     }
   };
 
+  const showCanvasError = (message, anchor = null) => {
+    setErrorToast({
+      message,
+      anchor: anchor
+        ? { x: anchor.clientX ?? anchor.x, y: anchor.clientY ?? anchor.y }
+        : null,
+    });
+  };
+
   const handleEditBlock = (block) => {
-    if (supportsInlineBlockEdit(block?.type)) {
+    if (block?.type === "universal_table") {
       return;
     }
 
@@ -672,19 +810,72 @@ export default function PortalPageView() {
 
     try {
       setError("");
-      const savedBlock = await updateBlock(selectedBlock.id, data);
-      await handleBlockUpdated(savedBlock);
+
+      const existingBlock = findBlockInPageData(pageData, selectedBlock.id);
+      const mergedBlock = mergeBlockUpdate(existingBlock, {
+        ...selectedBlock,
+        ...data,
+      });
+
+      const savedBlock = await updateBlock(mergedBlock.id, {
+        title: mergedBlock.title,
+        content: mergedBlock.content,
+        settings: mergedBlock.settings,
+      });
+
+      await handleBlockUpdated(savedBlock, { alreadyPersisted: true });
       setSelectedBlock(null);
     } catch (e) {
       console.error(e);
-      setError("Ошибка сохранения блока");
+      showCanvasError("Ошибка сохранения блока");
     }
   };
 
-  const handleDeleteBlock = async (block) => {
-    const confirmed = window.confirm(`Удалить блок "${block.title || "Блок"}"?`);
+  const handlePatchBlock = async (patch) => {
+    if (!selectedBlock?.id) return;
 
-    if (!confirmed) return;
+    try {
+      setError("");
+
+      const existingBlock = findBlockInPageData(pageData, selectedBlock.id);
+      const mergedBlock = mergeBlockUpdate(existingBlock, {
+        ...selectedBlock,
+        ...patch,
+        settings: {
+          ...(existingBlock?.settings || {}),
+          ...(selectedBlock?.settings || {}),
+          ...(patch?.settings || {}),
+        },
+        content: {
+          ...(existingBlock?.content || {}),
+          ...(selectedBlock?.content || {}),
+          ...(patch?.content || {}),
+        },
+      });
+
+      const savedBlock = await updateBlock(mergedBlock.id, {
+        title: mergedBlock.title,
+        content: mergedBlock.content,
+        settings: mergedBlock.settings,
+      });
+
+      applyBlockToPageState(savedBlock);
+      setSelectedBlock(savedBlock);
+    } catch (e) {
+      console.error(e);
+      showCanvasError("Ошибка сохранения блока");
+      throw e;
+    }
+  };
+
+  const handleDeleteBlock = async (block, options = {}) => {
+    if (!options.skipConfirm) {
+      const confirmed = window.confirm(
+        `Удалить блок "${block.title || "Блок"}"?`
+      );
+
+      if (!confirmed) return;
+    }
 
     try {
       setError("");
@@ -698,6 +889,43 @@ export default function PortalPageView() {
     } catch (e) {
       console.error(e);
       setError("Ошибка удаления блока");
+    }
+  };
+
+  const handleRemoveBlockFromSection = async (block) => {
+    await handleDeleteBlock(block, { skipConfirm: true });
+  };
+
+  const handleTableBlockAddCreateNew = async () => {
+    if (!tableBlockAddState?.sectionId) return;
+
+    try {
+      setError("");
+      await createUniversalTableBlock(
+        tableBlockAddState.sectionId,
+        tableBlockAddState.dropPoint
+      );
+      setTableBlockAddState(null);
+    } catch (e) {
+      console.error(e);
+      showCanvasError("Ошибка создания блока таблицы");
+    }
+  };
+
+  const handleTableBlockAddExisting = async (existingTableId) => {
+    if (!tableBlockAddState?.sectionId || !existingTableId) return;
+
+    try {
+      setError("");
+      await createUniversalTableBlock(
+        tableBlockAddState.sectionId,
+        tableBlockAddState.dropPoint,
+        { existingTableId }
+      );
+      setTableBlockAddState(null);
+    } catch (e) {
+      console.error(e);
+      showCanvasError("Ошибка добавления таблицы");
     }
   };
 
@@ -734,7 +962,7 @@ export default function PortalPageView() {
   const widgetDnD = useWidgetDragAndDrop({
     onAddSection: handleAddSection,
     onAddBlockToSection: handleAddBlockToSection,
-    onError: setError,
+    onError: (message) => showCanvasError(message),
     isFlexibleSection,
   });
 
@@ -759,12 +987,35 @@ export default function PortalPageView() {
 
     const nextTitle = pageTitleDraft.trim();
 
-    if (!nextTitle || nextTitle === pageData.page.title) {
-      return;
-    }
+    if (!nextTitle) return;
 
     try {
       setError("");
+
+      const primaryTableId = await resolvePrimaryTableIdForPage(pageData);
+      const isDedicatedTablePage =
+        isUniversalTableNavigationItem(activeNavigationItem);
+
+      if (isDedicatedTablePage && primaryTableId) {
+        const updated = await updateTable(primaryTableId, {
+          title: nextTitle,
+        });
+
+        const tableTitle = updated?.title || nextTitle;
+
+        dispatchUniversalTableTitleChanged({
+          tableId: primaryTableId,
+          title: tableTitle,
+          dedicatedPageId: pageId,
+        });
+
+        return;
+      }
+
+      if (nextTitle === pageData.page.title) {
+        return;
+      }
+
       const savedPage = await updatePage(pageId, {
         ...pageData.page,
         title: nextTitle,
@@ -868,7 +1119,7 @@ export default function PortalPageView() {
     const sectionId = findSectionIdFromPoint(dropPoint);
 
     if (!sectionId) {
-      setError("Блоки можно добавлять только внутрь раздела");
+      showCanvasError("Блоки можно добавлять только внутрь раздела", dropPoint);
       return;
     }
 
@@ -880,7 +1131,7 @@ export default function PortalPageView() {
     ].includes(blockType);
 
     if (isTableWidget && !isFlexibleSection(sectionId)) {
-      setError("Таблицу можно добавлять только в гибкий раздел");
+      showCanvasError("Таблицу можно добавлять только в гибкий раздел", dropPoint);
       return;
     }
 
@@ -963,12 +1214,7 @@ export default function PortalPageView() {
     }}
   >
     {navigationError && <SystemMessage>{navigationError}</SystemMessage>}
-    {error && (
-      <PageCanvasErrorBanner
-        message={error}
-        onDismiss={() => setError("")}
-      />
-    )}
+    {error && <SystemMessage>{error}</SystemMessage>}
 
     {isUniversalTablePage && (
       <div
@@ -1073,6 +1319,7 @@ export default function PortalPageView() {
                 onSectionUpdated={handleSectionUpdated}
                 onBlockUpdated={handleBlockUpdated}
                 onMoveBlock={handleMoveBlock}
+                selectedBlockId={selectedBlock?.id}
                 onEditBlock={handleEditBlock}
                 onDeleteBlock={handleDeleteBlock}
                 onWidgetDragOver={
@@ -1102,17 +1349,28 @@ export default function PortalPageView() {
     onSelect={handleContextMenuSelect}
   />
 
-  <CanvasInlineEditor
-    selectedBlock={
-      selectedBlock && !supportsInlineBlockEdit(selectedBlock.type)
-        ? selectedBlock
-        : null
-    }
+  <BlockSettingsModal
+    selectedBlock={selectedBlock}
     selectedSection={selectedSection}
     onSaveBlock={handleSaveBlock}
+    onPatchBlock={handlePatchBlock}
     onCloseBlockEditor={() => setSelectedBlock(null)}
+    onRemoveBlockFromSection={handleRemoveBlockFromSection}
     onSaveSection={handleSaveSection}
     onCloseSectionEditor={() => setSelectedSection(null)}
+  />
+
+  <TableBlockAddModal
+    isOpen={Boolean(tableBlockAddState)}
+    onClose={() => setTableBlockAddState(null)}
+    onCreateNew={handleTableBlockAddCreateNew}
+    onAddExisting={handleTableBlockAddExisting}
+  />
+
+  <PageCanvasToast
+    message={errorToast.message}
+    anchor={errorToast.anchor}
+    onDismiss={() => setErrorToast({ message: "", anchor: null })}
   />
 
   <PageSettingsPopover

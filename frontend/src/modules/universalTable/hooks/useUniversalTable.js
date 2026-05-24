@@ -12,6 +12,12 @@ import {
 
 import useTableColumns from "./useTableColumns";
 
+import { resolveTableShowTitle } from "../utils/resolveTableShowTitle";
+import {
+  dispatchUniversalTableTitleChanged,
+  UNIVERSAL_TABLE_TITLE_CHANGED_EVENT,
+} from "../utils/universalTableTitleEvents";
+
 const DEFAULT_TABLE_TITLE = "Таблица";
 
 const DEFAULT_TABLE_SETTINGS = {
@@ -275,7 +281,11 @@ export default function useUniversalTable({
         return;
       }
 
-      tableData = await applyInitialTableTitleIfNeeded(tableData);
+      const isExplicitLinkedTable = Boolean(tableId);
+
+      tableData = isExplicitLinkedTable
+        ? tableData
+        : await applyInitialTableTitleIfNeeded(tableData);
 
       if (isStaleLoadRequest(request)) {
         return;
@@ -308,20 +318,89 @@ export default function useUniversalTable({
     loadTable();
   }, [tableId, blockId, blockTitle, initialTableTitle]);
 
+  useEffect(() => {
+    const handleExternalTitleChange = (event) => {
+      const { tableId: changedTableId, title: nextTitle } = event.detail || {};
+      const currentTableId = tableId || table?.id;
+
+      if (!changedTableId || !currentTableId) return;
+      if (String(changedTableId) !== String(currentTableId)) return;
+
+      setTable((previous) => {
+        if (!previous) return previous;
+
+        return {
+          ...previous,
+          title: nextTitle || previous.title,
+        };
+      });
+    };
+
+    window.addEventListener(
+      UNIVERSAL_TABLE_TITLE_CHANGED_EVENT,
+      handleExternalTitleChange
+    );
+
+    return () => {
+      window.removeEventListener(
+        UNIVERSAL_TABLE_TITLE_CHANGED_EVENT,
+        handleExternalTitleChange
+      );
+    };
+  }, [tableId, table?.id]);
+
   const handleUpdateTableTitle = async (title) => {
     if (!table?.id) return;
 
-    const nextTitle = String(title || "").trim();
+    const nextTitle = String(title || "").trim() || DEFAULT_TABLE_TITLE;
 
     const updated = await updateTable(table.id, {
-      title: nextTitle || DEFAULT_TABLE_TITLE,
+      title: nextTitle,
       settings: {
         ...(table.settings || {}),
         title_initialized_from_block: true,
       },
     });
 
-    setTable(normalizeTable(updated));
+    const normalized = normalizeTable(updated);
+    setTable(normalized);
+
+    dispatchUniversalTableTitleChanged({
+      tableId: normalized.id,
+      title: normalized.title,
+    });
+  };
+
+  const handleToggleTableShowTitle = async () => {
+    if (!table?.id) return;
+
+    const nextShowTitle = !resolveTableShowTitle(table);
+
+    const optimisticTable = normalizeTable({
+      ...table,
+      settings: {
+        ...(table.settings || {}),
+        show_title: nextShowTitle,
+        showTitle: nextShowTitle,
+      },
+    });
+
+    setTable(optimisticTable);
+
+    try {
+      const updated = await updateTable(table.id, {
+        settings: {
+          ...(table.settings || {}),
+          show_title: nextShowTitle,
+          showTitle: nextShowTitle,
+        },
+      });
+
+      setTable(normalizeTable(updated));
+    } catch (error) {
+      console.error(error);
+      setTable(table);
+    }
   };
 
   const handleSaveFiltersToSettings = async (filters) => {
@@ -668,6 +747,7 @@ export default function useUniversalTable({
     handleCancelAddColumn,
 
     handleUpdateTableTitle,
+    handleToggleTableShowTitle,
     handleSaveFiltersToSettings,
     handleSaveSystemColumnSettings,
 

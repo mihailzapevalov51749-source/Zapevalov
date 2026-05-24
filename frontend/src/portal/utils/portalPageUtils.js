@@ -2,6 +2,22 @@ const GRID_COLUMNS = 60;
 const GRID_ROW_HEIGHT = 10;
 const GRID_GAP = 2;
 
+export function findNavigationItemById(items = [], itemId) {
+  for (const item of items || []) {
+    if (String(item.id) === String(itemId)) {
+      return item;
+    }
+
+    const found = findNavigationItemById(item.children || [], itemId);
+
+    if (found) {
+      return found;
+    }
+  }
+
+  return null;
+}
+
 export function findNavigationItemByPageId(items = [], pageId) {
   for (const item of items || []) {
     if (String(item.page_id) === String(pageId)) {
@@ -16,6 +32,24 @@ export function findNavigationItemByPageId(items = [], pageId) {
   }
 
   return null;
+}
+
+export function findNavigationItemsByPageId(items = [], pageId) {
+  const result = [];
+
+  const walk = (list = []) => {
+    for (const item of list) {
+      if (String(item.page_id) === String(pageId)) {
+        result.push(item);
+      }
+
+      walk(item.children || []);
+    }
+  };
+
+  walk(items);
+
+  return result;
 }
 
 export function getSectionItemById(sections = [], sectionId) {
