@@ -87,12 +87,13 @@ export function filterDocuments(documents, searchQuery) {
 
   return documents.filter((document) => {
     const isFolder = Boolean(document.is_folder);
-
     const title = String(document.title || "").toLowerCase();
-
     const typeRaw = String(document.document_type || "").toLowerCase();
 
-    const typeLabel = getTypeLabel(document.document_type, isFolder).toLowerCase();
+    const typeLabel = getTypeLabel(
+      document.document_type,
+      isFolder
+    ).toLowerCase();
 
     const author = String(document.created_by || "").toLowerCase();
 
@@ -123,6 +124,36 @@ export function filterDocuments(documents, searchQuery) {
 
     return searchableText.includes(query);
   });
+}
+
+export async function getLibraryDocument(documentId) {
+  const response = await fetch(
+    `${API_BASE_URL}/document-libraries/documents/${documentId}`
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+
+    throw new Error(error?.detail || "Не удалось загрузить документ");
+  }
+
+  return response.json();
+}
+
+export async function getLibraryDocumentByFileKey(fileKey) {
+  const encodedFileKey = encodeURIComponent(String(fileKey || ""));
+
+  const response = await fetch(
+    `${API_BASE_URL}/document-libraries/documents/by-file/${encodedFileKey}`
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+
+    throw new Error(error?.detail || "Не удалось загрузить документ по ключу файла");
+  }
+
+  return response.json();
 }
 
 export async function moveLibraryDocument(documentId, parentId) {

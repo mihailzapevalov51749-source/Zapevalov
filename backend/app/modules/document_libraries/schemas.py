@@ -1,6 +1,7 @@
-from pydantic import BaseModel
-from typing import Optional, List
 from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel
 
 
 class DocumentLibraryCreate(BaseModel):
@@ -13,7 +14,7 @@ class DocumentLibraryCreate(BaseModel):
 class DocumentLibraryResponse(BaseModel):
     id: int
     title: str
-    description: Optional[str]
+    description: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -33,15 +34,19 @@ class FolderCreate(BaseModel):
 
 class LibraryDocumentResponse(BaseModel):
     id: int
+
     library_id: int
+
     parent_id: Optional[int] = None
+
     title: str
     document_type: str
+
     file_path: Optional[str] = None
-    original_filename: Optional[str]
+    original_filename: Optional[str] = None
+
     is_folder: bool
 
-    # 🔴 НОВОЕ
     created_by: Optional[str] = None
 
     created_at: datetime
@@ -51,9 +56,9 @@ class LibraryDocumentResponse(BaseModel):
         from_attributes = True
 
 
-# 🔴 НОВОЕ — пагинация
 class PaginatedLibraryDocumentsResponse(BaseModel):
     items: List[LibraryDocumentResponse]
+
     total: int
     limit: int
     offset: int
@@ -61,6 +66,7 @@ class PaginatedLibraryDocumentsResponse(BaseModel):
 
 class RenameDocumentRequest(BaseModel):
     title: str
+
 
 class MoveDocumentRequest(BaseModel):
     parent_id: Optional[int] = None

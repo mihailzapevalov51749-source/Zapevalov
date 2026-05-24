@@ -24,6 +24,7 @@ export default function BlockRenderer({
   const BlockComponent = getBlockViewComponent(block?.type);
 
   const isUniversalTableBlock = block?.type === "universal_table";
+  const isAdminSystemBlock = block?.type === "admin_system";
 
   const isTableBlock =
     isUniversalTableBlock ||
@@ -44,6 +45,7 @@ export default function BlockRenderer({
     Boolean(block?.content?.url);
 
   const wrapperStyle = getWrapperStyle({
+    isAdminSystemBlock,
     isTableBlock,
     isDocumentsBlock,
     isImageBlock,
@@ -85,11 +87,26 @@ export default function BlockRenderer({
 }
 
 function getWrapperStyle({
+  isAdminSystemBlock,
   isTableBlock,
   isDocumentsBlock,
   isImageBlock,
   isEditMode,
 }) {
+  if (isAdminSystemBlock) {
+    return {
+      width: "100%",
+      height: "auto",
+      minHeight: "100%",
+      padding: 0,
+      boxSizing: "border-box",
+      overflow: "visible",
+      background: "transparent",
+      boxShadow: isEditMode ? undefined : "none",
+      border: isEditMode ? undefined : "none",
+    };
+  }
+
   if (isTableBlock) {
     return {
       width: "100%",
@@ -133,10 +150,10 @@ function getWrapperStyle({
 
   return {
     width: "100%",
-    height: "100%",
-    minHeight: 0,
+    height: "auto",
+    minHeight: "100%",
     boxSizing: "border-box",
-    overflow: "hidden",
+    overflow: "visible",
   };
 }
 

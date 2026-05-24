@@ -10,10 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@onlyoffice/document-editor-react": "^2.1.1",
     "axios": "^1.15.2",
     "lucide-react": "^1.11.0",
+    "pdfjs-dist": "^5.7.284",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
+    "react-pdf": "^10.4.1",
     "react-router-dom": "^6.30.3"
   },
   "devDependencies": {

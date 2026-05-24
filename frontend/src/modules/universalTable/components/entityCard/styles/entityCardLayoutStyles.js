@@ -5,7 +5,6 @@ export const entityCardLayoutStyle = {
   height: "100%",
 
   display: "flex",
-  flexDirection: "column",
 
   background: entityCardTheme.colors.bg,
 
@@ -14,15 +13,17 @@ export const entityCardLayoutStyle = {
 
 export const entityCardHeaderContainerStyle = {
   width: "100%",
-  height: entityCardTheme.layout.headerHeight,
+  height: 54,
 
   flexShrink: 0,
 
-  borderBottom: `1px solid ${entityCardTheme.colors.border}`,
+  borderBottom: "none",
 
   background: entityCardTheme.colors.bg,
 
   zIndex: 20,
+
+  boxSizing: "border-box",
 };
 
 export const entityCardBodyStyle = {
@@ -30,6 +31,7 @@ export const entityCardBodyStyle = {
 
   display: "flex",
 
+  minWidth: 0,
   minHeight: 0,
 
   overflow: "hidden",
@@ -40,31 +42,32 @@ export const entityCardBodyStyle = {
 export const entityCardContentStyle = {
   flex: 1,
 
-  minWidth: entityCardTheme.layout.leftPanelMinWidth,
+  minWidth:
+    entityCardTheme.layout.leftPanelMinWidth,
 
   overflowY: "auto",
   overflowX: "hidden",
 
-  padding: entityCardTheme.layout.bodyPadding,
+  padding: "0px 10px 14px",
 
   background: entityCardTheme.colors.bg,
 
   display: "flex",
   flexDirection: "column",
 
-  gap: entityCardTheme.layout.bodyGap,
+  gap: 5,
 
   boxSizing: "border-box",
 };
 
 export const entityCardSidebarStyle = {
-  width: entityCardTheme.layout.rightPanelWidth,
-  minWidth: entityCardTheme.layout.rightPanelWidth,
-  maxWidth: entityCardTheme.layout.rightPanelWidth,
+  width:300,
+  minWidth: 300,
+  maxWidth: 300,
 
   height: "100%",
 
-  borderLeft: `1px solid ${entityCardTheme.colors.border}`,
+  borderLeft: "none",
 
   background: entityCardTheme.colors.bg,
 
@@ -72,6 +75,8 @@ export const entityCardSidebarStyle = {
 
   display: "flex",
   flexDirection: "column",
+
+  flexShrink: 0,
 
   boxSizing: "border-box",
 };

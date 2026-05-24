@@ -65,7 +65,6 @@ def upload_document(
     return service.upload_document(db, library_id, file, parent_id)
 
 
-# 📄 Обычная загрузка (текущая папка)
 @router.get(
     "/{library_id}/documents",
     response_model=schemas.PaginatedLibraryDocumentsResponse,
@@ -86,7 +85,6 @@ def get_documents_by_library(
     )
 
 
-# 🔍 Глобальный поиск по всей библиотеке
 @router.get(
     "/{library_id}/documents/search",
     response_model=schemas.PaginatedLibraryDocumentsResponse,
@@ -104,6 +102,34 @@ def search_documents(
         query=query,
         limit=limit,
         offset=offset,
+    )
+
+
+@router.get(
+    "/documents/by-file/{file_key:path}",
+    response_model=schemas.LibraryDocumentResponse,
+)
+def get_document_by_file_key(
+    file_key: str,
+    db: Session = Depends(get_db),
+):
+    return service.get_document_by_file_key(
+        db,
+        file_key=file_key,
+    )
+
+
+@router.get(
+    "/documents/{document_id}",
+    response_model=schemas.LibraryDocumentResponse,
+)
+def get_document_by_id(
+    document_id: int,
+    db: Session = Depends(get_db),
+):
+    return service.get_document_by_id(
+        db,
+        document_id=document_id,
     )
 
 

@@ -2,7 +2,17 @@ import {
   formatDateTime,
   getCellDisplayValue,
   getUserDisplayName,
+  normalizeUserValue,
 } from "./entityValueUtils";
+
+const DEFAULT_AVATAR_SETTINGS = {
+  x: 0,
+  y: 0,
+  scale: 1,
+};
+
+const PROFILE_AVATAR_SIZE = 132;
+const DEFAULT_STATUS_COLOR = "#2563EB";
 
 export default function EntityValueRenderer({
   column,
@@ -25,7 +35,7 @@ export default function EntityValueRenderer({
   }
 
   if (type === "choice" || type === "status") {
-    return <EntityStatus value={value} />;
+    return <EntityStatus column={column} value={value} />;
   }
 
   if (type === "file" || type === "attachment") {
@@ -35,10 +45,38 @@ export default function EntityValueRenderer({
   return <EntityText value={value} />;
 }
 
+function getUserAvatarUrl(value) {
+  if (!value || typeof value !== "object") return "";
+
+  return (
+    value.avatarUrl ||
+    value.avatar_url ||
+    value.photoUrl ||
+    value.photo_url ||
+    value.imageUrl ||
+    value.image_url ||
+    ""
+  );
+}
+
+function getUserAvatarSettings(value) {
+  if (!value || typeof value !== "object") return DEFAULT_AVATAR_SETTINGS;
+
+  const settings = value.avatarSettings || value.avatar_settings || {};
+
+  return {
+    x: Number(settings.x || 0),
+    y: Number(settings.y || 0),
+    scale: Number(settings.scale || 1),
+  };
+}
+
 function EntityText({ value }) {
+  const label = getCellDisplayValue(value);
+
   return (
     <span
-      title={getCellDisplayValue(value)}
+      title={label}
       style={{
         minWidth: 0,
         maxWidth: "100%",
@@ -47,14 +85,25 @@ function EntityText({ value }) {
         whiteSpace: "nowrap",
       }}
     >
-      {getCellDisplayValue(value)}
+      {label}
     </span>
   );
 }
 
 function EntityUser({ value, variant }) {
-  const name = getUserDisplayName(value);
+  const normalizedUser = normalizeUserValue(value);
+
+  const name = getUserDisplayName(normalizedUser);
+  const avatarUrl = getUserAvatarUrl(normalizedUser);
+  const avatarSettings = getUserAvatarSettings(normalizedUser);
+
   const isCompact = variant === "compact";
+  const avatarSize = isCompact ? 20 : 22;
+
+  const avatarRatio = avatarSize / PROFILE_AVATAR_SIZE;
+  const avatarX = (avatarSettings.x || 0) * avatarRatio;
+  const avatarY = (avatarSettings.y || 0) * avatarRatio;
+  const avatarScale = avatarSettings.scale || 1;
 
   return (
     <span
@@ -70,9 +119,9 @@ function EntityUser({ value, variant }) {
     >
       <span
         style={{
-          width: isCompact ? 20 : 22,
-          height: isCompact ? 20 : 22,
-          minWidth: isCompact ? 20 : 22,
+          width: avatarSize,
+          height: avatarSize,
+          minWidth: avatarSize,
           borderRadius: "50%",
           background: "#E0E7FF",
           display: "inline-flex",
@@ -83,9 +132,29 @@ function EntityUser({ value, variant }) {
           color: "#3730A3",
           flexShrink: 0,
           userSelect: "none",
+          overflow: "hidden",
+          position: "relative",
         }}
       >
-        {name?.[0] || "?"}
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt=""
+            draggable={false}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              display: "block",
+              userSelect: "none",
+              pointerEvents: "none",
+              transform: `translate(${avatarX}px, ${avatarY}px) scale(${avatarScale})`,
+              transformOrigin: "center center",
+            }}
+          />
+        ) : (
+          name?.[0] || "?"
+        )}
       </span>
 
       <span
@@ -119,8 +188,89 @@ function EntityDate({ value }) {
   );
 }
 
-function EntityStatus({ value }) {
-  const label = getCellDisplayValue(value);
+function getStatusLabel(value) {
+  if (value === null || value === undefined || value === "") return "—";
+
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+
+  if (typeof value === "object") {
+    return String(
+      value.label ||
+        value.title ||
+        value.name ||
+        value.value ||
+        value.text ||
+        "—"
+    );
+  }
+
+  return String(value);
+}
+
+function normalizeStatusOptions(options) {
+  if (!Array.isArray(options)) return [];
+
+  return options.map((option) => {
+    if (typeof option === "string") {
+      return {
+        label: option,
+        value: option,
+        color: DEFAULT_STATUS_COLOR,
+      };
+    }
+
+    return {
+      label:
+        option?.label ||
+        option?.title ||
+        option?.name ||
+        option?.value ||
+        "",
+      value: option?.value || option?.id || option?.label || "",
+      color:
+        option?.color ||
+        option?.backgroundColor ||
+        option?.background_color ||
+        option?.bgColor ||
+        option?.bg_color ||
+        DEFAULT_STATUS_COLOR,
+    };
+  });
+}
+
+function getOptionByValue(column, value) {
+  const label = getStatusLabel(value);
+  const options = normalizeStatusOptions(column?.options);
+
+  return options.find((option) => {
+    return (
+      String(option.label || "").trim() === String(label || "").trim() ||
+      String(option.value || "").trim() === String(label || "").trim()
+    );
+  });
+}
+
+function getStatusColor(column, value) {
+  if (value && typeof value === "object") {
+    return (
+      value.color ||
+      value.backgroundColor ||
+      value.background_color ||
+      value.bgColor ||
+      value.bg_color ||
+      getOptionByValue(column, value)?.color ||
+      DEFAULT_STATUS_COLOR
+    );
+  }
+
+  return getOptionByValue(column, value)?.color || DEFAULT_STATUS_COLOR;
+}
+
+function EntityStatus({ column, value }) {
+  const label = getStatusLabel(value);
+  const color = getStatusColor(column, value);
 
   return (
     <span
@@ -130,8 +280,8 @@ function EntityStatus({ value }) {
         height: 22,
         padding: "0 10px",
         borderRadius: 999,
-        background: "#EEF4FF",
-        color: "#2563EB",
+        background: color,
+        color: "#ffffff",
         display: "inline-flex",
         alignItems: "center",
         fontSize: 12,

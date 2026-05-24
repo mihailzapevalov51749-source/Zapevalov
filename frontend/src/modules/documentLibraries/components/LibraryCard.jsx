@@ -1,5 +1,18 @@
 import { useState } from "react";
 
+function getDocumentFileName(document) {
+  return (
+    document?.file_name ||
+    document?.fileName ||
+    document?.filename ||
+    document?.original_name ||
+    document?.originalName ||
+    document?.name ||
+    document?.title ||
+    "Файл"
+  );
+}
+
 export default function LibraryCard({
   document,
 
@@ -12,6 +25,7 @@ export default function LibraryCard({
   onOpenFolder,
   onDelete,
   onMove,
+  onPreviewFile,
 
   onDropMoveDocuments,
 
@@ -32,7 +46,6 @@ export default function LibraryCard({
     dotsButton,
     dotsButtonHover,
     menu,
-    menuItem,
     menuButton,
   } = styles;
 
@@ -42,6 +55,8 @@ export default function LibraryCard({
   const [isHovered, setIsHovered] = useState(false);
   const [isDotsHovered, setIsDotsHovered] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
+
+  const fileName = getDocumentFileName(document);
 
   const stopEvent = (event) => {
     event.preventDefault();
@@ -56,7 +71,27 @@ export default function LibraryCard({
       return;
     }
 
-    window.open(getFileUrl(document), "_blank", "noopener,noreferrer");
+    onPreviewFile?.({
+      fileUrl: getFileUrl(document),
+      fileName,
+      fileType: document.document_type,
+      raw: document,
+    });
+  };
+
+  const handleDownload = (event) => {
+    stopEvent(event);
+
+    const fileUrl = getFileUrl(document);
+
+    if (!fileUrl) return;
+
+    const link = window.document.createElement("a");
+    link.href = fileUrl;
+    link.download = fileName;
+    link.target = "_blank";
+    link.rel = "noreferrer";
+    link.click();
   };
 
   const handleToggleSelect = (event) => {
@@ -195,32 +230,23 @@ export default function LibraryCard({
           </button>
 
           {isMenuOpen && (
-            <div style={menu} data-menu onClick={(e) => e.stopPropagation()}>
-              {isFolder ? (
-                <button type="button" style={menuButton} onClick={handleOpen}>
-                  Открыть
-                </button>
-              ) : (
-                <>
-                  <a
-                    href={getFileUrl(document)}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={menuItem}
-                    draggable={false}
-                  >
-                    Открыть
-                  </a>
+            <div
+              style={menu}
+              data-menu
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button type="button" style={menuButton} onClick={handleOpen}>
+                Открыть
+              </button>
 
-                  <a
-                    href={getFileUrl(document)}
-                    download
-                    style={menuItem}
-                    draggable={false}
-                  >
-                    Скачать
-                  </a>
-                </>
+              {!isFolder && (
+                <button
+                  type="button"
+                  style={menuButton}
+                  onClick={handleDownload}
+                >
+                  Скачать
+                </button>
               )}
 
               <button type="button" style={menuButton} onClick={handleMove}>

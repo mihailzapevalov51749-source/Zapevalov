@@ -1,19 +1,19 @@
 import { entityCardTheme } from "./entityCardTheme";
 
 export const entityCardMainStyle = {
-  minHeight: 148,
+  minHeight: 104,
 
   border: entityCardTheme.section.border,
-  borderRadius: entityCardTheme.section.radius,
+  borderRadius: 10,
 
   background: entityCardTheme.section.background,
 
-  padding: "18px 20px",
+  padding: "12px 16px",
   boxSizing: "border-box",
 
   display: "grid",
-  gridTemplateColumns: "52px minmax(0, 1fr) auto",
-  gap: 18,
+  gridTemplateColumns: "38px minmax(0, 1fr) auto",
+  gap: 12,
 
   alignItems: "flex-start",
 
@@ -21,10 +21,10 @@ export const entityCardMainStyle = {
 };
 
 export const entityCardMainIconBoxStyle = {
-  width: 52,
-  height: 52,
+  width: 38,
+  height: 38,
 
-  borderRadius: entityCardTheme.radius.md,
+  borderRadius: 10,
 
   background: entityCardTheme.colors.primarySoft,
 
@@ -36,9 +36,10 @@ export const entityCardMainIconBoxStyle = {
 };
 
 export const entityCardMainIconStyle = {
-  width: 28,
-  height: 28,
+  width: 18,
+  height: 18,
   objectFit: "contain",
+  opacity: 0.82,
 };
 
 export const entityCardMainContentStyle = {
@@ -46,77 +47,84 @@ export const entityCardMainContentStyle = {
 };
 
 export const entityCardMainLabelStyle = {
-  fontSize: 10,
-  fontWeight: 800,
-  color: entityCardTheme.colors.primary,
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: "0.02em",
+
+  color: "#2563EB",
 
   textTransform: "uppercase",
 
-  marginBottom: 8,
+  marginBottom: 4,
   lineHeight: 1.2,
 };
 
 export const entityCardMainTitleStyle = {
-  fontSize: 22,
-  lineHeight: 1.25,
-  fontWeight: 800,
-  color: entityCardTheme.colors.text,
+  fontSize: 13,
+  lineHeight: 1.35,
+  fontWeight: 700,
 
-  marginBottom: 16,
+  color: "#0F172A",
+
+  marginBottom: 10,
 
   maxWidth: 720,
+
+  textTransform: "uppercase",
 };
 
 export const entityCardMainDescriptionLabelStyle = {
-  fontSize: 10,
-  fontWeight: 800,
-  color: entityCardTheme.colors.primary,
+  fontSize: 11,
+  fontWeight: 700,
+  letterSpacing: "0.02em",
+
+  color: "#2563EB",
 
   textTransform: "uppercase",
 
-  marginBottom: 6,
+  marginBottom: 4,
   lineHeight: 1.2,
 };
 
 export const entityCardMainDescriptionStyle = {
-  fontSize: 12,
-  lineHeight: 1.55,
+  fontSize: 13,
+  lineHeight: 1.45,
 
-  color: entityCardTheme.colors.textSoft,
+  color: "#64748B",
 
   maxWidth: 760,
 };
 
 export const entityCardMainEmptyDescriptionStyle = {
-  fontSize: 12,
-  lineHeight: 1.55,
+  fontSize: 13,
+  lineHeight: 1.45,
 
-  color: entityCardTheme.colors.textLight,
+  color: "#94A3B8",
 
   maxWidth: 760,
 };
 
-export const entityCardMainStatusButtonStyle = {
-  height: 38,
-  minWidth: 112,
+export const entityCardMainFinishButtonStyle = {
+  height: 34,
+  minWidth: 96,
 
   padding: "0 16px",
 
   border: "none",
-  borderRadius: entityCardTheme.radius.sm,
+  borderRadius: 12,
 
-  background: entityCardTheme.colors.success,
+  background: "linear-gradient(135deg, #16A34A 0%, #22C55E 100%)",
 
   color: "#FFFFFF",
 
-  fontSize: 13,
-  fontWeight: 700,
+  fontSize: 14,
+  fontWeight: 600,
 
   cursor: "pointer",
 
   whiteSpace: "nowrap",
 
-  boxShadow: `0 8px 18px ${entityCardTheme.colors.successShadow}`,
+  boxShadow: "0 4px 14px rgba(34, 197, 94, 0.22)",
 
-  marginTop: 8,
+  marginTop: 0,
 };

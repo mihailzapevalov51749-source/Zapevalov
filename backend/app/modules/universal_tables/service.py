@@ -1,6 +1,14 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.modules.comments import service as comments_service
+from app.modules.comments.constants import (
+    COMMENT_SYSTEM_EVENT_ASSIGNEE_CHANGED,
+    COMMENT_SYSTEM_EVENT_DUE_DATE_CHANGED,
+    COMMENT_SYSTEM_EVENT_PRIORITY_CHANGED,
+    COMMENT_SYSTEM_EVENT_STATUS_CHANGED,
+)
+from app.modules.comments.schemas import SystemCommentCreate
 from app.modules.users.models import User
 from app.modules.universal_tables.models import (
     UniversalTable,
@@ -15,6 +23,7 @@ from app.modules.universal_tables.schemas import (
     UniversalTableRowCreate,
     UniversalTableRowUpdate,
 )
+from app.modules.universal_views.models import UniversalView
 
 
 DEFAULT_TABLE_TITLE = "Таблица"
@@ -123,6 +132,164 @@ def is_updated_by_column(column: UniversalTableColumn) -> bool:
         "modified by",
         "modifiedby",
     }
+
+
+def is_status_column(column: UniversalTableColumn) -> bool:
+    if column.system_key in {"status", "task_status"}:
+        return True
+
+    title = normalize_column_title(column.title)
+
+    return title in {
+        "статус",
+        "status",
+        "состояние",
+        "этап",
+        "stage",
+    }
+
+
+def is_due_date_column(column: UniversalTableColumn) -> bool:
+    if column.system_key in {"due_date", "deadline", "term"}:
+        return True
+
+    title = normalize_column_title(column.title)
+
+    return title in {
+        "срок",
+        "дедлайн",
+        "deadline",
+        "due date",
+        "дата завершения",
+        "срок выполнения",
+    }
+
+
+def is_assignee_column(column: UniversalTableColumn) -> bool:
+    if column.system_key in {"assignee", "responsible", "executor"}:
+        return True
+
+    title = normalize_column_title(column.title)
+
+    return title in {
+        "исполнитель",
+        "ответственный",
+        "ответственные",
+        "assignee",
+        "responsible",
+        "executor",
+    }
+
+
+def is_priority_column(column: UniversalTableColumn) -> bool:
+    if column.system_key in {"priority"}:
+        return True
+
+    title = normalize_column_title(column.title)
+
+    return title in {
+        "приоритет",
+        "priority",
+        "важность",
+    }
+
+
+def extract_display_value(value) -> str:
+    if value is None:
+        return "—"
+
+    if isinstance(value, str):
+        return value or "—"
+
+    if isinstance(value, (int, float, bool)):
+        return str(value)
+
+    if isinstance(value, list):
+        items = [extract_display_value(item) for item in value]
+        items = [item for item in items if item and item != "—"]
+        return ", ".join(items) if items else "—"
+
+    if isinstance(value, dict):
+        return (
+            value.get("label")
+            or value.get("title")
+            or value.get("name")
+            or value.get("full_name")
+            or value.get("fullName")
+            or value.get("value")
+            or "—"
+        )
+
+    return str(value)
+
+
+def build_system_comment_payload(
+    column: UniversalTableColumn,
+    old_values: dict,
+    new_values: dict,
+):
+    column_id = str(column.id)
+
+    old_value = old_values.get(column_id)
+    new_value = new_values.get(column_id)
+
+    if old_value == new_value:
+        return None
+
+    event_key = None
+
+    if is_status_column(column):
+        event_key = COMMENT_SYSTEM_EVENT_STATUS_CHANGED
+
+    elif is_due_date_column(column):
+        event_key = COMMENT_SYSTEM_EVENT_DUE_DATE_CHANGED
+
+    elif is_assignee_column(column):
+        event_key = COMMENT_SYSTEM_EVENT_ASSIGNEE_CHANGED
+
+    elif is_priority_column(column):
+        event_key = COMMENT_SYSTEM_EVENT_PRIORITY_CHANGED
+
+    if not event_key:
+        return None
+
+    return {
+        "system_event_key": event_key,
+        "system_payload": {
+            "fieldId": column.id,
+            "fieldTitle": column.title,
+            "from": extract_display_value(old_value),
+            "to": extract_display_value(new_value),
+        },
+    }
+
+
+def create_row_system_comments(
+    db: Session,
+    table: UniversalTable,
+    row: UniversalTableRow,
+    old_values: dict,
+    new_values: dict,
+):
+    for column in table.columns:
+        payload = build_system_comment_payload(
+            column=column,
+            old_values=old_values,
+            new_values=new_values,
+        )
+
+        if not payload:
+            continue
+
+        comments_service.create_system_comment(
+            db=db,
+            payload=SystemCommentCreate(
+                entity_type=f"universal_table:{table.id}",
+                entity_id=str(row.id),
+                system_event_key=payload["system_event_key"],
+                system_payload=payload["system_payload"],
+            ),
+        )
 
 
 def apply_create_user_values(
@@ -298,6 +465,26 @@ def create_table(db: Session, payload: UniversalTableCreate) -> UniversalTable:
     )
 
     db.add(table)
+    db.flush()
+
+    default_view = UniversalView(
+        table_id=table.id,
+        name="Таблица",
+        type="table",
+        position=0,
+        is_system=True,
+        is_default=True,
+        is_visible=True,
+        settings={
+            "fields": [],
+            "filters": [],
+            "sorting": [],
+            "grouping": [],
+            "visible_fields": [],
+        },
+    )
+
+    db.add(default_view)
     db.commit()
     db.refresh(table)
 
@@ -485,6 +672,10 @@ def update_row(
     if not row:
         return None
 
+    table = get_table(db, row.table_id)
+
+    old_values = dict(row.values or {})
+
     data = payload.model_dump(exclude_unset=True)
 
     if "parent_id" in data or "parentId" in data:
@@ -533,7 +724,6 @@ def update_row(
         data.pop("parent_row_id", None)
 
     if "values" in data:
-        table = get_table(db, row.table_id)
         current_user = get_current_user(db, current_user_id)
 
         if table:
@@ -549,6 +739,15 @@ def update_row(
 
     db.commit()
     db.refresh(row)
+
+    if table and "values" in data:
+        create_row_system_comments(
+            db=db,
+            table=table,
+            row=row,
+            old_values=old_values,
+            new_values=row.values or {},
+        )
 
     return row
 

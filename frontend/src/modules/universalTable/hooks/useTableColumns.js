@@ -139,10 +139,25 @@ const moveColumnInList = (columns = [], sourceColumnId, targetColumnId) => {
   return nextColumns;
 };
 
+const hasPrimaryColumn = (columns = []) => {
+  return columns.some((column) => {
+    const systemKey = getColumnSystemKey(column);
+    const title = normalizeTitle(column?.title || column?.name);
+
+    return (
+      systemKey === "title" ||
+      column?.is_primary === true ||
+      column?.isPrimary === true ||
+      column?.settings?.is_primary === true ||
+      column?.settings?.isPrimary === true ||
+      title === normalizeTitle(PRIMARY_COLUMN_TITLE)
+    );
+  });
+};
+
 export default function useTableColumns({ table, columns = [], setColumns }) {
   const draggedColumnIdRef = useRef(null);
   const primaryCreationInProgressRef = useRef(false);
-  const primaryCreationTableIdRef = useRef(null);
 
   const [isAddColumnOpen, setIsAddColumnOpen] = useState(false);
   const [newColumnTitle, setNewColumnTitle] = useState("");
@@ -167,17 +182,11 @@ export default function useTableColumns({ table, columns = [], setColumns }) {
   useEffect(() => {
     const ensurePrimaryColumn = async () => {
       if (!table?.id) return;
-
-      const tableId = String(table.id);
-      const hasUserColumns = columns.some((column) => !isSystemColumn(column));
-
-      if (hasUserColumns) return;
       if (primaryCreationInProgressRef.current) return;
-      if (primaryCreationTableIdRef.current === tableId) return;
+      if (hasPrimaryColumn(columns)) return;
 
       try {
         primaryCreationInProgressRef.current = true;
-        primaryCreationTableIdRef.current = tableId;
 
         const column = await createTableColumn(table.id, {
           title: PRIMARY_COLUMN_TITLE,
@@ -199,24 +208,19 @@ export default function useTableColumns({ table, columns = [], setColumns }) {
         });
 
         setColumns?.((prev) => {
-          const alreadyHasUserColumns = prev.some(
-            (item) => !isSystemColumn(item)
-          );
-
-          if (alreadyHasUserColumns) return prev;
+          if (hasPrimaryColumn(prev)) return prev;
 
           return [column, ...prev];
         });
       } catch (error) {
         console.error("Ошибка создания основного поля таблицы", error);
-        primaryCreationTableIdRef.current = null;
       } finally {
         primaryCreationInProgressRef.current = false;
       }
     };
 
     ensurePrimaryColumn();
-  }, [table?.id, columns, setColumns]);
+  }, [table?.id]);
 
   const handleAddColumn = async () => {
     if (!table?.id || !newColumnTitle.trim()) return null;

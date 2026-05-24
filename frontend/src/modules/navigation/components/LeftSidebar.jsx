@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { getMe } from "../../../api/authApi";
-import { theme } from "../../../styles/theme";
 
 import logo from "../../../assets/icons/logo.png";
+import settingsIcon from "../../../assets/icons/settings.gif";
+import saveIcon from "../../../assets/icons/save.gif";
+import chevronLeftIcon from "../../../assets/icons/Chevronleft.png";
+import chevronRightIcon from "../../../assets/icons/Chevronright.png";
 
 import MenuTree from "./MenuTree";
-import MenuEditPanel from "./MenuEditPanel";
 import CreateMenuItemModal from "./CreateMenuItemModal";
+
 import useMenuEditor from "../hooks/useMenuEditor";
 import useMenuDragAndDrop from "../hooks/useMenuDragAndDrop";
-
-const ADMIN_ROLES = ["admin", "superadmin"];
-const ADMIN_ROLE_IDS = [3, 4];
 
 const SYSTEM_MENU_SETTINGS_KEY = "systemMenuSettings";
 
@@ -69,22 +69,11 @@ function applyProtectedMenuSettings(tree = [], systemSettings = {}) {
       ? applyProtectedMenuSettings(item.children, systemSettings)
       : item.children;
 
-    const nextItem = {
-      ...item,
-      children,
-    };
+    const nextItem = { ...item, children };
 
-    if (!isProtectedMenuItem(nextItem)) {
-      return nextItem;
-    }
+    if (!isProtectedMenuItem(nextItem)) return nextItem;
 
-    return applySystemSettings(
-      {
-        ...nextItem,
-        isSystem: true,
-      },
-      systemSettings
-    );
+    return applySystemSettings({ ...nextItem, isSystem: true }, systemSettings);
   });
 }
 
@@ -110,9 +99,7 @@ function insertMyTasksAfterMainPage(tree = [], myTasksItem) {
       String(item?.title || "").trim().toLowerCase() === "мои задачи"
   );
 
-  if (hasMyTasksAlready) {
-    return tree;
-  }
+  if (hasMyTasksAlready) return tree;
 
   const mainPageIndex = tree.findIndex((item) => {
     const title = String(item?.title || "").trim().toLowerCase();
@@ -125,9 +112,7 @@ function insertMyTasksAfterMainPage(tree = [], myTasksItem) {
     );
   });
 
-  if (mainPageIndex === -1) {
-    return [myTasksItem, ...tree];
-  }
+  if (mainPageIndex === -1) return [myTasksItem, ...tree];
 
   return [
     ...tree.slice(0, mainPageIndex + 1),
@@ -136,80 +121,8 @@ function insertMyTasksAfterMainPage(tree = [], myTasksItem) {
   ];
 }
 
-function getAdministrationSection(menuScale = 1, systemSettings = {}) {
-  const section = {
-    id: "system-administration",
-    title: "Администрирование",
-    type: "section",
-    isSystem: true,
-    is_visible: true,
-    is_hidden: false,
-    position: 999999,
-    children: [
-      {
-        id: "system-admin-users",
-        title: "Пользователи",
-        type: "system_page",
-        route: "/admin/users",
-        isSystem: true,
-        is_visible: true,
-        is_hidden: false,
-        position: 1,
-      },
-      {
-        id: "system-admin-org-structure",
-        title: "Оргструктура",
-        type: "system_page",
-        route: "/admin/org-structure",
-        isSystem: true,
-        is_visible: true,
-        is_hidden: false,
-        position: 2,
-      },
-      {
-        id: "system-admin-roles",
-        title: "Роли и доступы",
-        type: "system_page",
-        route: "/admin/roles",
-        isSystem: true,
-        is_visible: true,
-        is_hidden: false,
-        position: 3,
-      },
-      {
-        id: "system-admin-departments",
-        title: "Подразделения",
-        type: "system_page",
-        route: "/admin/departments",
-        isSystem: true,
-        is_visible: true,
-        is_hidden: false,
-        position: 4,
-      },
-    ],
-    style: {
-      fontWeight: 700,
-      color: theme.colors.textWhite,
-      fontSize: 14 * menuScale,
-    },
-  };
-
-  return applySystemSettings(section, systemSettings);
-}
-
-function canUserViewAdministration(user) {
-  if (!user) return false;
-
-  const roleName = user.role || user.role_name || user.roleName;
-  const roleId = Number(user.role_id ?? user.roleId);
-
-  return ADMIN_ROLES.includes(roleName) || ADMIN_ROLE_IDS.includes(roleId);
-}
-
 async function canLeaveCurrentPage() {
-  if (window.__UNIVERSAL_TABLE_DIRTY__ !== true) {
-    return true;
-  }
+  if (window.__UNIVERSAL_TABLE_DIRTY__ !== true) return true;
 
   return new Promise((resolve) => {
     window.dispatchEvent(
@@ -230,10 +143,7 @@ async function canLeaveCurrentPage() {
               resolve(false);
             }
           },
-
-          onCancel: () => {
-            resolve(false);
-          },
+          onCancel: () => resolve(false),
         },
       })
     );
@@ -245,7 +155,9 @@ export default function LeftSidebar({
   activePageId,
   onSelectPage,
   topOffset = 0,
-  width = 260,
+  width = 220,
+  collapsed = false,
+  onToggleCollapse,
   portalId = 1,
   reloadNavigation,
   menuScale = 1,
@@ -274,14 +186,9 @@ export default function LeftSidebar({
     async function loadCurrentUser() {
       try {
         const data = await getMe();
-
-        if (isMounted) {
-          setCurrentUser(data);
-        }
+        if (isMounted) setCurrentUser(data);
       } catch {
-        if (isMounted) {
-          setCurrentUser(null);
-        }
+        if (isMounted) setCurrentUser(null);
       }
     }
 
@@ -292,37 +199,23 @@ export default function LeftSidebar({
     };
   }, []);
 
-  const canViewAdministration = canUserViewAdministration(currentUser);
-
   const finalTree = useMemo(() => {
     const treeWithProtectedSettings = applyProtectedMenuSettings(
       dragAndDrop.tree,
       systemMenuSettings
     );
 
-    const treeWithMyTasks = insertMyTasksAfterMainPage(
+    return insertMyTasksAfterMainPage(
       treeWithProtectedSettings,
       getMyTasksItem(systemMenuSettings)
     );
-
-    if (!canViewAdministration) {
-      return treeWithMyTasks;
-    }
-
-    return [
-      ...treeWithMyTasks,
-      getAdministrationSection(menuScale, systemMenuSettings),
-    ];
-  }, [dragAndDrop.tree, canViewAdministration, menuScale, systemMenuSettings]);
+  }, [dragAndDrop.tree, systemMenuSettings]);
 
   const handleSelectPage = async (item) => {
     if (!item) return;
 
     const canLeave = await canLeaveCurrentPage();
-
-    if (!canLeave) {
-      return;
-    }
+    if (!canLeave) return;
 
     if (item.type === "system_page" && item.route) {
       window.history.pushState({}, "", item.route);
@@ -363,6 +256,7 @@ export default function LeftSidebar({
 
       setSystemMenuSettings(nextSettings);
       saveSystemMenuSettings(nextSettings);
+
       return;
     }
 
@@ -370,109 +264,167 @@ export default function LeftSidebar({
   };
 
   const handleDeleteItem = async (itemId) => {
-    if (String(itemId).startsWith("system-")) {
+    if (String(itemId).startsWith("system-")) return;
+    await editor.deleteItem(itemId);
+  };
+
+  const handleEditButtonClick = () => {
+    if (editor.isEditMode) {
+      editor.exitEditMode?.();
       return;
     }
 
-    await editor.deleteItem(itemId);
+    editor.enterEditMode?.();
   };
+
+  if (collapsed) {
+    return (
+      <button
+        type="button"
+        onClick={onToggleCollapse}
+        style={expandFloatingButtonStyle}
+        title="Развернуть меню"
+        onMouseEnter={(event) => {
+          event.currentTarget.style.transform = "scale(1.08)";
+        }}
+        onMouseLeave={(event) => {
+          event.currentTarget.style.transform = "scale(1)";
+        }}
+      >
+        <img src={chevronRightIcon} alt="" style={chevronRightImageStyle} />
+      </button>
+    );
+  }
 
   return (
     <aside
       style={{
         width,
         height: `calc(100vh - ${topOffset}px)`,
-        borderRight: "1px solid rgba(255,255,255,0.06)",
-        paddingTop: 14 * menuScale,
-        paddingBottom: 72,
-        paddingLeft: 12 * menuScale,
-        paddingRight: 8 * menuScale,
-        background: theme.colors.deepBackground,
+        background: "#FFFFFF",
+        borderRight: "1px solid #E2E8F0",
         position: "fixed",
         left: 0,
         top: topOffset,
-        overflowY: "auto",
+        overflow: "hidden",
         boxSizing: "border-box",
+        transition: "width 180ms ease, background 180ms ease",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      <SidebarBrand menuScale={menuScale} />
+      <div style={{ padding: "8px 14px 8px 14px" }}>
+        <SidebarBrand menuScale={menuScale} />
+      </div>
 
-      {editor.isEditMode && (
-        <div
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+overflowX: "hidden",
+scrollbarWidth: "none",
+msOverflowStyle: "none",
+          paddingLeft: 14,
+          paddingRight: 10,
+          paddingBottom: 4,
+        }}
+      >
+        {editor.isEditMode && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              marginBottom: 12,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => onChangeMenuScale?.(menuScale - 0.1)}
+              style={scaleButtonStyle}
+            >
+              −
+            </button>
+
+            <span
+              style={{
+                fontSize: 12,
+                color: "#64748B",
+                minWidth: 42,
+                textAlign: "center",
+              }}
+            >
+              {Math.round(menuScale * 100)}%
+            </span>
+
+            <button
+              type="button"
+              onClick={() => onChangeMenuScale?.(menuScale + 0.1)}
+              style={scaleButtonStyle}
+            >
+              +
+            </button>
+          </div>
+        )}
+
+        <MenuTree
+          items={finalTree}
+          activePageId={activePageId}
+          onSelectPage={handleSelectPage}
+          isEditMode={editor.isEditMode}
+          onUpdateItem={handleUpdateItem}
+          onDeleteItem={handleDeleteItem}
+          dragAndDrop={dragAndDrop}
+          scale={menuScale}
+        />
+
+        {editor.isEditMode && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-start",
+              marginTop: 14,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen((prev) => !prev)}
+              style={createButtonStyle}
+            >
+              +
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div style={sidebarFooterStyle}>
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          style={collapseButtonStyle}
+        >
+          <img src={chevronLeftIcon} alt="" style={chevronLeftImageStyle} />
+          <span>Свернуть меню</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleEditButtonClick}
+          disabled={editor.isSaving}
+          title={editor.isEditMode ? "Сохранить меню" : "Редактировать меню"}
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            marginBottom: 12,
-            paddingLeft: 4,
-            paddingRight: 4,
+            ...settingsButtonStyle,
+            opacity: editor.isSaving ? 0.5 : 1,
           }}
         >
-          <button
-            type="button"
-            onClick={() => onChangeMenuScale?.(menuScale - 0.1)}
-            title="Уменьшить меню"
-            style={scaleButtonStyle}
-          >
-            −
-          </button>
-
-          <span
-            style={{
-              fontSize: 12,
-              color: theme.colors.secondaryGray,
-              minWidth: 42,
-              textAlign: "center",
-            }}
-          >
-            {Math.round(menuScale * 100)}%
-          </span>
-
-          <button
-            type="button"
-            onClick={() => onChangeMenuScale?.(menuScale + 0.1)}
-            title="Увеличить меню"
-            style={scaleButtonStyle}
-          >
-            +
-          </button>
-        </div>
-      )}
-
-      <MenuTree
-        items={finalTree}
-        activePageId={activePageId}
-        onSelectPage={handleSelectPage}
-        isEditMode={editor.isEditMode}
-        onUpdateItem={handleUpdateItem}
-        onDeleteItem={handleDeleteItem}
-        dragAndDrop={dragAndDrop}
-        scale={menuScale}
-      />
-
-      {editor.isEditMode && (
-        <div style={{ display: "flex", justifyContent: "center", marginTop: 10 }}>
-          <button
-            type="button"
-            onClick={() => setIsCreateOpen((prev) => !prev)}
-            style={{
-              border: "1px solid rgba(255,255,255,0.08)",
-              background: "rgba(255,255,255,0.04)",
-              color: theme.colors.textWhite,
-              cursor: "pointer",
-              fontSize: 26 * menuScale,
-              lineHeight: 1,
-              padding: 4,
-              width: 34 * menuScale,
-              height: 34 * menuScale,
-              borderRadius: 10 * menuScale,
-            }}
-            title="Создать элемент"
-          >
-            +
-          </button>
-        </div>
-      )}
+          <img
+            src={editor.isEditMode ? saveIcon : settingsIcon}
+            alt=""
+            style={settingsImageStyle}
+          />
+        </button>
+      </div>
 
       {editor.isEditMode && isCreateOpen && (
         <CreateMenuItemModal
@@ -483,14 +435,6 @@ export default function LeftSidebar({
           onClose={() => setIsCreateOpen(false)}
         />
       )}
-
-      <MenuEditPanel
-        isEditMode={editor.isEditMode}
-        isSaving={editor.isSaving}
-        onEnterEditMode={editor.enterEditMode}
-        onExitEditMode={editor.exitEditMode}
-        width={width}
-      />
     </aside>
   );
 }
@@ -501,22 +445,21 @@ function SidebarBrand({ menuScale }) {
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 10 * menuScale,
-        minHeight: 48 * menuScale,
-        marginBottom: 18 * menuScale,
-        padding: `${7 * menuScale}px ${6 * menuScale}px`,
-        borderRadius: 14 * menuScale,
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.06)",
+        justifyContent: "flex-start",
+        gap: 10,
+        minHeight: 42,
+        padding: 0,
+        background: "transparent",
+        border: "none",
         boxSizing: "border-box",
       }}
     >
       <img
         src={logo}
-        alt="ЯсноПро"
+        alt="YasnoPro"
         style={{
-          width: 34 * menuScale,
-          height: 34 * menuScale,
+          width: 34,
+          height: 34,
           objectFit: "contain",
           flexShrink: 0,
         }}
@@ -532,21 +475,21 @@ function SidebarBrand({ menuScale }) {
       >
         <div
           style={{
-            color: theme.colors.textWhite,
-            fontSize: 15 * menuScale,
-            fontWeight: 900,
+            color: "#0F172A",
+            fontSize: 16 * menuScale,
+            fontWeight: 800,
             letterSpacing: 0.2,
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
           }}
         >
-          ЯсноПро
+          YasnoPro
         </div>
 
         <div
           style={{
-            color: theme.colors.secondaryGray,
+            color: "#64748B",
             fontSize: 11 * menuScale,
             marginTop: 3,
             whiteSpace: "nowrap",
@@ -561,15 +504,119 @@ function SidebarBrand({ menuScale }) {
   );
 }
 
+const sidebarFooterStyle = {
+  padding: "10px 14px 10px 14px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 10,
+  flexShrink: 0,
+};
+
+const settingsButtonStyle = {
+  width: 32,
+  height: 32,
+  border: "none",
+  borderRadius: 10,
+  background: "transparent",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer",
+  padding: 0,
+  flexShrink: 0,
+  transition: "background 140ms ease",
+};
+
 const scaleButtonStyle = {
-  width: 26,
-  height: 26,
-  borderRadius: 8,
-  border: "1px solid rgba(255,255,255,0.08)",
-  background: "rgba(255,255,255,0.04)",
-  color: theme.colors.textWhite,
+  width: 28,
+  height: 28,
+  borderRadius: 10,
+  border: "1px solid #CBD5E1",
+  background: "#FFFFFF",
+  color: "#0F172A",
   cursor: "pointer",
   fontSize: 16,
-  fontWeight: 800,
+  fontWeight: 700,
   lineHeight: 1,
+};
+
+const createButtonStyle = {
+  border: "1px solid #CBD5E1",
+  background: "#FFFFFF",
+  color: "#0F172A",
+  cursor: "pointer",
+  fontSize: 26,
+  lineHeight: 1,
+  padding: 4,
+  width: 38,
+  height: 38,
+  borderRadius: 12,
+  boxShadow: "0 2px 8px rgba(15, 23, 42, 0.06)",
+};
+
+const collapseButtonStyle = {
+  flex: 1,
+  height: 34,
+  borderRadius: 8,
+  border: "none",
+  background: "transparent",
+  color: "#64748B",
+  fontSize: 12,
+  fontWeight: 400,
+  cursor: "pointer",
+  paddingLeft: 0,
+  minWidth: 0,
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  transition: "color 140ms ease, opacity 140ms ease",
+  opacity: 0.88,
+};
+
+const expandFloatingButtonStyle = {
+  position: "fixed",
+  left: 10,
+  bottom: 10,
+  width: 36,
+  height: 36,
+  borderRadius: "50%",
+  border: "1px solid #BFD2FF",
+  background: "linear-gradient(180deg, #FFFFFF 0%, #EDF4FF 100%)",
+  color: "#2563EB",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  cursor: "pointer",
+  boxShadow: `
+    0 10px 24px rgba(37, 99, 235, 0.22),
+    0 4px 10px rgba(15, 23, 42, 0.10)
+  `,
+  transition: "transform 140ms ease, box-shadow 140ms ease",
+  zIndex: 10000,
+};
+
+const chevronLeftImageStyle = {
+  width: 10,
+  height: 10,
+  objectFit: "contain",
+  display: "block",
+  flexShrink: 0,
+  opacity: 0.72,
+};
+
+const chevronRightImageStyle = {
+  width: 16,
+  height: 16,
+  objectFit: "contain",
+  display: "block",
+  opacity: 0.92,
+};
+
+const settingsImageStyle = {
+  width: 14,
+  height: 14,
+  objectFit: "contain",
+  display: "block",
+  opacity: 0.72,
 };

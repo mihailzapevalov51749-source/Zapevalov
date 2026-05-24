@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 
 import EntityCardView from "./EntityCardView";
@@ -7,25 +8,116 @@ import {
   entityCardModalStyle,
 } from "./styles/entityCardModalStyles";
 
+function normalizeInitialContext(initialContext) {
+  if (!initialContext) return null;
+
+  const type = String(
+    initialContext?.type || ""
+  ).trim();
+
+  const tab =
+    initialContext?.tab ||
+    (type === "card_note"
+      ? "notes"
+      : type === "card_attachment_file"
+      ? "attachments"
+      : "comments");
+
+  return {
+    ...initialContext,
+    tab,
+  };
+}
+
 export default function EntityCardModal({
   row,
+  rows = [],
   columns = [],
   table,
   onClose,
+  onBack,
+  initialContext = null,
+  onOpenParent,
+  onOpenRelatedRow,
+  onOpenFile,
+  onUploadAttachment,
+  onDeleteAttachment,
+  onSaveCardSettings,
+  onUpdateRowField,
 }) {
+  const normalizedContext = useMemo(() => {
+    return normalizeInitialContext(
+      initialContext
+    );
+  }, [initialContext]);
+
+  useEffect(() => {
+    if (!row) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onClose?.();
+      }
+    };
+
+    window.addEventListener(
+      "keydown",
+      handleKeyDown
+    );
+
+    return () => {
+      window.removeEventListener(
+        "keydown",
+        handleKeyDown
+      );
+    };
+  }, [row, onClose]);
+
+  useEffect(() => {
+    if (!normalizedContext) return;
+
+    console.log(
+      "ENTITY CARD INITIAL CONTEXT:",
+      normalizedContext
+    );
+  }, [normalizedContext]);
+
   if (!row) return null;
 
   return createPortal(
-    <div style={entityCardOverlayStyle} onMouseDown={onClose}>
+    <div
+      style={entityCardOverlayStyle}
+      onMouseDown={onClose}
+    >
       <div
         style={entityCardModalStyle}
-        onMouseDown={(event) => event.stopPropagation()}
+        onMouseDown={(event) =>
+          event.stopPropagation()
+        }
       >
         <EntityCardView
           row={row}
+          rows={rows}
           table={table}
           columns={columns}
           onClose={onClose}
+          onBack={onBack}
+          initialContext={normalizedContext}
+          onOpenParent={onOpenParent}
+          onOpenRelatedRow={onOpenRelatedRow}
+          onOpenFile={onOpenFile}
+          onUploadAttachment={
+            onUploadAttachment
+          }
+          onDeleteAttachment={
+            onDeleteAttachment
+          }
+          onSaveCardSettings={
+            onSaveCardSettings
+          }
+          onUpdateRowField={
+            onUpdateRowField
+          }
         />
       </div>
     </div>,

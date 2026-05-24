@@ -17,6 +17,8 @@ import LibraryGrid from "./LibraryGrid";
 import DeleteFolderModal from "./DeleteFolderModal";
 import MoveDocumentModal from "./MoveDocumentModal";
 
+import FileViewerModal from "../../../shared/files/components/FileViewerModal";
+
 import * as styles from "./libraryStyles";
 
 export default function LibraryPageView({
@@ -30,6 +32,7 @@ export default function LibraryPageView({
   const [moveError, setMoveError] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
   const [viewMode, setViewMode] = useState("table");
+  const [previewFile, setPreviewFile] = useState(null);
 
   const [sortConfig, setSortConfig] = useState({
     field: "title",
@@ -39,18 +42,15 @@ export default function LibraryPageView({
   const {
     filteredDocuments,
     folderPath,
-
     pagination,
     currentPage,
     totalPages,
     goToPage,
-
     isLoading,
     isCreating,
     isCreatingFolder,
     isUploading,
     isDeleting,
-
     documentTitle,
     setDocumentTitle,
     documentType,
@@ -61,7 +61,6 @@ export default function LibraryPageView({
     setOpenedMenuId,
     deleteTarget,
     error,
-
     handleOpenFolder,
     handleGoRoot,
     handleGoBack,
@@ -73,12 +72,13 @@ export default function LibraryPageView({
     requestDeleteDocument,
     handleDeleteFolder,
     closeDeleteModal,
-
     loadDocuments,
   } = useLibraryDocuments({ libraryId });
 
   const currentParentId =
-    folderPath.length > 0 ? folderPath[folderPath.length - 1].id : null;
+    folderPath.length > 0
+      ? folderPath[folderPath.length - 1].id
+      : null;
 
   const currentFolderTitle =
     folderPath.length > 0
@@ -86,7 +86,11 @@ export default function LibraryPageView({
       : title;
 
   const start = pagination.offset + 1;
-  const end = Math.min(pagination.offset + pagination.limit, pagination.total);
+
+  const end = Math.min(
+    pagination.offset + pagination.limit,
+    pagination.total
+  );
 
   const sortedDocuments = useMemo(() => {
     const parseDateValue = (document) => {
@@ -164,9 +168,10 @@ export default function LibraryPageView({
   const reloadDocuments = async () => {
     if (typeof loadDocuments === "function") {
       await loadDocuments();
-    } else {
-      goToPage(currentPage);
+      return;
     }
+
+    goToPage(currentPage);
   };
 
   const toggleSelectDocument = (documentId) => {
@@ -179,6 +184,21 @@ export default function LibraryPageView({
 
   const clearSelection = () => {
     setSelectedIds([]);
+  };
+
+  const handlePreviewFile = (file, initialContext = null) => {
+    if (!file?.fileUrl) return;
+
+    setOpenedMenuId(null);
+
+    setPreviewFile({
+      ...file,
+      initialContext,
+    });
+  };
+
+  const handleClosePreviewFile = () => {
+    setPreviewFile(null);
   };
 
   const handleOpenMoveModal = (document) => {
@@ -329,6 +349,7 @@ export default function LibraryPageView({
             onRenameDocument={handleRenameDocument}
             onDeleteDocument={requestDeleteDocument}
             onMoveDocument={handleOpenMoveModal}
+            onPreviewFile={handlePreviewFile}
             onDropMoveDocument={handleDropMoveDocument}
             onDropMoveDocuments={handleDropMoveDocuments}
             getFileUrl={getFileUrl}
@@ -352,6 +373,7 @@ export default function LibraryPageView({
             onRenameDocument={handleRenameDocument}
             onDeleteDocument={requestDeleteDocument}
             onMoveDocument={handleOpenMoveModal}
+            onPreviewFile={handlePreviewFile}
             onDropMoveDocument={handleDropMoveDocument}
             onDropMoveDocuments={handleDropMoveDocuments}
             getFileUrl={getFileUrl}
@@ -391,6 +413,19 @@ export default function LibraryPageView({
           ›
         </button>
       </div>
+
+      <FileViewerModal
+        isOpen={Boolean(previewFile)}
+        fileUrl={previewFile?.fileUrl}
+        fileName={previewFile?.fileName}
+        fileType={previewFile?.fileType}
+        fileId={previewFile?.raw?.id}
+        initialContext={previewFile?.initialContext}
+        userId="1"
+        userName="Михаил"
+        mode="view"
+        onClose={handleClosePreviewFile}
+      />
 
       <DeleteFolderModal
         folder={deleteTarget}

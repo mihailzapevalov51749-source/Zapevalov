@@ -6,21 +6,36 @@ import { theme } from "../../../styles/theme";
 const API_BASE_URL = "http://127.0.0.1:8010";
 
 const BASE = {
-  paddingY: 7,
-  paddingX: 8,
-  fontSize: 14,
+  rowHeight: 40,
+  paddingX: 12,
+  fontSize: 13,
   iconSize: 16,
   gap: 8,
-  indent: 16,
-  radius: 10,
+  indent: 14,
+  radius: 8,
   typeBadgeSize: 18,
 };
 
 const PROTECTED_TITLES = ["главная страница", "мои задачи"];
+const MENU_COLLAPSE_STORAGE_KEY = "yasnopro-menu-collapsed";
 
-const isProtectedMenuTitle = (title) => {
+function getCollapsedState() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(MENU_COLLAPSE_STORAGE_KEY) || "{}"
+    );
+  } catch {
+    return {};
+  }
+}
+
+function saveCollapsedState(state) {
+  localStorage.setItem(MENU_COLLAPSE_STORAGE_KEY, JSON.stringify(state));
+}
+
+function isProtectedMenuTitle(title) {
   return PROTECTED_TITLES.includes(String(title || "").trim().toLowerCase());
-};
+}
 
 export default function MenuItem({
   item,
@@ -35,7 +50,10 @@ export default function MenuItem({
   setOpenedEditorItemId,
 }) {
   const [isHovered, setIsHovered] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    const state = getCollapsedState();
+    return Boolean(state[item.id]);
+  });
 
   const isProtectedTitle = isProtectedMenuTitle(item?.title);
 
@@ -65,21 +83,16 @@ export default function MenuItem({
   const isActive =
     item.page_id && item.page_id === activePageId
       ? true
-      : item.type === "system_page" &&
-        item.route === window.location.pathname;
+      : item.type === "system_page" && item.route === window.location.pathname;
 
   const visibleChildren = isEditMode
     ? item.children || []
-    : (item.children || []).filter(
-        (child) => child.is_visible || child.isSystem
-      );
+    : (item.children || []).filter((child) => child.is_visible || child.isSystem);
 
   const hasChildren = visibleChildren.length > 0;
 
   const isSection =
-    item.type === "section" ||
-    item.type === "workspace" ||
-    hasChildren;
+    item.type === "section" || item.type === "workspace" || hasChildren;
 
   const isPageLike =
     item.type === "page" ||
@@ -90,40 +103,39 @@ export default function MenuItem({
     !isEditMode &&
     ((isPageLike && item.page_id) ||
       (item.type === "external_link" && item.url) ||
-      (item.type === "system_page" && item.route));
+      (item.type === "system_page" && item.route) ||
+      isSection);
 
   const isDropTarget =
     !isSystem && dragAndDrop?.dropTarget?.targetId === item.id;
 
   const dropPosition = dragAndDrop?.dropTarget?.position;
 
-  const itemTextColor = isActive
-    ? theme.colors.textWhite
-    : item.color || "rgba(255,255,255,0.74)";
+  const itemTextColor = isActive ? "#2563EB" : item.color || "#0F172A";
 
   const itemBackground = useMemo(() => {
-    if (isDropTarget && dropPosition === "inside") {
-      return "rgba(37, 99, 255, 0.22)";
-    }
-
-    if (isActive) {
-      return "linear-gradient(135deg, rgba(37,99,255,0.34), rgba(59,130,246,0.22))";
-    }
-
-    if (isHovered || isEditorOpen) {
-      return "rgba(255,255,255,0.06)";
-    }
-
+    if (isDropTarget && dropPosition === "inside") return "#DBEAFE";
+    if (isActive) return "#EEF4FF";
+    if (isHovered || isEditorOpen) return "#F8FAFC";
     return "transparent";
-  }, [
-    isDropTarget,
-    dropPosition,
-    isActive,
-    isHovered,
-    isEditorOpen,
-  ]);
+  }, [isDropTarget, dropPosition, isActive, isHovered, isEditorOpen]);
 
   const handleClick = () => {
+    if (isSection) {
+      setIsCollapsed((prev) => {
+        const next = !prev;
+        const state = getCollapsedState();
+
+        state[item.id] = next;
+
+        saveCollapsedState(state);
+
+        return next;
+      });
+
+      return;
+    }
+
     if (isEditMode) return;
     if (!item.is_visible && !isSystem) return;
 
@@ -146,13 +158,11 @@ export default function MenuItem({
   return (
     <div
       style={{
-        marginBottom: 4 * scale,
+        marginBottom: 2 * scale,
         opacity: item.is_visible || isSystem ? 1 : 0.35,
       }}
     >
-      {isDropTarget && dropPosition === "before" && (
-        <DropLine scale={scale} />
-      )}
+      {isDropTarget && dropPosition === "before" && <DropLine scale={scale} />}
 
       <div
         draggable={isEditMode && !isSystem}
@@ -174,41 +184,24 @@ export default function MenuItem({
         onClick={handleClick}
         style={{
           position: "relative",
-
-          cursor:
-            isEditMode && !isSystem
-              ? "grab"
-              : isClickable
-                ? "pointer"
-                : "default",
-
-          padding: `${BASE.paddingY * scale}px ${BASE.paddingX * scale}px`,
-
+          cursor: isEditMode && !isSystem ? "grab" : isClickable ? "pointer" : "default",
+          height: BASE.rowHeight * scale,
+          minHeight: BASE.rowHeight * scale,
+          padding: `0 ${BASE.paddingX * scale}px`,
           borderRadius: BASE.radius * scale,
-
           background: itemBackground,
-
-          fontWeight: item.is_bold ? 700 : 500,
+          fontWeight: isActive ? 600 : item.is_bold ? 700 : 500,
           fontStyle: item.is_italic ? "italic" : "normal",
           fontSize: BASE.fontSize * scale,
-
           color: itemTextColor,
-
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-
           gap: BASE.gap * scale,
-
           boxSizing: "border-box",
           width: "100%",
-
-          transition:
-            "background 0.15s ease, color 0.15s ease, opacity 0.15s ease",
-
-          boxShadow: isActive
-            ? "inset 0 0 0 1px rgba(255,255,255,0.05)"
-            : "none",
+          transition: "background 0.15s ease, color 0.15s ease, opacity 0.15s ease",
+          boxShadow: "none",
         }}
       >
         <div
@@ -223,7 +216,7 @@ export default function MenuItem({
           {isEditMode && !isSystem && (
             <span
               style={{
-                color: "rgba(255,255,255,0.32)",
+                color: "#94A3B8",
                 cursor: "grab",
                 fontSize: 13 * scale,
                 flexShrink: 0,
@@ -233,46 +226,6 @@ export default function MenuItem({
             >
               ⋮⋮
             </span>
-          )}
-
-          {isSection && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsCollapsed((prev) => !prev);
-              }}
-              style={{
-                width: BASE.typeBadgeSize * scale,
-                height: BASE.typeBadgeSize * scale,
-
-                border: "none",
-                background: "transparent",
-
-                cursor: "pointer",
-
-                color: isActive
-                  ? theme.colors.textWhite
-                  : "rgba(255,255,255,0.55)",
-
-                fontSize: 11 * scale,
-                padding: 0,
-                flexShrink: 0,
-                lineHeight: 1,
-
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-              title={
-                isCollapsed
-                  ? "Развернуть раздел"
-                  : "Свернуть раздел"
-              }
-            >
-              {hasChildren ? (isCollapsed ? "▶" : "▼") : ""}
-            </button>
           )}
 
           {isEditMode && !isSystem && (
@@ -285,15 +238,9 @@ export default function MenuItem({
             scale={scale}
           />
 
-          {isEditMode &&
-            item.type === "system_page" &&
-            !item.icon_type && (
-              <DefaultIcon
-                type={item.type}
-                scale={scale}
-                active={isActive}
-              />
-            )}
+          {isEditMode && item.type === "system_page" && !item.icon_type && (
+            <DefaultIcon type={item.type} scale={scale} active={isActive} />
+          )}
 
           <span
             style={{
@@ -312,62 +259,38 @@ export default function MenuItem({
         {isEditMode && (
           <button
             type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-
-              setOpenedEditorItemId?.(
-                isEditorOpen ? null : item.id
-              );
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              setOpenedEditorItemId?.(isEditorOpen ? null : item.id);
             }}
             style={{
               width: 22,
               height: 22,
-
               border: "none",
               borderRadius: 6,
-
-              background: isEditorOpen
-                ? "rgba(255,255,255,0.12)"
-                : "transparent",
-
+              background: isEditorOpen ? "#E2E8F0" : "transparent",
               cursor: "pointer",
-
               fontSize: 13 * scale,
-
-              color: isActive
-                ? theme.colors.textWhite
-                : "rgba(255,255,255,0.62)",
-
+              color: isActive ? "#2563EB" : "#64748B",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-
               flexShrink: 0,
-
-              opacity:
-                isHovered || isEditorOpen ? 1 : 0,
-
-              transition:
-                "opacity 0.15s ease, background 0.15s ease",
+              opacity: isHovered || isEditorOpen ? 1 : 0,
+              transition: "opacity 0.15s ease, background 0.15s ease",
             }}
-            title={
-              isSystem
-                ? "Настроить отображение"
-                : "Редактировать"
-            }
+            title={isSystem ? "Настроить отображение" : "Редактировать"}
           >
             ✎
           </button>
         )}
       </div>
 
-      {isDropTarget && dropPosition === "after" && (
-        <DropLine scale={scale} />
-      )}
+      {isDropTarget && dropPosition === "after" && <DropLine scale={scale} />}
 
       {isEditMode && isEditorOpen && (
-        <div onClick={(e) => e.stopPropagation()}>
+        <div onClick={(event) => event.stopPropagation()}>
           <MenuItemEditor
             item={item}
             onSave={async (data) => {
@@ -385,9 +308,7 @@ export default function MenuItem({
 
               setOpenedEditorItemId?.(null);
             }}
-            onClose={() =>
-              setOpenedEditorItemId?.(null)
-            }
+            onClose={() => setOpenedEditorItemId?.(null)}
           />
         </div>
       )}
@@ -395,8 +316,8 @@ export default function MenuItem({
       {hasChildren && !isCollapsed && (
         <div
           style={{
-            marginLeft: BASE.indent * scale,
-            marginTop: 3 * scale,
+            marginLeft: 0,
+            marginTop: 2 * scale,
           }}
         >
           {visibleChildren.map((child) => (
@@ -408,9 +329,7 @@ export default function MenuItem({
               isEditMode={isEditMode}
               onUpdateItem={onUpdateItem}
               onDeleteItem={onDeleteItem}
-              dragAndDrop={
-                child?.isSystem ? null : dragAndDrop
-              }
+              dragAndDrop={child?.isSystem ? null : dragAndDrop}
               scale={scale}
               openedEditorItemId={openedEditorItemId}
               setOpenedEditorItemId={setOpenedEditorItemId}
@@ -458,9 +377,9 @@ function TypeBadge({ type, scale = 1 }) {
         width: BASE.typeBadgeSize * scale,
         height: BASE.typeBadgeSize * scale,
         borderRadius: 6 * scale,
-        border: "1px solid rgba(255,255,255,0.08)",
-        background: "rgba(255,255,255,0.03)",
-        color: "rgba(255,255,255,0.6)",
+        border: "1px solid #CBD5E1",
+        background: "#F8FAFC",
+        color: "#64748B",
         fontSize: 12 * scale,
         fontWeight: 700,
         display: "inline-flex",
@@ -489,9 +408,7 @@ function DefaultIcon({ type, scale = 1, active = false }) {
       style={{
         width: BASE.iconSize * scale,
         height: BASE.iconSize * scale,
-        color: active
-          ? theme.colors.textWhite
-          : "rgba(255,255,255,0.55)",
+        color: active ? "#2563EB" : "#64748B",
         fontSize: 14 * scale,
         display: "inline-flex",
         alignItems: "center",
@@ -505,11 +422,7 @@ function DefaultIcon({ type, scale = 1, active = false }) {
   );
 }
 
-function IconRenderer({
-  iconType,
-  iconFileUrl,
-  scale = 1,
-}) {
+function IconRenderer({ iconType, iconFileUrl, scale = 1 }) {
   if (iconType === "upload" && iconFileUrl) {
     return (
       <img
@@ -520,8 +433,6 @@ function IconRenderer({
           height: BASE.iconSize * scale,
           objectFit: "contain",
           flexShrink: 0,
-          filter:
-            "drop-shadow(0 0 6px rgba(37,99,255,0.22))",
         }}
       />
     );
@@ -538,8 +449,7 @@ function DropLine({ scale = 1 }) {
         background: theme.colors.primaryBlue,
         borderRadius: 999,
         margin: `${4 * scale}px 0`,
-        boxShadow:
-          "0 0 12px rgba(37,99,255,0.45)",
+        boxShadow: "0 0 12px rgba(37,99,255,0.35)",
       }}
     />
   );

@@ -62,6 +62,7 @@ export default function TableCellEditor({
   readOnly = false,
   isPrimary = false,
   autoFocus = false,
+  onOpenFile,
 }) {
   const type = normalizeColumnType(column?.type);
 
@@ -72,6 +73,7 @@ export default function TableCellEditor({
     readOnly,
     isPrimary,
     autoFocus,
+    onOpenFile,
   };
 
   switch (type) {

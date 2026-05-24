@@ -39,6 +39,7 @@ export default function FileCellEditor({
   value,
   onChange,
   readOnly = false,
+  onOpenFile,
 }) {
   const [isUploading, setIsUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -87,6 +88,13 @@ export default function FileCellEditor({
     );
   };
 
+  const handleOpenFile = (event, file) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    onOpenFile?.(file);
+  };
+
   const renderFiles = ({ withRemove = false } = {}) => {
     if (!files.length) {
       return <span style={{ color: "#94a3b8" }}>—</span>;
@@ -115,11 +123,9 @@ export default function FileCellEditor({
           }}
         >
           {url ? (
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
+            <button
+              type="button"
+              onClick={(event) => handleOpenFile(event, file)}
               title={name}
               style={{
                 minWidth: 0,
@@ -129,10 +135,17 @@ export default function FileCellEditor({
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
+                border: "none",
+                background: "transparent",
+                padding: 0,
+                margin: 0,
+                cursor: "pointer",
+                font: "inherit",
+                textAlign: "left",
               }}
             >
               {name}
-            </a>
+            </button>
           ) : (
             <span
               title={name}
@@ -237,6 +250,7 @@ export default function FileCellEditor({
         }}
       >
         {isUploading ? "Загрузка..." : "+ файл"}
+
         <input
           type="file"
           multiple

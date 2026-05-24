@@ -14,7 +14,15 @@ router = APIRouter(
 )
 
 
-UPLOAD_DIR = Path("uploads/table-files")
+# backend/app/modules/tables/router.py
+# parents:
+# 0 = backend/app/modules/tables
+# 1 = backend/app/modules
+# 2 = backend/app
+# 3 = backend
+BACKEND_DIR = Path(__file__).resolve().parents[3]
+UPLOADS_DIR = BACKEND_DIR / "uploads"
+UPLOAD_DIR = UPLOADS_DIR / "table-files"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -26,7 +34,7 @@ async def upload_table_file(
     file: UploadFile = File(...),
 ):
     original_name = file.filename or "file"
-    suffix = Path(original_name).suffix
+    suffix = Path(original_name).suffix.lower()
     stored_name = f"{uuid4().hex}{suffix}"
     file_path = UPLOAD_DIR / stored_name
 

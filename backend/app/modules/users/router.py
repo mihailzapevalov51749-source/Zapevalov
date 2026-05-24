@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 import os
@@ -111,10 +112,11 @@ def admin_create_user(
         raise HTTPException(status_code=400, detail="Email обязателен")
 
     existing = db.query(User).filter(User.email == payload["email"]).first()
+
     if existing:
         raise HTTPException(status_code=400, detail="Email уже используется")
 
-    temp_password = generate_temp_password()
+    password = payload.get("password") or generate_temp_password()
 
     user = User(
         email=payload.get("email"),
@@ -129,7 +131,7 @@ def admin_create_user(
         avatar_settings=payload.get("avatar_settings"),
         is_active=payload.get("is_active", True),
         role_id=payload.get("role_id"),
-        hashed_password=hash_password(temp_password),
+        hashed_password=hash_password(password),
     )
 
     db.add(user)
@@ -137,7 +139,9 @@ def admin_create_user(
     db.refresh(user)
 
     result = serialize_user(user)
-    result["temp_password"] = temp_password
+
+    if not payload.get("password"):
+        result["temp_password"] = password
 
     return result
 
@@ -216,10 +220,28 @@ def update_me(
 
 @router.get("/users/", response_model=list[UserResponse])
 def get_users(
+    search: str | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    users = db.query(User).order_by(User.id.asc()).all()
+    query = db.query(User)
+
+    value = (search or "").strip()
+
+    if value:
+        search_pattern_start = f"{value}%"
+        search_pattern_word = f"% {value}%"
+
+        query = query.filter(
+            or_(
+                User.full_name.ilike(search_pattern_start),
+                User.full_name.ilike(search_pattern_word),
+                User.email.ilike(search_pattern_start),
+            )
+        )
+
+    users = query.order_by(User.full_name.asc()).limit(50).all()
+
     return [serialize_user(user) for user in users]
 
 
@@ -231,6 +253,7 @@ def admin_get_users(
     check_admin(current_user)
 
     users = db.query(User).order_by(User.id.asc()).all()
+
     return [serialize_user(user) for user in users]
 
 
@@ -258,11 +281,18 @@ def admin_update_user(
         "mentor",
         "is_active",
         "role_id",
+        "avatar_url",
+        "avatar_settings",
     }
 
     for field, value in payload.items():
         if field in allowed_fields:
             setattr(user, field, value)
+
+    password = payload.get("password")
+
+    if password:
+        user.hashed_password = hash_password(password)
 
     db.add(user)
     db.commit()

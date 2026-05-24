@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from pathlib import Path
+from uuid import uuid4
+
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -15,6 +18,10 @@ from app.modules.universal_tables.schemas import (
 )
 
 router = APIRouter(prefix="/universal-tables", tags=["universal-tables"])
+
+BACKEND_DIR = Path(__file__).resolve().parents[3]
+UPLOAD_DIR = BACKEND_DIR / "uploads" / "table-files"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @router.post("")
@@ -39,6 +46,32 @@ def get_lookup_options(
         source_table_id=source_table_id,
         display_column_id=display_column_id,
     )
+
+
+@router.post("/files/upload")
+async def upload_table_file(
+    request: Request,
+    file: UploadFile = File(...),
+):
+    original_name = file.filename or "file"
+    suffix = Path(original_name).suffix.lower()
+    stored_name = f"{uuid4().hex}{suffix}"
+    file_path = UPLOAD_DIR / stored_name
+
+    content = await file.read()
+    file_path.write_bytes(content)
+
+    base_url = str(request.base_url).rstrip("/")
+
+    return {
+        "id": stored_name,
+        "name": original_name,
+        "size": len(content),
+        "type": file.content_type,
+        "url": f"{base_url}/uploads/table-files/{stored_name}",
+        "storedName": stored_name,
+        "local": False,
+    }
 
 
 @router.get("/by-block/{block_id}")

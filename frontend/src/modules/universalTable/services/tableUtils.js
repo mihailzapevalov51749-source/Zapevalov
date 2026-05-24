@@ -55,17 +55,85 @@ export const normalizeAvatarSettings = (settings) => {
   return DEFAULT_AVATAR_SETTINGS;
 };
 
+const getUserFullName = (value) => {
+  if (!value || typeof value !== "object") return "";
+
+  const firstName =
+    value.firstName || value.first_name || value.firstname || "";
+
+  const lastName = value.lastName || value.last_name || value.lastname || "";
+
+  const combinedName = `${firstName} ${lastName}`.trim();
+
+  return (
+    value.full_name ||
+    value.fullName ||
+    value.displayName ||
+    value.display_name ||
+    combinedName ||
+    value.name ||
+    value.label ||
+    value.title ||
+    value.username ||
+    ""
+  );
+};
+
+const getNestedUserValue = (value) => {
+  if (!value || typeof value !== "object") return null;
+
+  return (
+    value.user ||
+    value.selectedUser ||
+    value.selected_user ||
+    value.assignee ||
+    value.responsible ||
+    value.owner ||
+    value.created_by ||
+    value.updated_by ||
+    null
+  );
+};
+
 export const normalizeUserValue = (value) => {
   if (!value) return null;
 
+  if (Array.isArray(value)) {
+    return normalizeUserValue(value[0] || null);
+  }
+
   if (typeof value === "object") {
-    const userId = value.userId ?? value.user_id ?? value.id ?? null;
+    const nestedValue = getNestedUserValue(value);
+
+    if (nestedValue) {
+      return normalizeUserValue(nestedValue);
+    }
+
+    const rawUserId =
+      value.userId ??
+      value.user_id ??
+      value.id ??
+      value.user?.id ??
+      value.selectedUser?.id ??
+      null;
+
+    const userId =
+      rawUserId !== null && rawUserId !== "" && !Number.isNaN(Number(rawUserId))
+        ? Number(rawUserId)
+        : null;
 
     return {
-      userId: userId !== null && userId !== "" ? Number(userId) : null,
-      full_name: value.full_name ?? value.fullName ?? value.name ?? "",
+      userId,
+      full_name: getUserFullName(value),
       email: value.email ?? "",
-      avatar_url: value.avatar_url ?? value.avatarUrl ?? "",
+      avatar_url:
+        value.avatar_url ??
+        value.avatarUrl ??
+        value.photo_url ??
+        value.photoUrl ??
+        value.image_url ??
+        value.imageUrl ??
+        "",
       avatar_settings: normalizeAvatarSettings(
         value.avatar_settings ?? value.avatarSettings
       ),
@@ -73,7 +141,10 @@ export const normalizeUserValue = (value) => {
   }
 
   return {
-    userId: value !== null && value !== "" ? Number(value) : null,
+    userId:
+      value !== null && value !== "" && !Number.isNaN(Number(value))
+        ? Number(value)
+        : null,
     full_name: "",
     email: "",
     avatar_url: "",

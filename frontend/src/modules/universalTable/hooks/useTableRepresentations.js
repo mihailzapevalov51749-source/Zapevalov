@@ -273,7 +273,7 @@ export default function useTableRepresentations({
     setActiveId(active?.id ?? null);
     setDirty(false);
     setIsHydrated(true);
-  }, [storageKey, initialRepresentations]);
+  }, [storageKey]);
 
   const activeRepresentation = useMemo(() => {
     return (

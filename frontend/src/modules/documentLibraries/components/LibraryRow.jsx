@@ -1,5 +1,18 @@
 import { useState, useRef, useEffect } from "react";
 
+function getDocumentFileName(document) {
+  return (
+    document?.file_name ||
+    document?.fileName ||
+    document?.filename ||
+    document?.original_name ||
+    document?.originalName ||
+    document?.name ||
+    document?.title ||
+    "Файл"
+  );
+}
+
 export default function LibraryRow({
   document,
 
@@ -13,6 +26,7 @@ export default function LibraryRow({
   onRename,
   onDelete,
   onMove,
+  onPreviewFile,
 
   onDropMove,
   onDropMoveDocuments,
@@ -23,7 +37,7 @@ export default function LibraryRow({
   formatDocumentDate,
   styles,
 
-  searchQuery, // 🔴 добавили
+  searchQuery,
 }) {
   const {
     tableRow,
@@ -64,7 +78,6 @@ export default function LibraryRow({
     }
   }, [isEditing]);
 
-  // 🔴 ПОДСВЕТКА
   const highlightText = (text) => {
     if (!searchQuery || !searchQuery.trim()) return text;
 
@@ -152,6 +165,40 @@ export default function LibraryRow({
   const handleOpenFolder = (event) => {
     stopEvent(event);
     onOpenFolder(document);
+  };
+
+  const handleOpenFile = (event) => {
+    stopEvent(event);
+
+    const fileUrl = getFileUrl(document);
+
+    if (!fileUrl) return;
+
+    onPreviewFile?.({
+      fileUrl,
+      fileName: getDocumentFileName(document),
+      fileType: document.document_type,
+      raw: document,
+    });
+
+    onToggleMenu?.();
+  };
+
+  const handleDownload = (event) => {
+    stopEvent(event);
+
+    const fileUrl = getFileUrl(document);
+
+    if (!fileUrl) return;
+
+    const link = window.document.createElement("a");
+    link.href = fileUrl;
+    link.download = getDocumentFileName(document);
+    link.target = "_blank";
+    link.rel = "noreferrer";
+    link.click();
+
+    onToggleMenu?.();
   };
 
   const handleToggleSelect = (event) => {
@@ -251,7 +298,7 @@ export default function LibraryRow({
           type="checkbox"
           checked={isSelected}
           onChange={handleToggleSelect}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
         />
       </div>
 
@@ -271,7 +318,7 @@ export default function LibraryRow({
             <input
               ref={inputRef}
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(event) => setTitle(event.target.value)}
               onKeyDown={handleKeyDown}
               onBlur={handleBlur}
               style={{
@@ -282,9 +329,20 @@ export default function LibraryRow({
               }}
             />
           ) : (
-            <span style={fileName} onClick={handleOpenFolder}>
+            <button
+              type="button"
+              style={{
+                ...fileName,
+                border: "none",
+                background: "transparent",
+                padding: 0,
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+              onClick={handleOpenFolder}
+            >
               {highlightText(document.title)}
-            </span>
+            </button>
           )}
         </div>
       ) : (
@@ -303,7 +361,7 @@ export default function LibraryRow({
             <input
               ref={inputRef}
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(event) => setTitle(event.target.value)}
               onKeyDown={handleKeyDown}
               onBlur={handleBlur}
               style={{
@@ -314,15 +372,20 @@ export default function LibraryRow({
               }}
             />
           ) : (
-            <a
-              href={getFileUrl(document)}
-              target="_blank"
-              rel="noreferrer"
-              style={fileName}
-              draggable={false}
+            <button
+              type="button"
+              onClick={handleOpenFile}
+              style={{
+                ...fileName,
+                border: "none",
+                background: "transparent",
+                padding: 0,
+                cursor: "pointer",
+                textAlign: "left",
+              }}
             >
               {highlightText(document.title)}
-            </a>
+            </button>
           )}
         </div>
       )}
@@ -354,7 +417,11 @@ export default function LibraryRow({
         </button>
 
         {isMenuOpen && (
-          <div style={menu} data-menu onClick={(e) => e.stopPropagation()}>
+          <div
+            style={menu}
+            data-menu
+            onClick={(event) => event.stopPropagation()}
+          >
             {isFolder ? (
               <button
                 type="button"
@@ -365,24 +432,21 @@ export default function LibraryRow({
               </button>
             ) : (
               <>
-                <a
-                  href={getFileUrl(document)}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={menuItem}
-                  draggable={false}
+                <button
+                  type="button"
+                  style={menuButton}
+                  onClick={handleOpenFile}
                 >
                   Открыть
-                </a>
+                </button>
 
-                <a
-                  href={getFileUrl(document)}
-                  download
-                  style={menuItem}
-                  draggable={false}
+                <button
+                  type="button"
+                  style={menuButton || menuItem}
+                  onClick={handleDownload}
                 >
                   Скачать
-                </a>
+                </button>
               </>
             )}
 

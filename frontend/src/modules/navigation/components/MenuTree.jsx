@@ -26,9 +26,24 @@ export default function MenuTree({
 
   return (
     <nav
+      onDragOver={(event) => {
+        dragAndDrop?.handleContainerDragOver?.(event);
+      }}
+      onDrop={(event) => {
+        dragAndDrop?.handleContainerDrop?.(event);
+      }}
       style={{
-        paddingLeft: 4 * scale,
+        width: "100%",
+        minHeight: isEditMode ? 220 : 0,
+
         boxSizing: "border-box",
+
+        display: "flex",
+        flexDirection: "column",
+        gap: 2 * scale,
+
+        padding: "0 0 80px",
+        margin: 0,
       }}
     >
       {visibleItems.map((item) => (

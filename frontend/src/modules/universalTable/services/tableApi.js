@@ -160,7 +160,7 @@ export async function uploadTableFile(file) {
   const formData = new FormData();
   formData.append("file", file);
 
-  return uploadRequest(`/tables/files/upload`, formData);
+  return uploadRequest(`/universal-tables/files/upload`, formData);
 }
 
 /* ------------------------

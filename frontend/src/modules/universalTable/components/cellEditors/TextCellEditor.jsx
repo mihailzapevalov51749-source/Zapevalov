@@ -3,8 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { cellInputStyle } from "../../styles/tableStyles";
 
 const CELL_EDITOR_MIN_HEIGHT = 28;
-const READ_ONLY_MAX_LINES = 3;
-const READ_ONLY_LINE_HEIGHT = 18;
 
 const normalizeAlign = (align) => {
   if (["left", "center", "right"].includes(align)) return align;
@@ -102,10 +100,10 @@ export default function TextCellEditor({
           padding: "4px 6px",
           boxSizing: "border-box",
           fontSize: 13,
-          lineHeight: `${READ_ONLY_LINE_HEIGHT}px`,
+          lineHeight: "18px",
           fontWeight,
           color: text ? "#0f172a" : "#94a3b8",
-          overflow: "hidden",
+          overflow: "visible",
           cursor: "default",
           textAlign: align,
         }}
@@ -114,10 +112,8 @@ export default function TextCellEditor({
           style={{
             minWidth: 0,
             maxWidth: "100%",
-            display: "-webkit-box",
-            WebkitLineClamp: READ_ONLY_MAX_LINES,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
+            display: "block",
+            overflow: "visible",
             whiteSpace: "normal",
             wordBreak: "break-word",
             overflowWrap: "anywhere",

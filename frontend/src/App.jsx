@@ -6,6 +6,8 @@ import LibraryPageView from "./modules/documentLibraries/components/LibraryPageV
 import LoginPage from "./pages/login/LoginPage";
 import ProfilePage from "./profile/components/ProfilePage";
 
+import OnlyOfficeTest from "./test/OnlyOfficeTest";
+
 import { getMe } from "./api/authApi";
 
 const ADMIN_ROLES = ["admin", "superadmin"];
@@ -35,9 +37,12 @@ export default function App() {
   const loadUser = async () => {
     try {
       const data = await getMe();
+
       setUser(data);
+      localStorage.setItem("currentUser", JSON.stringify(data));
     } catch {
       setUser(null);
+      localStorage.removeItem("currentUser");
     } finally {
       setLoading(false);
     }
@@ -59,6 +64,8 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Navigate to="/portal/1/page/1" replace />} />
 
+      <Route path="/onlyoffice-test" element={<OnlyOfficeTest />} />
+
       <Route path="/tasks" element={<PortalPageView />} />
 
       <Route path="/universal-table" element={<PortalPageView />} />
@@ -74,6 +81,16 @@ export default function App() {
       />
 
       <Route path="/profile" element={<ProfilePage />} />
+
+    
+      <Route
+  path="/admin"
+  element={
+    <ProtectedAdminRoute user={user}>
+      <PortalPageView />
+    </ProtectedAdminRoute>
+  }
+/>
 
       <Route
         path="/admin/users"

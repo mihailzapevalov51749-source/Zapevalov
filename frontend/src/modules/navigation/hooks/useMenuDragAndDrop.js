@@ -16,25 +16,31 @@ export default function useMenuDragAndDrop({ items, isEnabled, reload }) {
   };
 
   const handleDragOver = (event, targetItem) => {
-    if (!isEnabled || !draggedId || draggedId === targetItem.id) return;
+    if (!isEnabled || !draggedId || !targetItem) return;
+    if (String(draggedId) === String(targetItem.id)) return;
 
     event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
 
     const rect = event.currentTarget.getBoundingClientRect();
     const offsetY = event.clientY - rect.top;
-    const height = rect.height;
+    const height = Math.max(rect.height, 1);
 
-    let position = "inside";
+    let position;
 
-    if (offsetY < height * 0.25) {
-      position = "before";
-    } else if (offsetY > height * 0.75) {
-      position = "after";
-    }
+if (canAcceptChildren(targetItem)) {
+  position = "inside";
 
-    if (position === "inside" && !canAcceptChildren(targetItem)) {
-      position = "after";
-    }
+  if (offsetY < height * 0.3) {
+    position = "before";
+  } else if (offsetY > height * 0.7) {
+    position = "after";
+  }
+} else {
+  position = offsetY < height * 0.5
+    ? "before"
+    : "after";
+}
 
     setDropTarget({
       targetId: targetItem.id,
@@ -42,15 +48,84 @@ export default function useMenuDragAndDrop({ items, isEnabled, reload }) {
     });
   };
 
+  const handleContainerDragOver = (event) => {
+    if (!isEnabled || !draggedId || !tree.length) return;
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+
+    const lastRootItem = tree[tree.length - 1];
+
+    if (!lastRootItem || String(lastRootItem.id) === String(draggedId)) {
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const bottomDistance = rect.bottom - event.clientY;
+
+    if (bottomDistance <= 56) {
+      setDropTarget({
+        targetId: lastRootItem.id,
+        position: "after",
+      });
+    }
+  };
+
   const handleDrop = async (event, targetItem) => {
     event.preventDefault();
 
-    if (!isEnabled || !draggedId || draggedId === targetItem.id || !dropTarget) {
+    if (!isEnabled || !draggedId || !dropTarget) {
       resetDrag();
       return;
     }
 
-    const result = moveNode(tree, draggedId, targetItem.id, dropTarget.position);
+    if (targetItem && String(draggedId) === String(targetItem.id)) {
+      resetDrag();
+      return;
+    }
+
+    const result = moveNode(
+      tree,
+      draggedId,
+      dropTarget.targetId,
+      dropTarget.position
+    );
+
+    if (!result) {
+      resetDrag();
+      return;
+    }
+
+    setTree(result);
+
+    const payload = flattenTree(result);
+
+    try {
+      await navigationService.moveItems(payload);
+      await reload();
+    } catch (e) {
+      console.error("Ошибка сохранения порядка меню:", e);
+      alert("Не удалось сохранить порядок меню");
+      await reload();
+    } finally {
+      resetDrag();
+    }
+  };
+
+  const handleContainerDrop = async (event) => {
+    event.preventDefault();
+
+    if (!isEnabled || !draggedId || !dropTarget) {
+      resetDrag();
+      return;
+    }
+
+    const result = moveNode(
+      tree,
+      draggedId,
+      dropTarget.targetId,
+      dropTarget.position
+    );
 
     if (!result) {
       resetDrag();
@@ -85,6 +160,8 @@ export default function useMenuDragAndDrop({ items, isEnabled, reload }) {
     handleDragStart,
     handleDragOver,
     handleDrop,
+    handleContainerDragOver,
+    handleContainerDrop,
     resetDrag,
   };
 }
@@ -110,7 +187,7 @@ function removeNode(items, id) {
 
   const nextItems = items
     .map((item) => {
-      if (item.id === id) {
+      if (String(item.id) === String(id)) {
         removedNode = item;
         return null;
       }
@@ -141,7 +218,7 @@ function insertNode(items, targetId, node, position) {
   const result = [];
 
   for (const item of items) {
-    if (item.id === targetId) {
+    if (String(item.id) === String(targetId)) {
       if (position === "before") {
         result.push(normalizeNode(node));
         result.push(item);
@@ -187,7 +264,7 @@ function containsNode(node, targetId) {
   if (!node.children?.length) return false;
 
   return node.children.some((child) => {
-    if (child.id === targetId) return true;
+    if (String(child.id) === String(targetId)) return true;
     return containsNode(child, targetId);
   });
 }

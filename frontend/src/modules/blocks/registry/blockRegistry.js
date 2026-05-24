@@ -6,6 +6,9 @@ import CardsBlockView from "../../blockTypes/cards/CardsBlockView";
 
 import { UniversalTableView } from "../../universalTable";
 
+import AdminDashboardBlock from "../../admin/blocks/AdminDashboardBlock";
+import AdminSystemBlock from "../../admin/blocks/AdminSystemBlock";
+
 export const blockViewRegistry = {
   text: TextBlockView,
   image: ImageBlockView,
@@ -13,6 +16,9 @@ export const blockViewRegistry = {
   documents: DocumentsBlockView,
   button: ButtonBlockView,
   cards: CardsBlockView,
+
+  admin_dashboard: AdminDashboardBlock,
+  admin_system: AdminSystemBlock,
 
   // Старый тип table теперь тоже открываем через новую универсальную таблицу.
   // Это нужно, чтобы старые блоки не ломались после удаления старого модуля table.
@@ -29,6 +35,10 @@ export function getBlockTypeTitle(type) {
     link: "Ссылка",
     button: "Кнопка",
     cards: "Карточки",
+
+    admin_dashboard: "Администрирование",
+    admin_system: "Настройки системы",
+
     table: "Таблица",
     universal_table: "Универсальная таблица",
   };

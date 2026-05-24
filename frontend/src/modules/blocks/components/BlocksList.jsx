@@ -73,7 +73,7 @@ export default function BlocksList({
           justifyContent: "center",
           fontSize: 14,
           boxSizing: "border-box",
-          overflow: "hidden",
+          overflow: "visible",
         }}
       >
         Перетащи блок сюда
@@ -90,9 +90,9 @@ export default function BlocksList({
         display: "grid",
         gap: 16,
         gridTemplateColumns: getGridTemplateColumns(layout),
-        alignContent: "stretch",
+        alignContent: "start",
         boxSizing: "border-box",
-        overflow: "hidden",
+        overflow: "visible",
       }}
     >
       {blocks.map((block) => {
@@ -134,7 +134,7 @@ export default function BlocksList({
 }
 
 function getGridTemplateColumns(layout) {
-  if (layout === "two_columns") return "repeat(2, minmax(0, 1fr)";
+  if (layout === "two_columns") return "repeat(2, minmax(0, 1fr))";
   if (layout === "three_columns") return "repeat(3, minmax(0, 1fr))";
   if (layout === "grid") return "repeat(auto-fit, minmax(220px, 1fr))";
 

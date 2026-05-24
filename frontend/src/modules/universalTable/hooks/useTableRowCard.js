@@ -8,12 +8,180 @@ export const DEFAULT_ROW_CARD_SETTINGS = {
   customTitle: "",
   visibleColumnIds: [],
   columnOrder: [],
+
+  sections: undefined,
+  tabs: undefined,
+
+  sidebar: {
+    enabled: true,
+  },
+
+  fieldVisibility: {
+    hiddenFieldIds: [],
+  },
 };
 
-export const normalizeRowCardSettings = (settings) => ({
-  ...DEFAULT_ROW_CARD_SETTINGS,
-  ...(settings || {}),
-});
+const normalizeIds = (value) => {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter((id) => id !== null && id !== undefined && id !== "")
+    .map((id) => String(id));
+};
+
+const normalizeSectionId = (id) => {
+  if (id === "customFields") return "fields";
+  return id;
+};
+
+const normalizeSectionType = (section) => {
+  const id = normalizeSectionId(section?.id);
+  const type = section?.type;
+
+  if (id === "parent") return "parentRow";
+  if (id === "main") return "mainFields";
+  if (id === "fields") return "fieldsGrid";
+  if (id === "tabs") return "tabs";
+  if (id === "attachments") return "attachments";
+
+  return type || "fieldsGrid";
+};
+
+const normalizeSection = (section, index) => {
+  const config = section?.config || {};
+  const id = normalizeSectionId(section?.id || `section_${index}`);
+
+  const fieldIds = normalizeIds(
+    section?.fieldIds ||
+      config.fieldIds ||
+      config.fields ||
+      []
+  );
+
+  return {
+    ...(section || {}),
+
+    id,
+    type: normalizeSectionType({
+      ...(section || {}),
+      id,
+    }),
+
+    visible: section?.visible !== false,
+    enabled:
+      section?.enabled !== false &&
+      section?.visible !== false,
+
+    order:
+      typeof section?.order === "number"
+        ? section.order
+        : index,
+
+    fieldIds,
+
+    config: {
+      ...config,
+      fieldIds,
+    },
+  };
+};
+
+const normalizeSections = (sections) => {
+  if (!Array.isArray(sections)) return undefined;
+
+  const normalized = sections.map(normalizeSection);
+  const result = [];
+  const seen = new Set();
+
+  normalized.forEach((section) => {
+    if (!section?.id) return;
+    if (seen.has(section.id)) return;
+
+    seen.add(section.id);
+    result.push(section);
+  });
+
+  return result.sort((a, b) => {
+    const aOrder =
+      typeof a?.order === "number" ? a.order : 0;
+
+    const bOrder =
+      typeof b?.order === "number" ? b.order : 0;
+
+    return aOrder - bOrder;
+  });
+};
+
+const normalizeTab = (tab, index) => {
+  return {
+    ...(tab || {}),
+
+    id: tab?.id || `tab_${index}`,
+
+    visible: tab?.visible !== false,
+    enabled:
+      tab?.enabled !== false &&
+      tab?.visible !== false,
+
+    order:
+      typeof tab?.order === "number"
+        ? tab.order
+        : index,
+  };
+};
+
+const normalizeTabs = (tabs) => {
+  if (!Array.isArray(tabs)) return undefined;
+
+  return tabs
+    .map(normalizeTab)
+    .sort((a, b) => {
+      const aOrder =
+        typeof a?.order === "number" ? a.order : 0;
+
+      const bOrder =
+        typeof b?.order === "number" ? b.order : 0;
+
+      return aOrder - bOrder;
+    });
+};
+
+export const normalizeRowCardSettings = (settings = {}) => {
+  const source = settings || {};
+
+  const normalized = {
+    ...DEFAULT_ROW_CARD_SETTINGS,
+    ...source,
+
+    visibleColumnIds: normalizeIds(source.visibleColumnIds),
+    columnOrder: normalizeIds(source.columnOrder),
+
+    sidebar: {
+      ...DEFAULT_ROW_CARD_SETTINGS.sidebar,
+      ...(source.sidebar || {}),
+      enabled: source.sidebar?.enabled !== false,
+    },
+
+    fieldVisibility: {
+      ...(source.fieldVisibility || {}),
+      hiddenFieldIds: normalizeIds(
+        source.fieldVisibility?.hiddenFieldIds ||
+          source.hiddenFieldIds ||
+          []
+      ),
+    },
+  };
+
+  if (Array.isArray(source.sections)) {
+    normalized.sections = normalizeSections(source.sections);
+  }
+
+  if (Array.isArray(source.tabs)) {
+    normalized.tabs = normalizeTabs(source.tabs);
+  }
+
+  return normalized;
+};
 
 export default function useTableRowCard({
   rows = [],

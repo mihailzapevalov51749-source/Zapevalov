@@ -8,7 +8,7 @@ export const entityCardAttachmentsStyle = {
 
   background: entityCardTheme.section.background,
 
-  padding: "10px 14px",
+  padding: "10px 14px 18px",
 
   boxSizing: "border-box",
 
@@ -18,6 +18,8 @@ export const entityCardAttachmentsStyle = {
   gap: 8,
 
   flexShrink: 0,
+
+  marginBottom: 10,
 };
 
 export const entityCardAttachmentsHeaderStyle = {

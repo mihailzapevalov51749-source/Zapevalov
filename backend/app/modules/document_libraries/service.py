@@ -69,6 +69,71 @@ def get_libraries(db: Session):
     return repository.get_libraries(db)
 
 
+def get_document_by_id(
+    db: Session,
+    document_id: int,
+):
+    document = repository.get_document_by_id(
+        db,
+        document_id,
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=404,
+            detail="Документ не найден",
+        )
+
+    return document
+
+
+def get_document_by_file_key(
+    db: Session,
+    file_key: str,
+):
+    normalized_key = (
+        str(file_key or "")
+        .strip()
+    )
+
+    if not normalized_key:
+        raise HTTPException(
+            status_code=400,
+            detail="Ключ файла не указан",
+        )
+
+    document = (
+        db.query(repository.LibraryDocument)
+        .filter(
+            or_(
+                repository.LibraryDocument.file_path.ilike(
+                    f"%{normalized_key}%"
+                ),
+
+                repository.LibraryDocument.original_filename.ilike(
+                    f"%{normalized_key}%"
+                ),
+
+                repository.LibraryDocument.title.ilike(
+                    f"%{normalized_key}%"
+                ),
+            )
+        )
+        .order_by(
+            repository.LibraryDocument.id.desc()
+        )
+        .first()
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=404,
+            detail="Документ не найден",
+        )
+
+    return document
+
+
 def create_folder(db: Session, library_id: int, data):
     library = repository.get_library_by_id(db, library_id)
 

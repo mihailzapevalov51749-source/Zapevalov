@@ -1,53 +1,79 @@
 export const tableWrapperStyle = {
   width: "100%",
-  overflowX: "auto",
-  overflowY: "visible",
+  height: "100%",
+  minHeight: 0,
+
+  overflow: "hidden",
+
   border: "1px solid #e2e8f0",
   borderRadius: 12,
+
   background: "#ffffff",
+
   boxSizing: "border-box",
+
   boxShadow: "0 8px 24px rgba(15, 23, 42, 0.035)",
 };
 
 export const tableViewRootStyle = {
   ...tableWrapperStyle,
+
   display: "flex",
   flexDirection: "column",
+
   maxWidth: "100%",
   minWidth: 0,
+
   height: "100%",
   minHeight: 0,
+
   overflow: "hidden",
+
   paddingTop: 8,
 };
 
 export const tableViewScrollWrapperStyle = {
   flex: 1,
-  minHeight: 0,
+
   width: "100%",
   maxWidth: "100%",
   minWidth: 0,
-  overflowX: "auto",
-  overflowY: "hidden",
+
+  height: "100%",
+  minHeight: 0,
+
+  overflow: "hidden",
+
   boxSizing: "border-box",
 };
 
 export const getTableViewInnerStyle = (fullTableMinWidth) => ({
   display: "flex",
   flexDirection: "column",
-  width: fullTableMinWidth,
-  minWidth: fullTableMinWidth,
+
+  width: "100%",
+  minWidth: 0,
+
   height: "100%",
   minHeight: 0,
+
+  overflow: "hidden",
+
+  boxSizing: "border-box",
 });
 
 export const getTableViewBodyScrollStyle = (fullTableMinWidth) => ({
   flex: 1,
+
+  width: "100%",
+  minWidth: 0,
+
+  height: "100%",
   minHeight: 0,
-  width: fullTableMinWidth,
-  minWidth: fullTableMinWidth,
+
+  overflowX: "auto",
   overflowY: "auto",
-  overflowX: "hidden",
+
   boxSizing: "border-box",
 });
 

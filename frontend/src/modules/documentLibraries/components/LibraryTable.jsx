@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+
 import LibraryRow from "./LibraryRow";
 
 const DEFAULT_COLUMN_WIDTHS = [44, 520, 220, 160, 120, 120];
@@ -23,22 +24,35 @@ export default function LibraryTable({
   onDeleteDocument,
   onMoveDocument,
   onDropMoveDocument,
+
+  onPreviewFile,
+
   getFileUrl,
   getTypeLabel,
   getIcon,
   formatDocumentDate,
   styles,
 }) {
-  const { tableShell, tableHeader, tableRow, checkboxCell, emptyState } = styles;
+  const {
+    tableShell,
+    tableHeader,
+    tableRow,
+    checkboxCell,
+    emptyState,
+  } = styles;
 
   const [columnWidths, setColumnWidths] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      const parsed = saved ? JSON.parse(saved) : null;
+
+      const parsed = saved
+        ? JSON.parse(saved)
+        : null;
 
       if (
         Array.isArray(parsed) &&
-        parsed.length === DEFAULT_COLUMN_WIDTHS.length
+        parsed.length ===
+          DEFAULT_COLUMN_WIDTHS.length
       ) {
         return parsed;
       }
@@ -50,40 +64,65 @@ export default function LibraryTable({
   });
 
   const gridTemplateColumns = useMemo(
-    () => columnWidths.map((width) => `${width}px`).join(" "),
+    () =>
+      columnWidths
+        .map((width) => `${width}px`)
+        .join(" "),
     [columnWidths]
   );
 
   const minTableWidth = useMemo(
-    () => columnWidths.reduce((sum, width) => sum + width, 0),
+    () =>
+      columnWidths.reduce(
+        (sum, width) => sum + width,
+        0
+      ),
     [columnWidths]
   );
 
   const tableStyles = useMemo(
     () => ({
       ...styles,
+
       tableRow: {
         ...tableRow,
         gridTemplateColumns,
         minWidth: minTableWidth,
       },
     }),
-    [styles, tableRow, gridTemplateColumns, minTableWidth]
+    [
+      styles,
+      tableRow,
+      gridTemplateColumns,
+      minTableWidth,
+    ]
   );
 
   const allSelected =
     documents.length > 0 &&
-    documents.every((documentItem) => selectedIds.includes(documentItem.id));
+    documents.every((documentItem) =>
+      selectedIds.includes(documentItem.id)
+    );
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(columnWidths));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(columnWidths)
+    );
   }, [columnWidths]);
 
   useEffect(() => {
     const handleClick = (event) => {
-      const isMenu = event.target.closest("[data-menu]");
-      const isButton = event.target.closest("[data-menu-button]");
-      const isRow = event.target.closest("[data-row]");
+      const isMenu =
+        event.target.closest("[data-menu]");
+
+      const isButton =
+        event.target.closest(
+          "[data-menu-button]"
+        );
+
+      const isRow =
+        event.target.closest("[data-row]");
 
       if (isMenu || isButton || isRow) {
         return;
@@ -92,10 +131,16 @@ export default function LibraryTable({
       setOpenedMenuId(null);
     };
 
-    document.addEventListener("click", handleClick);
+    document.addEventListener(
+      "click",
+      handleClick
+    );
 
     return () => {
-      document.removeEventListener("click", handleClick);
+      document.removeEventListener(
+        "click",
+        handleClick
+      );
     };
   }, [setOpenedMenuId]);
 
@@ -103,49 +148,92 @@ export default function LibraryTable({
     if (!documents.length) return;
 
     documents.forEach((documentItem) => {
-      const shouldToggle = allSelected || !selectedIds.includes(documentItem.id);
+      const shouldToggle =
+        allSelected ||
+        !selectedIds.includes(documentItem.id);
 
       if (shouldToggle) {
-        onToggleSelectDocument?.(documentItem.id);
+        onToggleSelectDocument?.(
+          documentItem.id
+        );
       }
     });
   };
 
-  const startResize = (event, columnIndex) => {
+  const startResize = (
+    event,
+    columnIndex
+  ) => {
     event.preventDefault();
     event.stopPropagation();
 
     const startX = event.clientX;
-    const startWidth = columnWidths[columnIndex];
 
-    const handleMouseMove = (moveEvent) => {
-      const delta = moveEvent.clientX - startX;
-      const minWidth = COLUMN_MIN_WIDTHS[columnIndex] || 80;
-      const nextWidth = Math.max(minWidth, startWidth + delta);
+    const startWidth =
+      columnWidths[columnIndex];
+
+    const handleMouseMove = (
+      moveEvent
+    ) => {
+      const delta =
+        moveEvent.clientX - startX;
+
+      const minWidth =
+        COLUMN_MIN_WIDTHS[columnIndex] ||
+        80;
+
+      const nextWidth = Math.max(
+        minWidth,
+        startWidth + delta
+      );
 
       setColumnWidths((prev) => {
         const next = [...prev];
+
         next[columnIndex] = nextWidth;
+
         return next;
       });
     };
 
     const handleMouseUp = () => {
       document.body.style.cursor = "";
+
       document.body.style.userSelect = "";
 
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener(
+        "mousemove",
+        handleMouseMove
+      );
+
+      window.removeEventListener(
+        "mouseup",
+        handleMouseUp
+      );
     };
 
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
+    document.body.style.cursor =
+      "col-resize";
 
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    document.body.style.userSelect =
+      "none";
+
+    window.addEventListener(
+      "mousemove",
+      handleMouseMove
+    );
+
+    window.addEventListener(
+      "mouseup",
+      handleMouseUp
+    );
   };
 
-  const renderHeaderCell = (title, columnIndex, extraStyle = {}) => {
+  const renderHeaderCell = (
+    title,
+    columnIndex,
+    extraStyle = {}
+  ) => {
     const canResize = columnIndex > 0;
 
     return (
@@ -160,7 +248,12 @@ export default function LibraryTable({
 
         {canResize && (
           <span
-            onMouseDown={(event) => startResize(event, columnIndex)}
+            onMouseDown={(event) =>
+              startResize(
+                event,
+                columnIndex
+              )
+            }
             style={{
               position: "absolute",
               top: -12,
@@ -200,21 +293,36 @@ export default function LibraryTable({
         </div>
 
         {renderHeaderCell("Название", 1)}
+
         {renderHeaderCell("Изменён", 2)}
+
         {renderHeaderCell("Автор", 3)}
+
         {renderHeaderCell("Тип", 4)}
-        {renderHeaderCell("Действия", 5, { textAlign: "right" })}
+
+        {renderHeaderCell(
+          "Действия",
+          5,
+          {
+            textAlign: "right",
+          }
+        )}
       </div>
 
-      {isLoading && <div style={emptyState}>Загрузка документов...</div>}
-
-      {!isLoading && documents.length === 0 && (
+      {isLoading && (
         <div style={emptyState}>
-          {searchQuery.trim()
-            ? "По запросу ничего не найдено"
-            : "В этой папке пока нет документов"}
+          Загрузка документов...
         </div>
       )}
+
+      {!isLoading &&
+        documents.length === 0 && (
+          <div style={emptyState}>
+            {searchQuery.trim()
+              ? "По запросу ничего не найдено"
+              : "В этой папке пока нет документов"}
+          </div>
+        )}
 
       {!isLoading &&
         documents.map((documentItem) => (
@@ -222,13 +330,23 @@ export default function LibraryTable({
             key={documentItem.id}
             document={documentItem}
             searchQuery={searchQuery}
-            isSelected={selectedIds.includes(documentItem.id)}
+            isSelected={selectedIds.includes(
+              documentItem.id
+            )}
             selectedIds={selectedIds}
-            isMenuOpen={openedMenuId === documentItem.id}
-            onToggleSelect={onToggleSelectDocument}
+            isMenuOpen={
+              openedMenuId ===
+              documentItem.id
+            }
+            onToggleSelect={
+              onToggleSelectDocument
+            }
             onToggleMenu={() =>
               setOpenedMenuId(
-                openedMenuId === documentItem.id ? null : documentItem.id
+                openedMenuId ===
+                  documentItem.id
+                  ? null
+                  : documentItem.id
               )
             }
             onOpenFolder={onOpenFolder}
@@ -237,12 +355,17 @@ export default function LibraryTable({
             onMove={(document) => {
               onMoveDocument?.(document);
             }}
+            onPreviewFile={onPreviewFile}
             onDropMove={onDropMoveDocument}
-            onDropMoveDocuments={onDropMoveDocuments}
+            onDropMoveDocuments={
+              onDropMoveDocuments
+            }
             getFileUrl={getFileUrl}
             getTypeLabel={getTypeLabel}
             getIcon={getIcon}
-            formatDocumentDate={formatDocumentDate}
+            formatDocumentDate={
+              formatDocumentDate
+            }
             styles={tableStyles}
           />
         ))}

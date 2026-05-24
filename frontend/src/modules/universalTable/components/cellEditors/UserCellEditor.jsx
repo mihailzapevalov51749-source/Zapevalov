@@ -35,9 +35,7 @@ const getShowAvatar = (column) => {
   return true;
 };
 
-const getIsMultiple = (column) => {
-  return Boolean(column?.multiple);
-};
+const getIsMultiple = (column) => Boolean(column?.multiple);
 
 const normalizeAvatarSettings = (settings) => {
   if (!settings) return DEFAULT_AVATAR_SETTINGS;
@@ -63,15 +61,58 @@ const normalizeAvatarSettings = (settings) => {
   return DEFAULT_AVATAR_SETTINGS;
 };
 
+const getUserFullName = (value) => {
+  if (!value || typeof value !== "object") return "";
+
+  const firstName =
+    value.firstName || value.first_name || value.firstname || "";
+
+  const lastName =
+    value.lastName || value.last_name || value.lastname || "";
+
+  const combinedName = `${firstName} ${lastName}`.trim();
+
+  return (
+    value.full_name ||
+    value.fullName ||
+    value.displayName ||
+    value.display_name ||
+    combinedName ||
+    value.name ||
+    value.label ||
+    value.title ||
+    value.username ||
+    ""
+  );
+};
+
 const normalizeUserValue = (value) => {
   if (!value) return null;
 
+  if (Array.isArray(value)) {
+    return normalizeUserValue(value[0] || null);
+  }
+
   if (typeof value === "object") {
+    const rawUserId = value.userId ?? value.user_id ?? value.id ?? null;
+
     return {
-      userId: value.userId ?? value.user_id ?? value.id ?? null,
-      full_name: value.full_name ?? value.fullName ?? value.name ?? "",
+      userId:
+        rawUserId !== null &&
+        rawUserId !== "" &&
+        !Number.isNaN(Number(rawUserId))
+          ? Number(rawUserId)
+          : rawUserId,
+      full_name: getUserFullName(value),
       email: value.email ?? "",
-      avatar_url: value.avatar_url ?? value.avatarUrl ?? "",
+      avatar_url:
+        value.avatar_url ??
+        value.avatarUrl ??
+        value.photo_url ??
+        value.photoUrl ??
+        value.image_url ??
+        value.imageUrl ??
+        "",
       avatar_settings: normalizeAvatarSettings(
         value.avatar_settings ?? value.avatarSettings
       ),
@@ -100,12 +141,49 @@ const normalizeMultipleUsers = (value) => {
 };
 
 const normalizeUserOption = (user) => ({
-  userId: user.id,
-  full_name: user.full_name || user.email || "Без имени",
+  userId: user.id ?? user.userId ?? user.user_id ?? null,
+  full_name:
+    user.full_name ||
+    user.fullName ||
+    user.displayName ||
+    user.display_name ||
+    user.name ||
+    user.label ||
+    user.email ||
+    "Без имени",
   email: user.email || "",
-  avatar_url: user.avatar_url || "",
-  avatar_settings: normalizeAvatarSettings(user.avatar_settings),
+  avatar_url:
+    user.avatar_url ||
+    user.avatarUrl ||
+    user.photo_url ||
+    user.photoUrl ||
+    user.image_url ||
+    user.imageUrl ||
+    "",
+  avatar_settings: normalizeAvatarSettings(
+    user.avatar_settings ?? user.avatarSettings
+  ),
 });
+
+const mergeWithActualUser = (snapshotUser, actualUsers = []) => {
+  if (!snapshotUser) return null;
+
+  const actualUser =
+    actualUsers.find(
+      (user) => String(user.userId) === String(snapshotUser.userId)
+    ) || null;
+
+  if (!actualUser) return snapshotUser;
+
+  return {
+    ...snapshotUser,
+    full_name: actualUser.full_name || snapshotUser.full_name,
+    email: actualUser.email || snapshotUser.email,
+    avatar_url: actualUser.avatar_url || snapshotUser.avatar_url,
+    avatar_settings:
+      actualUser.avatar_settings || snapshotUser.avatar_settings,
+  };
+};
 
 const getInitials = (user) => {
   const source = user?.full_name || user?.email || "?";
@@ -215,13 +293,22 @@ export default function UserCellEditor({
   const showAvatar = getShowAvatar(column);
   const isMultiple = getIsMultiple(column);
 
-  const selectedUsers = normalizeMultipleUsers(value);
-  const selectedUser = selectedUsers[0] || null;
-
   const [users, setUsers] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [anchorRect, setAnchorRect] = useState(null);
+
+  const rawSelectedUsers = useMemo(() => normalizeMultipleUsers(value), [value]);
+
+  const selectedUsers = useMemo(
+    () =>
+      rawSelectedUsers
+        .map((user) => mergeWithActualUser(user, users))
+        .filter(Boolean),
+    [rawSelectedUsers, users]
+  );
+
+  const selectedUser = selectedUsers[0] || null;
 
   const sortedUsers = useMemo(() => {
     return [...users].sort((a, b) =>
@@ -233,8 +320,6 @@ export default function UserCellEditor({
   }, [users]);
 
   useEffect(() => {
-    if (readOnly) return;
-
     let isMounted = true;
 
     const loadUsers = async () => {
@@ -265,7 +350,7 @@ export default function UserCellEditor({
     return () => {
       isMounted = false;
     };
-  }, [readOnly]);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -307,6 +392,8 @@ export default function UserCellEditor({
   }, [isOpen]);
 
   const openDropdown = () => {
+    if (readOnly) return;
+
     setAnchorRect(rootRef.current?.getBoundingClientRect() || null);
     setIsOpen((current) => !current);
   };
@@ -318,13 +405,7 @@ export default function UserCellEditor({
   };
 
   const handleSelectUser = (user) => {
-    const normalizedUser = {
-      userId: user.userId,
-      full_name: user.full_name,
-      email: user.email,
-      avatar_url: user.avatar_url,
-      avatar_settings: user.avatar_settings,
-    };
+    const normalizedUser = normalizeUserValue(user);
 
     if (isMultiple) {
       const alreadySelected = isSelected(user);
@@ -392,9 +473,9 @@ export default function UserCellEditor({
           padding: "4px 0",
         }}
       >
-        {selectedUsers.map((user) => (
+        {selectedUsers.map((user, index) => (
           <div
-            key={user.userId}
+            key={user.userId ?? `${user.full_name}-${index}`}
             style={{
               width: "100%",
               minWidth: 0,
@@ -418,7 +499,7 @@ export default function UserCellEditor({
                 color: "#0f172a",
               }}
             >
-              {user.full_name || user.email}
+              {user.full_name || user.email || "—"}
             </span>
           </div>
         ))}
@@ -431,6 +512,7 @@ export default function UserCellEditor({
       <div
         title={selectedUsers
           .map((user) => user.full_name || user.email)
+          .filter(Boolean)
           .join(", ")}
         style={{
           width: "100%",
@@ -471,7 +553,7 @@ export default function UserCellEditor({
             color: "#0f172a",
           }}
         >
-          {selectedUser.full_name || selectedUser.email}
+          {selectedUser.full_name || selectedUser.email || "—"}
         </span>
       </div>
     ) : (
@@ -566,7 +648,9 @@ export default function UserCellEditor({
                     textAlign: "left",
                   }}
                 >
-                  {isMultiple && <input type="checkbox" checked={active} readOnly />}
+                  {isMultiple && (
+                    <input type="checkbox" checked={active} readOnly />
+                  )}
 
                   <UserAvatar user={user} />
 
@@ -589,7 +673,7 @@ export default function UserCellEditor({
                         color: "#0f172a",
                       }}
                     >
-                      {user.full_name || user.email}
+                      {user.full_name || user.email || "Без имени"}
                     </span>
 
                     {user.email && (
@@ -633,13 +717,15 @@ export default function UserCellEditor({
             minWidth: 0,
             minHeight: isMultiple && selectedUsers.length > 0 ? 34 : 30,
             height: isMultiple && selectedUsers.length > 0 ? "auto" : 30,
-            padding: isMultiple && selectedUsers.length > 0 ? "2px 8px" : "0 8px",
+            padding:
+              isMultiple && selectedUsers.length > 0 ? "2px 8px" : "0 8px",
             border: "1px solid transparent",
             borderRadius: 8,
             background: isOpen ? "#f8fafc" : "transparent",
             cursor: "pointer",
             display: "flex",
-            alignItems: isMultiple && selectedUsers.length > 0 ? "flex-start" : "center",
+            alignItems:
+              isMultiple && selectedUsers.length > 0 ? "flex-start" : "center",
             justifyContent,
             gap: showAvatar ? 7 : 0,
             textAlign: align,
@@ -665,7 +751,7 @@ export default function UserCellEditor({
                   color: "#0f172a",
                 }}
               >
-                {selectedUser.full_name || selectedUser.email}
+                {selectedUser.full_name || selectedUser.email || "—"}
               </span>
 
               <span

@@ -1,17 +1,10 @@
 import { useMemo, useState } from "react";
 
 import SectionToolbar from "./SectionToolbar";
-import SectionUniversalTableHeader from "./SectionUniversalTableHeader";
 import BlocksList from "../../blocks/components/BlocksList";
 import FreeLayoutSection from "./FreeLayoutSection";
-import TableViewBar from "../../universalTable/components/TableViewBar";
-import TableFiltersModal from "../../universalTable/components/TableFiltersModal";
 
 import useSectionUniversalTableControls from "../hooks/useSectionUniversalTableControls";
-
-const normalizeViewsVisibleLimit = (value) => {
-  return Math.max(0, Math.min(6, Number(value) || 0));
-};
 
 export default function ContentSection({
   section,
@@ -32,44 +25,13 @@ export default function ContentSection({
 }) {
   const [isHovered, setIsHovered] = useState(false);
 
-  const showTitle = section.settings?.show_title !== false;
-
-  const viewsVisibleLimit = normalizeViewsVisibleLimit(
-    section?.settings?.tableViewsVisibleLimit ?? 2
-  );
-
-  const handleViewsVisibleLimitChange = (nextValue) => {
-    const normalized = normalizeViewsVisibleLimit(nextValue);
-
-    onSectionUpdated?.({
-      ...section,
-      settings: {
-        ...(section.settings || {}),
-        tableViewsVisibleLimit: normalized,
-      },
-    });
-  };
-
   const {
     tableBlock,
-    hasUniversalTable,
-    isTableInlineActive,
-    activeFilter,
-    activeQuickFilterId,
-    activeConditions,
-    activeSort,
-    sortDirection,
-    isBaseStateDirty,
-    isFiltersOpen,
-    filterModalMode,
-    editingFilter,
-    quickFilters,
-    tableColumns,
-    tableRows,
     tableViewState,
     representations,
     activeRepresentationId,
     isRepresentationDirty,
+    isBaseStateDirty,
     handleSelectRepresentation,
     handleCreateRepresentation,
     handleDeleteRepresentation,
@@ -80,18 +42,6 @@ export default function ContentSection({
     handleSetDefaultRepresentation,
     handleToggleColumnVisibility,
     toggleRepresentationVisibility,
-    moveRepresentation,
-    handleToggleUniversalTableInlineEdit,
-    handleAddUniversalTableRow,
-    handleOpenFilters,
-    handleCloseFilters,
-    handleSaveFilters,
-    handleFilterChange,
-    handleSortChange,
-    handleSortDirectionChange,
-    handleStartDragColumnWithSystem,
-    handleDragOverColumnWithSystem,
-    handleDropColumnWithSystem,
   } = useSectionUniversalTableControls({
     section,
     blocks,
@@ -153,6 +103,7 @@ export default function ContentSection({
 
   const isTableWidget = (event) => {
     const widgetType = event.dataTransfer.getData("widget/type");
+
     return ["table", "tableBlock", "table_block"].includes(widgetType);
   };
 
@@ -265,23 +216,36 @@ export default function ContentSection({
         width: "100%",
         flex: 1,
         minHeight: 0,
+
         display: "flex",
         flexDirection: "column",
-        padding: "8px 0 0",
+
+        padding: "0",
+
         background:
-          isSectionDragTarget || isBlockDropInside ? "#eff6ff" : "transparent",
+          isSectionDragTarget || isBlockDropInside
+            ? "#eff6ff"
+            : "transparent",
+
         boxSizing: "border-box",
+
         position: "relative",
+
         borderRadius: 12,
+
         outline: isSectionDragTarget
           ? "2px solid #2563eb"
           : isBlockDropInside
             ? "2px dashed #2563eb"
             : "none",
+
         outlineOffset: 4,
+
         opacity: isSectionDragged ? 0.35 : 1,
+
         cursor: isEditMode ? "grab" : "default",
-        overflow: "hidden",
+
+        overflow: "visible",
       }}
     >
       {isEditMode && !isSectionDragActive && (
@@ -298,77 +262,16 @@ export default function ContentSection({
         </div>
       )}
 
-      <SectionUniversalTableHeader
-        section={section}
-        showTitle={showTitle}
-        hasUniversalTable={hasUniversalTable}
-        isEditMode={isEditMode}
-        isTableInlineActive={isTableInlineActive}
-        tableColumns={tableColumns}
-        tableViewState={tableViewState}
-        tableIdentity={tableIdentity}
-        representations={representations}
-        activeRepresentationId={activeRepresentationId}
-        isRepresentationDirty={isRepresentationDirty}
-        isBaseStateDirty={isBaseStateDirty}
-        viewsVisibleLimit={viewsVisibleLimit}
-        onViewsVisibleLimitChange={handleViewsVisibleLimitChange}
-        onToggleUniversalTableInlineEdit={handleToggleUniversalTableInlineEdit}
-        onAddUniversalTableRow={handleAddUniversalTableRow}
-        onSelectRepresentation={handleSelectRepresentation}
-        onCreateRepresentation={handleCreateRepresentation}
-        onDeleteRepresentation={handleDeleteRepresentation}
-        onToggleRepresentationVisibility={toggleRepresentationVisibility}
-        onMoveRepresentation={moveRepresentation}
-        onToggleColumnVisibility={handleToggleColumnVisibility}
-        onOpenRepresentationFilters={handleOpenFilters}
-        onRenameRepresentation={handleRenameRepresentation}
-        onSaveRepresentation={handleSaveRepresentation}
-        onSaveAsRepresentation={handleSaveAsRepresentation}
-        onDuplicateRepresentation={handleDuplicateRepresentation}
-        onSetDefaultRepresentation={handleSetDefaultRepresentation}
-        handleStartDragColumnWithSystem={handleStartDragColumnWithSystem}
-        handleDragOverColumnWithSystem={handleDragOverColumnWithSystem}
-        handleDropColumnWithSystem={handleDropColumnWithSystem}
-      />
-
-      <div style={{ flexShrink: 0 }}>
-        <TableViewBar
-          hasTable={hasUniversalTable}
-          blockId={tableBlock?.id}
-          quickFilters={quickFilters}
-          activeFilter={activeFilter}
-          activeQuickFilterId={activeQuickFilterId}
-          onFilterChange={handleFilterChange}
-          onOpenFilters={handleOpenFilters}
-          activeSort={activeSort}
-          sortDirection={sortDirection}
-          onSortChange={handleSortChange}
-          onSortDirectionChange={handleSortDirectionChange}
-        />
-      </div>
-
-      <TableFiltersModal
-        isOpen={isFiltersOpen}
-        blockId={tableBlock?.id}
-        columns={tableColumns}
-        rows={tableRows}
-        initialConditions={activeConditions}
-        savedFilters={quickFilters}
-        mode={filterModalMode}
-        editingFilter={editingFilter}
-        onClose={handleCloseFilters}
-        onSave={handleSaveFilters}
-      />
-
       <div
         style={{
           flex: 1,
           minHeight: 0,
           width: "100%",
+
           display: "flex",
           flexDirection: "column",
-          overflow: "hidden",
+
+          overflow: "visible",
         }}
       >
         {isFreeLayout ? (

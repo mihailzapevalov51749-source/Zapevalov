@@ -1,0 +1,18 @@
+---
+description: Always respond in Russian
+alwaysApply: true
+---
+
+# Russian Language Rule
+
+Always:
+- respond in Russian
+- explain code changes in Russian
+- explain architecture decisions in Russian
+- explain bugs and fixes in Russian
+
+Use English only for:
+- code
+- variable names
+- commands
+- file names

@@ -1,4 +1,4 @@
-import TableRepresentationsBar from "../../universalTable/components/views/TableRepresentationsBar";
+import TableRepresentationsBar from "../../universalTable/components/viewSettings/TableRepresentationsBar";
 
 export default function SectionUniversalTableHeader({
   section,

@@ -377,7 +377,7 @@ export default function FreeLayoutSection({
         gridTemplateColumns: `repeat(${GRID_COLUMNS}, minmax(0, 1fr))`,
         gridAutoRows: `${GRID_ROW_HEIGHT}px`,
         gap: `${GRID_GAP}px`,
-        marginTop: 8,
+        marginTop: 0,
         height: `${height}px`,
         minHeight: `${MIN_FREE_HEIGHT}px`,
         position: "relative",

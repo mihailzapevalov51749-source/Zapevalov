@@ -32,12 +32,19 @@ export default function BlockWrapper({
     height: "100%",
     minWidth: 0,
     minHeight: 0,
+
     position: "relative",
+
     boxSizing: "border-box",
-    borderRadius: 12,
+
+    borderRadius: isTableBlock ? 0 : 12,
+
     overflow: "hidden",
+
     cursor: isEditMode ? "pointer" : "default",
+
     opacity: isDragged ? 0.35 : 1,
+
     transition:
       "border 120ms ease, background 120ms ease, transform 120ms ease, opacity 120ms ease",
   };
@@ -86,10 +93,15 @@ export default function BlockWrapper({
           height: "100%",
           minWidth: 0,
           minHeight: 0,
+
           overflow: "hidden",
+
           boxSizing: "border-box",
+
           display: isTableBlock ? "flex" : "block",
           flexDirection: isTableBlock ? "column" : undefined,
+
+          background: "transparent",
         }}
       >
         {children}

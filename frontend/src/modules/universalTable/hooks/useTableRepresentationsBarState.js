@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 
-const getRaw = (representation) => representation?.raw || representation;
-
 const clearUniversalTableDirty = () => {
   window.__UNIVERSAL_TABLE_DIRTY__ = false;
 };
@@ -10,135 +8,185 @@ const normalizeVisibleSlotsCount = (value) => {
   return Math.max(0, Math.min(6, Number(value) || 0));
 };
 
-const normalizeIds = (value) => {
-  return Array.isArray(value) ? value.map(String).filter(Boolean) : [];
-};
+function normalizeView(view, index) {
+  return {
+    ...view,
 
-const normalizeArray = (value) => {
-  return Array.isArray(value) ? value : [];
-};
+    id: String(view?.id ?? index),
 
-const normalizeRepresentation = (item, index) => ({
-  id: String(item?.id ?? item?.key ?? index),
+    name:
+      view?.name ||
+      view?.title ||
+      view?.label ||
+      "Без названия",
 
-  name: item?.name || item?.title || item?.label || "Без названия",
+    title:
+      view?.title ||
+      view?.name ||
+      view?.label ||
+      "Без названия",
 
-  title: item?.title || item?.name || item?.label || "Без названия",
-  label: item?.label || item?.name || item?.title || "Без названия",
+    label:
+      view?.label ||
+      view?.name ||
+      view?.title ||
+      "Без названия",
 
-  isVisible: item?.isVisible ?? item?.is_visible ?? true,
+    type: view?.type || "table",
 
-  isDefault: Boolean(
-    item?.isDefault ?? item?.is_default ?? item?.default ?? false
-  ),
+    isVisible:
+      view?.isVisible ??
+      view?.is_visible ??
+      !view?.hidden,
 
-  position: Number.isFinite(Number(item?.position))
-    ? Number(item.position)
-    : index,
+    isDefault: Boolean(
+      view?.isDefault ??
+        view?.is_default ??
+        false
+    ),
 
-  conditions: normalizeArray(item?.conditions),
-  activeConditions: normalizeArray(item?.activeConditions),
+    isSystem: Boolean(
+      view?.isSystem ??
+        view?.is_system ??
+        false
+    ),
 
-  activeFilter: item?.activeFilter || item?.active_filter || "all",
-  activeQuickFilterId:
-    item?.activeQuickFilterId || item?.active_quick_filter_id || null,
+    position: Number.isFinite(
+      Number(view?.position)
+    )
+      ? Number(view.position)
+      : index,
 
-  activeSort: item?.activeSort || item?.active_sort || "none",
-  sortDirection: item?.sortDirection || item?.sort_direction || "asc",
-  sortRules: normalizeArray(item?.sortRules),
+    raw: view,
+  };
+}
 
-  hiddenColumnIds: normalizeIds(item?.hiddenColumnIds || item?.hiddenColumns),
-  visibleColumnIds: normalizeIds(item?.visibleColumnIds),
-  columnOrder: normalizeIds(
-    item?.columnOrder || item?.columnsOrder || item?.visibleColumnOrder
-  ),
-
-  raw: item,
-});
-
-const compactPinnedIds = ({
+function compactPinnedIds({
   pinnedIds = [],
   visibleIds = [],
   existingIds = new Set(),
   limit = 2,
-}) => {
-  if (limit <= 0) return [];
+}) {
+  if (limit <= 0) {
+    return [];
+  }
 
-  const normalizedVisibleIds = visibleIds.map(String);
+  const normalizedVisibleIds =
+    visibleIds.map(String);
 
   const validPinnedIds = pinnedIds
     .map(String)
     .filter((id) => existingIds.has(id))
-    .filter((id) => normalizedVisibleIds.includes(id));
+    .filter((id) =>
+      normalizedVisibleIds.includes(id)
+    );
 
-  const missingIds = normalizedVisibleIds.filter(
-    (id) => !validPinnedIds.includes(id)
-  );
+  const missingIds =
+    normalizedVisibleIds.filter(
+      (id) => !validPinnedIds.includes(id)
+    );
 
-  return Array.from(new Set([...validPinnedIds, ...missingIds])).slice(
-    0,
-    limit
-  );
-};
+  return Array.from(
+    new Set([
+      ...validPinnedIds,
+      ...missingIds,
+    ])
+  ).slice(0, limit);
+}
 
-export default function useTableRepresentationsBarState({
-  representations = [],
-  activeRepresentationId = null,
-  isRepresentationDirty = false,
+export default function useUniversalViewsBarState({
+  views = [],
+
+  activeViewId = null,
+
+  isViewDirty = false,
   isBaseStateDirty = false,
 
-  onSelectRepresentation,
-  onCreateRepresentation,
-  onDeleteRepresentation,
-  onToggleRepresentationVisibility,
+  onSelectView,
+  onCreateView,
+  onDeleteView,
+  onToggleViewVisibility,
 
-  onRenameRepresentation,
-  onSaveRepresentation,
-  onSaveAsRepresentation,
-  onDuplicateRepresentation,
-  onSetDefaultRepresentation,
+  onRenameView,
+  onSaveView,
+  onSaveAsView,
+  onDuplicateView,
+  onSetDefaultView,
 
   visibleSlotsCount = 2,
 }) {
-  const safeVisibleSlotsCount = normalizeVisibleSlotsCount(visibleSlotsCount);
+  const safeVisibleSlotsCount =
+    normalizeVisibleSlotsCount(
+      visibleSlotsCount
+    );
 
-  const [isOverflowOpen, setIsOverflowOpen] = useState(false);
-  const [isCreatePopoverOpen, setIsCreatePopoverOpen] = useState(false);
-  const [pinnedIds, setPinnedIds] = useState([]);
-  const [settingsRepresentationId, setSettingsRepresentationId] =
+  const [isOverflowOpen, setIsOverflowOpen] =
+    useState(false);
+
+  const [
+    isCreatePopoverOpen,
+    setIsCreatePopoverOpen,
+  ] = useState(false);
+
+  const [pinnedIds, setPinnedIds] =
+    useState([]);
+
+  const [
+    settingsViewId,
+    setSettingsViewId,
+  ] = useState(null);
+
+  const [renameViewId, setRenameViewId] =
     useState(null);
-  const [renameRepresentationId, setRenameRepresentationId] = useState(null);
-  const [renameValue, setRenameValue] = useState("");
-  const [pendingRepresentation, setPendingRepresentation] = useState(null);
 
-  const hasUnsavedChanges = Boolean(isRepresentationDirty || isBaseStateDirty);
+  const [renameValue, setRenameValue] =
+    useState("");
 
-  const normalizedRepresentations = useMemo(() => {
-    return Array.isArray(representations)
-      ? representations
-          .map((item, index) => normalizeRepresentation(item, index))
-          .sort((a, b) => a.position - b.position)
+  const [pendingView, setPendingView] =
+    useState(null);
+
+  const hasUnsavedChanges = Boolean(
+    isViewDirty || isBaseStateDirty
+  );
+
+  const normalizedViews = useMemo(() => {
+    return Array.isArray(views)
+      ? views
+          .map((item, index) =>
+            normalizeView(item, index)
+          )
+          .sort(
+            (a, b) => a.position - b.position
+          )
       : [];
-  }, [representations]);
+  }, [views]);
 
-  const visibleRepresentations = useMemo(() => {
-    return normalizedRepresentations.filter((item) => item.isVisible !== false);
-  }, [normalizedRepresentations]);
+  const visibleViews = useMemo(() => {
+    return normalizedViews.filter(
+      (item) => item.isVisible !== false
+    );
+  }, [normalizedViews]);
 
-  const activeRepresentation = useMemo(() => {
+  const activeView = useMemo(() => {
     return (
-      normalizedRepresentations.find(
-        (item) => String(item.id) === String(activeRepresentationId)
+      normalizedViews.find(
+        (item) =>
+          String(item.id) ===
+          String(activeViewId)
       ) || null
     );
-  }, [normalizedRepresentations, activeRepresentationId]);
+  }, [normalizedViews, activeViewId]);
 
   useEffect(() => {
     const existingIds = new Set(
-      normalizedRepresentations.map((item) => String(item.id))
+      normalizedViews.map((item) =>
+        String(item.id)
+      )
     );
 
-    const visibleIds = visibleRepresentations.map((item) => String(item.id));
+    const visibleIds = visibleViews.map(
+      (item) => String(item.id)
+    );
 
     setPinnedIds((prev) =>
       compactPinnedIds({
@@ -149,58 +197,82 @@ export default function useTableRepresentationsBarState({
       })
     );
   }, [
-    normalizedRepresentations,
-    visibleRepresentations,
+    normalizedViews,
+    visibleViews,
     safeVisibleSlotsCount,
   ]);
 
-  const pinnedRepresentations = useMemo(() => {
-    if (safeVisibleSlotsCount <= 0) return [];
+  const pinnedViews = useMemo(() => {
+    if (safeVisibleSlotsCount <= 0) {
+      return [];
+    }
 
     return pinnedIds
       .slice(0, safeVisibleSlotsCount)
       .map((id) =>
-        visibleRepresentations.find((item) => String(item.id) === String(id))
+        visibleViews.find(
+          (item) =>
+            String(item.id) === String(id)
+        )
       )
       .filter(Boolean);
-  }, [pinnedIds, visibleRepresentations, safeVisibleSlotsCount]);
+  }, [
+    pinnedIds,
+    visibleViews,
+    safeVisibleSlotsCount,
+  ]);
 
-  const overflowRepresentations = useMemo(() => {
+  const overflowViews = useMemo(() => {
     const pinnedSet = new Set(
-      pinnedRepresentations.map((item) => String(item.id))
+      pinnedViews.map((item) =>
+        String(item.id)
+      )
     );
 
-    return normalizedRepresentations.filter(
-      (item) => !pinnedSet.has(String(item.id))
+    return normalizedViews.filter(
+      (item) =>
+        !pinnedSet.has(String(item.id))
     );
-  }, [normalizedRepresentations, pinnedRepresentations]);
+  }, [normalizedViews, pinnedViews]);
 
   useEffect(() => {
-    if (!activeRepresentationId) return;
+    if (!activeViewId) {
+      return;
+    }
 
-    const active = normalizedRepresentations.find(
-      (item) => String(item.id) === String(activeRepresentationId)
+    const active = normalizedViews.find(
+      (item) =>
+        String(item.id) ===
+        String(activeViewId)
     );
 
-    if (!active || active.isVisible !== false) return;
+    if (
+      !active ||
+      active.isVisible !== false
+    ) {
+      return;
+    }
 
-    const nextVisible = visibleRepresentations.find(
-      (item) => String(item.id) !== String(activeRepresentationId)
+    const nextVisible = visibleViews.find(
+      (item) =>
+        String(item.id) !==
+        String(activeViewId)
     );
 
     if (nextVisible) {
-      onSelectRepresentation?.(getRaw(nextVisible));
+      onSelectView?.(nextVisible.raw);
     }
   }, [
-    activeRepresentationId,
-    normalizedRepresentations,
-    visibleRepresentations,
-    onSelectRepresentation,
+    activeViewId,
+    normalizedViews,
+    visibleViews,
+    onSelectView,
   ]);
 
-  const getPinnedSlotIndex = (representation) => {
+  const getPinnedSlotIndex = (view) => {
     const index = pinnedIds.findIndex(
-      (id) => String(id) === String(representation?.id)
+      (id) =>
+        String(id) === String(view?.id)
     );
 
     return index >= 0 ? index : null;
@@ -208,359 +280,541 @@ export default function useTableRepresentationsBarState({
 
   const closeAllMenus = () => {
     setIsOverflowOpen(false);
+
     setIsCreatePopoverOpen(false);
-    setSettingsRepresentationId(null);
-    setRenameRepresentationId(null);
+
+    setSettingsViewId(null);
+
+    setRenameViewId(null);
   };
 
   const closeOverflowMenus = () => {
     setIsOverflowOpen(false);
-    setSettingsRepresentationId(null);
-    setRenameRepresentationId(null);
+
+    setSettingsViewId(null);
+
+    setRenameViewId(null);
   };
 
   const toggleOverflow = () => {
     setIsCreatePopoverOpen(false);
-    setSettingsRepresentationId(null);
-    setRenameRepresentationId(null);
+
+    setSettingsViewId(null);
+
+    setRenameViewId(null);
+
     setIsOverflowOpen((prev) => !prev);
   };
 
-  const selectRepresentation = (representation) => {
-    if (representation?.isVisible === false) return;
-
-    onSelectRepresentation?.(getRaw(representation));
-    closeAllMenus();
-  };
-
-  const handleSelect = (representation) => {
-    if (representation?.isVisible === false) return;
-
-    const isSame = String(representation.id) === String(activeRepresentationId);
-
-    if (!isSame && hasUnsavedChanges) {
-      setPendingRepresentation(representation);
+  const selectView = (view) => {
+    if (view?.isVisible === false) {
       return;
     }
 
-    selectRepresentation(representation);
+    onSelectView?.(view.raw);
+
+    closeAllMenus();
   };
 
-  const saveActiveRepresentation = async () => {
-    if (!activeRepresentation) return null;
+  const handleSelect = (view) => {
+    if (view?.isVisible === false) {
+      return;
+    }
 
-    const rawActiveRepresentation = getRaw(activeRepresentation);
+    const isSame =
+      String(view.id) ===
+      String(activeViewId);
 
-    await onSaveRepresentation?.(rawActiveRepresentation);
+    if (!isSame && hasUnsavedChanges) {
+      setPendingView(view);
+
+      return;
+    }
+
+    selectView(view);
+  };
+
+  const saveActiveView = async () => {
+    if (!activeView) {
+      return null;
+    }
+
+    await onSaveView?.(activeView.raw);
 
     clearUniversalTableDirty();
 
-    return rawActiveRepresentation;
+    return activeView.raw;
   };
 
-  const handleConfirmSaveAndSwitch = async () => {
-    await saveActiveRepresentation();
+  const handleConfirmSaveAndSwitch =
+    async () => {
+      await saveActiveView();
 
-    if (pendingRepresentation) {
-      selectRepresentation(pendingRepresentation);
-    }
+      if (pendingView) {
+        selectView(pendingView);
+      }
 
-    setPendingRepresentation(null);
-  };
+      setPendingView(null);
+    };
 
-  const handleConfirmSwitchWithoutSave = () => {
-    clearUniversalTableDirty();
+  const handleConfirmSwitchWithoutSave =
+    () => {
+      clearUniversalTableDirty();
 
-    if (pendingRepresentation) {
-      selectRepresentation(pendingRepresentation);
-    }
+      if (pendingView) {
+        selectView(pendingView);
+      }
 
-    setPendingRepresentation(null);
-  };
+      setPendingView(null);
+    };
 
   const handleCancelSwitch = () => {
-    setPendingRepresentation(null);
+    setPendingView(null);
   };
 
-  const handleCreateButtonClick = (event) => {
+  const handleCreateButtonClick = (
+    event
+  ) => {
     event?.preventDefault?.();
+
     event?.stopPropagation?.();
 
     setIsOverflowOpen(false);
-    setSettingsRepresentationId(null);
-    setRenameRepresentationId(null);
-    setIsCreatePopoverOpen((prev) => !prev);
+
+    setSettingsViewId(null);
+
+    setRenameViewId(null);
+
+    setIsCreatePopoverOpen(
+      (prev) => !prev
+    );
   };
 
-  const handleCreateSave = async (payload) => {
-    await onCreateRepresentation?.(payload);
+  const handleCreateSave = async (
+    payload
+  ) => {
+    await onCreateView?.(payload);
+
     setIsCreatePopoverOpen(false);
   };
 
-  const replacePinnedSlot = (representation, slotIndex) => {
-    if (!representation || representation.isVisible === false) return;
+  const replacePinnedSlot = (
+    view,
+    slotIndex
+  ) => {
+    if (
+      !view ||
+      view.isVisible === false
+    ) {
+      return;
+    }
 
-    const representationId = String(representation.id);
-    const normalizedSlotIndex = Number(slotIndex);
+    const viewId = String(view.id);
+
+    const normalizedSlotIndex =
+      Number(slotIndex);
 
     if (
-      !Number.isInteger(normalizedSlotIndex) ||
+      !Number.isInteger(
+        normalizedSlotIndex
+      ) ||
       normalizedSlotIndex < 0 ||
-      normalizedSlotIndex >= safeVisibleSlotsCount
+      normalizedSlotIndex >=
+        safeVisibleSlotsCount
     ) {
       return;
     }
 
     setPinnedIds((prev) => {
-      const visibleIds = visibleRepresentations.map((item) => String(item.id));
+      const visibleIds =
+        visibleViews.map((item) =>
+          String(item.id)
+        );
+
       const existingIds = new Set(
-        normalizedRepresentations.map((item) => String(item.id))
+        normalizedViews.map((item) =>
+          String(item.id)
+        )
       );
 
-      const currentPinnedIds = compactPinnedIds({
-        pinnedIds: prev,
-        visibleIds,
-        existingIds,
-        limit: safeVisibleSlotsCount,
-      });
+      const currentPinnedIds =
+        compactPinnedIds({
+          pinnedIds: prev,
+          visibleIds,
+          existingIds,
+          limit: safeVisibleSlotsCount,
+        });
 
       const next = [...currentPinnedIds];
 
-      while (next.length < safeVisibleSlotsCount) {
-        const missingId = visibleIds.find((id) => !next.includes(id));
-        if (!missingId) break;
+      while (
+        next.length <
+        safeVisibleSlotsCount
+      ) {
+        const missingId =
+          visibleIds.find(
+            (id) => !next.includes(id)
+          );
+
+        if (!missingId) {
+          break;
+        }
+
         next.push(missingId);
       }
 
-      const currentIndex = next.findIndex((id) => id === representationId);
-      const targetId = next[normalizedSlotIndex];
+      const currentIndex =
+        next.findIndex(
+          (id) => id === viewId
+        );
+
+      const targetId =
+        next[normalizedSlotIndex];
 
       if (currentIndex >= 0) {
         next[currentIndex] = targetId;
       }
 
-      next[normalizedSlotIndex] = representationId;
+      next[normalizedSlotIndex] =
+        viewId;
 
-      return Array.from(new Set(next.filter(Boolean))).slice(
-        0,
-        safeVisibleSlotsCount
-      );
+      return Array.from(
+        new Set(next.filter(Boolean))
+      ).slice(0, safeVisibleSlotsCount);
     });
   };
 
-  const saveRenameByRepresentation = async (representation) => {
-    const nextName = String(renameValue || "").trim();
+  const saveRenameByView = async (
+    view
+  ) => {
+    const nextName = String(
+      renameValue || ""
+    ).trim();
 
-    if (!representation || !nextName) {
-      setRenameRepresentationId(null);
+    if (!view || !nextName) {
+      setRenameViewId(null);
+
       setRenameValue("");
+
       return;
     }
 
-    const currentName = String(representation.name || "").trim();
+    const currentName = String(
+      view.name || ""
+    ).trim();
 
     if (nextName !== currentName) {
-      await onRenameRepresentation?.(getRaw(representation), nextName);
-    }
-
-    setRenameRepresentationId(null);
-    setRenameValue("");
-  };
-
-  const handleToggleSettings = (event, representation) => {
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
-
-    setIsCreatePopoverOpen(false);
-    setRenameRepresentationId(null);
-    setSettingsRepresentationId((prev) =>
-      String(prev) === String(representation.id)
-        ? null
-        : String(representation.id)
-    );
-  };
-
-  const handleStartRename = async (event, representation) => {
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
-
-    const representationId = String(representation?.id || "");
-
-    if (
-      renameRepresentationId &&
-      String(renameRepresentationId) === representationId
-    ) {
-      await saveRenameByRepresentation(representation);
-      return;
-    }
-
-    setRenameValue(representation.name || "");
-    setRenameRepresentationId(representationId);
-  };
-
-  const handleSubmitRename = async (event, representation) => {
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
-
-    await saveRenameByRepresentation(representation);
-  };
-
-  const handleCancelRename = async (event) => {
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
-
-    const isEscape = event?.key === "Escape";
-
-    if (isEscape) {
-      setRenameRepresentationId(null);
-      setRenameValue("");
-      return;
-    }
-
-    const currentRepresentation = normalizedRepresentations.find(
-      (item) => String(item.id) === String(renameRepresentationId)
-    );
-
-    if (currentRepresentation) {
-      await saveRenameByRepresentation(currentRepresentation);
-      return;
-    }
-
-    setRenameRepresentationId(null);
-    setRenameValue("");
-  };
-
-  const handleToggleVisibility = async (event, representation) => {
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
-
-    const representationId = String(representation?.id || "");
-
-    await onToggleRepresentationVisibility?.(getRaw(representation));
-
-    if (representation?.isVisible) {
-      setPinnedIds((prev) =>
-        prev.filter((id) => String(id) !== representationId)
+      await onRenameView?.(
+        view.raw,
+        nextName
       );
     }
 
-    if (!representation?.isVisible && safeVisibleSlotsCount > 0) {
-      setPinnedIds((prev) => {
-        if (prev.map(String).includes(representationId)) return prev;
+    setRenameViewId(null);
 
-        return [...prev.map(String), representationId].slice(
-          0,
-          safeVisibleSlotsCount
-        );
-      });
-    }
-
-    setSettingsRepresentationId(null);
+    setRenameValue("");
   };
 
-  const handleSave = async (event, representation) => {
+  const handleToggleSettings = (
+    event,
+    view
+  ) => {
     event?.preventDefault?.();
+
     event?.stopPropagation?.();
 
-    const targetRepresentation = representation || activeRepresentation;
+    setIsCreatePopoverOpen(false);
 
-    if (!targetRepresentation) return null;
+    setRenameViewId(null);
 
-    const rawTargetRepresentation = getRaw(targetRepresentation);
-
-    await onSaveRepresentation?.(rawTargetRepresentation);
-
-    clearUniversalTableDirty();
-    setSettingsRepresentationId(null);
-
-    return rawTargetRepresentation;
+    setSettingsViewId((prev) =>
+      String(prev) === String(view.id)
+        ? null
+        : String(view.id)
+    );
   };
 
-  const handleSaveAs = async (event, representation) => {
+  const handleStartRename = async (
+    event,
+    view
+  ) => {
     event?.preventDefault?.();
+
     event?.stopPropagation?.();
 
-    const targetRepresentation = representation || activeRepresentation;
-
-    if (!targetRepresentation) return null;
-
-    const rawTargetRepresentation = getRaw(targetRepresentation);
-
-    await onSaveAsRepresentation?.(rawTargetRepresentation);
-
-    clearUniversalTableDirty();
-    setSettingsRepresentationId(null);
-
-    return rawTargetRepresentation;
-  };
-
-  const handleDuplicate = async (event, representation) => {
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
-
-    await onDuplicateRepresentation?.(getRaw(representation));
-    setSettingsRepresentationId(null);
-  };
-
-  const handleSetDefault = async (event, representation) => {
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
-
-    await onSetDefaultRepresentation?.(getRaw(representation));
-    setSettingsRepresentationId(null);
-  };
-
-  const handleDelete = async (event, representation) => {
-    event?.preventDefault?.();
-    event?.stopPropagation?.();
-
-    setPinnedIds((prev) =>
-      prev.filter((id) => String(id) !== String(representation.id))
+    const viewId = String(
+      view?.id || ""
     );
 
-    await onDeleteRepresentation?.(getRaw(representation));
+    if (
+      renameViewId &&
+      String(renameViewId) === viewId
+    ) {
+      await saveRenameByView(view);
 
-    setSettingsRepresentationId(null);
-    setRenameRepresentationId(null);
+      return;
+    }
+
+    setRenameValue(view.name || "");
+
+    setRenameViewId(viewId);
+  };
+
+  const handleSubmitRename = async (
+    event,
+    view
+  ) => {
+    event?.preventDefault?.();
+
+    event?.stopPropagation?.();
+
+    await saveRenameByView(view);
+  };
+
+  const handleCancelRename = async (
+    event
+  ) => {
+    event?.preventDefault?.();
+
+    event?.stopPropagation?.();
+
+    const isEscape =
+      event?.key === "Escape";
+
+    if (isEscape) {
+      setRenameViewId(null);
+
+      setRenameValue("");
+
+      return;
+    }
+
+    const currentView =
+      normalizedViews.find(
+        (item) =>
+          String(item.id) ===
+          String(renameViewId)
+      );
+
+    if (currentView) {
+      await saveRenameByView(
+        currentView
+      );
+
+      return;
+    }
+
+    setRenameViewId(null);
+
+    setRenameValue("");
+  };
+
+  const handleToggleVisibility =
+    async (event, view) => {
+      event?.preventDefault?.();
+
+      event?.stopPropagation?.();
+
+      const viewId = String(
+        view?.id || ""
+      );
+
+      await onToggleViewVisibility?.(
+        view.raw
+      );
+
+      if (view?.isVisible) {
+        setPinnedIds((prev) =>
+          prev.filter(
+            (id) =>
+              String(id) !== viewId
+          )
+        );
+      }
+
+      if (
+        !view?.isVisible &&
+        safeVisibleSlotsCount > 0
+      ) {
+        setPinnedIds((prev) => {
+          if (
+            prev
+              .map(String)
+              .includes(viewId)
+          ) {
+            return prev;
+          }
+
+          return [
+            ...prev.map(String),
+            viewId,
+          ].slice(
+            0,
+            safeVisibleSlotsCount
+          );
+        });
+      }
+
+      setSettingsViewId(null);
+    };
+
+  const handleSave = async (
+    event,
+    view
+  ) => {
+    event?.preventDefault?.();
+
+    event?.stopPropagation?.();
+
+    const targetView =
+      view || activeView;
+
+    if (!targetView) {
+      return null;
+    }
+
+    await onSaveView?.(
+      targetView.raw
+    );
+
+    if (
+      renameViewId &&
+      renameValue?.trim()
+    ) {
+      await saveRenameByView(
+        targetView
+      );
+    }
+
+    clearUniversalTableDirty();
+
+    setSettingsViewId(null);
+
+    return targetView.raw;
+  };
+
+  const handleSaveAs = async (
+    event,
+    view
+  ) => {
+    event?.preventDefault?.();
+
+    event?.stopPropagation?.();
+
+    const targetView =
+      view || activeView;
+
+    if (!targetView) {
+      return null;
+    }
+
+    await onSaveAsView?.(
+      targetView.raw
+    );
+
+    clearUniversalTableDirty();
+
+    setSettingsViewId(null);
+
+    return targetView.raw;
+  };
+
+  const handleDuplicate = async (
+    event,
+    view
+  ) => {
+    event?.preventDefault?.();
+
+    event?.stopPropagation?.();
+
+    await onDuplicateView?.(
+      view.raw
+    );
+
+    setSettingsViewId(null);
+  };
+
+  const handleSetDefault = async (
+    event,
+    view
+  ) => {
+    event?.preventDefault?.();
+
+    event?.stopPropagation?.();
+
+    await onSetDefaultView?.(
+      view.raw
+    );
+
+    setSettingsViewId(null);
+  };
+
+  const handleDelete = async (
+    event,
+    view
+  ) => {
+    event?.preventDefault?.();
+
+    event?.stopPropagation?.();
+
+    if (view?.isSystem) {
+      return;
+    }
+
+    setPinnedIds((prev) =>
+      prev.filter(
+        (id) =>
+          String(id) !==
+          String(view.id)
+      )
+    );
+
+    await onDeleteView?.(view.raw);
+
+    setSettingsViewId(null);
+
+    setRenameViewId(null);
   };
 
   return {
     isOverflowOpen,
     setIsOverflowOpen,
+
     isCreatePopoverOpen,
     setIsCreatePopoverOpen,
 
     pinnedIds,
     setPinnedIds,
 
-    settingsRepresentationId,
-    setSettingsRepresentationId,
+    settingsViewId,
+    setSettingsViewId,
 
-    renameRepresentationId,
-    setRenameRepresentationId,
+    renameViewId,
+    setRenameViewId,
+
     renameValue,
     setRenameValue,
 
-    pendingRepresentation,
-    setPendingRepresentation,
+    pendingView,
+    setPendingView,
 
-    normalizedRepresentations,
-    visibleRepresentations,
-    activeRepresentation,
-    pinnedRepresentations,
-    overflowRepresentations,
+    normalizedViews,
+    visibleViews,
+    activeView,
+    pinnedViews,
+    overflowViews,
 
     safeVisibleSlotsCount,
 
-    getRaw,
     getPinnedSlotIndex,
 
     closeAllMenus,
     closeOverflowMenus,
     toggleOverflow,
 
-    selectRepresentation,
+    selectView,
     handleSelect,
+
     handleConfirmSaveAndSwitch,
     handleConfirmSwitchWithoutSave,
     handleCancelSwitch,
@@ -576,6 +830,7 @@ export default function useTableRepresentationsBarState({
     handleCancelRename,
 
     handleToggleVisibility,
+
     handleSave,
     handleSaveAs,
     handleDuplicate,

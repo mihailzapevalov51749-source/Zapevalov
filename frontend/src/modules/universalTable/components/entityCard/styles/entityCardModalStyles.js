@@ -3,40 +3,44 @@ import { entityCardTheme } from "./entityCardTheme";
 export const entityCardOverlayStyle = {
   position: "fixed",
 
-  top: 8,
-  left: 276,
-  right: 0,
-  bottom: 0,
+  inset: 0,
 
   zIndex: 100000,
 
-  background: "transparent",
+  background: "rgba(15, 23, 42, 0.24)",
 
   display: "flex",
-  alignItems: "stretch",
-  justifyContent: "center",
 
-  padding: "8px 10px",
+  alignItems: "center",
+
+  justifyContent: "flex-start",
+
+  padding: 20,
+
+  paddingLeft: 350,
 
   boxSizing: "border-box",
+
+  backdropFilter: "blur(2px)",
 };
 
 export const entityCardModalStyle = {
-  width: "100%",
-  maxWidth: 1480,
+  width: "min(980px, calc(100vw - 120px))",
 
-  height: "100%",
+  height: "min(1040px, calc(100vh - 12px))",
 
   background: entityCardTheme.colors.bg,
 
-  borderRadius: 14,
+  borderRadius: 8,
 
   overflow: "hidden",
 
-  border: `1px solid ${entityCardTheme.colors.border}`,
-
   boxSizing: "border-box",
 
+  display: "flex",
+
+  border: `1px solid ${entityCardTheme.colors.border}`,
+
   boxShadow:
-    "0 1px 2px rgba(15,23,42,0.04), 0 18px 54px rgba(15,23,42,0.10)",
+    "0 18px 54px rgba(15, 23, 42, 0.22)",
 };

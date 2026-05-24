@@ -4,7 +4,6 @@ import { TABLE_HEIGHT_PADDING } from "../services/tableConstants";
 
 export default function useTableAutoHeight({
   block,
-  rowCardSettings,
   onBlockUpdated,
 }) {
   const tableRef = useRef(null);
@@ -26,10 +25,9 @@ export default function useTableAutoHeight({
       settings: {
         ...(block.settings || {}),
         autoHeight: nextHeight,
-        rowCard: rowCardSettings,
       },
     });
-  }, [block, rowCardSettings, onBlockUpdated]);
+  }, [block, onBlockUpdated]);
 
   useEffect(() => {
     if (!tableRef.current || typeof ResizeObserver === "undefined") return;

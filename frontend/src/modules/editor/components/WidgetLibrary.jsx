@@ -7,6 +7,8 @@ const WIDGETS = [
   { type: "button", title: "Кнопка", icon: "●" },
   { type: "cards", title: "Карточки", icon: "▦" },
   { type: "table", title: "Таблица", icon: "▦" },
+  { type: "admin_dashboard", title: "Администрирование", icon: "⚙" },
+  {type: "admin_system", title: "Настройки системы", icon: "⚙", },
 ];
 
 export default function WidgetLibrary({ onAddSection }) {

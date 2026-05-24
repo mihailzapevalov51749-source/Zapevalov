@@ -14,6 +14,7 @@ export default function LibraryGrid({
   onRenameDocument,
   onDeleteDocument,
   onMoveDocument,
+  onPreviewFile,
   onDropMoveDocument,
   onDropMoveDocuments,
 
@@ -56,6 +57,7 @@ export default function LibraryGrid({
           onRename={onRenameDocument}
           onDelete={onDeleteDocument}
           onMove={onMoveDocument}
+          onPreviewFile={onPreviewFile}
           onDropMove={onDropMoveDocument}
           onDropMoveDocuments={onDropMoveDocuments}
           getFileUrl={getFileUrl}

@@ -34,10 +34,14 @@ import DeleteSectionModal from "./components/DeleteSectionModal";
 import EmptyDropZone from "./components/EmptyDropZone";
 import SystemMessage from "../system/SystemMessage";
 
-import AdminUsersPage from "../admin/users/AdminUsersPage";
-import AdminOrgStructurePage from "../admin/pages/AdminOrgStructurePage";
-import AdminRolesPage from "../admin/pages/AdminRolesPage";
-import AdminDepartmentsPage from "../admin/pages/AdminDepartmentsPage";
+import AdminUsersPage from "../modules/admin/users/AdminUsersPage";
+import AdminOrgStructurePage from "../modules/admin/orgStructure/AdminOrgStructurePage";
+import AdminRolesPage from "../modules/admin/roles/AdminRolesPage";
+import AdminDepartmentsPage from "../modules/admin/departments/AdminDepartmentsPage";
+import AdminDashboardPage from "../modules/admin/pages/AdminDashboardPage";
+import AdminSystemPage from "../modules/admin/system/AdminSystemPage";
+
+import CorporateChatPage from "../modules/chats/pages/CorporateChatPage";
 
 import {
   findNavigationItemByPageId,
@@ -46,6 +50,7 @@ import {
 } from "./utils/portalPageUtils";
 
 const BASE_SIDEBAR_WIDTH = 260;
+const CORPORATE_CHAT_PAGE_ID = 35;
 
 const EMPTY_DELETE_SECTION_STATE = {
   isOpen: false,
@@ -53,13 +58,217 @@ const EMPTY_DELETE_SECTION_STATE = {
   blocks: [],
 };
 
+function normalizeId(value) {
+  return String(value ?? "").trim();
+}
+
+function ensureEntityLocationRegistry() {
+  if (!window.__YASNOPRO_ENTITY_LOCATION_REGISTRY__) {
+    window.__YASNOPRO_ENTITY_LOCATION_REGISTRY__ = {
+      tables: {},
+      files: {},
+    };
+  }
+
+  if (!window.__YASNOPRO_ENTITY_LOCATION_REGISTRY__.tables) {
+    window.__YASNOPRO_ENTITY_LOCATION_REGISTRY__.tables = {};
+  }
+
+  if (!window.__YASNOPRO_ENTITY_LOCATION_REGISTRY__.files) {
+    window.__YASNOPRO_ENTITY_LOCATION_REGISTRY__.files = {};
+  }
+
+  return window.__YASNOPRO_ENTITY_LOCATION_REGISTRY__;
+}
+
+function collectBlockTableIds(block) {
+  const possibleTableIds = [
+    block?.table_id,
+    block?.tableId,
+    block?.table?.id,
+    block?.settings?.table_id,
+    block?.settings?.tableId,
+    block?.settings?.table?.id,
+    block?.content?.table_id,
+    block?.content?.tableId,
+    block?.content?.table?.id,
+    block?.config?.table_id,
+    block?.config?.tableId,
+    block?.config?.table?.id,
+  ]
+    .map(normalizeId)
+    .filter(Boolean);
+
+  return Array.from(new Set(possibleTableIds));
+}
+
+function collectBlockFileUrls(block) {
+  const possibleFileUrls = [
+    block?.file_url,
+    block?.fileUrl,
+    block?.url,
+    block?.settings?.file_url,
+    block?.settings?.fileUrl,
+    block?.settings?.url,
+    block?.content?.file_url,
+    block?.content?.fileUrl,
+    block?.content?.url,
+    block?.config?.file_url,
+    block?.config?.fileUrl,
+    block?.config?.url,
+  ]
+    .map(normalizeId)
+    .filter(Boolean);
+
+  return Array.from(new Set(possibleFileUrls));
+}
+
+function registerPageEntities(sections, pageId) {
+  const normalizedPageId = normalizeId(pageId);
+
+  if (!normalizedPageId || !Array.isArray(sections)) return;
+
+  const registry = ensureEntityLocationRegistry();
+
+  for (const sectionItem of sections) {
+    const sectionId = sectionItem?.section?.id || sectionItem?.id || null;
+    const blocks = Array.isArray(sectionItem?.blocks) ? sectionItem.blocks : [];
+
+    for (const block of blocks) {
+      const blockId = normalizeId(block?.id);
+      const tableIds = collectBlockTableIds(block);
+      const fileUrls = collectBlockFileUrls(block);
+
+      for (const tableId of tableIds) {
+        registry.tables[tableId] = {
+          pageId: normalizedPageId,
+          blockId,
+          sectionId: normalizeId(sectionId),
+        };
+      }
+
+      for (const fileUrl of fileUrls) {
+        registry.files[fileUrl] = {
+          pageId: normalizedPageId,
+          blockId,
+          sectionId: normalizeId(sectionId),
+        };
+      }
+    }
+  }
+
+  console.log("ENTITY LOCATION REGISTRY:", registry);
+}
+
 function getAdminPageByPath(pathname) {
-  if (pathname === "/admin/users") return <AdminUsersPage />;
-  if (pathname === "/admin/org-structure") return <AdminOrgStructurePage />;
-  if (pathname === "/admin/roles") return <AdminRolesPage />;
-  if (pathname === "/admin/departments") return <AdminDepartmentsPage />;
+  const normalizedPath = pathname.replace(/\/+$/, "");
+
+  if (normalizedPath === "/admin") return <AdminDashboardPage />;
+  if (normalizedPath === "/admin/users") return <AdminUsersPage />;
+  if (normalizedPath === "/admin/org-structure") return <AdminOrgStructurePage />;
+  if (normalizedPath === "/admin/roles") return <AdminRolesPage />;
+  if (normalizedPath === "/admin/departments") return <AdminDepartmentsPage />;
+  if (normalizedPath === "/admin/system") return <AdminSystemPage />;
 
   return null;
+}
+
+function getSystemPageMeta({
+  pathname,
+  isAdminPage,
+  isUniversalTablePage,
+  isCorporateChatPage,
+  isDocumentLibraryPage,
+  activeNavigationItem,
+  pageData,
+}) {
+  if (isCorporateChatPage) {
+    return {
+      title: "Корпоративный чат",
+          };
+  }
+
+  if (pathname === "/admin") {
+    return {
+      title: "Администрирование",
+      subtitle: "Управление платформой и настройками системы",
+    };
+  }
+
+  if (pathname === "/admin/users") {
+    return {
+      title: "Пользователи системы",
+      subtitle: "Аккаунты, профили, статусы и привязка к сотрудникам",
+    };
+  }
+
+  if (pathname === "/admin/roles") {
+    return {
+      title: "Роли и доступы",
+      subtitle: "Настройка прав и политик безопасности",
+    };
+  }
+
+  if (pathname === "/admin/org-structure") {
+    return {
+      title: "Оргструктура",
+      subtitle: "Компании, подразделения, должности и сотрудники",
+    };
+  }
+
+  if (pathname === "/admin/departments") {
+    return {
+      title: "Подразделения",
+      subtitle: "Структурные единицы компании",
+    };
+  }
+
+  if (pathname === "/admin/system") {
+    return {
+      title: "Настройки системы",
+      subtitle: "Общие параметры платформы",
+    };
+  }
+
+  if (isUniversalTablePage) {
+    return {
+      title: "Универсальная таблица",
+      subtitle: "Работа с данными и представлениями",
+    };
+  }
+
+  if (isDocumentLibraryPage && activeNavigationItem) {
+    return {
+      title: activeNavigationItem.title || "Документы",
+      subtitle: "Библиотека документов",
+    };
+  }
+
+  if (pageData?.page?.title) {
+    return {
+      title: pageData.page.title,
+      subtitle: pageData.page.description || "",
+    };
+  }
+
+  if (activeNavigationItem?.title) {
+    return {
+      title: activeNavigationItem.title,
+      subtitle: "",
+    };
+  }
+
+  if (isAdminPage) {
+    return {
+      title: "Администрирование",
+      subtitle: "Управление платформой",
+    };
+  }
+
+  return {
+    title: "",
+    subtitle: "",
+  };
 }
 
 export default function PortalPageView() {
@@ -67,13 +276,14 @@ export default function PortalPageView() {
   const location = useLocation();
   const { portalId: portalIdParam, pageId: pageIdParam } = useParams();
 
-  const isUniversalTablePage = location.pathname === "/universal-table";
-  const isAdminPage = location.pathname.startsWith("/admin");
-
-  const adminPageContent = getAdminPageByPath(location.pathname);
-
   const portalId = Number(portalIdParam || 1);
   const pageId = pageIdParam ? Number(pageIdParam) : null;
+
+  const isUniversalTablePage = location.pathname === "/universal-table";
+  const isAdminPage = location.pathname.startsWith("/admin");
+  const isCorporateChatPage = Number(pageId) === CORPORATE_CHAT_PAGE_ID;
+
+  const adminPageContent = getAdminPageByPath(location.pathname);
 
   const [pageData, setPageData] = useState(null);
   const [error, setError] = useState("");
@@ -106,7 +316,18 @@ export default function PortalPageView() {
   const isDocumentLibraryPage =
     !isUniversalTablePage &&
     !isAdminPage &&
+    !isCorporateChatPage &&
     activeNavigationItem?.type === "document_library";
+
+  const topBarMeta = getSystemPageMeta({
+    pathname: location.pathname,
+    isAdminPage,
+    isUniversalTablePage,
+    isCorporateChatPage,
+    isDocumentLibraryPage,
+    activeNavigationItem,
+    pageData,
+  });
 
   const changeMenuScale = (nextScale) => {
     const normalized = Math.min(1.4, Math.max(0.8, nextScale));
@@ -117,7 +338,13 @@ export default function PortalPageView() {
   };
 
   const loadCurrentPage = async () => {
-    if (isUniversalTablePage || isAdminPage || !pageId || isDocumentLibraryPage) {
+    if (
+      isUniversalTablePage ||
+      isAdminPage ||
+      isCorporateChatPage ||
+      !pageId ||
+      isDocumentLibraryPage
+    ) {
       setPageData(null);
       return;
     }
@@ -136,7 +363,23 @@ export default function PortalPageView() {
 
   useEffect(() => {
     loadCurrentPage();
-  }, [pageId, isDocumentLibraryPage, isAdminPage, isUniversalTablePage]);
+  }, [
+    pageId,
+    isDocumentLibraryPage,
+    isAdminPage,
+    isUniversalTablePage,
+    isCorporateChatPage,
+  ]);
+
+  const sections = pageData?.sections || [];
+
+  useEffect(() => {
+    if (!pageId) return;
+    if (!sections.length) return;
+    if (isCorporateChatPage) return;
+
+    registerPageEntities(sections, pageId);
+  }, [sections, pageId, isCorporateChatPage]);
 
   const preserveScrollAndReload = async () => {
     const scrollElement = document.querySelector("[data-page-scroll]");
@@ -146,6 +389,7 @@ export default function PortalPageView() {
 
     requestAnimationFrame(() => {
       const nextScrollElement = document.querySelector("[data-page-scroll]");
+
       if (nextScrollElement) {
         nextScrollElement.scrollTop = previousScrollTop;
       }
@@ -190,41 +434,57 @@ export default function PortalPageView() {
     });
   };
 
-  const handleBlockUpdated = (updatedBlock) => {
+  const handleBlockUpdated = async (updatedBlock) => {
     if (!updatedBlock?.id) return;
 
-    setPageData((currentPageData) => {
-      if (!currentPageData?.sections) return currentPageData;
+    try {
+      setError("");
 
-      return {
-        ...currentPageData,
-        sections: currentPageData.sections.map((item) => {
-          const nextBlocks = (item.blocks || []).map((block) => {
-            if (String(block.id) !== String(updatedBlock.id)) {
-              return block;
-            }
+      const savedBlock = await updateBlock(updatedBlock.id, {
+        ...updatedBlock,
+        settings: {
+          ...(updatedBlock.settings || {}),
+        },
+      });
+
+      setPageData((currentPageData) => {
+        if (!currentPageData?.sections) return currentPageData;
+
+        return {
+          ...currentPageData,
+          sections: currentPageData.sections.map((item) => {
+            const nextBlocks = (item.blocks || []).map((block) => {
+              if (String(block.id) !== String(savedBlock.id)) {
+                return block;
+              }
+
+              return {
+                ...block,
+                ...savedBlock,
+                settings: {
+                  ...(block.settings || {}),
+                  ...(savedBlock.settings || {}),
+                },
+              };
+            });
 
             return {
-              ...block,
-              ...updatedBlock,
-              settings: {
-                ...(block.settings || {}),
-                ...(updatedBlock.settings || {}),
-              },
+              ...item,
+              blocks: nextBlocks,
             };
-          });
-
-          return {
-            ...item,
-            blocks: nextBlocks,
-          };
-        }),
-      };
-    });
+          }),
+        };
+      });
+    } catch (e) {
+      console.error(e);
+      setError("Ошибка сохранения блока");
+    }
   };
 
   const handleAddSection = async () => {
-    if (isUniversalTablePage || isAdminPage || !pageId) return;
+    if (isUniversalTablePage || isAdminPage || isCorporateChatPage || !pageId) {
+      return;
+    }
 
     try {
       setError("");
@@ -338,7 +598,7 @@ export default function PortalPageView() {
   };
 
   const handleAddBlockToSection = async (sectionId, blockType, dropPoint) => {
-    if (isUniversalTablePage || isAdminPage) return;
+    if (isUniversalTablePage || isAdminPage || isCorporateChatPage) return;
 
     try {
       setError("");
@@ -370,7 +630,7 @@ export default function PortalPageView() {
     try {
       setError("");
       const savedBlock = await updateBlock(selectedBlock.id, data);
-      handleBlockUpdated(savedBlock);
+      await handleBlockUpdated(savedBlock);
       setSelectedBlock(null);
     } catch (e) {
       console.error(e);
@@ -444,11 +704,9 @@ export default function PortalPageView() {
   });
 
   const Layout =
-    isEditMode && !isAdminPage && !isUniversalTablePage
+    isEditMode && !isAdminPage && !isUniversalTablePage && !isCorporateChatPage
       ? EditorLayout
       : PortalLayout;
-
-  const sections = pageData?.sections || [];
 
   return (
     <Layout
@@ -474,181 +732,205 @@ export default function PortalPageView() {
       onSaveSection={handleSaveSection}
       onCloseSectionEditor={() => setSelectedSection(null)}
     >
+    
+<div
+  data-page-scroll
+  onDragOver={
+    isEditMode &&
+    !isUniversalTablePage &&
+    !isDocumentLibraryPage &&
+    !isAdminPage &&
+    !isCorporateChatPage
+      ? widgetDnD.handlePageDragOver
+      : undefined
+  }
+  onDrop={
+    isEditMode &&
+    !isUniversalTablePage &&
+    !isDocumentLibraryPage &&
+    !isAdminPage &&
+    !isCorporateChatPage
+      ? widgetDnD.handlePageDrop
+      : undefined
+  }
+  style={{
+    width: "100%",
+    height: "100%",
+    minHeight: 0,
+    display: "flex",
+    flexDirection: "column",
+    boxSizing: "border-box",
+    overflow: isUniversalTablePage || isCorporateChatPage ? "hidden" : "auto",
+    background: "#f1f5f9",
+  }}
+>
+  <WorkspaceTopBar
+    title={topBarMeta.title}
+    subtitle={topBarMeta.subtitle}
+    searchQuery={searchQuery}
+    onChangeSearchQuery={setSearchQuery}
+    isEditMode={isEditMode}
+    showBackButton={isAdminPage && location.pathname !== "/admin"}
+    onBack={() => navigate(-1)}
+    onEnterEditMode={() => setIsEditMode(true)}
+    onExitEditMode={() => {
+      setSelectedBlock(null);
+      setSelectedSection(null);
+      setIsEditMode(false);
+    }}
+  />
+
+  <div
+    style={{
+      flex: 1,
+      minHeight: 0,
+      width: "100%",
+      display: "flex",
+      flexDirection: "column",
+      overflow:
+        isUniversalTablePage || isCorporateChatPage ? "hidden" : "visible",
+      padding:
+        isDocumentLibraryPage || isUniversalTablePage || isCorporateChatPage
+          ? 0
+          : "10px 16px 16px",
+      boxSizing: "border-box",
+    }}
+  >
+    {navigationError && <SystemMessage>{navigationError}</SystemMessage>}
+    {error && <SystemMessage>{error}</SystemMessage>}
+
+    {!error && isUniversalTablePage && (
       <div
-        data-page-scroll
-        onDragOver={
-          isEditMode &&
-          !isUniversalTablePage &&
-          !isDocumentLibraryPage &&
-          !isAdminPage
-            ? widgetDnD.handlePageDragOver
-            : undefined
-        }
-        onDrop={
-          isEditMode &&
-          !isUniversalTablePage &&
-          !isDocumentLibraryPage &&
-          !isAdminPage
-            ? widgetDnD.handlePageDrop
-            : undefined
-        }
         style={{
-          width: "100%",
-          height: "100%",
+          flex: 1,
           minHeight: 0,
+          width: "100%",
           display: "flex",
           flexDirection: "column",
-          boxSizing: "border-box",
           overflow: "hidden",
-          background: "#f1f5f9",
         }}
       >
-        <WorkspaceTopBar
-          searchQuery={searchQuery}
-          onChangeSearchQuery={setSearchQuery}
-          isEditMode={isEditMode}
-          onEnterEditMode={() => setIsEditMode(true)}
-          onExitEditMode={() => {
-            setSelectedBlock(null);
-            setSelectedSection(null);
-            setIsEditMode(false);
-          }}
-        />
+        <UniversalTableView blockId={999999} isEditMode={isEditMode} />
+      </div>
+    )}
 
+    {!error && !isUniversalTablePage && isCorporateChatPage && (
+      <CorporateChatPage />
+    )}
+
+    {!error &&
+      !isUniversalTablePage &&
+      !isCorporateChatPage &&
+      isAdminPage &&
+      adminPageContent}
+
+    {!error &&
+      !isUniversalTablePage &&
+      !isCorporateChatPage &&
+      isAdminPage &&
+      !adminPageContent && (
+        <SystemMessage>Раздел администрирования не найден</SystemMessage>
+      )}
+
+    {!error &&
+      !isUniversalTablePage &&
+      !isAdminPage &&
+      !isCorporateChatPage &&
+      isDocumentLibraryPage &&
+      activeNavigationItem &&
+      (activeNavigationItem.library_id ? (
+        <LibraryPageView
+          libraryId={activeNavigationItem.library_id}
+          title={activeNavigationItem.title}
+        />
+      ) : (
+        <SystemMessage>
+          У пункта библиотеки нет library_id. Удали этот пункт и создай
+          библиотеку заново.
+        </SystemMessage>
+      ))}
+
+    {!error &&
+      !isUniversalTablePage &&
+      !isAdminPage &&
+      !isCorporateChatPage &&
+      !isDocumentLibraryPage &&
+      !pageData &&
+      pageId && <SystemMessage>Загрузка...</SystemMessage>}
+
+    {!error &&
+      !isUniversalTablePage &&
+      !isAdminPage &&
+      !isCorporateChatPage &&
+      !isDocumentLibraryPage &&
+      pageData &&
+      sections.length === 0 &&
+      isEditMode && <EmptyDropZone />}
+
+    {!error &&
+      !isUniversalTablePage &&
+      !isAdminPage &&
+      !isCorporateChatPage &&
+      !isDocumentLibraryPage &&
+      pageData &&
+      sections.length > 0 && (
         <div
           style={{
-            flex: 1,
-            minHeight: 0,
+            flex: "0 0 auto",
+            minHeight: "auto",
             width: "100%",
             display: "flex",
             flexDirection: "column",
-            overflow: "hidden",
-            padding:
-              isDocumentLibraryPage || isUniversalTablePage
-                ? 0
-                : "10px 16px 16px",
-            boxSizing: "border-box",
+            gap: 0,
+            overflow: "visible",
           }}
         >
-          {navigationError && <SystemMessage>{navigationError}</SystemMessage>}
-          {error && <SystemMessage>{error}</SystemMessage>}
-
-          {!error && isUniversalTablePage && (
-            <UniversalTableView blockId={999999} isEditMode={isEditMode} />
-          )}
-
-          {!error && !isUniversalTablePage && isAdminPage && adminPageContent}
-
-          {!error &&
-            !isUniversalTablePage &&
-            isAdminPage &&
-            !adminPageContent && (
-              <SystemMessage>Раздел администрирования не найден</SystemMessage>
-            )}
-
-          {!error &&
-            !isUniversalTablePage &&
-            !isAdminPage &&
-            isDocumentLibraryPage &&
-            activeNavigationItem &&
-            (activeNavigationItem.library_id ? (
-              <LibraryPageView
-                libraryId={activeNavigationItem.library_id}
-                title={activeNavigationItem.title}
+          {sections.map(({ section, blocks }) => (
+            <div
+              key={section.id}
+              data-section-host-id={section.id}
+              style={{
+                flex: "0 0 auto",
+                minHeight: "auto",
+                width: "100%",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "visible",
+              }}
+            >
+              <ContentSection
+                section={section}
+                blocks={blocks}
+                sections={sections}
+                isEditMode={isEditMode}
+                onEditSection={handleEditSection}
+                onDeleteSection={handleRequestDeleteSection}
+                onSectionUpdated={handleSectionUpdated}
+                onBlockUpdated={handleBlockUpdated}
+                onMoveBlock={handleMoveBlock}
+                onEditBlock={handleEditBlock}
+                onDeleteBlock={handleDeleteBlock}
+                onWidgetDragOver={
+                  isEditMode
+                    ? (event) =>
+                        widgetDnD.handleSectionDragOver(event, section.id)
+                    : undefined
+                }
+                onWidgetDrop={
+                  isEditMode
+                    ? (event) =>
+                        widgetDnD.handleSectionDrop(event, section.id)
+                    : undefined
+                }
+                blockDragAndDrop={isEditMode ? blockDragAndDrop : undefined}
+                sectionDragAndDrop={isEditMode ? sectionDragAndDrop : undefined}
               />
-            ) : (
-              <SystemMessage>
-                У пункта библиотеки нет library_id. Удали этот пункт и создай
-                библиотеку заново.
-              </SystemMessage>
-            ))}
-
-          {!error &&
-            !isUniversalTablePage &&
-            !isAdminPage &&
-            !isDocumentLibraryPage &&
-            !pageData &&
-            pageId && <SystemMessage>Загрузка...</SystemMessage>}
-
-          {!error &&
-            !isUniversalTablePage &&
-            !isAdminPage &&
-            !isDocumentLibraryPage &&
-            pageData &&
-            sections.length === 0 &&
-            isEditMode && <EmptyDropZone />}
-
-          {!error &&
-            !isUniversalTablePage &&
-            !isAdminPage &&
-            !isDocumentLibraryPage &&
-            pageData &&
-            sections.length > 0 && (
-              <div
-                style={{
-                  flex: 1,
-                  minHeight: 0,
-                  width: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 0,
-                  overflow: "hidden",
-                }}
-              >
-                {sections.map(({ section, blocks }) => (
-                  <div
-                    key={section.id}
-                    data-section-host-id={section.id}
-                    style={{
-                      flex: 1,
-                      minHeight: 0,
-                      width: "100%",
-                      display: "flex",
-                      flexDirection: "column",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <ContentSection
-                      section={section}
-                      blocks={blocks}
-                      sections={sections}
-                      isEditMode={isEditMode}
-                      onEditSection={handleEditSection}
-                      onDeleteSection={handleRequestDeleteSection}
-                      onSectionUpdated={handleSectionUpdated}
-                      onBlockUpdated={handleBlockUpdated}
-                      onMoveBlock={handleMoveBlock}
-                      onEditBlock={handleEditBlock}
-                      onDeleteBlock={handleDeleteBlock}
-                      onWidgetDragOver={
-                        isEditMode
-                          ? (event) =>
-                              widgetDnD.handleSectionDragOver(
-                                event,
-                                section.id
-                              )
-                          : undefined
-                      }
-                      onWidgetDrop={
-                        isEditMode
-                          ? (event) =>
-                              widgetDnD.handleSectionDrop(event, section.id)
-                          : undefined
-                      }
-                      blockDragAndDrop={
-                        isEditMode ? blockDragAndDrop : undefined
-                      }
-                      sectionDragAndDrop={
-                        isEditMode ? sectionDragAndDrop : undefined
-                      }
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+            </div>
+          ))}
         </div>
-      </div>
-
+      )}
+  </div>
+</div>
       <DeleteSectionModal
         isOpen={deleteSectionState.isOpen}
         section={deleteSectionState.section}
