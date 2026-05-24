@@ -61,6 +61,24 @@ function normalizeView(view, index) {
   };
 }
 
+function areStringArraysEqual(left = [], right = []) {
+  if (left === right) {
+    return true;
+  }
+
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  for (let index = 0; index < left.length; index += 1) {
+    if (String(left[index]) !== String(right[index])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function compactPinnedIds({
   pinnedIds = [],
   visibleIds = [],
@@ -177,6 +195,30 @@ export default function useUniversalViewsBarState({
     );
   }, [normalizedViews, activeViewId]);
 
+  const pinnedIdsSyncKey = useMemo(() => {
+    const items = Array.isArray(views) ? views : [];
+
+    const allIds = items
+      .map((view, index) => String(view?.id ?? index))
+      .join(",");
+
+    const visibleIds = items
+      .filter((view) => {
+        const isVisible =
+          view?.isVisible ??
+          view?.is_visible ??
+          (view?.hidden !== undefined
+            ? !view.hidden
+            : true);
+
+        return isVisible !== false;
+      })
+      .map((view, index) => String(view?.id ?? index))
+      .join(",");
+
+    return `${allIds}::${visibleIds}::${safeVisibleSlotsCount}`;
+  }, [views, safeVisibleSlotsCount]);
+
   useEffect(() => {
     const existingIds = new Set(
       normalizedViews.map((item) =>
@@ -188,19 +230,19 @@ export default function useUniversalViewsBarState({
       (item) => String(item.id)
     );
 
-    setPinnedIds((prev) =>
-      compactPinnedIds({
+    setPinnedIds((prev) => {
+      const next = compactPinnedIds({
         pinnedIds: prev,
         visibleIds,
         existingIds,
         limit: safeVisibleSlotsCount,
-      })
-    );
-  }, [
-    normalizedViews,
-    visibleViews,
-    safeVisibleSlotsCount,
-  ]);
+      });
+
+      return areStringArraysEqual(prev, next)
+        ? prev
+        : next;
+    });
+  }, [pinnedIdsSyncKey]);
 
   const pinnedViews = useMemo(() => {
     if (safeVisibleSlotsCount <= 0) {
@@ -259,7 +301,10 @@ export default function useUniversalViewsBarState({
         String(activeViewId)
     );
 
-    if (nextVisible) {
+    if (
+      nextVisible &&
+      String(nextVisible.id) !== String(activeViewId)
+    ) {
       onSelectView?.(nextVisible.raw);
     }
   }, [
@@ -478,9 +523,13 @@ export default function useUniversalViewsBarState({
       next[normalizedSlotIndex] =
         viewId;
 
-      return Array.from(
+      const result = Array.from(
         new Set(next.filter(Boolean))
       ).slice(0, safeVisibleSlotsCount);
+
+      return areStringArraysEqual(prev, result)
+        ? prev
+        : result;
     });
   };
 

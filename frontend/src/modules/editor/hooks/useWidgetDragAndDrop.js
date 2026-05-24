@@ -16,7 +16,12 @@ export default function useWidgetDragAndDrop({
   };
 
   const isTableWidget = (widgetType) => {
-    return ["table", "tableBlock", "table_block"].includes(widgetType);
+    return [
+      "table",
+      "universal_table",
+      "tableBlock",
+      "table_block",
+    ].includes(widgetType);
   };
 
   const handlePageDragOver = (event) => {

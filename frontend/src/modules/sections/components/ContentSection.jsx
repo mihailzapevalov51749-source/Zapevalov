@@ -104,7 +104,12 @@ export default function ContentSection({
   const isTableWidget = (event) => {
     const widgetType = event.dataTransfer.getData("widget/type");
 
-    return ["table", "tableBlock", "table_block"].includes(widgetType);
+    return [
+      "table",
+      "universal_table",
+      "tableBlock",
+      "table_block",
+    ].includes(widgetType);
   };
 
   return (

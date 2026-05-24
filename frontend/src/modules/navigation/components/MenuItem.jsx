@@ -96,6 +96,7 @@ export default function MenuItem({
 
   const isPageLike =
     item.type === "page" ||
+    item.type === "table" ||
     item.type === "universal_table" ||
     item.type === "document_library";
 
