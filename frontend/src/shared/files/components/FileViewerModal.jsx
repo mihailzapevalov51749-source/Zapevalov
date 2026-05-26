@@ -3,14 +3,14 @@ import { createPortal } from "react-dom";
 
 import FileViewer from "./FileViewer";
 import CommentsPanel from "../../../modules/comments/components/CommentsPanel";
+import { LAYOUT_MODES } from "../../layout/layoutModes";
+import { resolveWorkspaceLeftOffset } from "../../layout/shellGeometry";
+import { Z_INDEX_TOKENS } from "../../layout/zIndexTokens";
 
 import chatIcon from "../../../assets/icons/chat.png";
 import closeIcon from "../../../assets/icons/x.svg";
 
 const SIDEBAR_SETTINGS_KEY = "yasnopro-sidebar-collapsed";
-
-const EXPANDED_LEFT_OFFSET = 220;
-const COLLAPSED_LEFT_OFFSET = 0;
 
 function readSidebarCollapsed() {
   try {
@@ -28,7 +28,7 @@ const WORKSPACE_TOP_OFFSET = 0;
 const COMMENTS_PANEL_WIDTH = 380;
 
 const getOverlayStyle = ({
-  workspaceLeftOffset = WORKSPACE_LEFT_OFFSET,
+  workspaceLeftOffset,
   workspaceTopOffset = WORKSPACE_TOP_OFFSET,
 }) => ({
   position: "fixed",
@@ -36,7 +36,7 @@ const getOverlayStyle = ({
   top: workspaceTopOffset,
   right: 0,
   bottom: 0,
-  zIndex: 999999,
+  zIndex: Z_INDEX_TOKENS.overlays.fileViewer,
   background: "#FFFFFF",
   overflow: "hidden",
 });
@@ -300,15 +300,15 @@ export default function FileViewerModal({
   const [notificationContext, setNotificationContext] =
     useState(initialContext);
 
-    const [sidebarCollapsed, setSidebarCollapsed] =
-  useState(readSidebarCollapsed);
-
-const effectiveWorkspaceLeftOffset =
-  workspaceLeftOffset !== undefined
-    ? workspaceLeftOffset
-    : sidebarCollapsed
-      ? COLLAPSED_LEFT_OFFSET
-      : EXPANDED_LEFT_OFFSET;
+  // TODO: Phase 2 — remove internal workspace offset fallback after all overlay entry points use shared geometry.
+  const effectiveWorkspaceLeftOffset =
+    workspaceLeftOffset !== undefined
+      ? workspaceLeftOffset
+      : resolveWorkspaceLeftOffset({
+          mode: LAYOUT_MODES.RUNTIME,
+          collapsed: readSidebarCollapsed(),
+          explicitWorkspaceLeftOffset: 240,
+        });
 
   const discussionFileId =
     normalizeId(initialContext?.file_id) ||
@@ -476,25 +476,5 @@ const effectiveWorkspaceLeftOffset =
     </div>,
     document.body
   );
-
-  useEffect(() => {
-  function handleStorageChange() {
-    setSidebarCollapsed(
-      readSidebarCollapsed()
-    );
-  }
-
-  window.addEventListener(
-    "storage",
-    handleStorageChange
-  );
-
-  return () => {
-    window.removeEventListener(
-      "storage",
-      handleStorageChange
-    );
-  };
-}, []);
 
 }

@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { resolveBlockTableId } from "../utils/resolveBlockTableId";
+import { resolveBlockShowTitle } from "../utils/resolveBlockShowTitle";
+import { resolveTableShowTitle } from "../utils/resolveTableShowTitle";
+
 import useUniversalTable from "./useUniversalTable";
 import useRowSelection from "./useRowSelection";
 import useColumnResize from "./useColumnResize";
@@ -43,10 +47,21 @@ export default function useUniversalTableController({
   blockId,
   isEditMode,
   onEdit,
+  onDelete,
   onBlockUpdated,
+  embeddedInCanvas = false,
   tableRepresentationProps = {},
 }) {
   const resolvedBlockId = blockId || block?.id || null;
+
+  const resolvedTableId = useMemo(() => {
+    if (tableId != null && tableId !== "") {
+      return Number(tableId) || null;
+    }
+
+    return resolveBlockTableId(block);
+  }, [tableId, block]);
+
   const bodyScrollRef = useRef(null);
 
   const canEditColumns = Boolean(isEditMode);
@@ -54,7 +69,15 @@ export default function useUniversalTableController({
   const { tableViewState, onToggleColumnVisibility } =
     tableRepresentationProps || {};
 
-  const [isInlineEditMode, setIsInlineEditMode] = useState(false);
+  const [isInlineEditMode, setIsInlineEditMode] = useState(
+    Boolean(embeddedInCanvas && isEditMode)
+  );
+
+  useEffect(() => {
+    if (embeddedInCanvas && isEditMode) {
+      setIsInlineEditMode(true);
+    }
+  }, [embeddedInCanvas, isEditMode]);
   const [forcedVisibleRowIds, setForcedVisibleRowIds] = useState(new Set());
   const [localRowCardSettings, setLocalRowCardSettings] = useState(null);
 
@@ -69,10 +92,12 @@ export default function useUniversalTableController({
   } = useTableColumnSorting();
 
   const tableState = useUniversalTable({
-    tableId,
-    blockId: resolvedBlockId,
+    tableId: resolvedTableId,
+    blockId: resolvedTableId ? null : resolvedBlockId,
     blockTitle: block?.title,
-    initialTableTitle: block?.content?.initial_table_title,
+    initialTableTitle: resolvedTableId
+      ? undefined
+      : block?.content?.initial_table_title,
   });
 
   const {
@@ -115,6 +140,7 @@ export default function useUniversalTableController({
     handleDeleteRows = noopAsync,
     handleDeleteRow = noopAsync,
     handleUpdateTableTitle = noopAsync,
+    handleToggleTableShowTitle = noopAsync,
     handleSaveFiltersToSettings = noopAsync,
     handleSaveSystemColumnSettings = noopAsync,
 
@@ -125,6 +151,24 @@ export default function useUniversalTableController({
     handleDragOverColumn = noop,
     handleDropColumn = noopAsync,
   } = tableState || {};
+
+  useEffect(() => {
+    if (!table?.id || !block?.id || !onBlockUpdated) return;
+
+    const linkedTableId = resolveBlockTableId(block);
+
+    if (String(linkedTableId) === String(table.id)) {
+      return;
+    }
+
+    onBlockUpdated({
+      ...block,
+      content: {
+        ...(block.content || {}),
+        table_id: table.id,
+      },
+    });
+  }, [table?.id, block, onBlockUpdated]);
 
   useTableLocationRegistry({
     table,
@@ -292,9 +336,10 @@ export default function useUniversalTableController({
     setForcedVisibleRowIds,
   });
 
-  const showTableTitle = block
-    ? block?.settings?.show_title !== false
-    : table?.settings?.show_title !== false;
+  const showTableTitle =
+    embeddedInCanvas && block
+      ? resolveBlockShowTitle(block)
+      : resolveTableShowTitle(table);
 
   const rowCardSettings = useMemo(() => {
     return normalizeRowCardSettings(localRowCardSettings || {});
@@ -313,6 +358,7 @@ export default function useUniversalTableController({
   const { tableRef, requestTableHeightReport } = useTableAutoHeight({
     block,
     onBlockUpdated,
+    layoutControlled: embeddedInCanvas,
   });
 
   const {
@@ -539,10 +585,52 @@ export default function useUniversalTableController({
     },
   });
 
+  const handleToggleBlockShowTitle = async (event) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    if (!block?.id || !onBlockUpdated) return;
+
+    const nextShowTitle = !resolveBlockShowTitle(block);
+
+    await onBlockUpdated({
+      ...block,
+      settings: {
+        ...(block.settings || {}),
+        showTitle: nextShowTitle,
+      },
+    });
+  };
+
+  const handleToggleTableShowTitleClick = async (event) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    await handleToggleTableShowTitle();
+  };
+
+  const handleDeleteBlockFromHeader = async (event) => {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+
+    if (!block?.id || !onDelete) return;
+
+    const confirmed = window.confirm(
+      "Удалить таблицу из раздела? Блок будет удалён, универсальная таблица и её данные останутся."
+    );
+
+    if (!confirmed) return;
+
+    await onDelete(block, { skipConfirm: true });
+  };
+
   const handleRootClick = (event) => {
-    const isTableAction = event.target.closest("[data-table-action='true']");
+    const isTableAction = event.target.closest(
+      "[data-table-action='true'], [data-table-block-control='true']"
+    );
     if (isTableAction) return;
     if (!isEditMode) return;
+    if (embeddedInCanvas) return;
 
     event.stopPropagation();
 
@@ -723,8 +811,18 @@ export default function useUniversalTableController({
       table,
       showTitle: showTableTitle,
       isPageEditMode: isEditMode,
+      embeddedInCanvas,
       isInlineEditMode,
       onToggleInlineEditMode: handleToggleInlineEditMode,
+      onToggleShowTitle: embeddedInCanvas
+        ? isEditMode
+          ? handleToggleBlockShowTitle
+          : undefined
+        : table?.id
+          ? handleToggleTableShowTitleClick
+          : undefined,
+      onDeleteBlock:
+        embeddedInCanvas && isEditMode ? handleDeleteBlockFromHeader : undefined,
       onSaveTitle: handleUpdateTableTitle,
       onAfterChange: requestTableHeightReport,
       onAddRow: handleAddRowAndUpdateHeight,

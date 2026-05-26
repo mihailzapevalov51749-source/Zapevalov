@@ -83,13 +83,6 @@ export default function TextBlockView({ block, isEditMode, onBlockUpdated }) {
     setSavedText(initialText);
   }, [initialText]);
 
-  useEffect(() => {
-    if (!isEditingText && textViewRef.current) {
-      setTimeout(() => {
-        updateLocalHeight(textViewRef.current, false);
-      }, 0);
-    }
-  }, [savedText, isEditingText]);
 
   useEffect(() => {
     if (isEditingText && textareaRef.current) {
@@ -134,56 +127,21 @@ export default function TextBlockView({ block, isEditMode, onBlockUpdated }) {
     });
   };
 
-  const updateLocalHeight = (element, includeToolbar = false) => {
-    if (!element || !block?.id) return;
-
-    const nextRows = getNextRows(element, includeToolbar);
-    const currentRows = Number(position.h || MIN_TEXT_BLOCK_ROWS);
-
-    if (nextRows === currentRows) return;
-
-    onBlockUpdated?.(
-      {
-        ...block,
-        settings: {
-          ...(block.settings || {}),
-          position: {
-            ...(position || {}),
-            h: nextRows,
-          },
-        },
-      },
-      { localOnly: true }
-    );
-  };
-
   const saveText = async () => {
     if (!block?.id || isSaving) return;
 
     const nextText = draftText;
-    const measureElement = textareaRef.current || textViewRef.current;
-
-    const nextRows = measureElement
-      ? getNextRows(measureElement, false)
-      : Number(position.h || MIN_TEXT_BLOCK_ROWS);
-
     try {
       setIsSaving(true);
-
-      const nextSettings = {
-        ...(block.settings || {}),
-        position: {
-          ...(position || {}),
-          h: nextRows,
-        },
-      };
 
       const savedBlock = await updateBlock(block.id, {
         content: {
           ...(block.content || {}),
           text: nextText,
         },
-        settings: nextSettings,
+        settings: {
+          ...(block.settings || {}),
+        },
       });
 
       const updatedBlock = {
@@ -197,11 +155,6 @@ export default function TextBlockView({ block, isEditMode, onBlockUpdated }) {
         settings: {
           ...(block.settings || {}),
           ...(savedBlock?.settings || {}),
-          position: {
-            ...(position || {}),
-            ...(savedBlock?.settings?.position || {}),
-            h: nextRows,
-          },
         },
       };
 
@@ -220,11 +173,6 @@ export default function TextBlockView({ block, isEditMode, onBlockUpdated }) {
     setDraftText(savedText);
     setIsEditingText(false);
 
-    setTimeout(() => {
-      if (textViewRef.current) {
-        updateLocalHeight(textViewRef.current, false);
-      }
-    }, 0);
   };
 
   const handleKeyDown = async (event) => {
@@ -243,7 +191,6 @@ export default function TextBlockView({ block, isEditMode, onBlockUpdated }) {
   const handleTextChange = (event) => {
     setDraftText(event.target.value);
     autoResizeTextarea(event.target);
-    updateLocalHeight(event.target, true);
   };
 
   const updateTextSettings = async (nextPartialSettings) => {
@@ -290,12 +237,6 @@ export default function TextBlockView({ block, isEditMode, onBlockUpdated }) {
         { alreadyPersisted: true }
       );
 
-      setTimeout(() => {
-        const element = isEditingText ? textareaRef.current : textViewRef.current;
-        if (element) {
-          updateLocalHeight(element, isEditingText);
-        }
-      }, 0);
     } catch (error) {
       console.error("Ошибка сохранения настроек текста", error);
     } finally {
@@ -399,12 +340,14 @@ export default function TextBlockView({ block, isEditMode, onBlockUpdated }) {
       }}
       style={{
         width: "100%",
-        minHeight: "fit-content",
+        height: "100%",
+        minHeight: 0,
         fontFamily: "inherit",
         color: settings.color || "#0f172a",
         position: "relative",
         paddingLeft: isEditMode ? 16 : 0,
         boxSizing: "border-box",
+        overflow: "auto",
         ...blockAppearanceStyle,
       }}
     >

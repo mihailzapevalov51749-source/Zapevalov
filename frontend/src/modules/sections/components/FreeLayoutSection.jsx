@@ -20,6 +20,7 @@ export default function FreeLayoutSection({
   sectionId,
   blocks = [],
   isEditMode,
+  selectedBlockId = null,
   onEditBlock,
   onDeleteBlock,
   onSectionUpdated,
@@ -27,7 +28,6 @@ export default function FreeLayoutSection({
   onMoveBlock,
 }) {
   const gridRef = useRef(null);
-  const blockContentRefs = useRef({});
   const manualHeightRef = useRef(
     Number(section?.settings?.freeHeight) || DEFAULT_FREE_HEIGHT
   );
@@ -38,7 +38,6 @@ export default function FreeLayoutSection({
   );
 
   const [localPositions, setLocalPositions] = useState({});
-  const [measuredSizes, setMeasuredSizes] = useState({});
   const [blockedBlockId, setBlockedBlockId] = useState(null);
 
   useEffect(() => {
@@ -48,7 +47,7 @@ export default function FreeLayoutSection({
   }, [section?.settings?.freeHeight]);
 
   useEffect(() => {
-    const positions = buildSmartPositions(blocks, measuredSizes);
+    const positions = buildSmartPositions(blocks);
     setLocalPositions(positions);
 
     const requiredHeight = calculateRequiredSectionHeight(positions, blocks);
@@ -59,63 +58,10 @@ export default function FreeLayoutSection({
     );
 
     setHeight(nextHeight);
-  }, [blocks, measuredSizes]);
-
-  useEffect(() => {
-    const gridElement = gridRef.current;
-    if (!gridElement) return;
-
-    const observers = [];
-
-    blocks.forEach((block) => {
-      const element = blockContentRefs.current[block.id];
-      if (!element) return;
-
-      const observer = new ResizeObserver(([entry]) => {
-        const rect = entry.contentRect;
-
-        const nextSize = {
-          w: widthToGridColumns(rect.width, gridElement),
-          h: heightToGridRows(rect.height),
-        };
-
-        setMeasuredSizes((current) => {
-          const currentSize = current[block.id];
-          const savedPosition = getSavedBlockPosition(block);
-
-          const mergedSize = {
-            w: Math.max(nextSize.w, savedPosition?.w || 0, currentSize?.w || 0),
-            h: Math.max(nextSize.h, savedPosition?.h || 0, currentSize?.h || 0),
-          };
-
-          if (
-            currentSize?.w === mergedSize.w &&
-            currentSize?.h === mergedSize.h
-          ) {
-            return current;
-          }
-
-          return {
-            ...current,
-            [block.id]: mergedSize,
-          };
-        });
-      });
-
-      observer.observe(element);
-      observers.push(observer);
-    });
-
-    return () => {
-      observers.forEach((observer) => observer.disconnect());
-    };
   }, [blocks]);
 
   const getPosition = (block, index) => {
-    return (
-      localPositions[block.id] ||
-      getBlockPosition(block, index, measuredSizes)
-    );
+    return localPositions[block.id] || getBlockPosition(block, index);
   };
 
   const recalculateSectionHeight = (positions) => {
@@ -508,27 +454,23 @@ export default function FreeLayoutSection({
             }}
           >
             <div
-              ref={(element) => {
-                if (element) {
-                  const realContent = element.firstElementChild || element;
-                  blockContentRefs.current[block.id] = realContent;
-                } else {
-                  delete blockContentRefs.current[block.id];
-                }
-              }}
+              data-block-layout-host="true"
               style={{
                 width: "100%",
-                height: block?.settings?.autoHeight ? "auto" : "100%",
-                minHeight: block?.settings?.autoHeight
-                  ? `${block.settings.autoHeight}px`
-                  : 0,
-                display: "block",
-                overflow: "visible",
+                height: "100%",
+                minHeight: 0,
+                position: "relative",
+                overflow: "hidden",
               }}
             >
               <BlockRenderer
                 block={block}
                 isEditMode={isEditMode}
+                isSelected={
+                  selectedBlockId != null &&
+                  String(selectedBlockId) === String(block.id)
+                }
+                embeddedInCanvas
                 onEdit={onEditBlock}
                 onDelete={onDeleteBlock}
                 onBlockUpdated={onBlockUpdated}
@@ -545,23 +487,19 @@ export default function FreeLayoutSection({
                   }
                 />
 
-                {!block?.settings?.autoHeight && (
-                  <>
-                    <ResizeHandle
-                      type="bottom"
-                      onPointerDown={(event) =>
-                        handleBlockResizeStart(event, block, index, "bottom")
-                      }
-                    />
+                <ResizeHandle
+                  type="bottom"
+                  onPointerDown={(event) =>
+                    handleBlockResizeStart(event, block, index, "bottom")
+                  }
+                />
 
-                    <ResizeHandle
-                      type="corner"
-                      onPointerDown={(event) =>
-                        handleBlockResizeStart(event, block, index, "corner")
-                      }
-                    />
-                  </>
-                )}
+                <ResizeHandle
+                  type="corner"
+                  onPointerDown={(event) =>
+                    handleBlockResizeStart(event, block, index, "corner")
+                  }
+                />
               </>
             )}
           </div>
@@ -651,22 +589,34 @@ function ResizeHandle({ type, onPointerDown }) {
   );
 }
 
-function buildSmartPositions(blocks, measuredSizes = {}) {
+function getDefaultBlockSize(blockType) {
+  const sizes = {
+    text: { w: 12, h: 6 },
+    image: { w: 16, h: 18 },
+    document: { w: 12, h: 8 },
+    link: { w: 10, h: 5 },
+    button: { w: 8, h: 4 },
+    cards: { w: 18, h: 12 },
+    universal_table: { w: 36, h: 18 },
+    table: { w: 36, h: 18 },
+  };
+
+  return sizes[blockType] || { w: 12, h: 6 };
+}
+
+function buildSmartPositions(blocks) {
   const positions = {};
 
   const preparedBlocks = blocks
     .map((block, index) => {
       const savedPosition = getSavedBlockPosition(block);
-      const measuredSize = measuredSizes[block.id] || {
-        w: DEFAULT_BLOCK_WIDTH,
-        h: DEFAULT_BLOCK_HEIGHT,
-      };
+      const defaultSize = getDefaultBlockSize(block?.type);
 
       const basePosition = savedPosition
         ? normalizePosition({
             ...savedPosition,
-            w: savedPosition.w || measuredSize.w,
-            h: savedPosition.h || measuredSize.h,
+            w: savedPosition.w || defaultSize.w,
+            h: savedPosition.h || defaultSize.h,
           })
         : null;
 
@@ -674,7 +624,7 @@ function buildSmartPositions(blocks, measuredSizes = {}) {
         block,
         index,
         savedPosition: basePosition,
-        measuredSize,
+        defaultSize,
       };
     })
     .sort((a, b) => {
@@ -691,7 +641,7 @@ function buildSmartPositions(blocks, measuredSizes = {}) {
 
   let currentY = 0;
 
-  preparedBlocks.forEach(({ block, savedPosition, measuredSize }) => {
+  preparedBlocks.forEach(({ block, savedPosition, defaultSize }) => {
     let basePosition;
 
     if (savedPosition) {
@@ -699,15 +649,15 @@ function buildSmartPositions(blocks, measuredSizes = {}) {
         ...savedPosition,
         x: savedPosition.x,
         y: savedPosition.y,
-        w: savedPosition.w || measuredSize.w,
-        h: savedPosition.h || measuredSize.h,
+        w: savedPosition.w || defaultSize.w,
+        h: savedPosition.h || defaultSize.h,
       });
     } else {
       basePosition = normalizePosition({
         x: 0,
         y: currentY,
-        w: measuredSize.w,
-        h: measuredSize.h,
+        w: defaultSize.w,
+        h: defaultSize.h,
       });
     }
 
@@ -737,28 +687,25 @@ function findFreePosition(position, currentBlockId, positions) {
   return nextPosition;
 }
 
-function getBlockPosition(block, index, measuredSizes = {}) {
+function getBlockPosition(block, index) {
   const savedPosition = getSavedBlockPosition(block);
-  const measuredSize = measuredSizes[block.id] || {
-    w: DEFAULT_BLOCK_WIDTH,
-    h: DEFAULT_BLOCK_HEIGHT,
-  };
+  const defaultSize = getDefaultBlockSize(block?.type);
 
   if (savedPosition) {
     return normalizePosition({
       ...savedPosition,
       x: savedPosition.x,
       y: savedPosition.y,
-      w: savedPosition.w || measuredSize.w,
-      h: savedPosition.h || measuredSize.h,
+      w: savedPosition.w || defaultSize.w,
+      h: savedPosition.h || defaultSize.h,
     });
   }
 
   return normalizePosition({
     x: 0,
-    y: index * (measuredSize.h + BLOCK_MARGIN_ROWS),
-    w: measuredSize.w,
-    h: measuredSize.h,
+    y: index * (defaultSize.h + BLOCK_MARGIN_ROWS),
+    w: defaultSize.w,
+    h: defaultSize.h,
   });
 }
 
@@ -780,40 +727,14 @@ function calculateRequiredSectionHeight(positions = {}, blocks = []) {
   let maxBottom = 0;
 
   Object.entries(positions).forEach(([blockId, position]) => {
-    const block = blocks.find((item) => String(item.id) === String(blockId));
-    const autoHeight = Number(block?.settings?.autoHeight || 0);
-
-    let bottom;
-
-    if (autoHeight > 0) {
-      bottom = Number(position.y || 0) * (GRID_ROW_HEIGHT + GRID_GAP) + autoHeight;
-    } else {
-      bottom =
-        (Number(position.y || 0) + Number(position.h || 1)) *
-        (GRID_ROW_HEIGHT + GRID_GAP);
-    }
+    let bottom =
+      (Number(position.y || 0) + Number(position.h || 1)) *
+      (GRID_ROW_HEIGHT + GRID_GAP);
 
     maxBottom = Math.max(maxBottom, bottom);
   });
 
   return Math.max(MIN_FREE_HEIGHT, Math.ceil(maxBottom + 48));
-}
-
-function heightToGridRows(height) {
-  return Math.max(
-    1,
-    Math.ceil((Number(height) + GRID_GAP) / (GRID_ROW_HEIGHT + GRID_GAP))
-  );
-}
-
-function widthToGridColumns(width, gridElement) {
-  const columnWidth = getColumnWidth(gridElement);
-
-  return clamp(
-    Math.ceil((Number(width) + GRID_GAP) / (columnWidth + GRID_GAP)),
-    1,
-    GRID_COLUMNS
-  );
 }
 
 function getColumnWidth(gridElement) {

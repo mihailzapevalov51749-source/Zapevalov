@@ -3,13 +3,19 @@ import { useEffect, useRef } from "react";
 import UniversalTableModals from "../core/UniversalTableModals";
 
 import useUniversalTableController from "../../hooks/useUniversalTableController";
+import { resolveBlockTableId } from "../../utils/resolveBlockTableId";
 import { useUniversalViews } from "../../hooks/useUniversalViews";
 
 import UniversalViewRenderer from "../views/UniversalViewRenderer";
 import UniversalViewsBar from "../views/UniversalViewsBar";
 
 export default function UniversalTableView(props) {
-  const controller = useUniversalTableController(props);
+  const embeddedInCanvas = Boolean(props.embeddedInCanvas && props.block?.id);
+
+  const controller = useUniversalTableController({
+    ...props,
+    embeddedInCanvas,
+  });
 
   const didApplyDefaultViewRef = useRef(false);
 
@@ -36,13 +42,9 @@ export default function UniversalTableView(props) {
 
   const tableId =
     props?.table?.id ||
-    props?.block?.table_id ||
-    props?.block?.tableId ||
-    props?.block?.settings?.table_id ||
-    props?.block?.settings?.tableId ||
+    resolveBlockTableId(props?.block) ||
+    resolveBlockTableId(block) ||
     table?.id ||
-    block?.table_id ||
-    block?.tableId ||
     null;
 
   const defaultViewId =

@@ -6,13 +6,14 @@ import logo from "../../../assets/icons/logo.png";
 import settingsIcon from "../../../assets/icons/settings.gif";
 import saveIcon from "../../../assets/icons/save.gif";
 import chevronLeftIcon from "../../../assets/icons/Chevronleft.png";
-import chevronRightIcon from "../../../assets/icons/Chevronright.png";
+import { LAYOUT_TOKENS } from "../../../shared/layout/layoutTokens";
+import { TRANSITION_TOKENS } from "../../../shared/layout/transitionTokens";
 
 import MenuTree from "./MenuTree";
 import CreateMenuItemModal from "./CreateMenuItemModal";
 
 import { getPageFull } from "../../../api/pagesApi";
-import { updateTable } from "../../universalTable/services/tableApi";
+import { updateLegacyTable } from "../../runtimeLegacyWriteAdapter";
 import { dispatchUniversalTableTitleChanged } from "../../universalTable/utils/universalTableTitleEvents";
 import {
   isUniversalTableNavigationItem,
@@ -284,7 +285,7 @@ export default function LeftSidebar({
           const tableId = await resolvePrimaryTableIdForPage(linkedPage);
 
           if (tableId) {
-            const updatedTable = await updateTable(tableId, {
+            const updatedTable = await updateLegacyTable(tableId, {
               title: nextTitle,
             });
 
@@ -328,24 +329,7 @@ export default function LeftSidebar({
     editor.enterEditMode?.();
   };
 
-  if (collapsed) {
-    return (
-      <button
-        type="button"
-        onClick={onToggleCollapse}
-        style={expandFloatingButtonStyle}
-        title="Развернуть меню"
-        onMouseEnter={(event) => {
-          event.currentTarget.style.transform = "scale(1.08)";
-        }}
-        onMouseLeave={(event) => {
-          event.currentTarget.style.transform = "scale(1)";
-        }}
-      >
-        <img src={chevronRightIcon} alt="" style={chevronRightImageStyle} />
-      </button>
-    );
-  }
+  const sidebarVisual = LAYOUT_TOKENS.sidebar;
 
   return (
     <aside
@@ -359,13 +343,17 @@ export default function LeftSidebar({
         top: topOffset,
         overflow: "hidden",
         boxSizing: "border-box",
-        transition: "width 180ms ease, background 180ms ease",
+        transition: TRANSITION_TOKENS.shell.sidebarWidth,
         display: "flex",
         flexDirection: "column",
       }}
     >
-      <div style={{ padding: "8px 14px 8px 14px" }}>
-        <SidebarBrand menuScale={menuScale} />
+      <div
+        style={{
+          padding: collapsed ? "8px 6px" : "8px 14px",
+        }}
+      >
+        <SidebarBrand menuScale={menuScale} collapsed={collapsed} />
       </div>
 
       <div
@@ -373,15 +361,15 @@ export default function LeftSidebar({
           flex: 1,
           minHeight: 0,
           overflowY: "auto",
-overflowX: "hidden",
-scrollbarWidth: "none",
-msOverflowStyle: "none",
-          paddingLeft: 14,
-          paddingRight: 10,
+          overflowX: "hidden",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
+          paddingLeft: collapsed ? 6 : 14,
+          paddingRight: collapsed ? 6 : 10,
           paddingBottom: 4,
         }}
       >
-        {editor.isEditMode && (
+        {!collapsed && editor.isEditMode && (
           <div
             style={{
               display: "flex",
@@ -428,9 +416,10 @@ msOverflowStyle: "none",
           onDeleteItem={handleDeleteItem}
           dragAndDrop={dragAndDrop}
           scale={menuScale}
+          sidebarCollapsed={collapsed}
         />
 
-        {editor.isEditMode && (
+        {!collapsed && editor.isEditMode && (
           <div
             style={{
               display: "flex",
@@ -449,35 +438,59 @@ msOverflowStyle: "none",
         )}
       </div>
 
-      <div style={sidebarFooterStyle}>
+      <div
+        style={{
+          ...sidebarFooterStyle,
+          justifyContent: collapsed ? "center" : sidebarFooterStyle.justifyContent,
+          padding: collapsed ? "10px 8px" : sidebarFooterStyle.padding,
+          gap: collapsed ? 0 : sidebarFooterStyle.gap,
+        }}
+      >
         <button
           type="button"
           onClick={onToggleCollapse}
-          style={collapseButtonStyle}
-        >
-          <img src={chevronLeftIcon} alt="" style={chevronLeftImageStyle} />
-          <span>Свернуть меню</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={handleEditButtonClick}
-          disabled={editor.isSaving}
-          title={editor.isEditMode ? "Сохранить меню" : "Редактировать меню"}
           style={{
-            ...settingsButtonStyle,
-            opacity: editor.isSaving ? 0.5 : 1,
+            ...collapseButtonStyle,
+            flex: collapsed ? "0 0 auto" : collapseButtonStyle.flex,
+            justifyContent: "center",
+            width: collapsed ? sidebarVisual.menuItemHeight : undefined,
+            minWidth: collapsed ? sidebarVisual.menuItemHeight : collapseButtonStyle.minWidth,
           }}
+          title={collapsed ? "Развернуть меню" : "Свернуть меню"}
+          aria-label={collapsed ? "Развернуть меню" : "Свернуть меню"}
         >
           <img
-            src={editor.isEditMode ? saveIcon : settingsIcon}
+            src={chevronLeftIcon}
             alt=""
-            style={settingsImageStyle}
+            style={{
+              ...chevronLeftImageStyle,
+              transform: collapsed ? "rotate(180deg)" : "none",
+            }}
           />
+          {!collapsed && <span>Свернуть меню</span>}
         </button>
+
+        {!collapsed && (
+          <button
+            type="button"
+            onClick={handleEditButtonClick}
+            disabled={editor.isSaving}
+            title={editor.isEditMode ? "Сохранить меню" : "Редактировать меню"}
+            style={{
+              ...settingsButtonStyle,
+              opacity: editor.isSaving ? 0.5 : 1,
+            }}
+          >
+            <img
+              src={editor.isEditMode ? saveIcon : settingsIcon}
+              alt=""
+              style={settingsImageStyle}
+            />
+          </button>
+        )}
       </div>
 
-      {editor.isEditMode && isCreateOpen && (
+      {!collapsed && editor.isEditMode && isCreateOpen && (
         <CreateMenuItemModal
           onCreate={async (data) => {
             await editor.createItem(data);
@@ -490,13 +503,18 @@ msOverflowStyle: "none",
   );
 }
 
-function SidebarBrand({ menuScale }) {
+function SidebarBrand({ menuScale, collapsed = false }) {
+  const sidebarVisual = LAYOUT_TOKENS.sidebar;
+  const logoSize = collapsed
+    ? sidebarVisual.brandLogoCollapsedSize
+    : sidebarVisual.brandLogoSize;
+
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
-        justifyContent: "flex-start",
+        justifyContent: collapsed ? "center" : "flex-start",
         gap: 10,
         minHeight: 42,
         padding: 0,
@@ -509,48 +527,50 @@ function SidebarBrand({ menuScale }) {
         src={logo}
         alt="YasnoPro"
         style={{
-          width: 34,
-          height: 34,
+          width: logoSize,
+          height: logoSize,
           objectFit: "contain",
           flexShrink: 0,
         }}
       />
 
-      <div
-        style={{
-          minWidth: 0,
-          display: "flex",
-          flexDirection: "column",
-          lineHeight: 1.15,
-        }}
-      >
+      {!collapsed && (
         <div
           style={{
-            color: "#0F172A",
-            fontSize: 16 * menuScale,
-            fontWeight: 800,
-            letterSpacing: 0.2,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
+            minWidth: 0,
+            display: "flex",
+            flexDirection: "column",
+            lineHeight: 1.15,
           }}
         >
-          YasnoPro
-        </div>
+          <div
+            style={{
+              color: "#0F172A",
+              fontSize: sidebarVisual.brandTitleFontSize * menuScale,
+              fontWeight: 800,
+              letterSpacing: 0.2,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            YasnoPro
+          </div>
 
-        <div
-          style={{
-            color: "#64748B",
-            fontSize: 11 * menuScale,
-            marginTop: 3,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          Система управления
+          <div
+            style={{
+              color: "#64748B",
+              fontSize: sidebarVisual.brandSubtitleFontSize * menuScale,
+              marginTop: 3,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            Система управления
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -562,6 +582,25 @@ const sidebarFooterStyle = {
   justifyContent: "space-between",
   gap: 10,
   flexShrink: 0,
+};
+
+const collapseButtonStyle = {
+  flex: 1,
+  height: 34,
+  borderRadius: 8,
+  border: "none",
+  background: "transparent",
+  color: "#64748B",
+  fontSize: 12,
+  fontWeight: 400,
+  cursor: "pointer",
+  paddingLeft: 0,
+  minWidth: 0,
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  transition: "color 140ms ease, opacity 140ms ease",
+  opacity: 0.88,
 };
 
 const settingsButtonStyle = {
@@ -606,47 +645,6 @@ const createButtonStyle = {
   boxShadow: "0 2px 8px rgba(15, 23, 42, 0.06)",
 };
 
-const collapseButtonStyle = {
-  flex: 1,
-  height: 34,
-  borderRadius: 8,
-  border: "none",
-  background: "transparent",
-  color: "#64748B",
-  fontSize: 12,
-  fontWeight: 400,
-  cursor: "pointer",
-  paddingLeft: 0,
-  minWidth: 0,
-  display: "flex",
-  alignItems: "center",
-  gap: 6,
-  transition: "color 140ms ease, opacity 140ms ease",
-  opacity: 0.88,
-};
-
-const expandFloatingButtonStyle = {
-  position: "fixed",
-  left: 10,
-  bottom: 10,
-  width: 36,
-  height: 36,
-  borderRadius: "50%",
-  border: "1px solid #BFD2FF",
-  background: "linear-gradient(180deg, #FFFFFF 0%, #EDF4FF 100%)",
-  color: "#2563EB",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  cursor: "pointer",
-  boxShadow: `
-    0 10px 24px rgba(37, 99, 235, 0.22),
-    0 4px 10px rgba(15, 23, 42, 0.10)
-  `,
-  transition: "transform 140ms ease, box-shadow 140ms ease",
-  zIndex: 10000,
-};
-
 const chevronLeftImageStyle = {
   width: 10,
   height: 10,
@@ -654,14 +652,6 @@ const chevronLeftImageStyle = {
   display: "block",
   flexShrink: 0,
   opacity: 0.72,
-};
-
-const chevronRightImageStyle = {
-  width: 16,
-  height: 16,
-  objectFit: "contain",
-  display: "block",
-  opacity: 0.92,
 };
 
 const settingsImageStyle = {

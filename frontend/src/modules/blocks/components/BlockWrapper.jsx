@@ -5,9 +5,8 @@ import BlockToolbar from "./BlockToolbar";
 export default function BlockWrapper({
   block,
   isEditMode,
+  isSelected = false,
   wrapperStyle = {},
-  isResizable = false,
-  onResizeCommit,
   onEdit,
   onDelete,
   draggable,
@@ -23,8 +22,10 @@ export default function BlockWrapper({
   const suppressClickRef = useRef(false);
   const pointerRef = useRef({ x: 0, y: 0, moved: false });
 
+  const isUniversalTableBlock = block?.type === "universal_table";
+
   const isTableBlock =
-    block?.type === "universal_table" ||
+    isUniversalTableBlock ||
     ["table", "tables", "table_block", "tableBlock"].includes(block?.type) ||
     Array.isArray(block?.content?.columns) ||
     Array.isArray(block?.content?.rows);
@@ -34,37 +35,35 @@ export default function BlockWrapper({
     height: "100%",
     minWidth: 0,
     minHeight: 0,
-
     position: "relative",
-
     boxSizing: "border-box",
-
     borderRadius: isTableBlock ? 0 : 12,
-
     overflow: "hidden",
-
-    cursor: isEditMode && onEdit ? "pointer" : "default",
-
+    cursor:
+      isEditMode && onEdit && !isUniversalTableBlock ? "pointer" : "default",
     opacity: isDragged ? 0.35 : 1,
-
     transition:
-      "border 120ms ease, background 120ms ease, transform 120ms ease, opacity 120ms ease",
+      "border 120ms ease, background 120ms ease, box-shadow 120ms ease, opacity 120ms ease",
   };
 
   const editFrameStyle = isEditMode
     ? {
-        border: isDragTarget ? "2px solid #2563eb" : "1px solid #cbd5e1",
-        background: isDragTarget ? "#eff6ff" : "#ffffff",
-        boxShadow: isDragTarget
-          ? "0 0 0 3px rgba(37, 99, 235, 0.12)"
-          : "0 1px 2px rgba(15, 23, 42, 0.06)",
-        transform: isDragTarget ? "scale(1.01)" : "scale(1)",
+        border: isSelected
+          ? "2px solid #2563eb"
+          : isDragTarget
+            ? "2px solid #93c5fd"
+            : "1px solid #cbd5e1",
+        background: isSelected || isDragTarget ? "#eff6ff" : "#ffffff",
+        boxShadow: isSelected
+          ? "0 0 0 3px rgba(37, 99, 235, 0.14)"
+          : isDragTarget
+            ? "0 0 0 3px rgba(37, 99, 235, 0.08)"
+            : "0 1px 2px rgba(15, 23, 42, 0.06)",
       }
     : {
         border: "none",
         background: "transparent",
         boxShadow: "none",
-        transform: "scale(1)",
       };
 
   const handleDragStart = (event) => {
@@ -101,9 +100,15 @@ export default function BlockWrapper({
     }
   };
 
-  const handleClick = () => {
-    if (!isEditMode || !onEdit) return;
+  const handleClick = (event) => {
+    if (!isEditMode || !onEdit || isUniversalTableBlock) return;
     if (suppressClickRef.current || pointerRef.current.moved) return;
+
+    const inlineEditor = event.target.closest?.(
+      "[data-inline-editor='true'], [data-text-block-content='true'], [data-link-block-content='true'], [data-button-block-content='true'], [data-table-action='true'], [data-table-block-control='true'], [data-block-resize-handle='true'], [data-block-drag-handle='true']"
+    );
+
+    if (inlineEditor) return;
 
     onEdit();
   };
@@ -111,6 +116,7 @@ export default function BlockWrapper({
   return (
     <div
       data-block-host-id={block?.id}
+      data-block-layout="true"
       draggable={Boolean(draggable)}
       onContextMenu={(event) => {
         if (isEditMode) {
@@ -132,24 +138,21 @@ export default function BlockWrapper({
         ...wrapperStyle,
       }}
     >
-      {isEditMode && isHovered && (
+      {isEditMode && isHovered && !isTableBlock && (
         <BlockToolbar onDelete={() => onDelete?.()} />
       )}
 
       <div
+        data-block-content-area="true"
         style={{
           width: "100%",
           height: "100%",
           minWidth: 0,
           minHeight: 0,
-
-          overflow: "hidden",
-
+          overflow: isTableBlock ? "hidden" : "auto",
           boxSizing: "border-box",
-
           display: isTableBlock ? "flex" : "block",
           flexDirection: isTableBlock ? "column" : undefined,
-
           background: "transparent",
         }}
       >

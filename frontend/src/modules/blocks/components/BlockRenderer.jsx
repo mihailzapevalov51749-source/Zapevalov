@@ -2,12 +2,13 @@ import {
   getBlockTypeTitle,
   getBlockViewComponent,
 } from "../registry/blockRegistry";
-import { supportsInlineBlockEdit } from "../../../portal/utils/blockEditUtils";
 import BlockWrapper from "./BlockWrapper";
 
 export default function BlockRenderer({
   block,
   isEditMode,
+  isSelected = false,
+  embeddedInCanvas = false,
   onEdit,
   onDelete,
   onBlockUpdated,
@@ -45,8 +46,6 @@ export default function BlockRenderer({
     Boolean(block?.content?.imageUrl) ||
     Boolean(block?.content?.url);
 
-  const usePanelEditor = isEditMode && !supportsInlineBlockEdit(block?.type);
-
   const wrapperStyle = getWrapperStyle({
     isAdminSystemBlock,
     isTableBlock,
@@ -59,9 +58,9 @@ export default function BlockRenderer({
     <BlockWrapper
       block={block}
       isEditMode={isEditMode}
+      isSelected={isSelected}
       wrapperStyle={wrapperStyle}
-      isResizable={false}
-      onEdit={usePanelEditor ? () => onEdit?.(block) : undefined}
+      onEdit={() => onEdit?.(block)}
       onDelete={() => onDelete?.(block)}
       draggable={draggable}
       onDragStart={onDragStart}
@@ -77,6 +76,7 @@ export default function BlockRenderer({
         <BlockComponent
           block={block}
           isEditMode={isEditMode}
+          embeddedInCanvas={embeddedInCanvas}
           onEdit={onEdit}
           onDelete={onDelete}
           onBlockUpdated={onBlockUpdated}
@@ -119,8 +119,8 @@ function getWrapperStyle({
       boxSizing: "border-box",
       overflow: "hidden",
       background: "transparent",
-      boxShadow: isEditMode ? undefined : "none",
-      border: isEditMode ? undefined : "none",
+      boxShadow: "none",
+      border: "none",
     };
   }
 
@@ -133,8 +133,8 @@ function getWrapperStyle({
       boxSizing: "border-box",
       overflow: "hidden",
       background: "transparent",
-      boxShadow: isEditMode ? undefined : "none",
-      border: isEditMode ? undefined : "none",
+      boxShadow: "none",
+      border: "none",
     };
   }
 
@@ -153,10 +153,10 @@ function getWrapperStyle({
 
   return {
     width: "100%",
-    height: "auto",
-    minHeight: "100%",
+    height: "100%",
+    minHeight: 0,
     boxSizing: "border-box",
-    overflow: "visible",
+    overflow: "hidden",
   };
 }
 

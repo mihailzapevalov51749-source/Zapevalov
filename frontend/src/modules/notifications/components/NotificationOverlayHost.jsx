@@ -4,11 +4,10 @@ import EntityCardModal from "../../universalTable/components/entityCard/EntityCa
 import FileViewerModal from "../../../shared/files/components/FileViewerModal";
 
 import { uploadFile } from "../../../shared/files/api/filesApi";
-
-import {
-  getTable,
-  updateTableRow,
-} from "../../universalTable/services/tableApi";
+import { runtimeReadGateway } from "../../runtimeReadGateway";
+import { updateLegacyTableRow } from "../../runtimeLegacyWriteAdapter";
+import { LAYOUT_MODES } from "../../../shared/layout/layoutModes";
+import { resolveWorkspaceLeftOffset } from "../../../shared/layout/shellGeometry";
 
 import {
   getLibraryDocumentByFileKey,
@@ -197,7 +196,7 @@ export default function NotificationOverlayHost() {
       [String(columnId)]: value,
     };
 
-    await updateTableRow(rowId, {
+    await updateLegacyTableRow(rowId, {
       values: nextValues,
     });
 
@@ -265,7 +264,7 @@ export default function NotificationOverlayHost() {
           [columnId]: nextFiles,
         };
 
-        await updateTableRow(row.id, {
+        await updateLegacyTableRow(row.id, {
           values: nextValues,
         });
 
@@ -323,7 +322,7 @@ export default function NotificationOverlayHost() {
         [columnId]: nextFiles,
       };
 
-      await updateTableRow(row.id, {
+      await updateLegacyTableRow(row.id, {
         values: nextValues,
       });
 
@@ -465,7 +464,7 @@ export default function NotificationOverlayHost() {
       if (!tableId || !rowId) return;
 
       try {
-        const table = await getTable(tableId);
+        const table = await runtimeReadGateway.getLegacyTable(tableId);
 
         const rows = Array.isArray(table?.rows) ? table.rows : [];
         const columns = Array.isArray(table?.columns) ? table.columns : [];
@@ -511,6 +510,13 @@ export default function NotificationOverlayHost() {
 
   if (!overlayState) return null;
 
+  // TODO: Phase 2 — remove explicitWorkspaceLeftOffset after overlay geometry is aligned with shell geometry.
+  const workspaceLeftOffset = resolveWorkspaceLeftOffset({
+    mode: LAYOUT_MODES.RUNTIME,
+    collapsed: localStorage.getItem("yasnopro-sidebar-collapsed") === "true",
+    explicitWorkspaceLeftOffset: 240,
+  });
+
   if (
     overlayState.type === "library_file" ||
     overlayState.type === "uploaded_file"
@@ -526,7 +532,7 @@ export default function NotificationOverlayHost() {
         userId="1"
         userName="Михаил"
         mode="view"
-        workspaceLeftOffset={240}
+        workspaceLeftOffset={workspaceLeftOffset}
         workspaceTopOffset={0}
         onClose={() => {
           updateOverlayState(null);

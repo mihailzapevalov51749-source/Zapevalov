@@ -11,6 +11,7 @@ export default function MenuTree({
   onDeleteItem,
   dragAndDrop,
   scale = 1,
+  sidebarCollapsed = false,
 }) {
   const [openedEditorItemId, setOpenedEditorItemId] = useState(null);
 
@@ -40,9 +41,9 @@ export default function MenuTree({
 
         display: "flex",
         flexDirection: "column",
-        gap: 2 * scale,
+        gap: sidebarCollapsed ? 4 : 2 * scale,
 
-        padding: "0 0 80px",
+        padding: sidebarCollapsed ? "0 0 12px" : "0 0 80px",
         margin: 0,
       }}
     >
@@ -59,6 +60,7 @@ export default function MenuTree({
           scale={scale}
           openedEditorItemId={openedEditorItemId}
           setOpenedEditorItemId={setOpenedEditorItemId}
+          sidebarCollapsed={sidebarCollapsed}
         />
       ))}
     </nav>

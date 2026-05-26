@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import PortalPageView from "./portal/PortalPageView";
 import LibraryPageView from "./modules/documentLibraries/components/LibraryPageView";
@@ -9,6 +9,12 @@ import ProfilePage from "./profile/components/ProfilePage";
 import OnlyOfficeTest from "./test/OnlyOfficeTest";
 
 import { getMe } from "./api/authApi";
+import { saveLastRuntimePath } from "./shared/appMode/appModeStorage";
+
+import DesignerAccessGate from "./modules/designer/pages/DesignerAccessGate";
+import DesignerTenantLayout from "./modules/designer/pages/DesignerTenantLayout";
+import ObjectTypesPage from "./modules/designer/pages/ObjectTypesPage";
+import ObjectTypeWorkspacePage from "./modules/designer/pages/ObjectTypeWorkspacePage";
 
 const ADMIN_ROLES = ["admin", "superadmin"];
 const ADMIN_ROLE_IDS = [3, 4];
@@ -30,6 +36,16 @@ function ProtectedAdminRoute({ user, children }) {
   return children;
 }
 
+function RuntimePathTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    saveLastRuntimePath(location.pathname);
+  }, [location.pathname]);
+
+  return null;
+}
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +65,14 @@ export default function App() {
   };
 
   useEffect(() => {
-    loadUser();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    const id = window.setTimeout(() => {
+      loadUser();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(id);
+    };
   }, []);
 
   if (loading) {
@@ -61,7 +84,9 @@ export default function App() {
   }
 
   return (
-    <Routes>
+    <>
+      <RuntimePathTracker />
+      <Routes>
       <Route path="/" element={<Navigate to="/portal/1/page/1" replace />} />
 
       <Route path="/onlyoffice-test" element={<OnlyOfficeTest />} />
@@ -81,6 +106,21 @@ export default function App() {
       />
 
       <Route path="/profile" element={<ProfilePage />} />
+
+      <Route path="/designer" element={<DesignerAccessGate user={user} />}>
+        <Route path="tenant/:tenantId" element={<DesignerTenantLayout />}>
+          <Route index element={<Navigate to="object-types" replace />} />
+          <Route path="object-types" element={<ObjectTypesPage />} />
+          <Route
+            path="object-types/:objectTypeId"
+            element={<Navigate to="general" replace relative="path" />}
+          />
+          <Route
+            path="object-types/:objectTypeId/:tab"
+            element={<ObjectTypeWorkspacePage />}
+          />
+        </Route>
+      </Route>
 
     
       <Route
@@ -130,5 +170,6 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }

@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 
 import { uploadFile } from "../../files/api/filesApi";
 import FileViewerModal from "../../files/components/FileViewerModal";
+import { LAYOUT_MODES } from "../../layout/layoutModes";
+import { resolveWorkspaceLeftOffset } from "../../layout/shellGeometry";
 
 import EmojiIcon from "../../../modules/comments/components/EmojiIcon";
 import MessageAvatar from "./MessageAvatar";
@@ -645,6 +647,13 @@ export default function MessageItem({
     closePopovers();
   };
 
+  // TODO: Phase 2 — remove explicitWorkspaceLeftOffset after overlay geometry is aligned with shell geometry.
+  const workspaceLeftOffset = resolveWorkspaceLeftOffset({
+    mode: LAYOUT_MODES.RUNTIME,
+    collapsed: localStorage.getItem("yasnopro-sidebar-collapsed") === "true",
+    explicitWorkspaceLeftOffset: 240,
+  });
+
   return (
     <div
       id={`message-${currentMessage?.id}`}
@@ -848,7 +857,7 @@ export default function MessageItem({
         userId="1"
         userName="Михаил"
         mode="view"
-        workspaceLeftOffset={240}
+        workspaceLeftOffset={workspaceLeftOffset}
         workspaceTopOffset={0}
         initialContext={
           previewFile?.notificationContext || {

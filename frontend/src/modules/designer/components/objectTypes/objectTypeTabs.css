@@ -1,0 +1,26 @@
+.object-type-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--designer-border);
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+
+.object-type-tabs__item {
+  text-decoration: none;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 14px;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+
+.object-type-tabs__item:hover {
+  color: #334155;
+}
+
+.object-type-tabs__item.is-active {
+  color: #5b21b6;
+  border-bottom-color: #7c3aed;
+}

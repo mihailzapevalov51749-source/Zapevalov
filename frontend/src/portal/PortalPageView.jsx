@@ -63,7 +63,7 @@ import {
   calculateDropPosition,
 } from "./utils/portalPageUtils";
 
-import { updateTable } from "../modules/universalTable/services/tableApi";
+import { updateLegacyTable } from "../modules/runtimeLegacyWriteAdapter";
 import {
   dispatchUniversalTableTitleChanged,
   UNIVERSAL_TABLE_TITLE_CHANGED_EVENT,
@@ -997,7 +997,7 @@ export default function PortalPageView() {
         isUniversalTableNavigationItem(activeNavigationItem);
 
       if (isDedicatedTablePage && primaryTableId) {
-        const updated = await updateTable(primaryTableId, {
+        const updated = await updateLegacyTable(primaryTableId, {
           title: nextTitle,
         });
 
@@ -1193,6 +1193,7 @@ export default function PortalPageView() {
     onBack={() => navigate(-1)}
     onEnterEditMode={() => setIsEditMode(true)}
     onExitEditMode={exitEditMode}
+    tenantId={Number(portalId) || 1}
   />
 
   <div

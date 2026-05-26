@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -20,6 +21,116 @@ from app.modules.users.models import User
 
 def _actor_user_id(current_user: User | None) -> int | None:
     return current_user.id if current_user else None
+
+
+def _validate_projection_metadata(
+    *,
+    settings_json: dict[str, Any],
+    context: str,
+) -> dict[str, Any]:
+    """
+    Validates/normalizes `settings_json.projection` contract.
+
+    Backward compatible: if `projection` is missing -> settings_json unchanged.
+    """
+    if not isinstance(settings_json, dict):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"{context}: settings_json должен быть объектом",
+        )
+
+    projection = settings_json.get("projection", None)
+
+    # Backward compatibility: old views had no projection yet.
+    if projection is None:
+        return settings_json
+
+    if not isinstance(projection, dict):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"{context}: settings_json.projection должен быть объектом",
+        )
+
+    visible_fields = projection.get("visible_fields", None)
+    field_order = projection.get("field_order", None)
+    title_field = projection.get("title_field", None)
+    default_sort = projection.get("default_sort", None)
+
+    if visible_fields is None:
+        visible_fields_norm: list[str] = []
+    else:
+        if not isinstance(visible_fields, list) or not all(
+            isinstance(x, str) for x in visible_fields
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"{context}: visible_fields должен быть list[str]",
+            )
+        visible_fields_norm = visible_fields
+
+    if field_order is None:
+        field_order_norm: list[str] = []
+    else:
+        if not isinstance(field_order, list) or not all(
+            isinstance(x, str) for x in field_order
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"{context}: field_order должен быть list[str]",
+            )
+        field_order_norm = field_order
+
+    if title_field is None:
+        title_field_norm: str | None = None
+    else:
+        if not isinstance(title_field, str):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"{context}: title_field должен быть string или null",
+            )
+        title_field_norm = title_field
+
+    default_sort_norm: dict[str, Any]
+    if default_sort is None:
+        default_sort_norm = {"field": None, "order": "desc"}
+    else:
+        if not isinstance(default_sort, dict):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"{context}: default_sort должен быть объектом",
+            )
+
+        sort_field = default_sort.get("field", None)
+        sort_order = default_sort.get("order", "desc")
+
+        if sort_field is not None and not isinstance(sort_field, str):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"{context}: default_sort.field должен быть string или null",
+            )
+
+        if sort_order not in {"asc", "desc"}:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"{context}: default_sort.order должен быть 'asc' или 'desc'",
+            )
+
+        default_sort_norm = {"field": sort_field, "order": sort_order}
+
+    # Fallback defaults (saved projection stays consistent with the contract)
+    if not field_order_norm and visible_fields_norm:
+        field_order_norm = list(visible_fields_norm)
+
+    normalized_projection: dict[str, Any] = {
+        "visible_fields": visible_fields_norm,
+        "field_order": field_order_norm,
+        "title_field": title_field_norm,
+        "default_sort": default_sort_norm,
+    }
+
+    result = dict(settings_json)
+    result["projection"] = normalized_projection
+    return result
 
 
 def _get_object_type_or_404(
@@ -112,6 +223,11 @@ def create_view(
 ) -> ViewDefinitionRead:
     object_type = _get_object_type_or_404(db, tenant_id, object_type_id)
 
+    settings_json = _validate_projection_metadata(
+        settings_json=payload.settings_json or {},
+        context=f"create_view({tenant_id}/{object_type_id})",
+    )
+
     if repository.get_by_key(db, tenant_id, object_type_id, payload.key):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -138,7 +254,7 @@ def create_view(
         is_system=False,
         is_active=payload.is_active,
         sort_order=payload.sort_order,
-        settings_json=payload.settings_json,
+        settings_json=settings_json,
         layout_json=payload.layout_json,
         filters_json=payload.filters_json,
         visibility_json=payload.visibility_json,
@@ -221,7 +337,10 @@ def update_view(
     if "sort_order" in updates:
         entity.sort_order = updates["sort_order"]
     if "settings_json" in updates:
-        entity.settings_json = updates["settings_json"]
+        entity.settings_json = _validate_projection_metadata(
+            settings_json=updates["settings_json"] or {},
+            context=f"update_view({tenant_id}/{view_id})",
+        )
     if "layout_json" in updates:
         entity.layout_json = updates["layout_json"]
     if "filters_json" in updates:

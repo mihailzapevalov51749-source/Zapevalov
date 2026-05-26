@@ -5,6 +5,11 @@ import ViewCreatePopover from "./ViewCreatePopover";
 import TableRepresentationsOverflowMenu from "./TableRepresentationsOverflowMenu";
 
 import useTableRepresentationsBarState from "../../hooks/useTableRepresentationsBarState";
+import {
+  registerTableSessionSaveHandler,
+  resolveTableSessionId,
+  unregisterTableSessionSaveHandler,
+} from "../../session/tableSessionStore";
 
 import {
   tableRepresentationsRootStyle,
@@ -102,6 +107,22 @@ export default function TableRepresentationsBar({
     tableIdentity?.section_id,
   ]);
 
+  const sessionId = useMemo(
+    () =>
+      resolveTableSessionId({
+        blockId:
+          tableIdentity?.blockId || tableIdentity?.block_id,
+        tableId:
+          tableIdentity?.tableId || tableIdentity?.table_id,
+      }),
+    [
+      tableIdentity?.blockId,
+      tableIdentity?.block_id,
+      tableIdentity?.tableId,
+      tableIdentity?.table_id,
+    ]
+  );
+
   const [localViewsVisibleLimit, setLocalViewsVisibleLimit] = useState(() => {
     try {
       const savedValue = localStorage.getItem(
@@ -184,6 +205,7 @@ export default function TableRepresentationsBar({
     activeRepresentationId,
     isRepresentationDirty,
     isBaseStateDirty,
+    sessionId,
 
     onSelectRepresentation,
     onCreateRepresentation,
@@ -200,16 +222,18 @@ export default function TableRepresentationsBar({
   });
 
   useEffect(() => {
-    window.__UNIVERSAL_TABLE_SAVE_HANDLER__ = async () => {
+    if (sessionId === "unknown") {
+      return undefined;
+    }
+
+    registerTableSessionSaveHandler(sessionId, async () => {
       await handleSave?.();
-    };
+    });
 
     return () => {
-      if (window.__UNIVERSAL_TABLE_SAVE_HANDLER__) {
-        delete window.__UNIVERSAL_TABLE_SAVE_HANDLER__;
-      }
+      unregisterTableSessionSaveHandler(sessionId);
     };
-  }, [handleSave]);
+  }, [sessionId, handleSave]);
 
   useEffect(() => {
     const handleLeaveRequest = (event) => {
@@ -397,6 +421,10 @@ export default function TableRepresentationsBar({
       return null;
     }
 
+    if (typeof document === "undefined") {
+      return null;
+    }
+
     const isLeavePageMode = Boolean(leavePageRequest);
 
     const shouldShowBaseStateModal =
@@ -404,14 +432,24 @@ export default function TableRepresentationsBar({
       !activeRepresentationId &&
       isBaseStateDirty;
 
-    return (
+    const stopModalEvent = (event) => {
+      event.stopPropagation();
+    };
+
+    return createPortal(
       <div
         data-representation-dirty-modal="true"
         style={dirtyModalOverlayStyle}
-        onMouseDown={(event) => event.stopPropagation()}
-        onPointerDown={(event) => event.stopPropagation()}
+        onMouseDown={stopModalEvent}
+        onPointerDown={stopModalEvent}
+        onClick={stopModalEvent}
       >
-        <div style={dirtyModalStyle}>
+        <div
+          style={dirtyModalStyle}
+          onMouseDown={stopModalEvent}
+          onPointerDown={stopModalEvent}
+          onClick={stopModalEvent}
+        >
           <div style={dirtyModalHeaderStyle}>
             <div style={dirtyModalTitleStyle}>
               {shouldShowBaseStateModal
@@ -479,7 +517,8 @@ export default function TableRepresentationsBar({
             </button>
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
     );
   };
 
@@ -639,18 +678,23 @@ export default function TableRepresentationsBar({
   );
 }
 
+const DIRTY_MODAL_Z_INDEX = 10000050;
+
 const dirtyModalOverlayStyle = {
   position: "fixed",
   inset: 0,
-  zIndex: 10000,
+  zIndex: DIRTY_MODAL_Z_INDEX,
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   background: "rgba(15, 23, 42, 0.45)",
   backdropFilter: "blur(2px)",
+  pointerEvents: "auto",
 };
 
 const dirtyModalStyle = {
+  position: "relative",
+  zIndex: DIRTY_MODAL_Z_INDEX + 1,
   width: 440,
   maxWidth: "calc(100vw - 32px)",
   background: "#ffffff",
@@ -658,6 +702,7 @@ const dirtyModalStyle = {
   border: "1px solid #dbe4ee",
   boxShadow: "0 25px 80px rgba(15, 23, 42, 0.25)",
   overflow: "hidden",
+  pointerEvents: "auto",
 };
 
 const dirtyModalHeaderStyle = {

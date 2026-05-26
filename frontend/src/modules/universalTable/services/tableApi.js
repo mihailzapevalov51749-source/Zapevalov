@@ -171,6 +171,11 @@ export async function getLookupSources() {
   return request(`/universal-tables/lookup-sources`);
 }
 
+/** Список всех Universal Tables (тот же endpoint, что и lookup-sources). */
+export async function listUniversalTables() {
+  return getLookupSources();
+}
+
 export async function getLookupOptions(sourceTableId, displayColumnId) {
   const params = new URLSearchParams({
     source_table_id: String(sourceTableId),

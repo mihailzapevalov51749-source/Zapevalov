@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import MenuItemEditor from "./MenuItemEditor";
 import { theme } from "../../../styles/theme";
+import { LAYOUT_TOKENS } from "../../../shared/layout/layoutTokens";
 
 const API_BASE_URL = "http://127.0.0.1:8010";
 
@@ -37,6 +38,10 @@ function isProtectedMenuTitle(title) {
   return PROTECTED_TITLES.includes(String(title || "").trim().toLowerCase());
 }
 
+function hasCustomMenuIcon(item) {
+  return item?.icon_type === "upload" && Boolean(item?.icon_file_url);
+}
+
 export default function MenuItem({
   item,
   activePageId,
@@ -48,6 +53,7 @@ export default function MenuItem({
   scale = 1,
   openedEditorItemId,
   setOpenedEditorItemId,
+  sidebarCollapsed = false,
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -113,6 +119,22 @@ export default function MenuItem({
   const dropPosition = dragAndDrop?.dropTarget?.position;
 
   const itemTextColor = isActive ? "#2563EB" : item.color || "#0F172A";
+  const sidebarVisual = LAYOUT_TOKENS.sidebar;
+  const rowHeight = sidebarCollapsed
+    ? sidebarVisual.menuItemHeight
+    : BASE.rowHeight * scale;
+  const iconSize = sidebarCollapsed
+    ? sidebarVisual.menuItemIconSize
+    : BASE.iconSize * scale;
+  const itemFontSize = sidebarCollapsed
+    ? sidebarVisual.menuItemFontSize
+    : BASE.fontSize * scale;
+  const itemRadius = sidebarCollapsed
+    ? sidebarVisual.menuItemRadius
+    : BASE.radius * scale;
+  const itemGap = sidebarCollapsed
+    ? sidebarVisual.menuItemGap
+    : BASE.gap * scale;
 
   const itemBackground = useMemo(() => {
     if (isDropTarget && dropPosition === "inside") return "#DBEAFE";
@@ -186,19 +208,19 @@ export default function MenuItem({
         style={{
           position: "relative",
           cursor: isEditMode && !isSystem ? "grab" : isClickable ? "pointer" : "default",
-          height: BASE.rowHeight * scale,
-          minHeight: BASE.rowHeight * scale,
-          padding: `0 ${BASE.paddingX * scale}px`,
-          borderRadius: BASE.radius * scale,
+          height: rowHeight,
+          minHeight: rowHeight,
+          padding: sidebarCollapsed ? "0 6px" : `0 ${BASE.paddingX * scale}px`,
+          borderRadius: itemRadius,
           background: itemBackground,
           fontWeight: isActive ? 600 : item.is_bold ? 700 : 500,
           fontStyle: item.is_italic ? "italic" : "normal",
-          fontSize: BASE.fontSize * scale,
+          fontSize: itemFontSize,
           color: itemTextColor,
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          gap: BASE.gap * scale,
+          justifyContent: sidebarCollapsed ? "center" : "space-between",
+          gap: itemGap,
           boxSizing: "border-box",
           width: "100%",
           transition: "background 0.15s ease, color 0.15s ease, opacity 0.15s ease",
@@ -209,12 +231,13 @@ export default function MenuItem({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: BASE.gap * scale,
+            gap: itemGap,
             minWidth: 0,
-            flex: 1,
+            flex: sidebarCollapsed ? "0 0 auto" : 1,
+            justifyContent: sidebarCollapsed ? "center" : "flex-start",
           }}
         >
-          {isEditMode && !isSystem && (
+          {isEditMode && !isSystem && !sidebarCollapsed && (
             <span
               style={{
                 color: "#94A3B8",
@@ -229,20 +252,47 @@ export default function MenuItem({
             </span>
           )}
 
-          {isEditMode && !isSystem && (
+          {isEditMode && !isSystem && !sidebarCollapsed && (
             <TypeBadge type={item.type} scale={scale} />
           )}
 
-          <IconRenderer
-            iconType={item.icon_type}
-            iconFileUrl={item.icon_file_url}
-            scale={scale}
-          />
+          {sidebarCollapsed ? (
+            hasCustomMenuIcon(item) ? (
+              <IconRenderer
+                iconType={item.icon_type}
+                iconFileUrl={item.icon_file_url}
+                scale={1}
+                iconSize={iconSize}
+              />
+            ) : (
+              <DefaultIcon
+                type={item.type}
+                scale={1}
+                active={isActive}
+                iconSize={iconSize}
+              />
+            )
+          ) : (
+            <>
+              <IconRenderer
+                iconType={item.icon_type}
+                iconFileUrl={item.icon_file_url}
+                scale={scale}
+                iconSize={iconSize}
+              />
 
-          {isEditMode && item.type === "system_page" && !item.icon_type && (
-            <DefaultIcon type={item.type} scale={scale} active={isActive} />
+              {isEditMode && item.type === "system_page" && !item.icon_type && (
+                <DefaultIcon
+                  type={item.type}
+                  scale={scale}
+                  active={isActive}
+                  iconSize={iconSize}
+                />
+              )}
+            </>
           )}
 
+          {!sidebarCollapsed && (
           <span
             style={{
               overflow: "hidden",
@@ -255,9 +305,10 @@ export default function MenuItem({
           >
             {item.title}
           </span>
+          )}
         </div>
 
-        {isEditMode && (
+        {isEditMode && !sidebarCollapsed && (
           <button
             type="button"
             onClick={(event) => {
@@ -314,7 +365,7 @@ export default function MenuItem({
         </div>
       )}
 
-      {hasChildren && !isCollapsed && (
+      {hasChildren && !isCollapsed && !sidebarCollapsed && (
         <div
           style={{
             marginLeft: 0,
@@ -334,6 +385,7 @@ export default function MenuItem({
               scale={scale}
               openedEditorItemId={openedEditorItemId}
               setOpenedEditorItemId={setOpenedEditorItemId}
+              sidebarCollapsed={sidebarCollapsed}
             />
           ))}
         </div>
@@ -395,43 +447,67 @@ function TypeBadge({ type, scale = 1 }) {
   );
 }
 
-function DefaultIcon({ type, scale = 1, active = false }) {
+function DefaultIcon({ type, scale = 1, active = false, iconSize }) {
+  const size = iconSize ?? BASE.iconSize * scale;
   const config = {
+    section: "▣",
+    workspace: "▣",
+    page: "□",
+    universal_table: "▦",
+    external_link: "↗",
+    document_library: "▤",
     system_page: "⚙",
+    table: "▦",
   };
 
-  const symbol = config[type];
-
-  if (!symbol) return null;
+  const symbol = config[type] || "?";
 
   return (
     <span
       style={{
-        width: BASE.iconSize * scale,
-        height: BASE.iconSize * scale,
+        width: size,
+        height: size,
         color: active ? "#2563EB" : "#64748B",
-        fontSize: 14 * scale,
+        fontSize: Math.max(12, size - 2),
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
         flexShrink: 0,
         lineHeight: 1,
       }}
+      title={itemTypeLabel(type)}
     >
       {symbol}
     </span>
   );
 }
 
-function IconRenderer({ iconType, iconFileUrl, scale = 1 }) {
+function itemTypeLabel(type) {
+  const labels = {
+    section: "Раздел",
+    workspace: "Раздел",
+    page: "Страница",
+    universal_table: "Универсальная таблица",
+    external_link: "Ссылка",
+    document_library: "Библиотека документов",
+    system_page: "Системная страница",
+    table: "Таблица",
+  };
+
+  return labels[type] || "Пункт меню";
+}
+
+function IconRenderer({ iconType, iconFileUrl, scale = 1, iconSize }) {
+  const size = iconSize ?? BASE.iconSize * scale;
+
   if (iconType === "upload" && iconFileUrl) {
     return (
       <img
         src={`${API_BASE_URL}${iconFileUrl}`}
         alt=""
         style={{
-          width: BASE.iconSize * scale,
-          height: BASE.iconSize * scale,
+          width: size,
+          height: size,
           objectFit: "contain",
           flexShrink: 0,
         }}

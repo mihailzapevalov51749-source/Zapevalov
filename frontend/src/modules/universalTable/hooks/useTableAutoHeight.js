@@ -5,11 +5,13 @@ import { TABLE_HEIGHT_PADDING } from "../services/tableConstants";
 export default function useTableAutoHeight({
   block,
   onBlockUpdated,
+  layoutControlled = false,
 }) {
   const tableRef = useRef(null);
   const lastReportedHeightRef = useRef(0);
 
   const reportTableHeight = useCallback(() => {
+    if (layoutControlled) return;
     if (!tableRef.current || !block?.id) return;
 
     const nextHeight = Math.ceil(
@@ -27,9 +29,10 @@ export default function useTableAutoHeight({
         autoHeight: nextHeight,
       },
     });
-  }, [block, onBlockUpdated]);
+  }, [block, layoutControlled, onBlockUpdated]);
 
   useEffect(() => {
+    if (layoutControlled) return;
     if (!tableRef.current || typeof ResizeObserver === "undefined") return;
 
     const observer = new ResizeObserver(() => {
@@ -41,7 +44,7 @@ export default function useTableAutoHeight({
     return () => {
       observer.disconnect();
     };
-  }, [reportTableHeight]);
+  }, [layoutControlled, reportTableHeight]);
 
   const requestTableHeightReport = () => {
     requestAnimationFrame(reportTableHeight);

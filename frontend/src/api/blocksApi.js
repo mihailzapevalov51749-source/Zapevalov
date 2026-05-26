@@ -58,6 +58,14 @@ function getDefaultSize(blockType) {
       w: 18,
       h: 12,
     },
+    universal_table: {
+      w: 36,
+      h: 18,
+    },
+    table: {
+      w: 36,
+      h: 18,
+    },
   };
 
   return sizes[blockType] || {
@@ -75,6 +83,8 @@ function getDefaultTitle(blockType) {
     button: "Новая кнопка",
     cards: "Новые карточки",
     steps: "Новые шаги",
+    universal_table: "Таблица",
+    table: "Таблица",
   };
 
   return titles[blockType] || "Новый блок";

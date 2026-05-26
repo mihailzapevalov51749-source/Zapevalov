@@ -3,9 +3,12 @@ import { useEffect, useState } from "react";
 import LeftSidebar from "../modules/navigation/components/LeftSidebar";
 
 import NotificationOverlayHost from "../modules/notifications/components/NotificationOverlayHost";
-
-const SIDEBAR_EXPANDED_WIDTH = 220;
-const SIDEBAR_COLLAPSED_WIDTH = 0;
+import {
+  resolveSidebarWidth,
+  resolveWorkspaceLeftOffset,
+} from "../shared/layout/shellGeometry";
+import { LAYOUT_MODES } from "../shared/layout/layoutModes";
+import { TRANSITION_TOKENS } from "../shared/layout/transitionTokens";
 
 const CORPORATE_CHAT_PAGE_ID = 35;
 
@@ -371,9 +374,14 @@ export default function PortalLayout({
   getInitialSidebarCollapsed
 );
 
-  const sidebarWidth = sidebarCollapsed
-    ? SIDEBAR_COLLAPSED_WIDTH
-    : SIDEBAR_EXPANDED_WIDTH;
+  const sidebarWidth = resolveSidebarWidth({
+    mode: LAYOUT_MODES.RUNTIME,
+    collapsed: sidebarCollapsed,
+  });
+  const workspaceLeftOffset = resolveWorkspaceLeftOffset({
+    mode: LAYOUT_MODES.RUNTIME,
+    collapsed: sidebarCollapsed,
+  });
 
   const pathname = window.location.pathname;
 
@@ -535,7 +543,7 @@ export default function PortalLayout({
         style={{
           position: "fixed",
           top: 0,
-          left: sidebarWidth,
+          left: workspaceLeftOffset,
           right: 0,
           bottom: 0,
 
@@ -551,7 +559,7 @@ export default function PortalLayout({
           display: "flex",
           flexDirection: "column",
 
-          transition: "left 180ms ease",
+          transition: TRANSITION_TOKENS.shell.workspaceLeft,
         }}
       >
         <div

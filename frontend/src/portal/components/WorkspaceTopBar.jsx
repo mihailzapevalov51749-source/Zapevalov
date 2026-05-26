@@ -7,6 +7,8 @@ import saveIcon from "../../assets/icons/save.gif";
 
 import ProfileSidePanel from "../../profile/components/ProfileSidePanel";
 
+import AppModeSwitch from "../../shared/appMode/AppModeSwitch";
+
 import useNotifications from "../../modules/notifications/hooks/useNotifications";
 import NotificationBell from "../../modules/notifications/components/NotificationBell";
 
@@ -57,6 +59,7 @@ export default function WorkspaceTopBar({
   onExitEditMode,
   showBackButton = false,
   onBack,
+  tenantId = 1,
 }) {
   const [user, setUser] = useState(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -124,6 +127,8 @@ const effectiveShowBackButton =
               ←
             </button>
           ) : null}
+
+          <AppModeSwitch tenantId={tenantId} variant="runtime" />
 
           <div style={titleBlockStyle}>
             {isPageTitleEditable ? (

@@ -5,8 +5,13 @@ import DocumentsBlockEditor from "../../blockTypes/documents/DocumentsBlockEdito
 import ImageBlockEditor from "../../blockTypes/image/ImageBlockEditor";
 import TextBlockEditor from "../../blockTypes/text/TextBlockEditor";
 import CardsBlockEditor from "../../blockTypes/cards/CardsBlockEditor";
-
-export default function BlockEditorModal({ block, onSave, onClose }) {
+export default function BlockEditorModal({
+  block,
+  onSave,
+  onClose,
+  onPatchBlock,
+  onRemoveFromSection,
+}) {
   const [title, setTitle] = useState("");
   const [showTitle, setShowTitle] = useState(true);
 
@@ -39,83 +44,10 @@ export default function BlockEditorModal({ block, onSave, onClose }) {
 
   if (block.type === "universal_table") {
     return (
-      <form
-        onSubmit={async (event) => {
-          event.preventDefault();
-
-          const nextTitle = title.trim();
-
-          await onSave({
-            title: nextTitle,
-            content: {
-              ...(block.content || {}),
-
-              // Используется при первичном создании/инициализации таблицы.
-              // Само название таблицы дальше можно менять отдельно в интерфейсе таблицы.
-              initial_table_title:
-                block.content?.initial_table_title || nextTitle || "Таблица",
-            },
-            settings: {
-              ...(block.settings || {}),
-              show_title: showTitle,
-            },
-          });
-        }}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 12,
-          color: "#e5f0ff",
-        }}
-      >
-        <div style={headerStyle}>
-          <h3 style={titleStyle}>Универсальная таблица</h3>
-
-          {onClose && (
-            <button type="button" onClick={onClose} style={smallButtonStyle}>
-              ×
-            </button>
-          )}
-        </div>
-
-        <Field label="Название в меню">
-          <input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            style={inputStyle}
-          />
-        </Field>
-
-        <label style={checkboxStyle}>
-          <input
-            type="checkbox"
-            checked={showTitle}
-            onChange={(event) => setShowTitle(event.target.checked)}
-          />
-          Показывать название таблицы
-        </label>
-
-        <div
-          style={{
-            padding: 10,
-            borderRadius: 8,
-            border: "1px solid #334155",
-            background: "#0f1b2d",
-            color: "#cbd5e1",
-            fontSize: 13,
-            lineHeight: 1.5,
-          }}
-        >
-          При создании новой универсальной таблицы название из меню используется
-          как первичное название самой таблицы. После создания название таблицы
-          можно изменить прямо в интерфейсе таблицы или скрыть через этот
-          переключатель.
-        </div>
-
-        <button type="submit" style={saveButtonStyle}>
-          Сохранить
-        </button>
-      </form>
+      <div style={{ color: "#94a3b8", fontSize: 13, lineHeight: 1.5 }}>
+        Настройки таблицы на canvas доступны в заголовке блока: иконка глаза и
+        удаление.
+      </div>
     );
   }
 
