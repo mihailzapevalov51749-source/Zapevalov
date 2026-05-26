@@ -44,8 +44,14 @@ from app.modules.notes.router import (
 
 from app.modules.chats.router import router as chats_router
 
-# важно для регистрации модели в SQLAlchemy
+from app.modules.platform.designer.router import router as platform_designer_router
+from app.modules.platform.runtime.router import router as platform_runtime_router
+
+# Регистрация ORM в metadata (legacy + platform). Platform DDL — только через Alembic.
 from app.modules.universal_views import models as universal_views_models  # noqa: F401
+from app.modules.platform.designer.object_types.models import (  # noqa: F401
+    DesignerObjectType,
+)
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -110,6 +116,12 @@ app.include_router(checklists_router)
 
 # NOTES
 app.include_router(notes_router)
+
+# PLATFORM DESIGNER
+app.include_router(platform_designer_router)
+
+# PLATFORM RUNTIME (published metadata catalog)
+app.include_router(platform_runtime_router)
 
 
 @app.get("/")
