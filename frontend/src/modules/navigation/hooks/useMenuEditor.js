@@ -8,7 +8,15 @@ export default function useMenuEditor({ portalId, reload }) {
   const enterEditMode = () => setIsEditMode(true);
   const exitEditMode = () => setIsEditMode(false);
 
-  const createItem = async ({ type, title, url, parent_id = null }) => {
+  const createItem = async ({
+    type,
+    title,
+    url,
+    parent_id = null,
+    scope,
+    mode,
+    context,
+  }) => {
     setIsSaving(true);
 
     try {
@@ -50,6 +58,9 @@ export default function useMenuEditor({ portalId, reload }) {
           color: null,
           is_bold: false,
           is_italic: false,
+          scope,
+          mode,
+          context,
         });
 
         const section = await navigationService.createSection({
@@ -106,6 +117,9 @@ export default function useMenuEditor({ portalId, reload }) {
         color: null,
         is_bold: false,
         is_italic: false,
+        scope,
+        mode,
+        context,
       });
 
       await reload();

@@ -65,6 +65,8 @@ export default function MenuItem({
 
   const isSystem =
     item?.isSystem ||
+    item?.is_system === true ||
+    item?.is_protected === true ||
     String(item?.id || "").startsWith("system-") ||
     isProtectedTitle;
 

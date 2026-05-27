@@ -5,6 +5,10 @@ import AppModeSwitch from "../../../../shared/appMode/AppModeSwitch";
 import "./designerHeader.css";
 
 export default function DesignerHeader({ tenantId, user }) {
+  console.log("[RENDER DesignerHeader]", {
+    tenantId,
+    userId: user?.id,
+  });
   const displayName = user?.full_name || user?.email || "Пользователь";
   const roleName = user?.role || user?.role_name || user?.roleName || "Аналитик";
   const initials =

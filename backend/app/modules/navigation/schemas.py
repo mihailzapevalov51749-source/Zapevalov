@@ -10,6 +10,8 @@ class NavigationItemCreate(BaseModel):
     page_id: Optional[int] = None
     library_id: Optional[int] = None
     url: Optional[str] = None
+    route: Optional[str] = None
+    path: Optional[str] = None
     sort_order: int = 0
     is_visible: bool = True
 
@@ -20,6 +22,13 @@ class NavigationItemCreate(BaseModel):
     color: Optional[str] = None
     is_bold: bool = False
     is_italic: bool = False
+    menu_scope: Optional[str] = None
+    scope: Optional[str] = None
+    mode: Optional[str] = None
+    context: Optional[str] = None
+    system_key: Optional[str] = None
+    is_system: Optional[bool] = None
+    is_protected: Optional[bool] = None
 
 
 class NavigationItemUpdate(BaseModel):
@@ -28,6 +37,8 @@ class NavigationItemUpdate(BaseModel):
     page_id: Optional[int] = None
     library_id: Optional[int] = None
     url: Optional[str] = None
+    route: Optional[str] = None
+    path: Optional[str] = None
     sort_order: Optional[int] = None
     is_visible: Optional[bool] = None
 
@@ -38,6 +49,9 @@ class NavigationItemUpdate(BaseModel):
     color: Optional[str] = None
     is_bold: Optional[bool] = None
     is_italic: Optional[bool] = None
+    system_key: Optional[str] = None
+    is_system: Optional[bool] = None
+    is_protected: Optional[bool] = None
 
 
 class NavigationItemMove(BaseModel):
@@ -56,6 +70,8 @@ class NavigationItemResponse(BaseModel):
     page_id: Optional[int] = None
     library_id: Optional[int] = None
     url: Optional[str] = None
+    route: Optional[str] = None
+    path: Optional[str] = None
 
     sort_order: int
     is_visible: bool
@@ -67,6 +83,10 @@ class NavigationItemResponse(BaseModel):
     color: Optional[str] = None
     is_bold: bool
     is_italic: bool
+    menu_scope: str
+    system_key: Optional[str] = None
+    is_system: bool
+    is_protected: bool
 
     class Config:
         from_attributes = True

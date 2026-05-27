@@ -224,10 +224,152 @@ PARTIAL
 ## Designer
 
 Статус:
-NOT IMPLEMENTED
+PARTIAL (shell exists; platform layer incomplete)
 
 Проблемы:
-- отсутствует отдельный Designer Layer.
+- Designer Shell работает, но не отделён на уровне platform engines;
+- отдельный Designer Layer для schema/modeling — в roadmap.
+
+---
+
+## AppShell migration (Phase 6.x)
+
+| Компонент | Foundation | Production |
+|---|---|---|
+| `AppSidebarRenderer` | **COMPLETE** (Phase 6.3) | **Not connected** |
+| `AppHeaderRenderer` | **COMPLETE** (Phase 6.4) | **Not connected** |
+| Runtime shell (`LeftSidebar`, `WorkspaceTopBar`) | Legacy | **Active** |
+| Designer shell (`DesignerHeader`, Designer sidebar) | Legacy | **Active** |
+| Feature flags | Unchanged | Renderers dev-only |
+| Build | Passing | — |
+
+### Dev previews
+
+| Route | Назначение |
+|---|---|
+| `/dev/app-sidebar-renderer` | Sidebar contract visual validation (5 panels) |
+| `/dev/app-header-renderer` | Header contract visual validation (5 panels) |
+| `/dev/appshell-shadow-runtime` | Dev-only shadow runtime wiring: provider snapshot + renderer contracts + diagnostics |
+| `/dev/appshell-shadow-designer` | Dev-only shadow designer parity diagnostics route |
+
+### AppShellProvider (Phase 6.6)
+
+| Артефакт | Статус |
+|---|---|
+| Design | `docs/architecture/YASNOPRO_APPSHELL_PROVIDER_DESIGN.md` |
+| Skeleton | `frontend/src/shared/shell/provider/*` |
+| Production wiring | **Not connected** |
+| Build | Passing (skeleton tree-shaken) |
+
+### Action Bridge (Phase 6.7)
+
+| Артефакт | Статус |
+|---|---|
+| Design | `docs/architecture/YASNOPRO_APPSHELL_ACTION_BRIDGE_DESIGN.md` |
+| Skeleton | `frontend/src/shared/shell/actions/*` |
+| Production wiring | **Not connected** |
+| Real action execution | **Disabled (design/skeleton only)** |
+
+### Shadow Mode (Phase 6.8)
+
+| Артефакт | Статус |
+|---|---|
+| Design | `docs/architecture/YASNOPRO_APPSHELL_SHADOW_MODE_DESIGN.md` |
+| Skeleton | `frontend/src/shared/shell/shadow/*` |
+| Flag | `yasnopro:dev:appshell-shadow` (DEV-only) |
+| Production wiring | **Not connected** |
+| Impact on users | **None** (observer + diagnostics only) |
+
+### Production Replacement Readiness Review (Phase 6.9)
+
+| Артефакт | Статус |
+|---|---|
+| Review doc | `docs/architecture/YASNOPRO_APPSHELL_PRODUCTION_REPLACEMENT_READINESS_REVIEW.md` |
+| Decision | **NO-GO** |
+| Reason summary | provider/handlers/routing/parity/rollback not ready |
+
+### Dev-only Shadow Runtime Wiring (Phase 6.10)
+
+| Артефакт | Статус |
+|---|---|
+| Dev route | `/dev/appshell-shadow-runtime` |
+| Source model | Runtime-like read-only snapshot |
+| Output | `AppSidebarRenderer` + `AppHeaderRenderer` + `AppShellShadowDiagnostics` |
+| Diagnostics fields | mode, collapsed, activePageId, activeItemId, section/item counters, title, search, notifications, geometry offsets, timestamp |
+| Real actions | **Disabled (no-op)** |
+| Production wiring | **Not connected** |
+
+### Dev-only Real Runtime Snapshot Probe (Phase 6.11)
+
+| Артефакт | Статус |
+|---|---|
+| Route mode switch | `Mock snapshot` / `Real runtime snapshot` |
+| Real sources | `useNavigationTree`, `getPageFull`, `getMe`, `readShellSidebarCollapsed`, `getLastRuntimePath`, unread notifications count |
+| Diagnostics sourceMode | `mock` / `real` / `unavailable` |
+| Unavailable reason | `real runtime sources unavailable in isolated dev route` |
+| Actions/routing/API mutate | **Disabled** |
+| Production wiring | **Not connected** |
+
+### Runtime Shadow Bridge (Phase 6.12)
+
+| Артефакт | Статус |
+|---|---|
+| Design | `docs/architecture/YASNOPRO_RUNTIME_SHADOW_BRIDGE_DESIGN.md` |
+| Bridge files | `shared/shell/shadow/runtime/*` (`runtimeShadowBridge.js`, `runtimeShadowSnapshot.ts`) |
+| Transport | readonly emitter + latest snapshot registry + subscribe/unsubscribe |
+| Runtime emitter | DEV-only observer emit from `PortalPageView` + `WorkspaceTopBar` |
+| Source mode | `bridge` / `mock` / `unavailable` |
+| Diagnostics | snapshot age, last update time, freshness, missing fields, runtime parity warnings |
+| Production impact | **None** |
+
+### Runtime/Shadow Parity Validation (Phase 6.13)
+
+| Артефакт | Статус |
+|---|---|
+| Validation doc | `docs/architecture/YASNOPRO_APPSHELL_RUNTIME_PARITY_VALIDATION.md` |
+| UI panel | parity checklist panel on `/dev/appshell-shadow-runtime` |
+| Check statuses | `pass`, `warn`, `fail`, `not_applicable` |
+| Aggregate status | `parityStatus = pass | partial | fail` |
+| Diagnostics arrays | `failedChecks[]`, `warningChecks[]`, `passedChecks[]` |
+| Production impact | **None** |
+
+### Designer/Shadow Parity Validation (Phase 6.14)
+
+| Артефакт | Статус |
+|---|---|
+| Validation doc | `docs/architecture/YASNOPRO_APPSHELL_DESIGNER_PARITY_VALIDATION.md` |
+| Dev route | `/dev/appshell-shadow-designer` |
+| Check statuses | `pass`, `warn`, `fail`, `not_applicable` |
+| Aggregate status | `designerParityStatus = pass | partial | fail` |
+| Diagnostics arrays | `designerFailedChecks[]`, `designerWarningChecks[]`, `designerPassedChecks[]` |
+| Production impact | **None** |
+
+### Cross-mode Shadow Readiness Review (Phase 6.15)
+
+| Артефакт | Статус |
+|---|---|
+| Review doc | `docs/architecture/YASNOPRO_APPSHELL_CROSS_MODE_SHADOW_READINESS_REVIEW.md` |
+| Decision | **NO-GO** (unchanged) |
+| Runtime parity status | Partial / manual verification pending |
+| Designer parity status | Partial / mock-based |
+| Main cross-mode risk | different fidelity of runtime/designer shadow sources |
+| Production impact | **None** |
+
+### Designer Shadow Bridge (Phase 6.16)
+
+| Артефакт | Статус |
+|---|---|
+| Design | `docs/architecture/YASNOPRO_DESIGNER_SHADOW_BRIDGE_DESIGN.md` |
+| Bridge files | `shared/shell/shadow/designer/*` (`designerShadowBridge.js`, `designerShadowSnapshot.ts`) |
+| Transport | readonly emitter + latest snapshot registry + subscribe/unsubscribe |
+| Designer emitter | DEV-only observer emit from `DesignerShell` |
+| Source mode | `bridge` / `mock` / `unavailable` on `/dev/appshell-shadow-designer` |
+| Production impact | **None** |
+
+### Следующий шаг
+
+Phase **6.17 — Cross-mode parity revalidation**.  
+Production replacement остаётся **заблокирован** до закрытия NO-GO причин из 6.9 review.
 
 ---
 

@@ -7,6 +7,10 @@ import LoginPage from "./pages/login/LoginPage";
 import ProfilePage from "./profile/components/ProfilePage";
 
 import OnlyOfficeTest from "./test/OnlyOfficeTest";
+import AppSidebarRendererPreview from "./shared/shell/sidebar/dev/AppSidebarRendererPreview";
+import AppHeaderRendererPreview from "./shared/shell/header/dev/AppHeaderRendererPreview";
+import AppShellShadowRuntimePreview from "./shared/shell/shadow/dev/AppShellShadowRuntimePreview";
+import AppShellShadowDesignerPreview from "./shared/shell/shadow/dev/AppShellShadowDesignerPreview";
 
 import { getMe } from "./api/authApi";
 import { saveLastRuntimePath } from "./shared/appMode/appModeStorage";
@@ -91,6 +95,34 @@ export default function App() {
 
       <Route path="/onlyoffice-test" element={<OnlyOfficeTest />} />
 
+      {import.meta.env.DEV ? (
+        <Route
+          path="/dev/app-sidebar-renderer"
+          element={<AppSidebarRendererPreview />}
+        />
+      ) : null}
+
+      {import.meta.env.DEV ? (
+        <Route
+          path="/dev/app-header-renderer"
+          element={<AppHeaderRendererPreview />}
+        />
+      ) : null}
+
+      {import.meta.env.DEV ? (
+        <Route
+          path="/dev/appshell-shadow-runtime"
+          element={<AppShellShadowRuntimePreview />}
+        />
+      ) : null}
+
+      {import.meta.env.DEV ? (
+        <Route
+          path="/dev/appshell-shadow-designer"
+          element={<AppShellShadowDesignerPreview />}
+        />
+      ) : null}
+
       <Route path="/tasks" element={<PortalPageView />} />
 
       <Route path="/universal-table" element={<PortalPageView />} />
@@ -110,6 +142,7 @@ export default function App() {
       <Route path="/designer" element={<DesignerAccessGate user={user} />}>
         <Route path="tenant/:tenantId" element={<DesignerTenantLayout />}>
           <Route index element={<Navigate to="object-types" replace />} />
+          <Route path="page/:pageId" element={<PortalPageView />} />
           <Route path="object-types" element={<ObjectTypesPage />} />
           <Route
             path="object-types/:objectTypeId"

@@ -540,3 +540,222 @@ Architecture Debt Registry должен стать:
 - системой архитектурного governance;
 - инструментом migration management;
 - инструментом platform stabilization.
+
+---
+
+# 19. AppShell migration debt (review backlog)
+
+Записи по миграции AppShell Phase 1+; формат review backlog (Severity / Status / Acceptance criteria).
+
+## AD-SHELL-001 — Shell sidebar collapse state has delayed/double-click behavior
+
+**Severity:** MEDIUM
+
+**Status:** PARTIAL — bridge transport and freshness diagnostics added in Phase 6.12; parity validation still pending
+
+**Area:**
+
+- AppShell migration
+- `shared/shell/useShellSidebarState.ts`
+- Runtime/Designer sidebar synchronization
+
+**Symptoms:**
+
+- Sidebar collapse/expand may require double click.
+- Collapse/expand may react with noticeable delay.
+- State synchronization between component state, localStorage, storage event and custom event may be inconsistent.
+
+**Likely causes to investigate:**
+
+- State update and localStorage write happen in same setState callback.
+- Custom event may trigger additional state update in the same tab.
+- Runtime and Designer may remount and read state before write/event propagation completes.
+- Toggle handler may close over stale state in one of the consumers.
+- Multiple shell consumers may subscribe and update independently without a central provider.
+
+**Recommended future fix:**
+
+- Wire `AppShellProvider` (skeleton exists in `shared/shell/provider/`) as single runtime owner of shell state.
+- Deprecate direct `useShellSidebarState()` in layouts after shadow validation (Phase 6.8).
+- Keep localStorage only as persistence layer, not active state owner.
+- Replace independent hook instances with context-based shared state.
+- Emit event only after canonical state is committed.
+- Add smoke tests/manual QA for Runtime → Designer and Designer → Runtime collapse continuity.
+
+**Do not fix during current phase unless it blocks demo.**
+
+**Acceptance criteria for closing:**
+
+- Single click always toggles sidebar.
+- No visible delay in Runtime or Designer.
+- Collapse state persists after refresh.
+- Collapse state follows mode switch.
+- No duplicate state events in console.
+- Works across two browser tabs.
+
+## AD-SHELL-002 — AppSidebar icon system is temporary until analyst-driven icon configuration
+
+**Severity:** MEDIUM
+
+**Status:** OPEN
+
+**Area:**
+
+- AppSidebarRenderer
+- Runtime/Designer menu icon rendering
+- future Designer icon configuration
+
+**Symptoms:**
+
+- AppSidebarRenderer uses temporary icon mapping/fallbacks.
+- Runtime icons are partially compatible with current menu but not yet driven by final editable icon configuration.
+- Designer icons are temporary.
+
+**Recommended future fix:**
+
+- Move icon rendering to shared configurable menu icon system.
+- Use menu item icon settings from analyst edit mode.
+- Support upload icons, system icons and fallback icons through one renderer.
+- Remove temporary icon maps from AppSidebarRenderer.
+
+**Do not fix during current phase unless it blocks demo.**
+
+## AD-SHELL-003 — AppShell renderers are foundation-only; production bridges missing
+
+**Severity:** CRITICAL (for production replacement only)
+
+**Status:** PARTIAL — visual foundation DONE (6.3 / 6.4); provider DONE (6.6); action bridge DONE (6.7); shadow design DONE (6.8); 6.9 readiness = NO-GO; production wiring OPEN
+
+**Area:**
+
+- `AppSidebarRenderer`, `AppHeaderRenderer`
+- `LeftSidebar`, `WorkspaceTopBar`, `DesignerHeader`
+- AppShell migration Phase 6.6+
+
+**Current state:**
+
+- Sidebar/header contracts and adapters map legacy data shapes.
+- Renderers support visual contract fields (editMode, actions, capabilities, search, notifications, editable title, tree).
+- All renderer actions are **no-op**; renderers do **not** own shell state.
+- Production still uses legacy shell components; feature flags unchanged.
+
+**Blockers before replacement:**
+
+1. AppShellProvider / canonical shell state owner  
+2. Action execution contract + routing/action bridge (**design done in 6.7, integration open**)  
+3. Shadow validation loop / parity diagnostics in dev-only mode (**design done in 6.8, operational wiring open; confirmed in 6.9 NO-GO**)  
+4. Edit mode bridge, notification bridge, search bridge  
+5. Collapse sync (see AD-SHELL-001)  
+6. Drag/drop integration (sidebar)  
+7. Runtime + Designer parity tests  
+8. Rollback strategy (not tested)  
+
+**Acceptance criteria for closing:**
+
+- Provider owns collapse, active nav, edit flags.
+- Action keys dispatch outside renderers.
+- Parity tests pass vs legacy shell.
+- Feature flag can swap production shell with instant rollback.
+- Coverage matrix §11 blockers cleared.
+
+**Do not:** replace LeftSidebar / WorkspaceTopBar / DesignerHeader until criteria met.
+
+## AD-SHELL-005 — Action key taxonomy and naming drift risk
+
+**Severity:** MEDIUM
+
+**Status:** PARTIAL — canonical taxonomy added in Phase 6.7, legacy aliases still present
+
+**Area:**
+
+- `shared/shell/actions/appShellActionKeys.ts`
+- legacy action keys emitted by existing adapters/contracts
+
+**Problem:**
+
+- Different key styles may coexist (`kebab-case` legacy vs dot-notation canonical).
+- Without normalization + lint checks, handlers can be silently missed.
+
+**Current mitigation (6.7):**
+
+- Canonical naming convention documented.
+- Alias normalization added in Action Bridge skeleton.
+- DEV diagnostics for invalid/missing keys.
+
+**Acceptance criteria for closing:**
+
+- Adapters/contracts emit only canonical keys.
+- Legacy aliases removed.
+- CI/lint guard for action key pattern enabled.
+
+## AD-SHELL-006 — Shadow diagnostics drift from legacy behavior
+
+**Severity:** MEDIUM
+
+**Status:** OPEN
+
+**Area:**
+
+- `shared/shell/shadow/*`
+- parity compare between legacy inputs and generated AppShell contracts
+
+**Problem:**
+
+- Shadow may report green diagnostics while real runtime/designer flows still diverge.
+- Snapshot fields can become stale/incomplete if mirroring contract is not strictly maintained.
+
+**Current mitigation (6.8–6.12):**
+
+- Shadow mode is DEV-only and observer-only.
+- Explicit compare checklist documented in `YASNOPRO_APPSHELL_SHADOW_MODE_DESIGN.md`.
+- No production replacement allowed from shadow output alone.
+- Runtime Shadow Bridge adds readonly snapshot transport and missing-fields diagnostics (`shared/shell/shadow/runtime/*`).
+
+**Acceptance criteria for closing:**
+
+- Runtime and Designer shadow checks cover full parity checklist.
+- Diagnostics validated against manual QA scenarios.
+- 6.9 readiness review confirms shadow data fidelity.
+
+## AD-SHELL-007 — Production replacement blocked by 6.9 NO-GO
+
+**Severity:** CRITICAL
+
+**Status:** OPEN
+
+**Area:**
+
+- AppShell migration readiness gate
+- Runtime/Designer shell replacement decision
+
+**Problem:**
+
+6.9 review confirms replacement criteria are not met (updated after 6.12):
+
+- provider wired to DEV-only readonly runtime bridge sources (not production ownership);
+- action handlers/routing bridge absent;
+- runtime/designer parity unverified;
+- rollback untested;
+- AD-SHELL-001 still open.
+
+**Acceptance criteria for closing:**
+
+- 6.10 shadow runtime wiring complete (dev-only).
+- parity checklists executed and passed.
+- rollback drill passed.
+- follow-up readiness review changes decision from NO-GO to GO.
+
+## AD-SHELL-004 — Renderer icon/header action maps are temporary
+
+**Severity:** LOW
+
+**Status:** OPEN
+
+**Area:**
+
+- `AppSidebarIconRenderer` temporary type symbols (related to AD-SHELL-002)
+- `AppHeaderRenderer` action icon fallbacks
+
+**Recommended future fix:**
+
+- Unified shell action/icon registry driven by configuration, not hardcoded maps in renderers.

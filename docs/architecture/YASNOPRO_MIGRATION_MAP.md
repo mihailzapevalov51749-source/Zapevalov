@@ -574,3 +574,109 @@ Stabilization
 → AI Agents
 
 Это путь трансформации ЯсноПро из table-centric MVP в полноценную AI-native Object-centric Business Platform.
+
+---
+
+# 23. AppShell migration track (Phase 6.x)
+
+Отдельный track внутри PHASE 7 (Runtime/Designer Split): унификация shell UI без смены platform engines.
+
+## Принцип
+
+```text
+Contracts → Renderer (visual) → AppShellProvider → Action bridge → Shadow → Production swap
+```
+
+Renderers **никогда** не становятся router, state owner или action executor.
+
+## Phase status
+
+| Phase | Название | Статус | Production impact |
+|---|---|---|---|
+| 6.1–6.2 | Shell geometry, adapters, dev routes | DONE | None |
+| 6.3 | Sidebar renderer visual contract | **DONE** | None — `LeftSidebar` unchanged |
+| 6.4 | Header renderer visual contract | **DONE** | None — `WorkspaceTopBar` / `DesignerHeader` unchanged |
+| 6.5 | Coverage matrix + migration docs | **DONE** | None |
+| 6.6 | AppShellProvider design + skeleton | **DONE** | None — not imported by layouts |
+| 6.7 | Action bridge design + skeleton | **DONE** | None — not imported by layouts |
+| 6.8 | Shadow Integration design / dev-only shadow mode | **DONE** | Compare only; no production wiring |
+| 6.9 | Production replacement readiness review | **DONE — NO-GO** | Go/no-go gate failed |
+| 6.10 | Dev-only Shadow Runtime Wiring | **DONE** | Dev-only route `/dev/appshell-shadow-runtime`, no production impact |
+| 6.11 | Dev-only Real Runtime Snapshot for Shadow | **DONE** | Same dev route: mock/real/unavailable diagnostics, observer-only |
+| 6.12 | Runtime Shadow Bridge (DEV-only, read-only) | **DONE** | Readonly emitter + bridge registry + shadow subscriber, no production replacement |
+| 6.13 | Runtime/Shadow Parity Validation | **DONE** | Checklist statuses + parityStatus + diagnostics arrays (DEV-only) |
+| 6.14 | Designer/Shadow Parity Validation | **DONE** | `/dev/appshell-shadow-designer` + designer parity checks/status arrays |
+| 6.15 | Cross-mode Shadow Readiness Review | **DONE** | consolidated NO-GO checkpoint for runtime+designer parity |
+| 6.16 | Designer Shadow Bridge (DEV-only, read-only) | **DONE** | readonly designer emitter + bridge transport + designer route sourceMode |
+
+## Current production truth
+
+| Shell | Production component | Unified renderer |
+|---|---|---|
+| Runtime sidebar | `LeftSidebar` | `AppSidebarRenderer` (dev only) |
+| Runtime header | `WorkspaceTopBar` | `AppHeaderRenderer` (dev only) |
+| Designer header | `DesignerHeader` | `AppHeaderRenderer` (dev only) |
+| Designer sidebar | Designer shell sidebar | `AppSidebarRenderer` (dev only) |
+
+## Unsafe until Phase 6.9 approval
+
+- Replace `LeftSidebar` with `AppSidebarRenderer`
+- Replace `WorkspaceTopBar` with `AppHeaderRenderer`
+- Replace `DesignerHeader` with `AppHeaderRenderer`
+- Wire real actions inside renderers
+- Move routing or collapse state into renderers
+
+## Safe now
+
+- Dev previews: `/dev/app-sidebar-renderer`, `/dev/app-header-renderer`, `/dev/appshell-shadow-runtime`, `/dev/appshell-shadow-designer`
+- Contract/adapter expansion without production wiring
+- Visual parity review against legacy shell
+- Readiness documentation and blocker triage (6.9 NO-GO)
+- Shadow diagnostics baseline on runtime-like snapshot (6.10)
+- Conditional real runtime snapshot probe via read-only hooks/api with fallback `unavailable` reason (6.11)
+- Runtime Shadow Bridge transport (`shared/shell/shadow/runtime/*`) with sourceMode `bridge` and freshness diagnostics (6.12)
+- Runtime parity checklist panel and validation status model (`YASNOPRO_APPSHELL_RUNTIME_PARITY_VALIDATION.md`) (6.13)
+- Designer parity checklist panel and validation status model (`YASNOPRO_APPSHELL_DESIGNER_PARITY_VALIDATION.md`) (6.14)
+- Cross-mode readiness consolidation and NO-GO rationale (`YASNOPRO_APPSHELL_CROSS_MODE_SHADOW_READINESS_REVIEW.md`) (6.15)
+- Designer bridge transport and source fidelity uplift (`YASNOPRO_DESIGNER_SHADOW_BRIDGE_DESIGN.md`) (6.16)
+
+## 6.9 Review decision
+
+`docs/architecture/YASNOPRO_APPSHELL_PRODUCTION_REPLACEMENT_READINESS_REVIEW.md` confirms:
+
+- **NO-GO** for production replacement;
+- replacement blocked by provider wiring, action/routing bridges, parity, AD-SHELL-001, rollback tests.
+
+## Связанные документы
+
+- `YASNOPRO_APPSHELL_PROVIDER_DESIGN.md` — provider state model, bridges, DoD
+- `YASNOPRO_APPSHELL_ACTION_BRIDGE_DESIGN.md` — action taxonomy, registry, dispatch pipeline
+- `YASNOPRO_APPSHELL_SHADOW_MODE_DESIGN.md` — dev-only shadow model, diagnostics, safety
+- `YASNOPRO_RUNTIME_SHADOW_BRIDGE_DESIGN.md` — runtime readonly snapshot transport for shadow mode
+- `YASNOPRO_APPSHELL_DESIGNER_PARITY_VALIDATION.md` — designer parity checklist and status model
+- `YASNOPRO_APPSHELL_CROSS_MODE_SHADOW_READINESS_REVIEW.md` — consolidated runtime/designer readiness checkpoint
+- `YASNOPRO_DESIGNER_SHADOW_BRIDGE_DESIGN.md` — designer readonly snapshot transport for shadow mode
+- `YASNOPRO_APPSHELL_PRODUCTION_REPLACEMENT_READINESS_REVIEW.md` — 6.9 GO/NO-GO decision
+- `YASNOPRO_APPSHELL_FUNCTIONAL_COVERAGE_MATRIX.md` — coverage, blockers, no-op rules
+- `YASNOPRO APP SHELL ARCHITECTURE.md` — target shell model
+- `YASNOPRO_ARCHITECTURE_DEBT.md` — AD-SHELL-001 … AD-SHELL-004
+
+## Skeleton location (6.6)
+
+`frontend/src/shared/shell/provider/` — `AppShellProvider`, `useAppShell`, `appShellReducer`, `appShellTypes`, `appShellContracts`
+
+## Skeleton location (6.7)
+
+`frontend/src/shared/shell/actions/` — `appShellActionKeys`, `appShellActionTypes`, `appShellActionRegistry`, `appShellActionBridge`
+
+## Skeleton location (6.8)
+
+`frontend/src/shared/shell/shadow/` — `AppShellShadowProvider`, `AppShellShadowDiagnostics`, `appShellShadowFlags`
+
+## Bridge location (6.12)
+
+`frontend/src/shared/shell/shadow/runtime/` — `runtimeShadowBridge`, `runtimeShadowSnapshot`, bridge exports
+
+## Bridge location (6.16)
+
+`frontend/src/shared/shell/shadow/designer/` — `designerShadowBridge`, `designerShadowSnapshot`, bridge exports

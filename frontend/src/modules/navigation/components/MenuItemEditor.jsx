@@ -48,6 +48,8 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
 
   const isSystem =
     item?.isSystem ||
+    item?.is_system === true ||
+    item?.is_protected === true ||
     String(item?.id || "").startsWith("system-") ||
     isProtectedTitle;
 

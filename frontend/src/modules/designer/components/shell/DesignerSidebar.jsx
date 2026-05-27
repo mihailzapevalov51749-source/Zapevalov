@@ -26,6 +26,7 @@ const PLATFORM_ITEMS = [
 ];
 
 export default function DesignerSidebar({ collapsed = false, onToggleCollapse }) {
+  console.log("[RENDER DesignerSidebar]", { collapsed });
   const { tenantId = "1" } = useParams();
   const objectsPath = getDesignerPath(tenantId);
 

@@ -1,5 +1,6 @@
 from app.db.base import Base
 from app.db.session import engine
+from sqlalchemy import inspect, text
 from app.modules.platform.shared.constants import PLATFORM_ALEMBIC_TABLE_NAMES
 
 # IMPORT EXISTING MODELS
@@ -59,6 +60,60 @@ def init_db():
         if table.name not in PLATFORM_ALEMBIC_TABLE_NAMES
     ]
     Base.metadata.create_all(bind=engine, tables=tables)
+    ensure_navigation_scope_column()
+    ensure_navigation_system_columns()
+
+
+def ensure_navigation_scope_column():
+    inspector = inspect(engine)
+    try:
+        columns = {column["name"] for column in inspector.get_columns("navigation_items")}
+    except Exception:
+        return
+
+    if "menu_scope" in columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(
+            text("ALTER TABLE navigation_items ADD COLUMN menu_scope VARCHAR(50) DEFAULT 'runtime'")
+        )
+        connection.execute(
+            text("UPDATE navigation_items SET menu_scope = 'runtime' WHERE menu_scope IS NULL")
+        )
+
+
+def ensure_navigation_system_columns():
+    inspector = inspect(engine)
+    try:
+        columns = {column["name"] for column in inspector.get_columns("navigation_items")}
+    except Exception:
+        return
+
+    statements = []
+    if "system_key" not in columns:
+        statements.append("ALTER TABLE navigation_items ADD COLUMN system_key VARCHAR(100)")
+    if "is_system" not in columns:
+        statements.append("ALTER TABLE navigation_items ADD COLUMN is_system BOOLEAN DEFAULT FALSE")
+    if "is_protected" not in columns:
+        statements.append("ALTER TABLE navigation_items ADD COLUMN is_protected BOOLEAN DEFAULT FALSE")
+
+    if not statements:
+        return
+
+    with engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
+        connection.execute(
+            text(
+                "UPDATE navigation_items SET is_system = FALSE WHERE is_system IS NULL"
+            )
+        )
+        connection.execute(
+            text(
+                "UPDATE navigation_items SET is_protected = FALSE WHERE is_protected IS NULL"
+            )
+        )
 
 
 if __name__ == "__main__":

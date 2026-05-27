@@ -93,6 +93,7 @@ class NavigationItem(Base):
     color = Column(String(50), nullable=True)
     is_bold = Column(Boolean, default=False)
     is_italic = Column(Boolean, default=False)
+    menu_scope = Column(String(50), nullable=False, default="runtime")
 
     portal = relationship("Portal", back_populates="navigation_items")
     page = relationship("Page", back_populates="navigation_item", foreign_keys=[page_id])

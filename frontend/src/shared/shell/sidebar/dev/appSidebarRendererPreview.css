@@ -1,0 +1,69 @@
+.app-sidebar-renderer-preview {
+  min-height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
+  background: #f1f5f9;
+  color: #0f172a;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+.app-sidebar-renderer-preview__header {
+  margin-bottom: 24px;
+}
+
+.app-sidebar-renderer-preview__title {
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.app-sidebar-renderer-preview__hint {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  max-width: 720px;
+  line-height: 1.5;
+}
+
+.app-sidebar-renderer-preview__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(272px, max-content));
+  gap: 20px;
+  align-items: start;
+}
+
+.app-sidebar-renderer-preview__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+}
+
+.app-sidebar-renderer-preview__panel-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.app-sidebar-renderer-preview__frame {
+  height: 640px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  flex-shrink: 0;
+}
+
+.app-sidebar-renderer-preview__frame--designer {
+  --designer-accent: #7c3aed;
+}
+
+.app-sidebar-renderer-preview__frame .app-sidebar-renderer {
+  width: 100%;
+  height: 100%;
+}

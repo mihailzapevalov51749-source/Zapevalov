@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { getMe } from "../../api/authApi";
 
@@ -11,6 +12,12 @@ import AppModeSwitch from "../../shared/appMode/AppModeSwitch";
 
 import useNotifications from "../../modules/notifications/hooks/useNotifications";
 import NotificationBell from "../../modules/notifications/components/NotificationBell";
+import {
+  AppHeaderRenderer,
+  createRuntimeHeaderContract,
+} from "../../shared/shell/header";
+import { getDesignerPath } from "../../shared/appMode/appModeStorage";
+import { emitRuntimeShadowSnapshot } from "../../shared/shell/shadow/runtime";
 
 const DEFAULT_AVATAR_SETTINGS = {
   x: 0,
@@ -60,7 +67,10 @@ export default function WorkspaceTopBar({
   showBackButton = false,
   onBack,
   tenantId = 1,
+  inlineRender = true,
+  onUnifiedHeaderModel,
 }) {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -75,14 +85,14 @@ const isRootPage =
 const effectiveShowBackButton =
   showBackButton || !isRootPage;
 
-    const handleBack = () => {
-  if (onBack) {
-    onBack();
-    return;
-  }
+  const handleBack = useCallback(() => {
+    if (onBack) {
+      onBack();
+      return;
+    }
 
-  window.history.back();
-};
+    window.history.back();
+  }, [onBack]);
 
   const loadUser = async () => {
     try {
@@ -101,20 +111,174 @@ const effectiveShowBackButton =
     loadUser();
   }, []);
 
+  useEffect(() => {
+    if (!import.meta.env.DEV) {
+      return;
+    }
+
+    emitRuntimeShadowSnapshot({
+      pathname: window.location.pathname,
+      user,
+      search: {
+        enabled: true,
+        value: String(searchQuery ?? ""),
+      },
+      notifications: {
+        enabled: true,
+        unreadCount: Number(unreadCount ?? 0),
+      },
+      timestamp: Date.now(),
+    });
+  }, [user, searchQuery, unreadCount]);
+
   const initials =
     user?.full_name?.trim()?.charAt(0)?.toUpperCase() ||
     user?.email?.trim()?.charAt(0)?.toUpperCase() ||
     "?";
 
-  const avatarSettings = normalizeAvatarSettings(user?.avatar_settings);
+  const avatarSettings = useMemo(
+    () => normalizeAvatarSettings(user?.avatar_settings),
+    [user?.avatar_settings]
+  );
 
   const avatarRatio = HEADER_AVATAR_SIZE / PROFILE_AVATAR_SIZE;
   const headerAvatarX = (avatarSettings.x || 0) * avatarRatio;
   const headerAvatarY = (avatarSettings.y || 0) * avatarRatio;
   const headerAvatarScale = avatarSettings.scale || 1;
 
+  const runtimeHeaderContract = useMemo(
+    () =>
+      createRuntimeHeaderContract({
+        pathname,
+        title,
+        subtitle,
+        user: {
+          id: user?.id,
+          name: user?.full_name,
+          email: user?.email,
+          avatarUrl: user?.avatar_url,
+        },
+        tenantId,
+        showBackButton: effectiveShowBackButton,
+        searchQuery,
+        isEditMode,
+        isPageTitleEditable,
+        pageTitleDraft,
+        notificationUnreadCount: unreadCount,
+        notificationItems: notifications,
+        onReadNotification: markAsRead,
+        avatarSettings,
+      }),
+    [
+      pathname,
+      title,
+      subtitle,
+      user?.id,
+      user?.full_name,
+      user?.email,
+      user?.avatar_url,
+      tenantId,
+      effectiveShowBackButton,
+      searchQuery,
+      isEditMode,
+      isPageTitleEditable,
+      pageTitleDraft,
+      unreadCount,
+      notifications,
+      markAsRead,
+      avatarSettings,
+    ]
+  );
+
+  const handleHeaderAction = useCallback(
+    (actionKey, payload) => {
+      switch (actionKey) {
+        case "back":
+          handleBack();
+          return;
+        case "app-mode-switch":
+          navigate(getDesignerPath(tenantId));
+          return;
+        case "search-change":
+        case "search":
+          onChangeSearchQuery?.(String(payload?.value ?? ""));
+          return;
+        case "search-clear":
+          onChangeSearchQuery?.("");
+          return;
+        case "profile":
+          setIsProfileOpen(true);
+          return;
+        case "enter-edit-mode":
+          onEnterEditMode?.();
+          return;
+        case "exit-edit-mode":
+          onExitEditMode?.();
+          return;
+        case "save-title":
+          onSavePageTitle?.();
+          return;
+        case "edit-title":
+          onEnterEditMode?.();
+          return;
+        case "edit-title-draft":
+          onChangePageTitleDraft?.(String(payload?.value ?? ""));
+          return;
+        case "cancel-title-edit":
+          onExitEditMode?.();
+          return;
+        default:
+          return;
+      }
+    },
+    [
+      handleBack,
+      tenantId,
+      navigate,
+      onChangeSearchQuery,
+      onEnterEditMode,
+      onExitEditMode,
+      onSavePageTitle,
+      onChangePageTitleDraft,
+    ]
+  );
+
+  const headerActionRef = useRef(handleHeaderAction);
+  headerActionRef.current = handleHeaderAction;
+
+  const stableHeaderAction = useCallback((actionKey, payload) => {
+    headerActionRef.current?.(actionKey, payload);
+  }, []);
+
+  const unifiedHeaderModelRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof onUnifiedHeaderModel !== "function") {
+      return;
+    }
+
+    const nextModel = {
+      contract: runtimeHeaderContract,
+      onAction: stableHeaderAction,
+    };
+
+    const previousModel = unifiedHeaderModelRef.current;
+    if (previousModel?.contract === nextModel.contract) {
+      return;
+    }
+
+    unifiedHeaderModelRef.current = nextModel;
+    onUnifiedHeaderModel(nextModel);
+  }, [onUnifiedHeaderModel, runtimeHeaderContract, stableHeaderAction]);
+
   return (
     <>
+      {inlineRender && runtimeHeaderContract ? (
+        <AppHeaderRenderer
+          contract={runtimeHeaderContract}
+          onAction={handleHeaderAction}
+        />
+      ) : inlineRender ? (
       <div style={topBarStyle} data-page-top-bar="true">
         <div style={leftSideStyle}>
           {effectiveShowBackButton ? (
@@ -212,6 +376,7 @@ const effectiveShowBackButton =
           </button>
         </div>
       </div>
+      ) : null}
 
       <ProfileSidePanel
         isOpen={isProfileOpen}

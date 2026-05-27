@@ -1,7 +1,19 @@
 import { apiClient } from "./apiClient";
 
-export async function getNavigationTree(portalId) {
-  const res = await apiClient.get(`/navigation/portal/${portalId}/tree`);
+export async function getNavigationTree(portalId, options = {}) {
+  const params = {};
+  if (options?.scope) {
+    params.scope = options.scope;
+  }
+  if (options?.mode) {
+    params.mode = options.mode;
+  }
+  if (options?.context) {
+    params.context = options.context;
+  }
+
+  const hasParams = Object.keys(params).length > 0;
+  const res = await apiClient.get(`/navigation/portal/${portalId}/tree`, hasParams ? { params } : undefined);
   return res.data;
 }
 

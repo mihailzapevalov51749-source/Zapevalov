@@ -29,9 +29,29 @@ class NavigationItem(Base):
     color = Column(String(50), nullable=True)
     is_bold = Column(Boolean, default=False)
     is_italic = Column(Boolean, default=False)
+    menu_scope = Column(String(50), nullable=False, default="runtime")
+    system_key = Column(String(100), nullable=True)
+    is_system = Column(Boolean, nullable=False, default=False)
+    is_protected = Column(Boolean, nullable=False, default=False)
 
     parent = relationship(
         "NavigationItem",
         remote_side=[id],
         backref="children"
     )
+
+    @property
+    def route(self):
+        return self.url
+
+    @route.setter
+    def route(self, value):
+        self.url = value
+
+    @property
+    def path(self):
+        return self.url
+
+    @path.setter
+    def path(self, value):
+        self.url = value

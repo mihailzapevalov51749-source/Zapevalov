@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { getPageFull, updatePage } from "../api/pagesApi";
@@ -73,6 +73,12 @@ import {
   resolvePrimaryTableIdForPage,
 } from "../modules/universalTable/utils/resolvePrimaryTableId";
 import { syncUniversalTableTitleAcrossUi } from "../modules/universalTable/utils/syncUniversalTableTitle";
+import { LAYOUT_MODES } from "../shared/layout/layoutModes";
+import { resolveSidebarWidth, resolveWorkspaceLeftOffset } from "../shared/layout/shellGeometry";
+import { SHELL_FEATURE_FLAGS } from "../shared/shell/shellFeatureFlags";
+import { resolveAppSidebarWidth } from "../shared/shell/shellSidebarGeometry";
+import { readShellSidebarCollapsed } from "../shared/shell/useShellSidebarState";
+import { emitRuntimeShadowSnapshot } from "../shared/shell/shadow/runtime";
 
 const CORPORATE_CHAT_PAGE_ID = 35;
 
@@ -354,6 +360,7 @@ export default function PortalPageView() {
   const [pageTitleDraft, setPageTitleDraft] = useState("");
   const [pageSettingsAnchor, setPageSettingsAnchor] = useState(null);
   const [tableBlockAddState, setTableBlockAddState] = useState(null);
+  const [runtimeHeaderModel, setRuntimeHeaderModel] = useState(null);
 
   const { navigation, navigationError, reloadNavigation } =
     useNavigationTree(portalId);
@@ -389,13 +396,23 @@ export default function PortalPageView() {
     isEnabled: isEditMode && isCanvasEditPage,
   });
 
-  const changeMenuScale = (nextScale) => {
+  const changeMenuScale = useCallback((nextScale) => {
     const normalized = Math.min(1.4, Math.max(0.8, nextScale));
     const rounded = Number(normalized.toFixed(1));
 
     setMenuScale(rounded);
     localStorage.setItem("leftMenuScale", String(rounded));
-  };
+  }, []);
+
+  const handleUnifiedHeaderModel = useCallback((nextModel) => {
+    setRuntimeHeaderModel((previous) => {
+      if (previous?.contract === nextModel?.contract) {
+        return previous;
+      }
+
+      return nextModel;
+    });
+  }, []);
 
   const loadCurrentPage = async ({ keepPrevious = false } = {}) => {
     if (
@@ -436,6 +453,70 @@ export default function PortalPageView() {
   useEffect(() => {
     setPageTitleDraft(pageData?.page?.title || topBarMeta.title || "");
   }, [pageData?.page?.title, topBarMeta.title]);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) {
+      return;
+    }
+
+    const collapsed = readShellSidebarCollapsed();
+    const useAppSidebarRenderer = SHELL_FEATURE_FLAGS.appSidebarRenderer;
+    const sidebarWidth = useAppSidebarRenderer
+      ? resolveAppSidebarWidth(collapsed)
+      : resolveSidebarWidth({
+          mode: LAYOUT_MODES.RUNTIME,
+          collapsed,
+        });
+    const workspaceLeftOffset = useAppSidebarRenderer
+      ? resolveAppSidebarWidth(collapsed)
+      : resolveWorkspaceLeftOffset({
+          mode: LAYOUT_MODES.RUNTIME,
+          collapsed,
+        });
+
+    let user = null;
+    try {
+      const rawUser = localStorage.getItem("currentUser");
+      user = rawUser ? JSON.parse(rawUser) : null;
+    } catch {
+      user = null;
+    }
+
+    emitRuntimeShadowSnapshot({
+      mode: "runtime",
+      pathname: location.pathname,
+      portal: { id: portalId, title: `Portal ${portalId}` },
+      page: pageData?.page ?? null,
+      user,
+      navigation: Array.isArray(navigation) ? navigation : [],
+      activePageId: isUniversalTablePage ? "system-universal-table" : pageId ?? null,
+      activeItemId: activeNavigationItem?.id ?? null,
+      collapsed,
+      search: {
+        enabled: true,
+        value: String(searchQuery ?? ""),
+      },
+      notifications: {
+        enabled: true,
+        unreadCount: null,
+      },
+      geometry: {
+        sidebarWidth,
+        workspaceLeftOffset,
+        workspaceTopOffset: 0,
+      },
+      timestamp: Date.now(),
+    });
+  }, [
+    location.pathname,
+    portalId,
+    pageData?.page,
+    navigation,
+    pageId,
+    activeNavigationItem?.id,
+    isUniversalTablePage,
+    searchQuery,
+  ]);
 
   const sections = pageData?.sections || [];
 
@@ -515,14 +596,17 @@ export default function PortalPageView() {
     });
   };
 
-  const handleSelectPage = (nextPageId) => {
-    if (!nextPageId) return;
+  const handleSelectPage = useCallback(
+    (nextPageId) => {
+      if (!nextPageId) return;
 
-    setSelectedBlock(null);
-    setSelectedSection(null);
+      setSelectedBlock(null);
+      setSelectedSection(null);
 
-    navigate(`/portal/${portalId}/page/${nextPageId}`);
-  };
+      navigate(`/portal/${portalId}/page/${nextPageId}`);
+    },
+    [navigate, portalId]
+  );
 
   const handleSectionUpdated = (updatedSection) => {
     if (!updatedSection?.id) return;
@@ -1146,6 +1230,8 @@ export default function PortalPageView() {
       reloadNavigation={reloadNavigation}
       menuScale={menuScale}
       onChangeMenuScale={changeMenuScale}
+      headerContract={runtimeHeaderModel?.contract}
+      onHeaderAction={runtimeHeaderModel?.onAction}
     >
     
 <div
@@ -1194,6 +1280,8 @@ export default function PortalPageView() {
     onEnterEditMode={() => setIsEditMode(true)}
     onExitEditMode={exitEditMode}
     tenantId={Number(portalId) || 1}
+    inlineRender={false}
+    onUnifiedHeaderModel={handleUnifiedHeaderModel}
   />
 
   <div

@@ -83,7 +83,7 @@ async function createBlock(data) {
 }
 
 export const navigationService = {
-  getTree: getNavigationTree,
+  getTree: (portalId, options) => getNavigationTree(portalId, options),
   createItem: createNavigationItem,
   updateItem: updateNavigationItem,
   deleteItem: deleteNavigationItem,
