@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
 import bellIcon from "../../../assets/icons/bell.png";
+import { emitNotificationNavigate } from "../navigation/notificationNavigationBus";
 
-function emitNotificationNavigate(notification) {
+function emitNotificationNavigateEvent(notification) {
   const context = notification?.context || {};
 
   const source =
@@ -66,23 +67,19 @@ function emitNotificationNavigate(notification) {
 
   if (!entityType && !fileId) return;
 
-  window.dispatchEvent(
-    new CustomEvent("yasnopro:notification:navigate", {
-      detail: {
-        notification,
-        source,
-        entityType,
-        entityId: String(entityId || ""),
-        tableId,
-        rowId,
-        fileId,
-        commentId,
-        parentCommentId,
-        highlightId,
-        context,
-      },
-    })
-  );
+  emitNotificationNavigate({
+    notification,
+    source,
+    entityType,
+    entityId: String(entityId || ""),
+    tableId,
+    rowId,
+    fileId,
+    commentId,
+    parentCommentId,
+    highlightId,
+    context,
+  });
 }
 
 function getNotificationPreview(item) {
@@ -189,7 +186,7 @@ export default function NotificationBell({
 
     setIsOpen(false);
 
-    emitNotificationNavigate(item);
+    emitNotificationNavigateEvent(item);
   };
 
   return (

@@ -5,15 +5,17 @@ import FileViewerModal from "../../../shared/files/components/FileViewerModal";
 
 import { uploadFile } from "../../../shared/files/api/filesApi";
 import { updateLegacyTableRow } from "../../runtimeLegacyWriteAdapter";
+import { subscribePendingTarget } from "../navigation/notificationNavigationBus";
 import { LAYOUT_MODES } from "../../../shared/layout/layoutModes";
 import { resolveWorkspaceLeftOffset } from "../../../shared/layout/shellGeometry";
+import { apiClient } from "../../../api/apiClient";
 
 import {
   getLibraryDocumentByFileKey,
   getFileUrl,
 } from "../../documentLibraries/services/documentLibrariesService";
 
-const API_BASE_URL = "http://127.0.0.1:8010";
+const API_BASE_URL = String(apiClient?.defaults?.baseURL || "").replace(/\/$/, "");
 
 function normalizeId(value) {
   return String(value ?? "").trim();
@@ -514,16 +516,10 @@ export default function NotificationOverlayHost() {
       });
     }
 
-    window.addEventListener(
-      "yasnopro:notification:pending-target",
-      handlePendingTarget
-    );
+    const unsubscribePendingTarget = subscribePendingTarget(handlePendingTarget);
 
     return () => {
-      window.removeEventListener(
-        "yasnopro:notification:pending-target",
-        handlePendingTarget
-      );
+      unsubscribePendingTarget();
     };
   }, []);
 
