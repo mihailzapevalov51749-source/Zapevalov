@@ -12,14 +12,30 @@ function buildFallbackWarning(providerName, reason) {
   return `Fallback to ${providerName}: ${reason || "unknown reason"}`;
 }
 
+function logCriticalLegacyFallback(method, providerName, reason) {
+  console.error(
+    `[runtimeReadGateway] CRITICAL: legacy fallback used. Runtime must read from Published Catalog only. method=${method}; provider=${providerName}; reason=${reason || "unknown reason"}`
+  );
+}
+
 export const runtimeReadGateway = {
   async getLegacyTable(tableId) {
+    logCriticalLegacyFallback(
+      "getLegacyTable",
+      "legacy_table",
+      "direct legacy table read"
+    );
     const response = await legacyTableReadProvider.getTableById(tableId);
     runtimeReadTelemetry.markLegacyFallbackRead();
     return response;
   },
 
   async getLegacyTableLookupSources() {
+    logCriticalLegacyFallback(
+      "getLegacyTableLookupSources",
+      "legacy_table",
+      "direct legacy lookup read"
+    );
     const response = await legacyTableReadProvider.getLookupSources();
     runtimeReadTelemetry.markLegacyFallbackRead();
     return response;
@@ -48,6 +64,7 @@ export const runtimeReadGateway = {
     }
 
     const reason = queryError?.message || "query unavailable";
+    logCriticalLegacyFallback("getObjectList", "legacy_table", reason);
     runtimeReadTelemetry.warnFallback({
       method: "getObjectList",
       from: "query",
@@ -91,6 +108,7 @@ export const runtimeReadGateway = {
     }
 
     const reason = queryError?.message || "query projection unavailable";
+    logCriticalLegacyFallback("getProjection", "legacy_view", reason);
     runtimeReadTelemetry.warnFallback({
       method: "getProjection",
       from: "query",

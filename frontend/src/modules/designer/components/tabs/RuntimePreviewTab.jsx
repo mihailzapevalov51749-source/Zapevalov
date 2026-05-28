@@ -59,7 +59,7 @@ export default function RuntimePreviewTab({ tenantId, objectTypeKey }) {
         tenantId,
         objectTypeKey,
         viewKey,
-        legacyFallback: true,
+        legacyFallback: false,
       });
 
       const projection = response?.projection;
@@ -113,7 +113,7 @@ export default function RuntimePreviewTab({ tenantId, objectTypeKey }) {
         offset,
         sort: sortParams.sort,
         order: sortParams.order,
-        legacyFallback: true,
+        legacyFallback: false,
       });
 
       setData(gatewayResponse);
@@ -129,7 +129,7 @@ export default function RuntimePreviewTab({ tenantId, objectTypeKey }) {
             offset,
             sort: "created_at",
             order: "desc",
-            legacyFallback: true,
+            legacyFallback: false,
           });
           setData(gatewayResponse);
           setProjectionValid(false);

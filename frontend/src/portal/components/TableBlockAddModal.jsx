@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 
-import { runtimeReadGateway } from "../../modules/runtimeReadGateway";
 import {
   setExistingTablesList,
   subscribeExistingTablesList,
@@ -27,37 +26,10 @@ export default function TableBlockAddModal({
       setTablesError("");
       return;
     }
-
-    let cancelled = false;
-
-    async function loadTables() {
-      try {
-        setIsLoadingTables(true);
-        setTablesError("");
-
-        const sources = await runtimeReadGateway.getLegacyTableLookupSources();
-        if (cancelled) return;
-
-        const nextTables = Array.isArray(sources) ? sources : [];
-        setTables(nextTables);
-        setExistingTablesList(nextTables);
-      } catch (error) {
-        console.error(error);
-        if (!cancelled) {
-          setTablesError("Не удалось загрузить список таблиц");
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoadingTables(false);
-        }
-      }
-    }
-
-    loadTables();
-
-    return () => {
-      cancelled = true;
-    };
+    setTables([]);
+    setExistingTablesList([]);
+    setIsLoadingTables(false);
+    setTablesError("");
   }, [isOpen]);
 
   useEffect(() => subscribeExistingTablesList(setTables), []);
@@ -166,26 +138,22 @@ export default function TableBlockAddModal({
         ) : (
           <div style={bodyStyle}>
             <p style={textStyle}>
-              Выберите таблицу. Будет создан новый блок со ссылкой на те же
-              данные — копия не создаётся.
+              Добавление существующей таблицы временно отключено до миграции на
+              Published Runtime Reference.
             </p>
 
-            {tablesError ? <div style={errorStyle}>{tablesError}</div> : null}
+            <div style={errorStyle}>
+              Добавление существующей таблицы временно отключено до миграции на
+              Published Runtime Reference.
+            </div>
 
             <select
               value={selectedTableId}
               onChange={(event) => setSelectedTableId(event.target.value)}
               style={selectStyle}
-              disabled={isLoadingTables || isSubmitting}
+              disabled
             >
-              <option value="">
-                {isLoadingTables ? "Загрузка..." : "Выберите таблицу"}
-              </option>
-              {tables.map((table) => (
-                <option key={table.id} value={String(table.id)}>
-                  {table.title || table.label || `Таблица #${table.id}`}
-                </option>
-              ))}
+              <option value="">Выбор существующей таблицы недоступен</option>
             </select>
 
             <div style={actionsStyle}>
@@ -201,10 +169,10 @@ export default function TableBlockAddModal({
               <button
                 type="button"
                 style={primaryButtonStyle}
-                disabled={!selectedTableId || isSubmitting}
-                onClick={handleAddExisting}
+                disabled
+                onClick={() => {}}
               >
-                {isSubmitting ? "Добавление..." : "Добавить"}
+                Добавить
               </button>
             </div>
           </div>

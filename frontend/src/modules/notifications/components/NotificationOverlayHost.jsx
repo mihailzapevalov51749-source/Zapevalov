@@ -4,7 +4,6 @@ import EntityCardModal from "../../universalTable/components/entityCard/EntityCa
 import FileViewerModal from "../../../shared/files/components/FileViewerModal";
 
 import { uploadFile } from "../../../shared/files/api/filesApi";
-import { runtimeReadGateway } from "../../runtimeReadGateway";
 import { updateLegacyTableRow } from "../../runtimeLegacyWriteAdapter";
 import { LAYOUT_MODES } from "../../../shared/layout/layoutModes";
 import { resolveWorkspaceLeftOffset } from "../../../shared/layout/shellGeometry";
@@ -463,36 +462,23 @@ export default function NotificationOverlayHost() {
 
       if (!tableId || !rowId) return;
 
-      try {
-        const table = await runtimeReadGateway.getLegacyTable(tableId);
-
-        const rows = Array.isArray(table?.rows) ? table.rows : [];
-        const columns = Array.isArray(table?.columns) ? table.columns : [];
-
-        const targetRow = getRowById(rows, rowId);
-
-        if (!targetRow) {
-          console.warn("OVERLAY ROW NOT FOUND:", {
-            tableId,
-            rowId,
-          });
-
-          return;
-        }
-
-        lastTargetKeyRef.current = targetKey;
-
-        updateOverlayState({
-          type: "card",
-          table,
-          rows,
-          columns,
-          row: targetRow,
+      // P0 strict mode: no legacy Universal Table reads from notification overlay.
+      console.error(
+        "[NotificationOverlayHost] Notification context needs migration to published runtime reference.",
+        {
+          source,
+          tableId,
+          rowId,
           context,
-        });
-      } catch (error) {
-        console.error("OVERLAY LOAD ERROR:", error);
-      }
+        }
+      );
+
+      lastTargetKeyRef.current = targetKey;
+      updateOverlayState({
+        type: "runtime_context_missing",
+        context,
+        message: "Контекст уведомления не содержит published runtime reference",
+      });
     }
 
     window.addEventListener(
@@ -542,6 +528,55 @@ export default function NotificationOverlayHost() {
           window.__YASNOPRO_PENDING_NOTIFICATION_TARGET__ = null;
         }}
       />
+    );
+  }
+
+  if (overlayState.type === "runtime_context_missing") {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          right: 24,
+          top: 24,
+          zIndex: 2000,
+          width: 420,
+          maxWidth: "calc(100vw - 48px)",
+          padding: "14px 16px",
+          borderRadius: 12,
+          border: "1px solid #FECACA",
+          background: "#FEF2F2",
+          color: "#991B1B",
+          boxShadow: "0 12px 28px rgba(15,23,42,0.12)",
+          boxSizing: "border-box",
+        }}
+      >
+        <div style={{ fontWeight: 700, marginBottom: 6 }}>
+          Контекст уведомления недоступен
+        </div>
+        <div style={{ fontSize: 13, lineHeight: 1.4 }}>
+          {overlayState.message ||
+            "Контекст уведомления не содержит published runtime reference"}
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            updateOverlayState(null);
+            lastTargetKeyRef.current = "";
+            window.__YASNOPRO_PENDING_NOTIFICATION_TARGET__ = null;
+          }}
+          style={{
+            marginTop: 10,
+            border: "1px solid #FCA5A5",
+            background: "#FFFFFF",
+            color: "#991B1B",
+            borderRadius: 8,
+            padding: "6px 10px",
+            cursor: "pointer",
+          }}
+        >
+          Закрыть
+        </button>
+      </div>
     );
   }
 

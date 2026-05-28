@@ -1,5 +1,5 @@
 export const runtimeReadFlags = {
-  enableLegacyFallback: true,
+  enableLegacyFallback: false,
   enableTelemetry: true,
 };
 
