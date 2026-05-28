@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { navigationService } from "../services/navigationService";
 
-export default function useMenuDragAndDrop({ items, isEnabled, reload }) {
+export default function useMenuDragAndDrop({ items, isEnabled, reload, onMove }) {
   const [tree, setTree] = useState(items || []);
   const [draggedId, setDraggedId] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);
@@ -101,8 +101,12 @@ if (canAcceptChildren(targetItem)) {
     const payload = flattenTree(result);
 
     try {
-      await navigationService.moveItems(payload);
-      await reload();
+      if (typeof onMove === "function") {
+        await onMove(payload, result);
+      } else {
+        await navigationService.moveItems(payload);
+        await reload();
+      }
     } catch (e) {
       console.error("Ошибка сохранения порядка меню:", e);
       alert("Не удалось сохранить порядок меню");
@@ -137,8 +141,12 @@ if (canAcceptChildren(targetItem)) {
     const payload = flattenTree(result);
 
     try {
-      await navigationService.moveItems(payload);
-      await reload();
+      if (typeof onMove === "function") {
+        await onMove(payload, result);
+      } else {
+        await navigationService.moveItems(payload);
+        await reload();
+      }
     } catch (e) {
       console.error("Ошибка сохранения порядка меню:", e);
       alert("Не удалось сохранить порядок меню");

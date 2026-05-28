@@ -1,7 +1,7 @@
 .mode-switcher-text {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 0;
   border: none;
   background: transparent;
   color: #334155;
@@ -14,7 +14,7 @@
 }
 
 .mode-switcher-text:hover {
-  opacity: 0.78;
+  opacity: 0.88;
 }
 
 .mode-switcher-text:focus-visible {
@@ -23,15 +23,30 @@
   border-radius: 4px;
 }
 
-.mode-switcher-text--designer {
-  color: #1f2937;
+.mode-switcher-text[data-mode="runtime"] {
+  color: #1e3a8a;
+}
+
+.mode-switcher-text[data-mode="designer"] {
+  color: #5b21b6;
 }
 
 .mode-switcher-text__label {
   letter-spacing: 0;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  line-height: 1.2;
 }
 
-.mode-switcher-text__arrow {
-  font-size: 11px;
-  transform: translateY(0.5px);
+.mode-switcher-text[data-mode="runtime"] .mode-switcher-text__label {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.mode-switcher-text[data-mode="designer"] .mode-switcher-text__label {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+  color: #6d28d9;
 }

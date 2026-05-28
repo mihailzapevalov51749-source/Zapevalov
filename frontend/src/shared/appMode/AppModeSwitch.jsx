@@ -5,12 +5,21 @@ import ModeSwitcherText from "./ModeSwitcherText";
 
 import "./appModeSwitch.css";
 
-export default function AppModeSwitch({ tenantId = 1, variant = "runtime" }) {
+export default function AppModeSwitch({
+  tenantId = 1,
+  variant = "runtime",
+  mode,
+}) {
   const navigate = useNavigate();
   const location = useLocation();
 
   const isDesigner = location.pathname.startsWith("/designer");
-  const activeMode = isDesigner ? "designer" : "runtime";
+  const activeMode =
+    mode === "designer" || mode === "runtime"
+      ? mode
+      : isDesigner
+        ? "designer"
+        : "runtime";
 
   const handleToggleMode = () => {
     if (activeMode === "designer") {

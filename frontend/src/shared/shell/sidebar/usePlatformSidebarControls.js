@@ -10,6 +10,10 @@ import {
   resolvePrimaryTableIdForPage,
 } from "../../../modules/universalTable/utils/resolvePrimaryTableId";
 import { navigationService } from "../../../modules/navigation/services/navigationService";
+import {
+  patchDesignerSystemMenuSettings,
+  resolveDesignerSystemItemKey,
+} from "./designerSystemMenuSettings";
 
 export function usePlatformSidebarControls({
   portalId = 1,
@@ -24,6 +28,7 @@ export function usePlatformSidebarControls({
     mode: "runtime",
     context: "runtime",
   },
+  mode = "runtime",
 }) {
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
   const menuEditor = useMenuEditor({
@@ -109,6 +114,45 @@ export function usePlatformSidebarControls({
       case "update-menu-item":
         if (!canEditMenu) return;
         if (!payload?.id || !payload?.data) return;
+        if (mode === "designer" && String(payload.id).startsWith("system-designer-")) {
+          const systemItem = {
+            id: payload.id,
+            ...(payload?.navigationItems
+              ? {
+                  sourceItem: findNavigationItemById(payload.navigationItems, payload.id),
+                }
+              : {}),
+          };
+          const itemKey = resolveDesignerSystemItemKey(
+            systemItem.sourceItem ?? { id: payload.id }
+          );
+          patchDesignerSystemMenuSettings(portalId, itemKey, {
+            title:
+              typeof payload.data.title === "string" ? payload.data.title : undefined,
+            icon: payload.data.icon,
+            icon_type: payload.data.icon_type,
+            icon_file_url: payload.data.icon_file_url,
+            color:
+              typeof payload.data.color === "string" ? payload.data.color : undefined,
+            is_bold:
+              typeof payload.data.is_bold === "boolean"
+                ? payload.data.is_bold
+                : undefined,
+            is_italic:
+              typeof payload.data.is_italic === "boolean"
+                ? payload.data.is_italic
+                : undefined,
+            is_visible:
+              typeof payload.data.is_visible === "boolean"
+                ? payload.data.is_visible
+                : undefined,
+            is_expanded:
+              typeof payload.data.is_expanded === "boolean"
+                ? payload.data.is_expanded
+                : undefined,
+          });
+          return;
+        }
         handleUpdateMenuItem(
           payload.id,
           payload.data,
@@ -123,6 +167,36 @@ export function usePlatformSidebarControls({
       case "move-menu-items":
         if (!canDragItems) return;
         if (!Array.isArray(payload?.items) || !payload.items.length) return;
+        if (mode === "designer") {
+          payload.items.forEach((item) => {
+            if (!String(item?.id || "").startsWith("system-designer-")) return;
+            const itemKey = resolveDesignerSystemItemKey({ id: item.id });
+            patchDesignerSystemMenuSettings(portalId, itemKey, {
+              sort_order:
+                typeof item.sort_order === "number" && Number.isFinite(item.sort_order)
+                  ? item.sort_order
+                  : undefined,
+              parent_id: item.parent_id ?? null,
+            });
+          });
+          const customItems = payload.items.filter(
+            (item) => !String(item?.id || "").startsWith("system-designer-")
+          );
+          if (!customItems.length) {
+            return;
+          }
+          navigationService
+            .moveItems(customItems)
+            .then(async () => {
+              await (typeof reloadNavigation === "function"
+                ? reloadNavigation()
+                : Promise.resolve());
+            })
+            .catch((moveError) => {
+              console.error("Failed to move menu items:", moveError);
+            });
+          return;
+        }
         navigationService
           .moveItems(payload.items)
           .then(async () => {

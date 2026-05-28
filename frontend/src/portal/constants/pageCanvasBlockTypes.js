@@ -8,8 +8,6 @@ export const PAGE_CANVAS_BLOCK_TYPES = [
   { type: "button", title: "Кнопка" },
   { type: "cards", title: "Карточки" },
   { type: "universal_table", title: "Таблица" },
-  { type: "admin_dashboard", title: "Администрирование" },
-  { type: "page_settings", title: "Настройки страницы" },
 ];
 
 export const PAGE_CANVAS_INTERACTIVE_SELECTOR =

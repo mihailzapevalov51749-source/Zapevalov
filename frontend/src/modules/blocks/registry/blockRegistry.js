@@ -39,7 +39,7 @@ export function getBlockTypeTitle(type) {
     cards: "Карточки",
 
     admin_dashboard: "Администрирование",
-    admin_system: "Настройки системы",
+    admin_system: "Настройка системы",
 
     table: "Таблица",
     universal_table: "Универсальная таблица",

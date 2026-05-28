@@ -27,8 +27,8 @@ function baseRuntimeOptions(
   overrides: HeaderPreviewOptions = {}
 ): Parameters<typeof createRuntimeHeaderContract>[0] {
   return {
-    title: overrides.title ?? "Главная",
-    subtitle: overrides.subtitle ?? "Главная страница портала",
+    title: overrides.title ?? "Проекты",
+    subtitle: overrides.subtitle ?? "",
     pathname: PREVIEW_PATHNAME,
     tenantId: PREVIEW_TENANT_ID,
     user: PREVIEW_USER,
@@ -52,6 +52,11 @@ function baseRuntimeOptions(
     onSaveTitleKey: "save-title",
     onCancelTitleKey: "cancel-title-edit",
     onSavePageKey: "save-page",
+    pathChain: [
+      { label: "Проекты", path: "/portal/1/page/1" },
+      { label: "СДС", path: "/portal/1/page/12" },
+      { label: "График работ" },
+    ],
     ...overrides,
   };
 }
@@ -116,10 +121,17 @@ export function createRuntimeHeaderSearchNotificationsPreviewContract(): AppHead
 export function createDesignerHeaderNormalPreviewContract(): AppHeaderContract {
   return createDesignerHeaderContract({
     title: "Типы объектов",
-    subtitle: "Режим аналитика",
+    subtitle: "",
     pathname: "/designer/tenant/1/object-types",
     tenantId: PREVIEW_TENANT_ID,
     user: PREVIEW_USER,
+    pathChain: [
+      { label: "Типы объектов", path: "/designer/tenant/1/object-types" },
+      { label: "CRM", path: "/designer/tenant/1/object-types/crm/general" },
+      { label: "Сделка", path: "/designer/tenant/1/object-types/crm/deal/general" },
+      { label: "Поля", path: "/designer/tenant/1/object-types/crm/deal/fields" },
+      { label: "Сумма" },
+    ],
   });
 }
 
@@ -127,10 +139,16 @@ export function createDesignerHeaderNormalPreviewContract(): AppHeaderContract {
 export function createDesignerHeaderEditModePreviewContract(): AppHeaderContract {
   const base = createDesignerHeaderContract({
     title: "Типы объектов",
-    subtitle: "Режим аналитика",
+    subtitle: "",
     pathname: "/designer/tenant/1/object-types",
     tenantId: PREVIEW_TENANT_ID,
     user: PREVIEW_USER,
+    pathChain: [
+      { label: "Типы объектов", path: "/designer/tenant/1/object-types" },
+      { label: "CRM", path: "/designer/tenant/1/object-types/crm/general" },
+      { label: "Сделка", path: "/designer/tenant/1/object-types/crm/deal/general" },
+      { label: "Поля" },
+    ],
   });
 
   return {

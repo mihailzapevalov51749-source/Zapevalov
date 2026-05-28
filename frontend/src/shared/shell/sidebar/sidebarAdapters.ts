@@ -294,6 +294,71 @@ function filterDesignerPersistedCustomItems(
     .filter((item): item is UnknownRecord => Boolean(item));
 }
 
+function resolveDesignerSortOrder(item: UnknownRecord): number {
+  const order = item.sort_order ?? item.sortOrder;
+
+  if (typeof order === "number" && Number.isFinite(order)) {
+    return order;
+  }
+
+  if (typeof order === "string") {
+    const parsed = Number(order);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  const id = asString(item.id);
+  const idNumber = id ? Number(id) : Number.NaN;
+  return Number.isFinite(idNumber) ? idNumber : 0;
+}
+
+function isDesignerSystemNavigationItem(item: UnknownRecord): boolean {
+  if (item.is_system === true || item.isSystem === true) {
+    return true;
+  }
+
+  const systemKey = asString(item.system_key) ?? asString(item.systemKey);
+  return Boolean(systemKey);
+}
+
+function sortDesignerNavigationItems(items: UnknownRecord[]): UnknownRecord[] {
+  return [...items].sort((left, right) => {
+    const orderDiff = resolveDesignerSortOrder(left) - resolveDesignerSortOrder(right);
+    if (orderDiff !== 0) {
+      return orderDiff;
+    }
+
+    const leftId = asString(left.id) ?? "";
+    const rightId = asString(right.id) ?? "";
+    return leftId.localeCompare(rightId);
+  });
+}
+
+function mergeDesignerNavigationItems(items: unknown[]): unknown[] {
+  const systemItems: UnknownRecord[] = [];
+  const customItems: UnknownRecord[] = [];
+
+  items.forEach((rawItem) => {
+    const item = asRecord(rawItem);
+    if (!item) {
+      return;
+    }
+
+    if (isDesignerSystemNavigationItem(item)) {
+      systemItems.push(item);
+      return;
+    }
+
+    customItems.push(item);
+  });
+
+  return [
+    ...sortDesignerNavigationItems(systemItems),
+    ...sortDesignerNavigationItems(customItems),
+  ];
+}
+
 function hasPersistableNavigationItems(items: unknown[] | undefined): boolean {
   if (!Array.isArray(items) || items.length === 0) {
     return false;
@@ -427,6 +492,63 @@ function isRuntimeItemExpanded(item: UnknownRecord): boolean | undefined {
   return undefined;
 }
 
+function shouldHideRuntimeAdministrationItem(item: UnknownRecord): boolean {
+  const title = String(item.title ?? item.label ?? "").trim().toLowerCase();
+  const route = String(item.route ?? item.path ?? item.url ?? "").trim().toLowerCase();
+  const type = String(item.type ?? "").trim().toLowerCase();
+  const systemKey = String(item.system_key ?? item.systemKey ?? "").trim().toLowerCase();
+  const blockType = String(
+    item.block_type ?? item.blockType ?? item.widget_type ?? item.widgetType ?? ""
+  )
+    .trim()
+    .toLowerCase();
+
+  if (title === "администрирование" || route.startsWith("/admin")) {
+    return true;
+  }
+
+  if (
+    title === "настройка системы" ||
+    title === "настройки системы" ||
+    title === "пользователи системы" ||
+    title === "роли и доступы"
+  ) {
+    return true;
+  }
+
+  if (
+    route.includes("/system-settings") ||
+    route.includes("/settings/system") ||
+    route.includes("/administration/system-settings") ||
+    route.includes("/admin/system")
+  ) {
+    return true;
+  }
+
+  if (
+    route.includes("/administration/users") ||
+    route.includes("/administration/roles") ||
+    route.includes("/administration/audit-log") ||
+    route.includes("/administration/modules") ||
+    route.includes("/administration/integrations") ||
+    route.includes("/administration/ai-assistants")
+  ) {
+    return true;
+  }
+
+  if (
+    title === "настройки страницы" &&
+    (type === "system_page" ||
+      systemKey.includes("admin") ||
+      systemKey.includes("system") ||
+      blockType === "admin_system")
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 function buildRuntimeItemMeta(
   item: UnknownRecord,
   iconType?: string,
@@ -474,8 +596,34 @@ function isRuntimeItemActive(
 ): boolean {
   const path = resolveRuntimeItemPath(item);
 
-  if (activePath && (path === activePath || itemId === activePath)) {
-    return true;
+  if (activePath) {
+    const normalize = (value: string | undefined) => {
+      if (!value) return "";
+      const trimmed = String(value).trim();
+      if (!trimmed) return "";
+      if (trimmed === "/") return "/";
+      return trimmed.replace(/\/+$/, "");
+    };
+    const normalizedActivePath = normalize(activePath);
+    const normalizedPath = normalize(path);
+    if (normalizedPath && normalizedPath === normalizedActivePath) {
+      return true;
+    }
+    if (itemId === normalizedActivePath) {
+      return true;
+    }
+
+    const isDesignerPath =
+      normalizedPath.startsWith("/designer/") &&
+      normalizedActivePath.startsWith("/designer/");
+    if (
+      isDesignerPath &&
+      normalizedPath &&
+      (normalizedActivePath === normalizedPath ||
+        normalizedActivePath.startsWith(`${normalizedPath}/`))
+    ) {
+      return true;
+    }
   }
 
   if (activePageId === undefined || pageId === undefined) {
@@ -525,6 +673,7 @@ function mapRuntimeNavigationItem(
   }
 
   const label = resolveRuntimeItemLabel(item);
+  if (shouldHideRuntimeAdministrationItem(item)) return null;
   const id = resolveRuntimeItemId(item, label);
   const path = resolveRuntimeItemPath(item);
   const pageId = resolveRuntimePageId(item);
@@ -576,6 +725,13 @@ function mapRuntimeNavigationItem(
 
   mappedItem.children = mapRuntimeNavigationChildren(item, context, id);
 
+  const isSectionLike =
+    asString(item.type) === "section" || asString(item.type) === "workspace";
+  const hasChildren = Array.isArray(mappedItem.children) && mappedItem.children.length > 0;
+  if (isSectionLike && !hasChildren && !path && pageId === undefined) {
+    return null;
+  }
+
   return mappedItem;
 }
 
@@ -601,6 +757,38 @@ function mapRuntimeNavigationItems(
   return navigationItems
     .map((item, index) => mapRuntimeNavigationItem(item, context, index))
     .filter((item): item is SidebarItemContract => item !== null);
+}
+
+function stripRuntimeAdministrationItems(items: unknown[] | undefined): unknown[] {
+  if (!Array.isArray(items)) return [];
+  const normalize = (rawItem: unknown): unknown | null => {
+    const item = asRecord(rawItem);
+    if (!item) return null;
+    if (shouldHideRuntimeAdministrationItem(item)) {
+      return null;
+    }
+    const childrenSource = Array.isArray(item.children) ? item.children : [];
+    const children = childrenSource
+      .map((child) => normalize(child))
+      .filter((child): child is UnknownRecord => Boolean(child));
+
+    if (childrenSource.length > 0 && children.length === 0) {
+      const itemType = String(item.type ?? "").trim().toLowerCase();
+      const isSectionLike = itemType === "section" || itemType === "workspace";
+      if (isSectionLike) {
+        return null;
+      }
+    }
+
+    return {
+      ...item,
+      ...(Array.isArray(item.children) ? { children } : {}),
+    };
+  };
+
+  return items
+    .map((item) => normalize(item))
+    .filter((item): item is UnknownRecord => Boolean(item));
 }
 
 function findActiveItemId(items: SidebarItemContract[]): string | undefined {
@@ -683,6 +871,7 @@ export function createRuntimeSidebarContract(
 ): AppSidebarContract {
   const activePageId = resolveRuntimeActivePageId(input.activePageId);
   const capabilities = resolveRuntimeCapabilities(input);
+  const navigationItems = stripRuntimeAdministrationItems(input.navigationItems);
 
   return {
     mode: SIDEBAR_MODES.RUNTIME,
@@ -700,7 +889,7 @@ export function createRuntimeSidebarContract(
     activePageId,
     actions: buildRuntimeActions(input, capabilities),
     capabilities,
-    navigationItems: Array.isArray(input.navigationItems) ? input.navigationItems : [],
+    navigationItems,
     reloadNavigation: input.reloadNavigation,
     onChangeMenuScale: input.onChangeMenuScale,
   } as AppSidebarContract & {
@@ -728,7 +917,7 @@ export function createDesignerSidebarContract(
   const fallbackItems = buildDesignerFallbackNavigationItems(input.tenantId);
   const navigationItems =
     persistedItems.length > 0
-      ? persistedItems
+      ? mergeDesignerNavigationItems(persistedItems)
       : filterDesignerPersistedCustomItems(fallbackItems, fallbackRoutes, input.tenantId);
 
   return {

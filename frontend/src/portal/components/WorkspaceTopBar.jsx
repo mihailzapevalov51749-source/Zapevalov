@@ -3,20 +3,17 @@ import { useNavigate } from "react-router-dom";
 
 import { getMe } from "../../api/authApi";
 
-import settingsIcon from "../../assets/icons/settings.gif";
-import saveIcon from "../../assets/icons/save.gif";
-
 import ProfileSidePanel from "../../profile/components/ProfileSidePanel";
 
-import AppModeSwitch from "../../shared/appMode/AppModeSwitch";
-
 import useNotifications from "../../modules/notifications/hooks/useNotifications";
-import NotificationBell from "../../modules/notifications/components/NotificationBell";
 import {
   AppHeaderRenderer,
   createRuntimeHeaderContract,
 } from "../../shared/shell/header";
-import { getDesignerPath } from "../../shared/appMode/appModeStorage";
+import {
+  getDesignerPath,
+  getLastRuntimePath,
+} from "../../shared/appMode/appModeStorage";
 import { emitRuntimeShadowSnapshot } from "../../shared/shell/shadow/runtime";
 
 const DEFAULT_AVATAR_SETTINGS = {
@@ -24,9 +21,42 @@ const DEFAULT_AVATAR_SETTINGS = {
   y: 0,
   scale: 1,
 };
+const HEADER_USER_CACHE_KEY = "__YASNOPRO_HEADER_USER_CACHE__";
 
-const HEADER_AVATAR_SIZE = 30;
-const PROFILE_AVATAR_SIZE = 132;
+const getCachedHeaderUser = () => window[HEADER_USER_CACHE_KEY] ?? null;
+
+const setCachedHeaderUser = (nextUser) => {
+  if (!nextUser) return;
+  window[HEADER_USER_CACHE_KEY] = nextUser;
+};
+
+const buildRuntimePathChain = ({ pathname, sectionTitle, breadcrumbItems }) => {
+  const chain = [];
+  const hasSemanticPath = Array.isArray(breadcrumbItems) && breadcrumbItems.length > 0;
+
+  if (!hasSemanticPath && sectionTitle) {
+    chain.push({
+      id: "runtime-section",
+      label: String(sectionTitle),
+      path: pathname,
+    });
+  }
+
+  if (Array.isArray(breadcrumbItems) && breadcrumbItems.length > 0) {
+    breadcrumbItems.forEach((item, index) => {
+      const label = String(item?.label || "").trim();
+      if (!label) return;
+      chain.push({
+        id: item?.id || `runtime-inner-${index}`,
+        label,
+        path: typeof item?.path === "string" ? item.path : undefined,
+        meta: item?.meta,
+      });
+    });
+  }
+
+  return chain;
+};
 
 const normalizeAvatarSettings = (settings) => {
   if (!settings) return DEFAULT_AVATAR_SETTINGS;
@@ -55,6 +85,8 @@ const normalizeAvatarSettings = (settings) => {
 export default function WorkspaceTopBar({
   title,
   subtitle,
+  sectionTitle,
+  breadcrumbItems,
   searchQuery,
   onChangeSearchQuery,
   isEditMode,
@@ -71,19 +103,13 @@ export default function WorkspaceTopBar({
   onUnifiedHeaderModel,
 }) {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => getCachedHeaderUser());
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const { notifications, unreadCount, markAsRead } = useNotifications();
 
  const pathname = window.location.pathname;
-
-const isRootPage =
-  pathname === "/" ||
-  pathname === "/admin";
-
-const effectiveShowBackButton =
-  showBackButton || !isRootPage;
+const effectiveShowBackButton = true;
 
   const handleBack = useCallback(() => {
     if (onBack) {
@@ -98,12 +124,14 @@ const effectiveShowBackButton =
     try {
       const data = await getMe();
 
-      setUser({
+      const nextUser = {
         ...data,
         avatar_settings: normalizeAvatarSettings(data.avatar_settings),
-      });
+      };
+      setCachedHeaderUser(nextUser);
+      setUser(nextUser);
     } catch {
-      setUser(null);
+      setUser((previous) => previous ?? getCachedHeaderUser());
     }
   };
 
@@ -131,26 +159,15 @@ const effectiveShowBackButton =
     });
   }, [user, searchQuery, unreadCount]);
 
-  const initials =
-    user?.full_name?.trim()?.charAt(0)?.toUpperCase() ||
-    user?.email?.trim()?.charAt(0)?.toUpperCase() ||
-    "?";
-
   const avatarSettings = useMemo(
     () => normalizeAvatarSettings(user?.avatar_settings),
     [user?.avatar_settings]
   );
 
-  const avatarRatio = HEADER_AVATAR_SIZE / PROFILE_AVATAR_SIZE;
-  const headerAvatarX = (avatarSettings.x || 0) * avatarRatio;
-  const headerAvatarY = (avatarSettings.y || 0) * avatarRatio;
-  const headerAvatarScale = avatarSettings.scale || 1;
-
   const runtimeHeaderContract = useMemo(
     () =>
       createRuntimeHeaderContract({
         pathname,
-        title,
         subtitle,
         user: {
           id: user?.id,
@@ -168,17 +185,30 @@ const effectiveShowBackButton =
         notificationItems: notifications,
         onReadNotification: markAsRead,
         avatarSettings,
+        title: sectionTitle ?? title,
+        pathChain: buildRuntimePathChain({
+          pathname,
+          sectionTitle: sectionTitle ?? title,
+          breadcrumbItems,
+        }),
+        meta: {
+          canGoBack: window.history.length > 1,
+          requestedShowBackButton: showBackButton,
+        },
       }),
     [
       pathname,
       title,
       subtitle,
+      sectionTitle,
+      breadcrumbItems,
       user?.id,
       user?.full_name,
       user?.email,
       user?.avatar_url,
       tenantId,
       effectiveShowBackButton,
+      showBackButton,
       searchQuery,
       isEditMode,
       isPageTitleEditable,
@@ -197,7 +227,11 @@ const effectiveShowBackButton =
           handleBack();
           return;
         case "app-mode-switch":
-          navigate(getDesignerPath(tenantId));
+          if (pathname.startsWith("/designer")) {
+            navigate(getLastRuntimePath());
+          } else {
+            navigate(getDesignerPath(tenantId));
+          }
           return;
         case "search-change":
         case "search":
@@ -205,6 +239,40 @@ const effectiveShowBackButton =
           return;
         case "search-clear":
           onChangeSearchQuery?.("");
+          return;
+        case "context-path-navigate":
+          if (payload?.item?.meta?.scope === "document-library-root") {
+            window.dispatchEvent(
+              new CustomEvent("yasnopro:library:go-root", {
+                detail: {
+                  libraryId: Number(payload?.item?.meta?.libraryId) || null,
+                },
+              })
+            );
+            return;
+          }
+          if (
+            payload?.item?.meta?.scope === "document-library-folder" &&
+            Number.isFinite(Number(payload?.item?.meta?.folderId))
+          ) {
+            window.dispatchEvent(
+              new CustomEvent("yasnopro:library:go-folder", {
+                detail: {
+                  libraryId: Number(payload?.item?.meta?.libraryId) || null,
+                  folderId: Number(payload?.item?.meta?.folderId),
+                },
+              })
+            );
+            return;
+          }
+          if (typeof payload?.path === "string" && payload.path.trim().length > 0) {
+            navigate(payload.path);
+          }
+          return;
+        case "breadcrumb-navigate":
+          if (typeof payload?.path === "string" && payload.path.trim().length > 0) {
+            navigate(payload.path);
+          }
           return;
         case "profile":
           setIsProfileOpen(true);
@@ -240,6 +308,7 @@ const effectiveShowBackButton =
       onExitEditMode,
       onSavePageTitle,
       onChangePageTitleDraft,
+      pathname,
     ]
   );
 
@@ -278,104 +347,6 @@ const effectiveShowBackButton =
           contract={runtimeHeaderContract}
           onAction={handleHeaderAction}
         />
-      ) : inlineRender ? (
-      <div style={topBarStyle} data-page-top-bar="true">
-        <div style={leftSideStyle}>
-          {effectiveShowBackButton ? (
-            <button
-              type="button"
-              onClick={handleBack}
-              title="Назад"
-              style={backButtonStyle}
-            >
-              ←
-            </button>
-          ) : null}
-
-          <AppModeSwitch tenantId={tenantId} variant="runtime" />
-
-          <div style={titleBlockStyle}>
-            {isPageTitleEditable ? (
-              <input
-                value={pageTitleDraft}
-                onChange={(event) => onChangePageTitleDraft?.(event.target.value)}
-                onBlur={() => onSavePageTitle?.()}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    onSavePageTitle?.();
-                  }
-                }}
-                style={pageTitleInputStyle}
-                placeholder="Название страницы"
-              />
-            ) : title ? (
-              <div style={pageTitleStyle}>{title}</div>
-            ) : null}
-            {subtitle ? <div style={pageSubtitleStyle}>{subtitle}</div> : null}
-          </div>
-        </div>
-
-        <div style={rightControlsStyle}>
-          <input
-            value={searchQuery}
-            onChange={(event) => onChangeSearchQuery(event.target.value)}
-            placeholder="Поиск по системе..."
-            style={searchInputStyle}
-          />
-
-          <div style={notificationWrapperStyle}>
-            <NotificationBell
-              notifications={notifications}
-              unreadCount={unreadCount}
-              onReadNotification={markAsRead}
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setIsProfileOpen(true)}
-            title="Личный кабинет"
-            style={avatarButtonStyle}
-          >
-            {user?.avatar_url ? (
-              <div style={avatarClipStyle}>
-                <img
-                  src={user.avatar_url}
-                  alt="Аватар"
-                  draggable={false}
-                  style={{
-                    ...avatarImageStyle,
-                    transform: `translate(${headerAvatarX}px, ${headerAvatarY}px) scale(${headerAvatarScale})`,
-                  }}
-                />
-              </div>
-            ) : (
-              initials
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={isEditMode ? onExitEditMode : onEnterEditMode}
-            title={
-              isEditMode
-                ? "Выйти из режима редактирования"
-                : "Режим редактирования страницы"
-            }
-            style={{
-              ...settingsButtonStyle,
-              background: isEditMode ? "#E0F2FE" : "#FFFFFF",
-            }}
-          >
-            <img
-              src={isEditMode ? saveIcon : settingsIcon}
-              alt=""
-              style={settingsImageStyle}
-            />
-          </button>
-        </div>
-      </div>
       ) : null}
 
       <ProfileSidePanel
@@ -389,216 +360,3 @@ const effectiveShowBackButton =
     </>
   );
 }
-
-const topBarStyle = {
-  position: "sticky",
-  top: 0,
-  zIndex: 20,
-
-  height: 56,
-
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-
-  gap: 24,
-
-  padding: "0 20px",
-  boxSizing: "border-box",
-
-  background: "#FFFFFF",
-  borderBottom: "1px solid #E2E8F0",
-};
-
-const leftSideStyle = {
-  minWidth: 0,
-  display: "flex",
-  alignItems: "center",
-  gap: 10,
-};
-
-
-const backButtonStyle = {
-  height: 32,
-
-  padding: "0 6px 0 0",
-
-  border: "none",
-  outline: "none",
-
-  background: "transparent",
-  color: "#1E3A8A",
-
-  cursor: "pointer",
-
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 6,
-
-  fontSize: 13,
-  fontWeight: 800,
-  lineHeight: 1,
-
-  flexShrink: 0,
-};
-
-const titleBlockStyle = {
-  minWidth: 0,
-  display: "flex",
-  flexDirection: "column",
-};
-
-const pageTitleStyle = {
-  fontSize: 16,
-  fontWeight: 800,
-  lineHeight: 1.2,
-  color: "#0F172A",
-  whiteSpace: "nowrap",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-};
-
-const pageTitleInputStyle = {
-  width: "100%",
-  maxWidth: 420,
-  height: 32,
-  padding: "0 10px",
-  border: "1px solid #93C5FD",
-  borderRadius: 8,
-  outline: "none",
-  fontSize: 16,
-  fontWeight: 800,
-  color: "#0F172A",
-  background: "#F8FAFC",
-  boxSizing: "border-box",
-};
-
-const pageSubtitleStyle = {
-  marginTop: 3,
-  fontSize: 11,
-  fontWeight: 500,
-  lineHeight: 1.2,
-  color: "#64748B",
-  whiteSpace: "nowrap",
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-};
-
-const rightControlsStyle = {
-  marginLeft: "auto",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "flex-end",
-  gap: 8,
-  flexShrink: 0,
-};
-
-const searchInputStyle = {
-  width: 420,
-  height: 32,
-
-  padding: "0 12px",
-
-  border: "1px solid #CBD5E1",
-  borderRadius: 8,
-
-  outline: "none",
-
-  fontSize: 13,
-
-  background: "#FFFFFF",
-
-  boxSizing: "border-box",
-};
-
-const notificationWrapperStyle = {
-  width: 30,
-  height: 30,
-
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-
-  transform: "scale(0.88)",
-  transformOrigin: "center center",
-};
-
-const avatarButtonStyle = {
-  width: HEADER_AVATAR_SIZE,
-  height: HEADER_AVATAR_SIZE,
-
-  padding: 0,
-
-  border: "1px solid #CBD5E1",
-  borderRadius: "50%",
-
-  background: "#F8FAFC",
-  color: "#0F172A",
-
-  cursor: "pointer",
-  overflow: "hidden",
-
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-
-  fontSize: 12,
-  fontWeight: 800,
-  lineHeight: 1,
-};
-
-const avatarClipStyle = {
-  width: "100%",
-  height: "100%",
-
-  borderRadius: "50%",
-  overflow: "hidden",
-
-  background: "#E2E8F0",
-
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
-
-const avatarImageStyle = {
-  width: "100%",
-  height: "100%",
-
-  objectFit: "contain",
-
-  display: "block",
-
-  userSelect: "none",
-  pointerEvents: "none",
-
-  transformOrigin: "center center",
-};
-
-const settingsButtonStyle = {
-  width: 30,
-  height: 30,
-
-  padding: 5,
-
-  border: "1px solid #CBD5E1",
-  borderRadius: 8,
-
-  cursor: "pointer",
-
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
-
-const settingsImageStyle = {
-  width: 18,
-  height: 18,
-
-  objectFit: "contain",
-
-  display: "block",
-
-  opacity: 0.82,
-};

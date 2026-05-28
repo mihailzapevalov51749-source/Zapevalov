@@ -54,6 +54,7 @@ export default function MenuItem({
   openedEditorItemId,
   setOpenedEditorItemId,
   sidebarCollapsed = false,
+  sidebarMode = "runtime",
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -84,18 +85,51 @@ export default function MenuItem({
     };
   }, [setOpenedEditorItemId]);
 
-  if (!isEditMode && !item.is_visible && !isSystem) {
+  if (!isEditMode && !item.is_visible) {
     return null;
   }
 
+  const normalizePath = (value) => {
+    if (!value) return "";
+    const trimmed = String(value).trim();
+    if (!trimmed) return "";
+    if (trimmed === "/") return "/";
+    return trimmed.replace(/\/+$/, "");
+  };
+  const currentPathname = normalizePath(window.location.pathname);
+  const itemRoute = normalizePath(item.route || item.path || item.url);
+  const isDesignerRoute =
+    itemRoute.startsWith("/designer/") && currentPathname.startsWith("/designer/");
+  const isRouteActive = Boolean(
+    itemRoute &&
+      (currentPathname === itemRoute ||
+        (isDesignerRoute && currentPathname.startsWith(`${itemRoute}/`)))
+  );
+  const resolveNumericId = (value) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+  };
+  const currentDesignerPageId = resolveNumericId(
+    currentPathname.match(/\/designer\/tenant\/\d+\/page\/(\d+)/)?.[1]
+  );
+  const itemPageId = resolveNumericId(
+    item.page_id ?? item.pageId ?? item?.meta?.page_id
+  );
+  const activeNumericPageId = resolveNumericId(activePageId);
+  const isPageActiveById =
+    itemPageId != null &&
+    ((activeNumericPageId != null && itemPageId === activeNumericPageId) ||
+      (activeNumericPageId == null &&
+        currentDesignerPageId != null &&
+        itemPageId === currentDesignerPageId));
   const isActive =
-    item.page_id && item.page_id === activePageId
-      ? true
-      : item.type === "system_page" && item.route === window.location.pathname;
+    item.active === true ||
+    isPageActiveById ||
+    isRouteActive;
 
   const visibleChildren = isEditMode
     ? item.children || []
-    : (item.children || []).filter((child) => child.is_visible || child.isSystem);
+    : (item.children || []).filter((child) => child.is_visible);
 
   const hasChildren = visibleChildren.length > 0;
 
@@ -115,12 +149,18 @@ export default function MenuItem({
       (item.type === "system_page" && item.route) ||
       isSection);
 
+  const allowSystemDrag = sidebarMode === "designer" && isSystem;
+  const canDragItem = !isSystem || allowSystemDrag;
   const isDropTarget =
-    !isSystem && dragAndDrop?.dropTarget?.targetId === item.id;
+    canDragItem && dragAndDrop?.dropTarget?.targetId === item.id;
 
   const dropPosition = dragAndDrop?.dropTarget?.position;
 
-  const itemTextColor = isActive ? "#2563EB" : item.color || "#0F172A";
+  const isDesignerMode = sidebarMode === "designer";
+  const activeAccent = isDesignerMode ? "#6D28D9" : "#2563EB";
+  const activeBackground = isDesignerMode ? "#F5F3FF" : "#EEF4FF";
+  const hoverBackground = isDesignerMode ? "#F8F5FF" : "#F8FAFC";
+  const itemTextColor = isActive ? activeAccent : item.color || "#0F172A";
   const sidebarVisual = LAYOUT_TOKENS.sidebar;
   const rowHeight = sidebarCollapsed
     ? sidebarVisual.menuItemHeight
@@ -140,10 +180,18 @@ export default function MenuItem({
 
   const itemBackground = useMemo(() => {
     if (isDropTarget && dropPosition === "inside") return "#DBEAFE";
-    if (isActive) return "#EEF4FF";
-    if (isHovered || isEditorOpen) return "#F8FAFC";
+    if (isActive) return activeBackground;
+    if (isHovered || isEditorOpen) return hoverBackground;
     return "transparent";
-  }, [isDropTarget, dropPosition, isActive, isHovered, isEditorOpen]);
+  }, [
+    isDropTarget,
+    dropPosition,
+    isActive,
+    isHovered,
+    isEditorOpen,
+    activeBackground,
+    hoverBackground,
+  ]);
 
   const handleClick = () => {
     if (isSection) {
@@ -184,23 +232,23 @@ export default function MenuItem({
     <div
       style={{
         marginBottom: 2 * scale,
-        opacity: item.is_visible || isSystem ? 1 : 0.35,
+        opacity: item.is_visible ? 1 : 0.35,
       }}
     >
       {isDropTarget && dropPosition === "before" && <DropLine scale={scale} />}
 
       <div
-        draggable={isEditMode && !isSystem}
+        draggable={isEditMode && canDragItem}
         onDragStart={() => {
-          if (isSystem) return;
+          if (!canDragItem) return;
           dragAndDrop?.handleDragStart(item.id);
         }}
         onDragOver={(event) => {
-          if (isSystem) return;
+          if (!canDragItem) return;
           dragAndDrop?.handleDragOver(event, item);
         }}
         onDrop={(event) => {
-          if (isSystem) return;
+          if (!canDragItem) return;
           dragAndDrop?.handleDrop(event, item);
         }}
         onDragEnd={() => dragAndDrop?.resetDrag()}
@@ -209,7 +257,7 @@ export default function MenuItem({
         onClick={handleClick}
         style={{
           position: "relative",
-          cursor: isEditMode && !isSystem ? "grab" : isClickable ? "pointer" : "default",
+          cursor: isEditMode && canDragItem ? "grab" : isClickable ? "pointer" : "default",
           height: rowHeight,
           minHeight: rowHeight,
           padding: sidebarCollapsed ? "0 6px" : `0 ${BASE.paddingX * scale}px`,
@@ -239,7 +287,7 @@ export default function MenuItem({
             justifyContent: sidebarCollapsed ? "center" : "flex-start",
           }}
         >
-          {isEditMode && !isSystem && !sidebarCollapsed && (
+          {isEditMode && canDragItem && !sidebarCollapsed && (
             <span
               style={{
                 color: "#94A3B8",
@@ -254,7 +302,7 @@ export default function MenuItem({
             </span>
           )}
 
-          {isEditMode && !isSystem && !sidebarCollapsed && (
+          {isEditMode && canDragItem && !sidebarCollapsed && (
             <TypeBadge type={item.type} scale={scale} />
           )}
 
@@ -272,6 +320,7 @@ export default function MenuItem({
                 scale={1}
                 active={isActive}
                 iconSize={iconSize}
+                accentColor={activeAccent}
               />
             )
           ) : (
@@ -289,6 +338,7 @@ export default function MenuItem({
                   scale={scale}
                   active={isActive}
                   iconSize={iconSize}
+                  accentColor={activeAccent}
                 />
               )}
             </>
@@ -326,7 +376,7 @@ export default function MenuItem({
               background: isEditorOpen ? "#E2E8F0" : "transparent",
               cursor: "pointer",
               fontSize: 13 * scale,
-              color: isActive ? "#2563EB" : "#64748B",
+              color: isActive ? activeAccent : "#64748B",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -383,11 +433,14 @@ export default function MenuItem({
               isEditMode={isEditMode}
               onUpdateItem={onUpdateItem}
               onDeleteItem={onDeleteItem}
-              dragAndDrop={child?.isSystem ? null : dragAndDrop}
+              dragAndDrop={
+                child?.isSystem && sidebarMode !== "designer" ? null : dragAndDrop
+              }
               scale={scale}
               openedEditorItemId={openedEditorItemId}
               setOpenedEditorItemId={setOpenedEditorItemId}
               sidebarCollapsed={sidebarCollapsed}
+              sidebarMode={sidebarMode}
             />
           ))}
         </div>
@@ -449,7 +502,13 @@ function TypeBadge({ type, scale = 1 }) {
   );
 }
 
-function DefaultIcon({ type, scale = 1, active = false, iconSize }) {
+function DefaultIcon({
+  type,
+  scale = 1,
+  active = false,
+  iconSize,
+  accentColor = "#2563EB",
+}) {
   const size = iconSize ?? BASE.iconSize * scale;
   const config = {
     section: "▣",
@@ -469,7 +528,7 @@ function DefaultIcon({ type, scale = 1, active = false, iconSize }) {
       style={{
         width: size,
         height: size,
-        color: active ? "#2563EB" : "#64748B",
+        color: active ? accentColor : "#64748B",
         fontSize: Math.max(12, size - 2),
         display: "inline-flex",
         alignItems: "center",

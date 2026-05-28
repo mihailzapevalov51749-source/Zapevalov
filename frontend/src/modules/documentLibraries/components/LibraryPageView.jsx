@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   getFileUrl,
@@ -24,6 +24,7 @@ import * as styles from "./libraryStyles";
 export default function LibraryPageView({
   libraryId,
   title = "Библиотека документов",
+  onContextPathChange,
 }) {
   const fileInputRef = useRef(null);
 
@@ -84,6 +85,57 @@ export default function LibraryPageView({
     folderPath.length > 0
       ? folderPath[folderPath.length - 1].title
       : title;
+
+  useEffect(() => {
+    if (typeof onContextPathChange !== "function") return;
+    onContextPathChange({
+      rootTitle: title,
+      folderPath: Array.isArray(folderPath) ? folderPath : [],
+    });
+  }, [title, folderPath, onContextPathChange]);
+
+  useEffect(() => {
+    const handleGoRootEvent = (event) => {
+      const detail = event?.detail ?? {};
+      const targetLibraryId = Number(detail.libraryId);
+      if (
+        Number.isFinite(targetLibraryId) &&
+        Number(libraryId) !== targetLibraryId
+      ) {
+        return;
+      }
+      handleGoRoot();
+    };
+
+    const handleGoFolder = (event) => {
+      const detail = event?.detail ?? {};
+      const targetLibraryId = Number(detail.libraryId);
+      const targetFolderId = Number(detail.folderId);
+
+      if (
+        Number.isFinite(targetLibraryId) &&
+        Number(libraryId) !== targetLibraryId
+      ) {
+        return;
+      }
+      if (!Number.isFinite(targetFolderId)) return;
+
+      const targetIndex = folderPath.findIndex(
+        (folder) => Number(folder?.id) === targetFolderId
+      );
+      if (targetIndex === -1) {
+        return;
+      }
+      handleGoToBreadcrumb(targetIndex);
+    };
+
+    window.addEventListener("yasnopro:library:go-root", handleGoRootEvent);
+    window.addEventListener("yasnopro:library:go-folder", handleGoFolder);
+    return () => {
+      window.removeEventListener("yasnopro:library:go-root", handleGoRootEvent);
+      window.removeEventListener("yasnopro:library:go-folder", handleGoFolder);
+    };
+  }, [libraryId, folderPath, handleGoToBreadcrumb, handleGoRoot]);
 
   const start = pagination.offset + 1;
 

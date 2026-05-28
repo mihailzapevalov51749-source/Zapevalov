@@ -1,5 +1,7 @@
 import usersIcon from "../../../assets/icons/users.png";
 
+const ADMIN_BASE = "/designer/tenant/1/administration";
+
 export const adminSections = [
   {
     id: "users",
@@ -7,7 +9,7 @@ export const adminSections = [
     subtitle: "Аккаунты входа в платформу",
     description:
       "Управление пользователями, профилями, статусами и привязкой к сотрудникам.",
-    route: "/admin/users",
+    route: `${ADMIN_BASE}/users`,
     icon: usersIcon,
     actionLabel: "Все пользователи",
     metrics: [
@@ -23,7 +25,7 @@ export const adminSections = [
     subtitle: "Настройка прав",
     description:
       "Управление ролями, правами доступа и политиками безопасности.",
-    route: "/admin/roles",
+    route: `${ADMIN_BASE}/roles`,
     actionLabel: "Управление ролями",
     metrics: [
       { label: "Ролей", value: "32", tone: "primary" },
@@ -33,27 +35,12 @@ export const adminSections = [
   },
 
   {
-    id: "workspaces",
-    title: "Рабочие пространства",
-    subtitle: "Управление workspace",
-    description:
-      "Включение, настройка и управление рабочими пространствами компании.",
-    route: "/admin/workspaces",
-    actionLabel: "Настроить",
-    metrics: [
-      { label: "Всего пространств", value: "8", tone: "primary" },
-      { label: "Активных", value: "7", tone: "success" },
-      { label: "Отключённых", value: "1", tone: "warning" },
-    ],
-  },
-
-  {
     id: "modules",
     title: "Модули",
     subtitle: "Подключаемые блоки платформы",
     description:
       "Управление таблицами, библиотеками, чатами, отчётами, процессами и другими модулями.",
-    route: "/admin/modules",
+    route: `${ADMIN_BASE}/modules`,
     actionLabel: "Управление",
     metrics: [
       { label: "Всего модулей", value: "24", tone: "primary" },
@@ -63,27 +50,12 @@ export const adminSections = [
   },
 
   {
-    id: "navigation",
-    title: "Навигация",
-    subtitle: "Управление левым меню",
-    description:
-      "Настройка структуры меню, видимости пунктов и доступности разделов по ролям.",
-    route: "/admin/navigation",
-    actionLabel: "Настроить",
-    metrics: [
-      { label: "Пунктов меню", value: "5", tone: "primary" },
-      { label: "Правил видимости", value: "38" },
-      { label: "Ролей", value: "27" },
-    ],
-  },
-
-  {
     id: "system",
-    title: "Настройки системы",
+    title: "Настройка системы",
     subtitle: "Общие параметры платформы",
     description:
       "Брендинг, локализация, уведомления, лимиты, резервное копирование и безопасность.",
-    route: "/portal/1/page/41",
+    route: `${ADMIN_BASE}/system-settings`,
     actionLabel: "Открыть настройки",
     metrics: [],
   },
@@ -94,7 +66,7 @@ export const adminSections = [
     subtitle: "Связь с внешними системами",
     description:
       "Подключение 1С, SharePoint, Telegram, почты, BI и других внешних сервисов.",
-    route: "/admin/integrations",
+    route: `${ADMIN_BASE}/integrations`,
     actionLabel: "Настроить",
     metrics: [
       { label: "Интеграций", value: "12", tone: "primary" },
@@ -104,12 +76,12 @@ export const adminSections = [
   },
 
   {
-    id: "audit",
+    id: "audit-log",
     title: "Журнал событий",
     subtitle: "Аудит действий",
     description:
       "Просмотр системных событий, действий пользователей и изменений данных.",
-    route: "/admin/audit",
+    route: `${ADMIN_BASE}/audit-log`,
     actionLabel: "Открыть журнал",
     metrics: [
       { label: "Событий сегодня", value: "1 248", tone: "primary" },
@@ -124,7 +96,7 @@ export const adminSections = [
     subtitle: "Настройка ИИ-помощников",
     description:
       "Управление ролями, поведением и доступами ИИ-ассистентов в рабочих пространствах.",
-    route: "/admin/ai-assistants",
+    route: `${ADMIN_BASE}/ai-assistants`,
     actionLabel: "Управление ассистентами",
     metrics: [
       { label: "Ассистентов", value: "6", tone: "primary" },

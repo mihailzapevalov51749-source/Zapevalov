@@ -12,6 +12,7 @@ export default function MenuTree({
   dragAndDrop,
   scale = 1,
   sidebarCollapsed = false,
+  sidebarMode = "runtime",
 }) {
   const [openedEditorItemId, setOpenedEditorItemId] = useState(null);
 
@@ -61,6 +62,7 @@ export default function MenuTree({
           openedEditorItemId={openedEditorItemId}
           setOpenedEditorItemId={setOpenedEditorItemId}
           sidebarCollapsed={sidebarCollapsed}
+          sidebarMode={sidebarMode}
         />
       ))}
     </nav>

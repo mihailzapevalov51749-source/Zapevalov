@@ -67,7 +67,7 @@ function ShellSidebarView({
   const canDragMenu = Boolean(
     editMode &&
       contract?.capabilities?.canDragItems &&
-      hasPersistableNavigationItems(navigationItems)
+      (hasDesignerScope || hasPersistableNavigationItems(navigationItems))
   );
 
   const [systemMenuSettings, setSystemMenuSettings] = useState(() =>
@@ -78,6 +78,11 @@ function ShellSidebarView({
     items: navigationItems,
     isEnabled: canDragMenu,
     reload: reloadNavigation,
+    onMove: async (itemsPayload) => {
+      if (typeof onAction === "function") {
+        onAction("move-menu-items", { items: itemsPayload });
+      }
+    },
   });
 
   console.log("[SIDEBAR collapsed value]", { collapsed });
@@ -112,7 +117,7 @@ function ShellSidebarView({
 
   const rootClassName = [
     "app-sidebar-renderer",
-    "app-sidebar-renderer--runtime",
+    hasDesignerScope ? "app-sidebar-renderer--designer" : "app-sidebar-renderer--runtime",
     collapsed ? "is-collapsed" : "",
     editMode ? "is-edit-mode" : "",
     className,
@@ -284,6 +289,7 @@ function ShellSidebarView({
           dragAndDrop={canDragMenu ? dragAndDrop : null}
           scale={menuScale}
           sidebarCollapsed={collapsed}
+          sidebarMode={hasDesignerScope ? "designer" : "runtime"}
         />
 
         {!collapsed && editMode ? (

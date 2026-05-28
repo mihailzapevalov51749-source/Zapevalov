@@ -19,21 +19,21 @@ import DesignerAccessGate from "./modules/designer/pages/DesignerAccessGate";
 import DesignerTenantLayout from "./modules/designer/pages/DesignerTenantLayout";
 import ObjectTypesPage from "./modules/designer/pages/ObjectTypesPage";
 import ObjectTypeWorkspacePage from "./modules/designer/pages/ObjectTypeWorkspacePage";
+import DesignerSectionPlaceholderPage from "./modules/designer/pages/DesignerSectionPlaceholderPage";
 
-const ADMIN_ROLES = ["admin", "superadmin"];
-const ADMIN_ROLE_IDS = [3, 4];
-
-function canOpenAdmin(user) {
+function isSuperadmin(user) {
   if (!user) return false;
 
-  const roleName = user.role || user.role_name || user.roleName;
+  const roleName = String(
+    user.role || user.role_name || user.roleName || ""
+  ).trim().toLowerCase();
   const roleId = Number(user.role_id ?? user.roleId);
 
-  return ADMIN_ROLES.includes(roleName) || ADMIN_ROLE_IDS.includes(roleId);
+  return roleName === "superadmin" || roleId === 4;
 }
 
-function ProtectedAdminRoute({ user, children }) {
-  if (!canOpenAdmin(user)) {
+function ProtectedSuperadminRoute({ user, children }) {
+  if (!isSuperadmin(user)) {
     return <Navigate to="/" replace />;
   }
 
@@ -143,6 +143,42 @@ export default function App() {
         <Route path="tenant/:tenantId" element={<DesignerTenantLayout />}>
           <Route index element={<Navigate to="object-types" replace />} />
           <Route path="page/:pageId" element={<PortalPageView />} />
+          <Route
+            path="relations"
+            element={<DesignerSectionPlaceholderPage title="Связи" />}
+          />
+          <Route
+            path="views"
+            element={<DesignerSectionPlaceholderPage title="Представления" />}
+          />
+          <Route
+            path="pages"
+            element={<DesignerSectionPlaceholderPage title="Страницы" />}
+          />
+          <Route
+            path="navigation"
+            element={<DesignerSectionPlaceholderPage title="Навигация" />}
+          />
+          <Route
+            path="processes"
+            element={<DesignerSectionPlaceholderPage title="Бизнес-процессы" />}
+          />
+          <Route
+            path="workspaces"
+            element={<DesignerSectionPlaceholderPage title="Рабочие пространства" />}
+          />
+          <Route
+            path="publishing"
+            element={<DesignerSectionPlaceholderPage title="Публикация" />}
+          />
+          <Route
+            path="administration/*"
+            element={
+              <ProtectedSuperadminRoute user={user}>
+                <PortalPageView />
+              </ProtectedSuperadminRoute>
+            }
+          />
           <Route path="object-types" element={<ObjectTypesPage />} />
           <Route
             path="object-types/:objectTypeId"
@@ -155,49 +191,25 @@ export default function App() {
         </Route>
       </Route>
 
-    
       <Route
-  path="/admin"
-  element={
-    <ProtectedAdminRoute user={user}>
-      <PortalPageView />
-    </ProtectedAdminRoute>
-  }
-/>
-
-      <Route
-        path="/admin/users"
+        path="/designer/administration/*"
         element={
-          <ProtectedAdminRoute user={user}>
-            <PortalPageView />
-          </ProtectedAdminRoute>
+          isSuperadmin(user) ? (
+            <Navigate to="/designer/tenant/1/administration" replace />
+          ) : (
+            <Navigate to="/" replace />
+          )
         }
       />
 
       <Route
-        path="/admin/org-structure"
+        path="/admin/*"
         element={
-          <ProtectedAdminRoute user={user}>
-            <PortalPageView />
-          </ProtectedAdminRoute>
-        }
-      />
-
-      <Route
-        path="/admin/roles"
-        element={
-          <ProtectedAdminRoute user={user}>
-            <PortalPageView />
-          </ProtectedAdminRoute>
-        }
-      />
-
-      <Route
-        path="/admin/departments"
-        element={
-          <ProtectedAdminRoute user={user}>
-            <PortalPageView />
-          </ProtectedAdminRoute>
+          isSuperadmin(user) ? (
+            <Navigate to="/designer/tenant/1/administration" replace />
+          ) : (
+            <Navigate to="/" replace />
+          )
         }
       />
 

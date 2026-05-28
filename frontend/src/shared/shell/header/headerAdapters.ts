@@ -5,6 +5,7 @@ import type {
   HeaderEditModeContract,
   HeaderEditableTitleContract,
   HeaderNotificationContract,
+  HeaderPathChainItem,
   HeaderSearchContract,
   HeaderTenantContract,
   HeaderUserContract,
@@ -22,6 +23,7 @@ export type RuntimeHeaderAdapterInput = {
   title?: string;
   subtitle?: string;
   breadcrumbs?: unknown[];
+  pathChain?: unknown[];
   portal?: unknown;
   page?: unknown;
   tenant?: Partial<HeaderTenantContract>;
@@ -61,7 +63,20 @@ export type DesignerHeaderAdapterInput = {
   user?: Partial<HeaderUserContract>;
   title?: string;
   subtitle?: string;
+  breadcrumbs?: unknown[];
+  pathChain?: unknown[];
   pathname?: string;
+  showBackButton?: boolean;
+  searchQuery?: string;
+  notificationUnreadCount?: number;
+  notificationItems?: unknown[];
+  onReadNotification?: ((notificationId: string | number) => void) | undefined;
+  avatarSettings?: Record<string, unknown>;
+  canSearch?: boolean;
+  canViewNotifications?: boolean;
+  canEditPage?: boolean;
+  canOpenSettings?: boolean;
+  isEditMode?: boolean;
   meta?: Record<string, unknown>;
 };
 
@@ -142,16 +157,6 @@ function resolveTitleFromPage(page: unknown): string | undefined {
   );
 }
 
-function resolveSubtitleFromPage(page: unknown): string | undefined {
-  const record = asRecord(page);
-
-  if (!record) {
-    return undefined;
-  }
-
-  return asString(record.description) ?? asString(record.subtitle);
-}
-
 function resolveTitleFromPortal(portal: unknown): string | undefined {
   const record = asRecord(portal);
 
@@ -178,17 +183,80 @@ function resolveRuntimeTitle(input: RuntimeHeaderAdapterInput): string | undefin
   );
 }
 
-function resolveRuntimeSubtitle(
-  input: RuntimeHeaderAdapterInput
-): string | undefined {
-  return (
-    asString(input.subtitle) ??
-    resolveSubtitleFromPage(input.page) ??
-    resolveSubtitleFromPage(
-      asRecord(input.page)?.page ?? asRecord(asRecord(input.meta)?.pageData)?.page
-    ) ??
-    undefined
-  );
+export function normalizePathChain(input: {
+  pathChain?: unknown[];
+  title?: string;
+  breadcrumbs?: unknown[];
+}): HeaderPathChainItem[] {
+  const fromPathChain = Array.isArray(input.pathChain)
+    ? input.pathChain
+        .map((entry, index) => {
+          const record = asRecord(entry);
+          if (!record) return null;
+          const label = asString(record.label) ?? asString(record.title);
+          if (!label) return null;
+          return {
+            id: asString(record.id) ?? `path-${index}`,
+            label,
+            path: asString(record.path) ?? asString(record.to) ?? asString(record.href),
+            active: asBoolean(record.active),
+            meta: asRecord(record.meta) ?? undefined,
+          };
+        })
+        .filter((entry): entry is HeaderPathChainItem => Boolean(entry))
+    : [];
+
+  const fallback = (() => {
+    const title = asString(input.title);
+    const breadcrumbs = mapBreadcrumbs(
+      Array.isArray(input.breadcrumbs) ? input.breadcrumbs : []
+    );
+    const chain: HeaderPathChainItem[] = [];
+    if (title) {
+      chain.push({ id: "title", label: title });
+    }
+    breadcrumbs.forEach((crumb, index) => {
+      chain.push({
+        id: crumb.id || `breadcrumb-${index}`,
+        label: crumb.label,
+        path: crumb.path,
+      });
+    });
+    return chain;
+  })();
+
+  const source = fromPathChain.length > 0 ? fromPathChain : fallback;
+  if (source.length === 0) {
+    return [];
+  }
+
+  const deduped: HeaderPathChainItem[] = [];
+  source.forEach((item, index) => {
+    const label = String(item.label || "").trim();
+    if (!label) return;
+    const prev = deduped[deduped.length - 1];
+    const normalizedPath = asString(item.path);
+    const prevPath = asString(prev?.path);
+    if (
+      prev &&
+      prev.label.trim().toLowerCase() === label.toLowerCase() &&
+      (prevPath ?? "") === (normalizedPath ?? "")
+    ) {
+      return;
+    }
+    deduped.push({
+      ...item,
+      id: item.id || `chain-${index}`,
+      label,
+      path: normalizedPath,
+    });
+  });
+
+  return deduped.map((item, index, list) => ({
+    ...item,
+    active: index === list.length - 1 ? true : Boolean(item.active),
+    path: index === list.length - 1 ? undefined : item.path,
+  }));
 }
 
 function resolveRuntimeTenant(
@@ -341,27 +409,20 @@ function resolveRuntimeCapabilities(
 function buildRuntimeLeftActions(
   input: RuntimeHeaderAdapterInput
 ): HeaderActionContract[] {
-  const actions: HeaderActionContract[] = [];
+  const canGoBack = (input.meta as UnknownRecord | undefined)?.canGoBack;
 
-  const showBack =
-    input.showBackButton === true ||
-    (typeof input.pathname === "string" &&
-      input.pathname !== "/" &&
-      input.pathname !== "/admin");
-
-  if (showBack) {
-    actions.push({
+  return [
+    {
       id: "runtime-back",
       kind: "button",
       actionKey: input.onBackKey ?? "back",
       onClickKey: input.onBackKey ?? "back",
       tooltip: "Назад",
       variant: "ghost",
+      disabled: canGoBack === false,
       meta: { display: "arrow-only" },
-    });
-  }
-
-  return actions;
+    },
+  ];
 }
 
 function buildRuntimeModeActions(
@@ -541,24 +602,110 @@ function buildRuntimeEditMode(
   };
 }
 
+function isDesignerCustomPageRoute(pathname?: string): boolean {
+  if (!pathname) {
+    return false;
+  }
+
+  return /\/designer\/tenant\/[^/]+\/page\/\d+/.test(pathname);
+}
+
 function resolveDesignerTitle(pathname?: string, explicitTitle?: string): string {
   if (explicitTitle) {
     return explicitTitle;
   }
 
   if (!pathname) {
-    return "Конструктор";
-  }
-
-  if (pathname.includes("/object-types/") && !pathname.endsWith("/object-types")) {
-    return "Тип объекта";
+    return "Студия";
   }
 
   if (pathname.includes("/object-types")) {
-    return "Типы объектов";
+    return "Объекты";
+  }
+  if (pathname.includes("/relations")) {
+    return "Связи";
+  }
+  if (pathname.includes("/views")) {
+    return "Представления";
+  }
+  if (pathname.includes("/users")) {
+    return "Пользователи";
+  }
+  if (pathname.includes("/settings")) {
+    return "Системные настройки";
   }
 
-  return "Конструктор";
+  return "Студия";
+}
+
+function buildDesignerBreadcrumbs(
+  pathname?: string,
+  tenantId?: string | number
+): HeaderBreadcrumbContract[] {
+  if (!pathname || !pathname.startsWith("/designer/")) {
+    return [];
+  }
+
+  const normalizedTenantId = String(tenantId ?? "1");
+  const base = `/designer/tenant/${normalizedTenantId}`;
+  const items: HeaderBreadcrumbContract[] = [];
+
+  if (pathname.includes("/object-types")) {
+    items.push({ id: "designer-objects", label: "Объекты", path: `${base}/object-types` });
+    const objectMatch = pathname.match(/\/object-types\/([^/]+)/);
+    if (objectMatch) {
+      items.push({
+        id: "designer-object-current",
+        label: "Объект",
+      });
+
+      const tabMatch = pathname.match(/\/object-types\/[^/]+\/([^/]+)/);
+      if (tabMatch) {
+        items.push({
+          id: "designer-object-tab",
+          label: resolveDesignerTabLabel(tabMatch[1]),
+        });
+      }
+    }
+    return items;
+  }
+
+  if (pathname.includes("/page/")) {
+    items.push({ id: "designer-objects", label: "Объекты", path: `${base}/object-types` });
+    items.push({ id: "designer-page", label: "Страница" });
+    return items;
+  }
+
+  if (pathname.includes("/relations")) {
+    items.push({ id: "designer-relations", label: "Связи", path: `${base}/relations` });
+    return items;
+  }
+
+  if (pathname.includes("/views")) {
+    items.push({ id: "designer-views", label: "Представления", path: `${base}/views` });
+    return items;
+  }
+
+  if (pathname.includes("/users")) {
+    items.push({ id: "designer-users", label: "Пользователи", path: `${base}/users` });
+    return items;
+  }
+
+  if (pathname.includes("/settings")) {
+    items.push({ id: "designer-settings", label: "Системные настройки", path: `${base}/settings` });
+    return items;
+  }
+
+  return [{ id: "designer-root", label: "Студия", path: base }];
+}
+
+function resolveDesignerTabLabel(tabSegment: string): string {
+  const segment = String(tabSegment || "").toLowerCase();
+  if (segment === "general") return "Общие";
+  if (segment === "fields") return "Поля";
+  if (segment === "relations") return "Связи";
+  if (segment === "views") return "Представления";
+  return "Раздел";
 }
 
 function buildDesignerModeActions(
@@ -579,43 +726,58 @@ function buildDesignerModeActions(
   ];
 }
 
-function buildDesignerRightActions(): HeaderActionContract[] {
+function buildDesignerLeftActions(
+  input: DesignerHeaderAdapterInput
+): HeaderActionContract[] {
+  const canGoBack = (input.meta as UnknownRecord | undefined)?.canGoBack;
+
   return [
     {
-      id: "designer-search",
-      kind: "custom",
-      label: "Поиск",
-      disabled: true,
-      actionKey: "search-change",
-      onClickKey: "search-change",
-      meta: {
-        placeholder: "Поиск по сотрудникам, подразделениям, должностям...",
-        value: "",
-      },
-    },
-    {
-      id: "designer-notifications",
+      id: "designer-back",
       kind: "button",
-      label: "Уведомления",
-      actionKey: "notifications",
-      onClickKey: "notifications",
-    },
-    {
-      id: "designer-profile",
-      kind: "button",
-      label: "Личный кабинет",
-      actionKey: "profile",
-      onClickKey: "profile",
-    },
-    {
-      id: "designer-settings",
-      kind: "button",
-      label: "Настройки",
-      actionKey: "settings",
-      onClickKey: "settings",
-      meta: { iconKey: "settings" },
+      actionKey: "back",
+      onClickKey: "back",
+      tooltip: "Назад",
+      variant: "ghost",
+      disabled: canGoBack === false,
+      meta: { display: "arrow-only" },
     },
   ];
+}
+
+function resolveDesignerCapabilities(
+  input: DesignerHeaderAdapterInput
+): HeaderCapabilitiesContract {
+  const isCustomPage = isDesignerCustomPageRoute(input.pathname);
+
+  return {
+    canSearch: input.canSearch ?? false,
+    canEditPage: input.canEditPage ?? isCustomPage,
+    canEditTitle: false,
+    canViewNotifications: input.canViewNotifications ?? true,
+    canOpenSettings: input.canOpenSettings ?? isCustomPage,
+  };
+}
+
+function toDesignerRuntimeLikeInput(
+  input: DesignerHeaderAdapterInput,
+  title: string,
+  subtitle: string
+): RuntimeHeaderAdapterInput {
+  return {
+    pathname: input.pathname,
+    title,
+    subtitle,
+    tenantId: input.tenantId,
+    user: input.user,
+    searchQuery: input.searchQuery ?? "",
+    notificationUnreadCount: input.notificationUnreadCount,
+    notificationItems: input.notificationItems,
+    onReadNotification: input.onReadNotification,
+    avatarSettings: input.avatarSettings,
+    isEditMode: input.isEditMode ?? false,
+    meta: input.meta,
+  };
 }
 
 /**
@@ -625,8 +787,12 @@ export function createRuntimeHeaderContract(
   input: RuntimeHeaderAdapterInput
 ): AppHeaderContract {
   const title = resolveRuntimeTitle(input);
-  const subtitle = resolveRuntimeSubtitle(input);
   const breadcrumbs = mapBreadcrumbs(input.breadcrumbs);
+  const pathChain = normalizePathChain({
+    pathChain: input.pathChain,
+    title,
+    breadcrumbs,
+  });
   const extraActions = mapUnknownActions(input.actions);
   const capabilities = resolveRuntimeCapabilities(input);
   const search = buildRuntimeSearch(input, capabilities);
@@ -635,10 +801,15 @@ export function createRuntimeHeaderContract(
   const pageActions = buildRuntimePageActions(input);
 
   return {
-    mode: HEADER_MODES.RUNTIME,
+    mode:
+      typeof input.pathname === "string" &&
+      input.pathname.startsWith("/designer")
+        ? HEADER_MODES.DESIGNER
+        : HEADER_MODES.RUNTIME,
     title,
-    subtitle,
-    breadcrumbs: breadcrumbs.length > 0 ? breadcrumbs : undefined,
+    subtitle: undefined,
+    breadcrumbs: undefined,
+    pathChain,
     leftActions: buildRuntimeLeftActions(input),
     modeActions: buildRuntimeModeActions(input),
     rightActions: [...buildRuntimeRightActions(input), ...extraActions],
@@ -682,38 +853,41 @@ export function createDesignerHeaderContract(
 ): AppHeaderContract {
   const tenantId = asString(input.tenantId);
   const title = resolveDesignerTitle(input.pathname, asString(input.title));
-  const subtitle = asString(input.subtitle) ?? "Режим аналитика";
+  const subtitle = asString(input.subtitle) ?? "Студия";
+  const capabilities = resolveDesignerCapabilities(input);
+  const runtimeLikeInput = toDesignerRuntimeLikeInput(input, title, subtitle);
+  const breadcrumbs = mapBreadcrumbs(input.breadcrumbs);
+  const resolvedBreadcrumbs =
+    breadcrumbs.length > 0
+      ? breadcrumbs
+      : buildDesignerBreadcrumbs(input.pathname, input.tenantId);
+  const pathChain = normalizePathChain({
+    pathChain: input.pathChain,
+    title,
+    breadcrumbs: resolvedBreadcrumbs,
+  });
+  const search = buildRuntimeSearch(runtimeLikeInput, capabilities);
+  const notifications = {
+    ...buildRuntimeNotifications(runtimeLikeInput, capabilities),
+    enabled: capabilities.canViewNotifications !== false,
+  };
+  const editMode = buildRuntimeEditMode(runtimeLikeInput, capabilities);
 
   return {
     mode: HEADER_MODES.DESIGNER,
     title,
-    subtitle,
+    subtitle: undefined,
+    breadcrumbs: undefined,
+    pathChain,
+    leftActions: buildDesignerLeftActions(input),
     modeActions: buildDesignerModeActions(input),
-    rightActions: buildDesignerRightActions(),
     search: {
-      enabled: false,
-      value: "",
-      placeholder: "Поиск по сотрудникам, подразделениям, должностям...",
-      actionKey: "search",
-      changeActionKey: "search-change",
-      clearActionKey: "search-clear",
+      ...search,
+      enabled: capabilities.canSearch === true,
     },
-    notifications: {
-      enabled: false,
-      unreadCount: 0,
-      actionKey: "notifications",
-    },
-    editMode: {
-      enabled: false,
-      active: false,
-    },
-    capabilities: {
-      canSearch: false,
-      canEditPage: false,
-      canEditTitle: false,
-      canViewNotifications: false,
-      canOpenSettings: false,
-    },
+    notifications,
+    editMode,
+    capabilities,
     tenant: tenantId
       ? {
           id: tenantId,
@@ -726,6 +900,9 @@ export function createDesignerHeaderContract(
       pathname: input.pathname,
       tenantId: input.tenantId,
       titleSource: input.title ? "input.title" : "pathname",
+      avatarSettings: input.avatarSettings,
+      notificationUnreadCount: input.notificationUnreadCount,
+      isDesignerCustomPage: isDesignerCustomPageRoute(input.pathname),
       ...input.meta,
     },
   };

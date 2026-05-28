@@ -6,6 +6,14 @@ export type HeaderBreadcrumbContract = {
   path?: string;
 };
 
+export type HeaderPathChainItem = {
+  id?: string;
+  label: string;
+  path?: string;
+  active?: boolean;
+  meta?: Record<string, unknown>;
+};
+
 export type HeaderTenantContract = {
   id?: string;
   name?: string;
@@ -78,6 +86,7 @@ export type AppHeaderContract = {
   title?: string;
   subtitle?: string;
   breadcrumbs?: HeaderBreadcrumbContract[];
+  pathChain?: HeaderPathChainItem[];
   leftActions?: HeaderActionContract[];
   contextActions?: HeaderActionContract[];
   modeActions?: HeaderActionContract[];

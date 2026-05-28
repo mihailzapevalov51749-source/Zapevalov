@@ -56,9 +56,8 @@ export default function AppHeaderRendererPreview() {
           AppHeaderRenderer — foundation preview
         </h1>
         <p className="app-header-renderer-preview__hint">
-          Full-width header bars for visual contract validation. Runtime and
-          Designer differ by mode label and accent only. Not connected to
-          production shells.
+          Единая context-navigation строка: Режим / Раздел / Внутренний путь.
+          Последний сегмент активный, остальные сегменты с path кликабельны.
         </p>
       </div>
 

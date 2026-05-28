@@ -13,10 +13,13 @@
   padding: 0 20px;
   background: #ffffff;
   border-bottom: 1px solid #e2e8f0;
+  overflow: visible;
+  flex-shrink: 0;
 }
 
 .app-header-renderer__left {
   min-width: 0;
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -43,17 +46,10 @@
 .app-header-renderer__title-block {
   min-width: 0;
   display: flex;
-  flex-direction: column;
-}
-
-.app-header-renderer__title {
-  font-size: 16px;
-  font-weight: 800;
-  line-height: 1.2;
-  color: #0f172a;
-  white-space: nowrap;
+  align-items: center;
+  flex: 1;
   overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-header-renderer__title-input {
@@ -71,15 +67,55 @@
   box-sizing: border-box;
 }
 
-.app-header-renderer__subtitle {
-  margin-top: 3px;
+.app-header-renderer__breadcrumb-part {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.app-header-renderer__breadcrumb-link {
+  display: inline-block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #2563eb;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.app-header-renderer__breadcrumb-link:hover {
+  text-decoration: underline;
+}
+
+.app-header-renderer__breadcrumb-text {
+  display: inline-block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 11px;
   font-weight: 500;
   line-height: 1.2;
   color: #64748b;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.app-header-renderer__breadcrumb-text.is-active {
+  font-weight: 650;
+  color: #0f172a;
+}
+
+.app-header-renderer__breadcrumb-separator {
+  margin: 0 6px;
+  font-size: 11px;
+  color: #94a3b8;
 }
 
 .app-header-renderer__right {
@@ -89,7 +125,7 @@
   justify-content: flex-end;
   gap: 8px;
   flex-shrink: 0;
-  flex-shrink: 0;
+  overflow: visible;
 }
 
 .app-header-renderer__search {
@@ -105,6 +141,12 @@
   box-sizing: border-box;
 }
 
+.app-header-renderer__search:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  background: #f8fafc;
+}
+
 .app-header-renderer__notification-wrap {
   width: 30px;
   height: 30px;
@@ -115,45 +157,11 @@
   transform-origin: center center;
   flex-shrink: 0;
   position: relative;
+  z-index: 30;
 }
 
-.app-header-renderer__notification-button {
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.app-header-renderer__notification-icon {
-  width: 18px;
-  height: 18px;
-  object-fit: contain;
-  display: block;
-  opacity: 0.82;
-}
-
-.app-header-renderer__notification-badge {
-  position: absolute;
-  top: -3px;
-  right: -4px;
-  min-width: 14px;
-  height: 14px;
-  padding: 0 3px;
-  border-radius: 999px;
-  background: #ef4444;
-  color: #ffffff;
-  font-size: 9px;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  line-height: 1;
+.app-header-renderer__notification-wrap.is-disabled {
+  opacity: 0.45;
 }
 
 .app-header-renderer__avatar {
@@ -175,6 +183,17 @@
   flex-shrink: 0;
 }
 
+.app-header-renderer__avatar-clip {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .app-header-renderer__avatar-image {
   width: 100%;
   height: 100%;
@@ -182,6 +201,7 @@
   display: block;
   user-select: none;
   pointer-events: none;
+  transform-origin: center center;
 }
 
 .app-header-renderer__settings-button {
@@ -196,6 +216,15 @@
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+}
+
+.app-header-renderer__settings-button.is-active {
+  background: #e0f2fe;
+}
+
+.app-header-renderer__settings-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .app-header-renderer__settings-icon {

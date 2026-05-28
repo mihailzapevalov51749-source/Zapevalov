@@ -214,13 +214,33 @@ function registerPageEntities(sections, pageId) {
 
 function getAdminPageByPath(pathname) {
   const normalizedPath = pathname.replace(/\/+$/, "");
+  const studioAdminPrefixMatch = normalizedPath.match(
+    /^\/designer\/tenant\/\d+\/administration(\/.*)?$/
+  );
+  const suffix = studioAdminPrefixMatch ? studioAdminPrefixMatch[1] || "" : "";
+  const adminPath = studioAdminPrefixMatch
+    ? `/admin${suffix}`
+    : normalizedPath;
 
-  if (normalizedPath === "/admin") return <AdminDashboardPage />;
-  if (normalizedPath === "/admin/users") return <AdminUsersPage />;
-  if (normalizedPath === "/admin/org-structure") return <AdminOrgStructurePage />;
-  if (normalizedPath === "/admin/roles") return <AdminRolesPage />;
-  if (normalizedPath === "/admin/departments") return <AdminDepartmentsPage />;
-  if (normalizedPath === "/admin/system") return <AdminSystemPage />;
+  if (adminPath === "/admin") return <AdminDashboardPage />;
+  if (adminPath === "/admin/users") return <AdminUsersPage />;
+  if (adminPath === "/admin/org-structure") return <AdminOrgStructurePage />;
+  if (adminPath === "/admin/roles") return <AdminRolesPage />;
+  if (adminPath === "/admin/departments") return <AdminDepartmentsPage />;
+  if (adminPath === "/admin/system-settings") return <AdminSystemPage />;
+  if (adminPath === "/admin/system") return <AdminSystemPage />;
+  if (adminPath === "/admin/modules") {
+    return <SystemMessage>Раздел в разработке</SystemMessage>;
+  }
+  if (adminPath === "/admin/integrations") {
+    return <SystemMessage>Раздел в разработке</SystemMessage>;
+  }
+  if (adminPath === "/admin/audit-log" || adminPath === "/admin/audit") {
+    return <SystemMessage>Раздел в разработке</SystemMessage>;
+  }
+  if (adminPath === "/admin/ai-assistants") {
+    return <SystemMessage>Раздел в разработке</SystemMessage>;
+  }
 
   return null;
 }
@@ -234,51 +254,83 @@ function getSystemPageMeta({
   activeNavigationItem,
   pageData,
 }) {
+  const normalizedPathname = String(pathname || "").replace(/\/+$/, "");
+  const studioAdminPrefixMatch = normalizedPathname.match(
+    /^\/designer\/tenant\/\d+\/administration(\/.*)?$/
+  );
+  const adminPath = studioAdminPrefixMatch
+    ? `/admin${studioAdminPrefixMatch[1] || ""}`
+    : normalizedPathname;
+
   if (isCorporateChatPage) {
     return {
       title: "Корпоративный чат",
           };
   }
 
-  if (pathname === "/admin") {
+  if (adminPath === "/admin") {
     return {
       title: "Администрирование",
       subtitle: "Управление платформой и настройками системы",
     };
   }
 
-  if (pathname === "/admin/users") {
+  if (adminPath === "/admin/users") {
     return {
       title: "Пользователи системы",
       subtitle: "Аккаунты, профили, статусы и привязка к сотрудникам",
     };
   }
 
-  if (pathname === "/admin/roles") {
+  if (adminPath === "/admin/roles") {
     return {
       title: "Роли и доступы",
       subtitle: "Настройка прав и политик безопасности",
     };
   }
 
-  if (pathname === "/admin/org-structure") {
+  if (adminPath === "/admin/org-structure") {
     return {
       title: "Оргструктура",
       subtitle: "Компании, подразделения, должности и сотрудники",
     };
   }
 
-  if (pathname === "/admin/departments") {
+  if (adminPath === "/admin/departments") {
     return {
       title: "Подразделения",
       subtitle: "Структурные единицы компании",
     };
   }
 
-  if (pathname === "/admin/system") {
+  if (adminPath === "/admin/system-settings" || adminPath === "/admin/system") {
     return {
-      title: "Настройки системы",
+      title: "Настройка системы",
       subtitle: "Общие параметры платформы",
+    };
+  }
+  if (adminPath === "/admin/modules") {
+    return {
+      title: "Модули",
+      subtitle: "",
+    };
+  }
+  if (adminPath === "/admin/integrations") {
+    return {
+      title: "Интеграции",
+      subtitle: "",
+    };
+  }
+  if (adminPath === "/admin/audit-log" || adminPath === "/admin/audit") {
+    return {
+      title: "Журнал событий",
+      subtitle: "",
+    };
+  }
+  if (adminPath === "/admin/ai-assistants") {
+    return {
+      title: "AI-ассистенты",
+      subtitle: "",
     };
   }
 
@@ -286,6 +338,13 @@ function getSystemPageMeta({
     return {
       title: "Универсальная таблица",
       subtitle: "Работа с данными и представлениями",
+    };
+  }
+
+  if (adminPath === "/tasks") {
+    return {
+      title: "Задачи",
+      subtitle: "",
     };
   }
 
@@ -323,6 +382,18 @@ function getSystemPageMeta({
   };
 }
 
+function resolveDesignerSectionTitle(pathname) {
+  if (!pathname.startsWith("/designer/")) return "";
+  if (pathname.includes("/administration")) return "Администрирование";
+  if (pathname.includes("/object-types")) return "Объекты";
+  if (pathname.includes("/relations")) return "Связи";
+  if (pathname.includes("/views")) return "Представления";
+  if (pathname.includes("/users")) return "Пользователи";
+  if (pathname.includes("/settings")) return "Системные настройки";
+  if (pathname.includes("/page/")) return "Объекты";
+  return "Студия";
+}
+
 export default function PortalPageView() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -332,7 +403,12 @@ export default function PortalPageView() {
   const pageId = pageIdParam ? Number(pageIdParam) : null;
 
   const isUniversalTablePage = location.pathname === "/universal-table";
-  const isAdminPage = location.pathname.startsWith("/admin");
+  const isAdminPage =
+    location.pathname.startsWith("/admin") ||
+    /^\/designer\/tenant\/\d+\/administration(\/|$)/.test(location.pathname);
+  const isAdminRootPage =
+    location.pathname === "/admin" ||
+    /^\/designer\/tenant\/\d+\/administration\/?$/.test(location.pathname);
   const isCorporateChatPage = Number(pageId) === CORPORATE_CHAT_PAGE_ID;
 
   const adminPageContent = getAdminPageByPath(location.pathname);
@@ -361,6 +437,10 @@ export default function PortalPageView() {
   const [pageSettingsAnchor, setPageSettingsAnchor] = useState(null);
   const [tableBlockAddState, setTableBlockAddState] = useState(null);
   const [runtimeHeaderModel, setRuntimeHeaderModel] = useState(null);
+  const [libraryContextPath, setLibraryContextPath] = useState({
+    rootTitle: "",
+    folderPath: [],
+  });
 
   const { navigation, navigationError, reloadNavigation } =
     useNavigationTree(portalId);
@@ -385,12 +465,54 @@ export default function PortalPageView() {
     pageData,
   });
 
+  const designerSectionTitle = resolveDesignerSectionTitle(location.pathname);
+  const isDocumentLibraryContext =
+    isDocumentLibraryPage && Array.isArray(libraryContextPath.folderPath);
+  const headerSectionTitle = isDocumentLibraryContext
+    ? String(
+        libraryContextPath.rootTitle || activeNavigationItem?.title || "Документы"
+      )
+    : designerSectionTitle || activeNavigationItem?.title || topBarMeta.title;
+  const headerBreadcrumbItems = [];
+  if (isDocumentLibraryContext) {
+    headerBreadcrumbItems.push({
+      id: "library-root",
+      label: String(
+        libraryContextPath.rootTitle || activeNavigationItem?.title || "Документы"
+      ),
+      path: location.pathname,
+      meta: {
+        scope: "document-library-root",
+        libraryId: activeNavigationItem?.library_id,
+      },
+    });
+    libraryContextPath.folderPath.forEach((folder, index) => {
+      const folderId = Number(folder?.id);
+      const label = String(folder?.title || "").trim();
+      if (!label || !Number.isFinite(folderId)) return;
+      headerBreadcrumbItems.push({
+        id: `library-folder-${folderId}`,
+        label,
+        path: location.pathname,
+        meta: {
+          scope: "document-library-folder",
+          libraryId: activeNavigationItem?.library_id,
+          folderId,
+          index,
+        },
+      });
+    });
+  }
+
   const isCanvasEditPage =
     !isUniversalTablePage &&
     !isAdminPage &&
     !isCorporateChatPage &&
     !isDocumentLibraryPage &&
     Boolean(pageId);
+  const isDesignerCustomPageRoute = /^\/designer\/tenant\/[^/]+\/page\/\d+/.test(
+    location.pathname
+  );
 
   const canvasContextMenu = usePageCanvasContextMenu({
     isEnabled: isEditMode && isCanvasEditPage,
@@ -413,6 +535,12 @@ export default function PortalPageView() {
       return nextModel;
     });
   }, []);
+
+  useEffect(() => {
+    if (!isDocumentLibraryPage) {
+      setLibraryContextPath({ rootTitle: "", folderPath: [] });
+    }
+  }, [isDocumentLibraryPage, activeNavigationItem?.library_id]);
 
   const loadCurrentPage = async ({ keepPrevious = false } = {}) => {
     if (
@@ -1058,13 +1186,47 @@ export default function PortalPageView() {
     onMoveSection: handleMoveSection,
   });
 
-  const exitEditMode = () => {
+  const exitEditMode = useCallback(() => {
     setSelectedBlock(null);
     setSelectedSection(null);
     setPageSettingsAnchor(null);
     canvasContextMenu.closeMenu();
     setIsEditMode(false);
-  };
+  }, [canvasContextMenu]);
+
+  useEffect(() => {
+    if (!isDesignerCustomPageRoute) {
+      return undefined;
+    }
+
+    const handleEnterEditMode = () => {
+      setIsEditMode(true);
+    };
+
+    const handleExitEditMode = () => {
+      exitEditMode();
+    };
+
+    window.addEventListener(
+      "yasnopro:designer-page:enter-edit-mode",
+      handleEnterEditMode
+    );
+    window.addEventListener(
+      "yasnopro:designer-page:exit-edit-mode",
+      handleExitEditMode
+    );
+
+    return () => {
+      window.removeEventListener(
+        "yasnopro:designer-page:enter-edit-mode",
+        handleEnterEditMode
+      );
+      window.removeEventListener(
+        "yasnopro:designer-page:exit-edit-mode",
+        handleExitEditMode
+      );
+    };
+  }, [isDesignerCustomPageRoute, exitEditMode]);
 
   const handleSavePageTitle = async () => {
     if (!pageId || !pageData?.page) return;
@@ -1268,6 +1430,8 @@ export default function PortalPageView() {
   <WorkspaceTopBar
     title={topBarMeta.title}
     subtitle={topBarMeta.subtitle}
+    sectionTitle={headerSectionTitle}
+    breadcrumbItems={headerBreadcrumbItems}
     searchQuery={searchQuery}
     onChangeSearchQuery={setSearchQuery}
     isEditMode={isEditMode}
@@ -1275,7 +1439,7 @@ export default function PortalPageView() {
     pageTitleDraft={pageTitleDraft}
     onChangePageTitleDraft={setPageTitleDraft}
     onSavePageTitle={handleSavePageTitle}
-    showBackButton={isAdminPage && location.pathname !== "/admin"}
+    showBackButton={isAdminPage && !isAdminRootPage}
     onBack={() => navigate(-1)}
     onEnterEditMode={() => setIsEditMode(true)}
     onExitEditMode={exitEditMode}
@@ -1345,6 +1509,7 @@ export default function PortalPageView() {
         <LibraryPageView
           libraryId={activeNavigationItem.library_id}
           title={activeNavigationItem.title}
+          onContextPathChange={setLibraryContextPath}
         />
       ) : (
         <SystemMessage>
