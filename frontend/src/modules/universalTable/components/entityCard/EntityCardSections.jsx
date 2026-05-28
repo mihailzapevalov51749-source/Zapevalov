@@ -269,6 +269,7 @@ function renderSection({
   table,
   columns,
   initialContext,
+  publishedRuntimeRef,
   onOpenRelatedRow,
   onUploadAttachment,
   onDeleteAttachment,
@@ -345,6 +346,7 @@ function renderSection({
           table={table}
           columns={columns}
           initialContext={initialContext}
+          publishedRuntimeRef={publishedRuntimeRef}
           onOpenRelatedRow={
             onOpenRelatedRow
           }
@@ -379,6 +381,7 @@ export default function EntityCardSections({
   table,
   columns = [],
   initialContext = null,
+  publishedRuntimeRef = null,
   onOpenRelatedRow,
   onUploadAttachment,
   onDeleteAttachment,
@@ -408,6 +411,7 @@ export default function EntityCardSections({
             table,
             columns,
             initialContext,
+            publishedRuntimeRef,
             onOpenRelatedRow,
             onUploadAttachment,
             onDeleteAttachment,

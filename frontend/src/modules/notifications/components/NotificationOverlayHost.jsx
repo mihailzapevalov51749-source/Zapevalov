@@ -20,6 +20,14 @@ function normalizeId(value) {
 }
 
 function normalizeContext(detail = {}) {
+  const rawRef =
+    detail?.published_runtime_ref ||
+    detail?.publishedRuntimeRef ||
+    detail?.context?.published_runtime_ref ||
+    detail?.context?.publishedRuntimeRef ||
+    detail?.detail?.context?.published_runtime_ref ||
+    detail?.detail?.context?.publishedRuntimeRef ||
+    null;
   return {
     ...(detail?.detail?.context || {}),
     ...(detail?.context || {}),
@@ -109,6 +117,20 @@ function normalizeContext(detail = {}) {
       detail?.context?.highlight_id ||
       detail?.context?.highlightId ||
       null,
+    published_runtime_ref:
+      rawRef && typeof rawRef === "object"
+        ? {
+            object_type_key:
+              rawRef?.object_type_key || rawRef?.objectTypeKey || null,
+            runtime_entity_id:
+              rawRef?.runtime_entity_id || rawRef?.runtimeEntityId || null,
+            view_key: rawRef?.view_key || rawRef?.viewKey || null,
+            catalog_version:
+              rawRef?.catalog_version || rawRef?.catalogVersion || null,
+            runtime_route:
+              rawRef?.runtime_route || rawRef?.runtimeRoute || null,
+          }
+        : null,
   };
 }
 
@@ -460,6 +482,17 @@ export default function NotificationOverlayHost() {
         return;
       }
 
+      if (context?.published_runtime_ref) {
+        lastTargetKeyRef.current = targetKey;
+        updateOverlayState({
+          type: "published_runtime_reference",
+          context,
+          message:
+            "Published Runtime Reference получен. Навигация должна выполняться через runtime route.",
+        });
+        return;
+      }
+
       if (!tableId || !rowId) return;
 
       // P0 strict mode: no legacy Universal Table reads from notification overlay.
@@ -569,6 +602,54 @@ export default function NotificationOverlayHost() {
             border: "1px solid #FCA5A5",
             background: "#FFFFFF",
             color: "#991B1B",
+            borderRadius: 8,
+            padding: "6px 10px",
+            cursor: "pointer",
+          }}
+        >
+          Закрыть
+        </button>
+      </div>
+    );
+  }
+
+  if (overlayState.type === "published_runtime_reference") {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          right: 24,
+          top: 24,
+          zIndex: 2000,
+          width: 420,
+          maxWidth: "calc(100vw - 48px)",
+          padding: "14px 16px",
+          borderRadius: 12,
+          border: "1px solid #BFDBFE",
+          background: "#EFF6FF",
+          color: "#1E3A8A",
+          boxShadow: "0 12px 28px rgba(15,23,42,0.12)",
+          boxSizing: "border-box",
+        }}
+      >
+        <div style={{ fontWeight: 700, marginBottom: 6 }}>
+          Published Runtime Reference
+        </div>
+        <div style={{ fontSize: 13, lineHeight: 1.4 }}>
+          {overlayState.message}
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            updateOverlayState(null);
+            lastTargetKeyRef.current = "";
+            window.__YASNOPRO_PENDING_NOTIFICATION_TARGET__ = null;
+          }}
+          style={{
+            marginTop: 10,
+            border: "1px solid #93C5FD",
+            background: "#FFFFFF",
+            color: "#1E3A8A",
             borderRadius: 8,
             padding: "6px 10px",
             cursor: "pointer",

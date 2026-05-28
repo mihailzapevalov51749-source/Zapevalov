@@ -29,6 +29,49 @@ function normalizeInitialContext(initialContext) {
   };
 }
 
+function normalizePublishedRuntimeRef(rawRef) {
+  if (!rawRef || typeof rawRef !== "object") return null;
+
+  const objectTypeKey =
+    typeof rawRef.object_type_key === "string"
+      ? rawRef.object_type_key
+      : typeof rawRef.objectTypeKey === "string"
+      ? rawRef.objectTypeKey
+      : null;
+
+  const runtimeEntityId =
+    typeof rawRef.runtime_entity_id === "string"
+      ? rawRef.runtime_entity_id
+      : typeof rawRef.runtimeEntityId === "string"
+      ? rawRef.runtimeEntityId
+      : null;
+
+  if (!objectTypeKey || !runtimeEntityId) return null;
+
+  return {
+    object_type_key: objectTypeKey,
+    runtime_entity_id: runtimeEntityId,
+    runtime_route:
+      typeof rawRef.runtime_route === "string"
+        ? rawRef.runtime_route
+        : typeof rawRef.runtimeRoute === "string"
+        ? rawRef.runtimeRoute
+        : null,
+    view_key:
+      typeof rawRef.view_key === "string"
+        ? rawRef.view_key
+        : typeof rawRef.viewKey === "string"
+        ? rawRef.viewKey
+        : null,
+    catalog_version:
+      typeof rawRef.catalog_version === "string"
+        ? rawRef.catalog_version
+        : typeof rawRef.catalogVersion === "string"
+        ? rawRef.catalogVersion
+        : null,
+  };
+}
+
 export default function EntityCardModal({
   row,
   rows = [],
@@ -50,6 +93,15 @@ export default function EntityCardModal({
       initialContext
     );
   }, [initialContext]);
+
+  const publishedRuntimeRef = useMemo(() => {
+    const fromContext = normalizePublishedRuntimeRef(
+      normalizedContext?.published_runtime_ref
+    );
+    if (fromContext) return fromContext;
+
+    return normalizePublishedRuntimeRef(row);
+  }, [normalizedContext, row]);
 
   useEffect(() => {
     if (!row) return undefined;
@@ -103,6 +155,7 @@ export default function EntityCardModal({
           onClose={onClose}
           onBack={onBack}
           initialContext={normalizedContext}
+          publishedRuntimeRef={publishedRuntimeRef}
           onOpenParent={onOpenParent}
           onOpenRelatedRow={onOpenRelatedRow}
           onOpenFile={onOpenFile}

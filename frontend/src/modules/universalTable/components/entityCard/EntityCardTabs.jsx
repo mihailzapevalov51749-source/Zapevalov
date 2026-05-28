@@ -156,6 +156,7 @@ function renderTabContent({
   rows,
   columns,
   initialContext,
+  publishedRuntimeRef,
   onOpenRelatedRow,
   onTabCountChange,
 }) {
@@ -192,6 +193,7 @@ function renderTabContent({
         row={row}
         entityType="table_row"
         initialContext={initialContext}
+        publishedRuntimeRef={publishedRuntimeRef}
         onCountChange={(count) => onTabCountChange(tab.id, count)}
       />
     );
@@ -206,6 +208,7 @@ export default function EntityCardTabs({
   columns = [],
   table,
   initialContext = null,
+  publishedRuntimeRef = null,
   onOpenRelatedRow,
 }) {
   const tabs = useMemo(() => normalizeTabsConfig(table), [table]);
@@ -394,6 +397,7 @@ export default function EntityCardTabs({
             rows,
             columns,
             initialContext,
+            publishedRuntimeRef,
             onOpenRelatedRow,
             onTabCountChange: handleTabCountChange,
           })}

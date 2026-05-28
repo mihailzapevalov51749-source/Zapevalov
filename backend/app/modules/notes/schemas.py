@@ -56,6 +56,14 @@ class NoteUpsert(BaseModel):
     )
 
 
+class PublishedRuntimeRefPayload(BaseModel):
+    object_type_key: str | None = Field(default=None, max_length=120)
+    runtime_entity_id: str | None = Field(default=None, max_length=120)
+    view_key: str | None = Field(default=None, max_length=120)
+    catalog_version: str | None = Field(default=None, max_length=120)
+    runtime_route: str | None = Field(default=None, max_length=500)
+
+
 class NotePublish(BaseModel):
     entity_type: str = Field(
         ...,
@@ -84,3 +92,5 @@ class NotePublish(BaseModel):
     mentioned_user_ids: list[int] = []
 
     mention_keys: list[str] = []
+
+    published_runtime_ref: PublishedRuntimeRefPayload | None = None

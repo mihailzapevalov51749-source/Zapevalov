@@ -15,6 +15,7 @@ export default function EntityCardView({
   onClose,
   onBack,
   initialContext = null,
+  publishedRuntimeRef = null,
   onOpenParent,
   onOpenRelatedRow,
   onUploadAttachment,
@@ -73,6 +74,7 @@ export default function EntityCardView({
             table={table}
             columns={columns}
             initialContext={initialContext}
+            publishedRuntimeRef={publishedRuntimeRef}
             onOpenRelatedRow={handleOpenRelatedRow}
             onUploadAttachment={onUploadAttachment}
             onDeleteAttachment={onDeleteAttachment}

@@ -73,6 +73,7 @@ export async function publishNote({
   entityType,
   entityId,
   tableId = null,
+  publishedRuntimeRef = null,
   content,
   format = "html",
   mentionedUserIds = [],
@@ -87,6 +88,31 @@ export async function publishNote({
       table_id: tableId
         ? String(tableId)
         : null,
+      published_runtime_ref:
+        publishedRuntimeRef && typeof publishedRuntimeRef === "object"
+          ? {
+              object_type_key:
+                typeof publishedRuntimeRef.object_type_key === "string"
+                  ? publishedRuntimeRef.object_type_key
+                  : null,
+              runtime_entity_id:
+                typeof publishedRuntimeRef.runtime_entity_id === "string"
+                  ? publishedRuntimeRef.runtime_entity_id
+                  : null,
+              view_key:
+                typeof publishedRuntimeRef.view_key === "string"
+                  ? publishedRuntimeRef.view_key
+                  : null,
+              catalog_version:
+                typeof publishedRuntimeRef.catalog_version === "string"
+                  ? publishedRuntimeRef.catalog_version
+                  : null,
+              runtime_route:
+                typeof publishedRuntimeRef.runtime_route === "string"
+                  ? publishedRuntimeRef.runtime_route
+                  : null,
+            }
+          : null,
 
       content,
       format,

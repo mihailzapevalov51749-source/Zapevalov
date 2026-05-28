@@ -93,14 +93,89 @@ function scrollToHighlight({ editorRef, highlightId }) {
   );
 }
 
+function resolvePublishedRuntimeRef({ row, publishedRuntimeRef }) {
+  if (
+    publishedRuntimeRef &&
+    typeof publishedRuntimeRef === "object" &&
+    typeof publishedRuntimeRef.object_type_key === "string" &&
+    typeof publishedRuntimeRef.runtime_entity_id === "string"
+  ) {
+    return {
+      object_type_key: publishedRuntimeRef.object_type_key,
+      runtime_entity_id: publishedRuntimeRef.runtime_entity_id,
+      view_key:
+        typeof publishedRuntimeRef.view_key === "string"
+          ? publishedRuntimeRef.view_key
+          : null,
+      catalog_version:
+        typeof publishedRuntimeRef.catalog_version === "string"
+          ? publishedRuntimeRef.catalog_version
+          : null,
+      runtime_route:
+        typeof publishedRuntimeRef.runtime_route === "string"
+          ? publishedRuntimeRef.runtime_route
+          : null,
+    };
+  }
+
+  const rowRef = row && typeof row === "object" ? row : {};
+  const objectTypeKey =
+    typeof rowRef.object_type_key === "string"
+      ? rowRef.object_type_key
+      : typeof rowRef.objectTypeKey === "string"
+        ? rowRef.objectTypeKey
+        : null;
+  const runtimeEntityId =
+    typeof rowRef.runtime_entity_id === "string"
+      ? rowRef.runtime_entity_id
+      : typeof rowRef.runtimeEntityId === "string"
+        ? rowRef.runtimeEntityId
+        : null;
+  const viewKey =
+    typeof rowRef.view_key === "string"
+      ? rowRef.view_key
+      : typeof rowRef.viewKey === "string"
+        ? rowRef.viewKey
+        : null;
+  const catalogVersion =
+    typeof rowRef.catalog_version === "string"
+      ? rowRef.catalog_version
+      : typeof rowRef.catalogVersion === "string"
+        ? rowRef.catalogVersion
+        : null;
+  const runtimeRoute =
+    typeof rowRef.runtime_route === "string"
+      ? rowRef.runtime_route
+      : typeof rowRef.runtimeRoute === "string"
+        ? rowRef.runtimeRoute
+        : null;
+
+  if (!objectTypeKey || !runtimeEntityId) {
+    return null;
+  }
+
+  return {
+    object_type_key: objectTypeKey,
+    runtime_entity_id: runtimeEntityId,
+    view_key: viewKey,
+    catalog_version: catalogVersion,
+    runtime_route: runtimeRoute,
+  };
+}
+
 export default function EntityCardNotes({
   row,
   entityType = "table_row",
   initialContext = null,
+  publishedRuntimeRef = null,
   onCountChange,
 }) {
   const entityId = getEntityId(row);
   const tableId = getTableId(row);
+  const resolvedPublishedRuntimeRef = resolvePublishedRuntimeRef({
+    row,
+    publishedRuntimeRef,
+  });
 
   const shouldOpenFullscreenInitially = initialContext?.tab === "notes";
 
@@ -438,10 +513,17 @@ export default function EntityCardNotes({
       setIsPublishing(true);
       setSaveStatus("Сохранение...");
 
+      if (!resolvedPublishedRuntimeRef) {
+        console.warn(
+          "[EntityCardNotes] publishedRuntimeRef is missing; note_mention will not include canonical runtime reference."
+        );
+      }
+
       const note = await publishNote({
         entityType,
         entityId: String(entityId),
         tableId,
+        publishedRuntimeRef: resolvedPublishedRuntimeRef,
         content: html,
         format: "html",
         mentionedUserIds,

@@ -236,6 +236,41 @@ function getHighlightId(detail) {
   );
 }
 
+function getPublishedRuntimeRef(detail) {
+  const context = getContext(detail);
+  const raw =
+    context?.published_runtime_ref ||
+    context?.publishedRuntimeRef ||
+    detail?.published_runtime_ref ||
+    detail?.publishedRuntimeRef ||
+    null;
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+
+  const objectTypeKey = normalizeId(raw.object_type_key || raw.objectTypeKey);
+  const runtimeEntityId = normalizeId(
+    raw.runtime_entity_id || raw.runtimeEntityId
+  );
+  const viewKey = normalizeId(raw.view_key || raw.viewKey);
+  const catalogVersion = normalizeId(
+    raw.catalog_version || raw.catalogVersion
+  );
+  const runtimeRoute = normalizeId(raw.runtime_route || raw.runtimeRoute);
+
+  if (!objectTypeKey || !runtimeEntityId) {
+    return null;
+  }
+
+  return {
+    object_type_key: objectTypeKey,
+    runtime_entity_id: runtimeEntityId,
+    view_key: viewKey || null,
+    catalog_version: catalogVersion || null,
+    runtime_route: runtimeRoute || null,
+  };
+}
+
 function buildPendingTarget({
   source,
   tableId,
@@ -249,8 +284,19 @@ function buildPendingTarget({
   highlightId,
   entityType,
   entityId,
+  publishedRuntimeRef,
   detail,
 }) {
+  if (publishedRuntimeRef) {
+    return {
+      type: "published_runtime_reference",
+      entityType,
+      entityId,
+      publishedRuntimeRef,
+      detail,
+    };
+  }
+
   if (entityType === "chat") {
     return {
       type: "chat_message",
@@ -438,6 +484,7 @@ export default function PortalLayout({
       const chatId = getChatId(detail, entityId);
       const tab = getTargetTab(detail);
       const highlightId = getHighlightId(detail);
+      const publishedRuntimeRef = getPublishedRuntimeRef(detail);
 
       if (!entityType && !fileId) {
         console.warn("PORTAL NOTIFICATION ROUTER: entity not found", {
@@ -465,12 +512,20 @@ export default function PortalLayout({
         highlightId,
         entityType,
         entityId,
+        publishedRuntimeRef,
         detail,
       });
 
       window.__YASNOPRO_PENDING_NOTIFICATION_TARGET__ = pendingTarget;
 
       console.log("PORTAL NOTIFICATION ROUTER:", pendingTarget);
+
+      if (publishedRuntimeRef?.runtime_route) {
+        window.history.pushState({}, "", publishedRuntimeRef.runtime_route);
+        window.dispatchEvent(new PopStateEvent("popstate"));
+        dispatchPendingTarget(300);
+        return;
+      }
 
       if (entityType === "chat") {
         onSelectPage?.(CORPORATE_CHAT_PAGE_ID);

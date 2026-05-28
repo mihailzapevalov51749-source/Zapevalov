@@ -60,6 +60,16 @@ def build_note_notification_context(
         else None
     )
 
+    published_runtime_ref = None
+    if payload.published_runtime_ref:
+        published_runtime_ref = {
+            "object_type_key": payload.published_runtime_ref.object_type_key,
+            "runtime_entity_id": payload.published_runtime_ref.runtime_entity_id,
+            "view_key": payload.published_runtime_ref.view_key,
+            "catalog_version": payload.published_runtime_ref.catalog_version,
+            "runtime_route": payload.published_runtime_ref.runtime_route,
+        }
+
     return {
         "source": "card_note",
 
@@ -76,6 +86,8 @@ def build_note_notification_context(
         "highlight_id": mention.mention_key,
 
         "mention_user_id": mention.user_id,
+
+        "published_runtime_ref": published_runtime_ref,
     }
 
 
