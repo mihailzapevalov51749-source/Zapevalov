@@ -17,6 +17,7 @@ export default function LibraryRow({
   document,
 
   isSelected,
+  isHighlighted = false,
   selectedIds,
   onToggleSelect,
 
@@ -275,6 +276,7 @@ export default function LibraryRow({
   return (
     <div
       data-row
+      data-library-item-id={document.id}
       draggable={!isEditing}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
@@ -283,6 +285,12 @@ export default function LibraryRow({
       style={{
         ...tableRow,
         ...(isHovered ? tableRowHover : {}),
+        ...(isHighlighted
+          ? {
+              outline: "2px solid #2563eb",
+              background: "#eff6ff",
+            }
+          : {}),
         ...(isDragOver
           ? {
               outline: "2px solid #2563eb",

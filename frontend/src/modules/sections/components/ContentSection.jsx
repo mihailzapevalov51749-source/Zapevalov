@@ -4,6 +4,10 @@ import SectionToolbar from "./SectionToolbar";
 import BlocksList from "../../blocks/components/BlocksList";
 import FreeLayoutSection from "./FreeLayoutSection";
 
+import {
+  getLegacyStorageCreationNoticeMessage,
+  isLegacyStorageBlockType,
+} from "../../../shared/legacy";
 import useSectionUniversalTableControls from "../hooks/useSectionUniversalTableControls";
 
 export default function ContentSection({
@@ -101,15 +105,9 @@ export default function ContentSection({
     section.type === "free" ||
     section.settings?.layout === "free";
 
-  const isTableWidget = (event) => {
+  const isLegacyStorageWidgetDrag = (event) => {
     const widgetType = event.dataTransfer.getData("widget/type");
-
-    return [
-      "table",
-      "universal_table",
-      "tableBlock",
-      "table_block",
-    ].includes(widgetType);
+    return isLegacyStorageBlockType(widgetType);
   };
 
   return (
@@ -138,7 +136,7 @@ export default function ContentSection({
         const widgetType = event.dataTransfer.getData("widget/type");
 
         if (widgetType) {
-          if (!isFreeLayout && isTableWidget(event)) {
+          if (isLegacyStorageWidgetDrag(event)) {
             event.preventDefault();
             event.dataTransfer.dropEffect = "none";
             return;
@@ -156,10 +154,10 @@ export default function ContentSection({
         const widgetType = event.dataTransfer.getData("widget/type");
 
         if (widgetType) {
-          if (!isFreeLayout && isTableWidget(event)) {
+          if (isLegacyStorageWidgetDrag(event)) {
             event.preventDefault();
             event.stopPropagation();
-            alert("Таблицу можно добавлять только в гибкий раздел");
+            alert(getLegacyStorageCreationNoticeMessage());
             return;
           }
 
@@ -178,7 +176,7 @@ export default function ContentSection({
         const blockId = event.dataTransfer.getData("block/id");
 
         if (widgetType) {
-          if (!isFreeLayout && isTableWidget(event)) {
+          if (isLegacyStorageWidgetDrag(event)) {
             event.preventDefault();
             return;
           }
@@ -198,9 +196,9 @@ export default function ContentSection({
         const blockId = event.dataTransfer.getData("block/id");
 
         if (widgetType) {
-          if (!isFreeLayout && isTableWidget(event)) {
+          if (isLegacyStorageWidgetDrag(event)) {
             event.preventDefault();
-            alert("Таблицу можно добавлять только в гибкий раздел");
+            alert(getLegacyStorageCreationNoticeMessage());
             return;
           }
 

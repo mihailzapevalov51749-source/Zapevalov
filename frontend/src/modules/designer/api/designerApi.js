@@ -32,6 +32,21 @@ export async function updateObjectType(tenantId, objectTypeId, payload) {
   return data;
 }
 
+export async function deleteObjectType(tenantId, objectTypeId) {
+  const { data } = await platformApiClient.delete(
+    `${tenantBase(tenantId)}/object-types/${objectTypeId}`,
+  );
+  return data;
+}
+
+export async function publishMenuPlacements(tenantId, objectTypeId, payload) {
+  const { data } = await platformApiClient.post(
+    `${tenantBase(tenantId)}/object-types/${objectTypeId}/menu-placements`,
+    payload,
+  );
+  return data;
+}
+
 export async function listFields(tenantId, objectTypeId) {
   const { data } = await platformApiClient.get(
     `${tenantBase(tenantId)}/object-types/${objectTypeId}/fields`,
@@ -95,6 +110,13 @@ export async function deleteRelation(tenantId, relationId) {
 export async function listViews(tenantId, objectTypeId) {
   const { data } = await platformApiClient.get(
     `${tenantBase(tenantId)}/object-types/${objectTypeId}/views`,
+  );
+  return data;
+}
+
+export async function getView(tenantId, viewId) {
+  const { data } = await platformApiClient.get(
+    `${tenantBase(tenantId)}/views/${viewId}`,
   );
   return data;
 }

@@ -1,18 +1,34 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import {
+  getLibraryDocumentById,
   getLibraryDocuments,
   createLibraryDocument,
   createLibraryFolder,
   uploadLibraryDocument,
   renameLibraryDocument,
   deleteLibraryDocument,
-  searchLibraryDocuments, // 🔴 добавлено
+  searchLibraryDocuments,
 } from "../api/documentLibrariesApi";
 
-import { filterDocuments } from "../services/documentLibrariesService";
+import { filterDocuments, buildWorkspacePreviewPayload } from "../services/documentLibrariesService";
+import {
+  buildLibraryDeepLinkSearchParams,
+  LIBRARY_OPEN_DOCUMENT,
+  parseLibraryDeepLink,
+  resolveDeepLinkFolderTarget,
+} from "../utils/libraryDeepLink";
+import { resolveFolderPath } from "../utils/libraryFolderPath";
 
-export default function useLibraryDocuments({ libraryId }) {
+export default function useLibraryDocuments({
+  libraryId,
+  enableDeepLinkUrl = false,
+}) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const deepLinkAppliedRef = useRef(false);
+  const skipNextDeepLinkApplyRef = useRef(false);
+
   const [documents, setDocuments] = useState([]);
 
   const [pagination, setPagination] = useState({
@@ -23,6 +39,15 @@ export default function useLibraryDocuments({ libraryId }) {
 
   const [currentFolderId, setCurrentFolderId] = useState(null);
   const [folderPath, setFolderPath] = useState([]);
+  const [highlightDocumentId, setHighlightDocumentId] = useState(null);
+  const [pendingWorkspaceDocument, setPendingWorkspaceDocument] = useState(null);
+
+  const [isDeepLinkReady, setIsDeepLinkReady] = useState(() => {
+    if (!enableDeepLinkUrl) {
+      return true;
+    }
+    return !parseLibraryDeepLink(searchParams).hasDeepLink;
+  });
 
   const [isLoading, setIsLoading] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -37,7 +62,23 @@ export default function useLibraryDocuments({ libraryId }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [error, setError] = useState("");
 
-  // 📄 обычная загрузка
+  const syncDeepLinkUrl = useCallback(
+    ({ folderId = null, documentId = null, open = null } = {}) => {
+      if (!enableDeepLinkUrl) {
+        return;
+      }
+
+      skipNextDeepLinkApplyRef.current = true;
+      setSearchParams(
+        buildLibraryDeepLinkSearchParams({ folderId, documentId, open }),
+        {
+          replace: true,
+        },
+      );
+    },
+    [enableDeepLinkUrl, setSearchParams],
+  );
+
   const loadDocuments = async (parentId = currentFolderId) => {
     if (!libraryId) return;
 
@@ -45,12 +86,7 @@ export default function useLibraryDocuments({ libraryId }) {
     setError("");
 
     try {
-      const data = await getLibraryDocuments(
-        libraryId,
-        parentId,
-        pagination.limit,
-        pagination.offset
-      );
+      const data = await getLibraryDocuments(libraryId, parentId);
 
       setDocuments(data.items || []);
 
@@ -58,15 +94,14 @@ export default function useLibraryDocuments({ libraryId }) {
         ...prev,
         total: data.total || 0,
       }));
-    } catch (error) {
-      console.error(error);
+    } catch (loadError) {
+      console.error(loadError);
       setError("Не удалось загрузить документы");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // 🔍 глобальный поиск
   const handleGlobalSearch = async () => {
     if (!libraryId || !searchQuery.trim()) return;
 
@@ -83,8 +118,8 @@ export default function useLibraryDocuments({ libraryId }) {
         limit: data.limit || 200,
         offset: 0,
       });
-    } catch (error) {
-      console.error(error);
+    } catch (searchError) {
+      console.error(searchError);
       setError("Ошибка поиска");
     } finally {
       setIsLoading(false);
@@ -95,6 +130,8 @@ export default function useLibraryDocuments({ libraryId }) {
     setDocuments([]);
     setCurrentFolderId(null);
     setFolderPath([]);
+    setHighlightDocumentId(null);
+    setPendingWorkspaceDocument(null);
     setOpenedMenuId(null);
     setDeleteTarget(null);
     setSearchQuery("");
@@ -104,16 +141,129 @@ export default function useLibraryDocuments({ libraryId }) {
       limit: 50,
       offset: 0,
     });
-  }, [libraryId]);
+    deepLinkAppliedRef.current = false;
+    skipNextDeepLinkApplyRef.current = false;
+    setIsDeepLinkReady(
+      !enableDeepLinkUrl || !parseLibraryDeepLink(searchParams).hasDeepLink,
+    );
+  }, [libraryId, enableDeepLinkUrl]);
 
-  // 🔴 КЛЮЧЕВОЕ ИЗМЕНЕНИЕ
   useEffect(() => {
+    if (!enableDeepLinkUrl || !libraryId) {
+      return;
+    }
+
+    if (skipNextDeepLinkApplyRef.current) {
+      skipNextDeepLinkApplyRef.current = false;
+      deepLinkAppliedRef.current = true;
+      setIsDeepLinkReady(true);
+      return;
+    }
+
+    deepLinkAppliedRef.current = false;
+    setIsDeepLinkReady(!parseLibraryDeepLink(searchParams).hasDeepLink);
+  }, [enableDeepLinkUrl, libraryId, searchParams]);
+
+  useEffect(() => {
+    if (!enableDeepLinkUrl || !libraryId || deepLinkAppliedRef.current) {
+      return;
+    }
+
+    const deepLink = parseLibraryDeepLink(searchParams);
+    if (!deepLink.hasDeepLink) {
+      deepLinkAppliedRef.current = true;
+      setIsDeepLinkReady(true);
+      return;
+    }
+
+    let cancelled = false;
+
+    const applyDeepLink = async () => {
+      try {
+        let documentRecord = null;
+
+        if (deepLink.documentId) {
+          documentRecord = await getLibraryDocumentById(deepLink.documentId);
+          if (Number(documentRecord.library_id) !== Number(libraryId)) {
+            throw new Error("Документ не принадлежит этой библиотеке");
+          }
+        }
+
+        const { targetFolderId, openDocumentId, highlightDocumentId: nextHighlightId } =
+          resolveDeepLinkFolderTarget({
+            folderId: deepLink.folderId,
+            documentId: deepLink.documentId,
+            documentRecord,
+            shouldOpenDocument: deepLink.shouldOpenDocument,
+          });
+
+        if (
+          targetFolderId == null &&
+          deepLink.documentId == null &&
+          openDocumentId == null
+        ) {
+          throw new Error("Не удалось определить папку для deep-link");
+        }
+
+        if (targetFolderId != null) {
+          const resolved = await resolveFolderPath({
+            libraryId,
+            targetFolderId,
+            getDocumentById: getLibraryDocumentById,
+          });
+
+          if (cancelled) {
+            return;
+          }
+
+          setFolderPath(resolved.folderPath);
+          setCurrentFolderId(resolved.currentFolderId);
+        } else {
+          setFolderPath([]);
+          setCurrentFolderId(null);
+        }
+
+        setHighlightDocumentId(nextHighlightId);
+
+        if (
+          openDocumentId != null &&
+          documentRecord &&
+          !documentRecord.is_folder &&
+          !deepLink.shouldOpenDocument
+        ) {
+          setPendingWorkspaceDocument(documentRecord);
+        }
+      } catch (deepLinkError) {
+        console.error(deepLinkError);
+        if (!cancelled) {
+          setError("Не удалось открыть ссылку на папку или документ");
+        }
+      } finally {
+        if (!cancelled) {
+          deepLinkAppliedRef.current = true;
+          setIsDeepLinkReady(true);
+        }
+      }
+    };
+
+    applyDeepLink();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enableDeepLinkUrl, libraryId, searchParams]);
+
+  useEffect(() => {
+    if (!isDeepLinkReady) {
+      return;
+    }
+
     if (searchQuery && searchQuery.trim()) {
       handleGlobalSearch();
     } else {
       loadDocuments(currentFolderId);
     }
-  }, [libraryId, currentFolderId, pagination.offset, searchQuery]);
+  }, [libraryId, currentFolderId, pagination.offset, searchQuery, isDeepLinkReady]);
 
   const filteredDocuments = useMemo(() => {
     return filterDocuments(documents, searchQuery);
@@ -141,9 +291,11 @@ export default function useLibraryDocuments({ libraryId }) {
     ]);
 
     setPagination((prev) => ({ ...prev, offset: 0 }));
-
     setOpenedMenuId(null);
-    setSearchQuery(""); // 🔴 сброс поиска
+    setSearchQuery("");
+    setHighlightDocumentId(null);
+    setPendingWorkspaceDocument(null);
+    syncDeepLinkUrl({ folderId: document.id, documentId: null, open: null });
   };
 
   const handleGoRoot = () => {
@@ -152,6 +304,9 @@ export default function useLibraryDocuments({ libraryId }) {
     setPagination((prev) => ({ ...prev, offset: 0 }));
     setOpenedMenuId(null);
     setSearchQuery("");
+    setHighlightDocumentId(null);
+    setPendingWorkspaceDocument(null);
+    syncDeepLinkUrl({ folderId: null, documentId: null, open: null });
   };
 
   const handleGoBack = () => {
@@ -165,6 +320,13 @@ export default function useLibraryDocuments({ libraryId }) {
     setPagination((prev) => ({ ...prev, offset: 0 }));
     setOpenedMenuId(null);
     setSearchQuery("");
+    setHighlightDocumentId(null);
+    setPendingWorkspaceDocument(null);
+    syncDeepLinkUrl({
+      folderId: previousFolder ? previousFolder.id : null,
+      documentId: null,
+      open: null,
+    });
   };
 
   const handleGoToBreadcrumb = (index) => {
@@ -176,6 +338,13 @@ export default function useLibraryDocuments({ libraryId }) {
     setPagination((prev) => ({ ...prev, offset: 0 }));
     setOpenedMenuId(null);
     setSearchQuery("");
+    setHighlightDocumentId(null);
+    setPendingWorkspaceDocument(null);
+    syncDeepLinkUrl({
+      folderId: folder ? folder.id : null,
+      documentId: null,
+      open: null,
+    });
   };
 
   const handleCreateDocument = async () => {
@@ -195,8 +364,8 @@ export default function useLibraryDocuments({ libraryId }) {
       setDocumentType("word");
 
       await loadDocuments(currentFolderId);
-    } catch (error) {
-      console.error(error);
+    } catch (createError) {
+      console.error(createError);
       setError("Не удалось создать документ");
     } finally {
       setIsCreating(false);
@@ -218,8 +387,8 @@ export default function useLibraryDocuments({ libraryId }) {
       });
 
       await loadDocuments(currentFolderId);
-    } catch (error) {
-      console.error(error);
+    } catch (createFolderError) {
+      console.error(createFolderError);
       setError("Не удалось создать папку");
     } finally {
       setIsCreatingFolder(false);
@@ -240,8 +409,8 @@ export default function useLibraryDocuments({ libraryId }) {
       }
 
       await loadDocuments(currentFolderId);
-    } catch (error) {
-      console.error(error);
+    } catch (uploadError) {
+      console.error(uploadError);
       setError("Не удалось загрузить файл");
     } finally {
       setIsUploading(false);
@@ -264,13 +433,13 @@ export default function useLibraryDocuments({ libraryId }) {
         prev.map((folder) =>
           folder.id === document.id
             ? { ...folder, title: nextTitle.trim() }
-            : folder
-        )
+            : folder,
+        ),
       );
 
       await loadDocuments(currentFolderId);
-    } catch (error) {
-      console.error(error);
+    } catch (renameError) {
+      console.error(renameError);
       setError("Ошибка переименования");
     }
   };
@@ -288,8 +457,8 @@ export default function useLibraryDocuments({ libraryId }) {
       setOpenedMenuId(null);
 
       await loadDocuments(currentFolderId);
-    } catch (error) {
-      console.error(error);
+    } catch (deleteError) {
+      console.error(deleteError);
       setError("Ошибка удаления");
     } finally {
       setIsDeleting(false);
@@ -321,8 +490,8 @@ export default function useLibraryDocuments({ libraryId }) {
       setOpenedMenuId(null);
 
       await loadDocuments(currentFolderId);
-    } catch (error) {
-      console.error(error);
+    } catch (deleteFolderError) {
+      console.error(deleteFolderError);
       setError("Ошибка удаления папки");
     } finally {
       setIsDeleting(false);
@@ -334,12 +503,62 @@ export default function useLibraryDocuments({ libraryId }) {
     setDeleteTarget(null);
   };
 
+  const clearPendingWorkspaceDocument = useCallback(() => {
+    setPendingWorkspaceDocument(null);
+  }, []);
+
+  const openWorkspaceDocument = useCallback(
+    (document, { syncUrl = true } = {}) => {
+      if (!document || document.is_folder) {
+        return buildWorkspacePreviewPayload(document);
+      }
+
+      const payload = buildWorkspacePreviewPayload(document);
+      if (!payload) {
+        setHighlightDocumentId(document.id);
+        return null;
+      }
+
+      setHighlightDocumentId(null);
+
+      if (syncUrl && enableDeepLinkUrl) {
+        syncDeepLinkUrl({
+          folderId: currentFolderId,
+          documentId: document.id,
+          open: LIBRARY_OPEN_DOCUMENT,
+        });
+        return payload;
+      }
+
+      setPendingWorkspaceDocument(document);
+      return payload;
+    },
+    [currentFolderId, enableDeepLinkUrl, syncDeepLinkUrl],
+  );
+
+  const closeWorkspaceDocumentUrl = useCallback(() => {
+    setPendingWorkspaceDocument(null);
+    setHighlightDocumentId(null);
+    syncDeepLinkUrl({
+      folderId: currentFolderId,
+      documentId: null,
+      open: null,
+    });
+  }, [currentFolderId, syncDeepLinkUrl]);
+
   return {
     documents,
     filteredDocuments,
 
     currentFolderId,
     folderPath,
+    highlightDocumentId,
+    pendingWorkspaceDocument,
+    clearPendingWorkspaceDocument,
+    openWorkspaceDocument,
+    closeWorkspaceDocumentUrl,
+    syncDeepLinkUrl,
+    isDeepLinkReady,
 
     pagination,
     currentPage,

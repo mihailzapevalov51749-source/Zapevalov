@@ -37,6 +37,8 @@ class DesignerObjectType(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     icon = Column(String(64), nullable=True)
+    icon_type = Column(String(50), nullable=True)
+    icon_file_url = Column(String(1000), nullable=True)
     color = Column(String(7), nullable=True)
 
     sort_order = Column(Integer, nullable=False, default=0, server_default="0")

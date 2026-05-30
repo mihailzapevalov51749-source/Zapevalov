@@ -645,11 +645,16 @@ AI Context Designer НЕ реализуется.
 
 # Universal Table Status
 
+> Superseded by ADR-001 Universal Table Retirement.
+
 ## Официальный статус
 
 ```text
-Transitional View Engine Layer
+LEGACY — RETIREMENT ACTIVE
+(frozen → isolated → removed)
 ```
+
+~~Transitional View Engine Layer~~ — больше не часть целевой архитектуры.
 
 ---
 

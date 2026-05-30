@@ -7,8 +7,9 @@ from app.modules.platform.runtime.query import repository
 from app.modules.platform.runtime.query.schemas import (
     DEFAULT_QUERY_LIMIT,
     EntityQueryResponse,
-    ViewProjectionResponse,
     PaginationMeta,
+    PublishedViewMeta,
+    ViewProjectionResponse,
 )
 from app.modules.platform.runtime.query.validators import (
     coerce_filters,
@@ -125,6 +126,8 @@ def get_view_projection(
     except CatalogNotFound as exc:
         raise _catalog_http_error(exc) from exc
 
+    view_meta = metadata.view_meta if isinstance(metadata.view_meta, dict) else {}
+
     return ViewProjectionResponse(
         tenant_id=tenant_id,
         object_type_key=object_type_key,
@@ -138,4 +141,16 @@ def get_view_projection(
                 "order": metadata.default_sort_order,
             },
         },
+        object_view=metadata.object_view,
+        filters_json=metadata.filters_json or {},
+        view=PublishedViewMeta(
+            key=str(view_meta.get("key") or metadata.view_key),
+            name=view_meta.get("name"),
+            view_type=view_meta.get("view_type"),
+            is_default=bool(view_meta.get("is_default")),
+            is_system=bool(view_meta.get("is_system")),
+            settings_json=view_meta.get("settings_json") or {},
+            filters_json=view_meta.get("filters_json") or {},
+            layout_json=view_meta.get("layout_json") or {},
+        ),
     )

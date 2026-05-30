@@ -5,6 +5,10 @@ import type {
 } from "./sidebarContracts";
 import { SIDEBAR_MODES } from "./sidebarMode";
 import type { SidebarActionContract, SidebarItemContract } from "./sidebarTypes";
+import {
+  resolveActiveDesignerSidebarItemId,
+  resolveDesignerSidebarItemActive,
+} from "../designer/designerNavigationResolver";
 
 type UnknownRecord = Record<string, unknown>;
 type RuntimeMappingContext = {
@@ -14,6 +18,7 @@ type RuntimeMappingContext = {
   level: number;
   isEditMode: boolean;
   capabilities: SidebarCapabilitiesContract;
+  routeOwner?: Record<string, unknown> | null;
 };
 
 export type RuntimeSidebarAdapterInput = {
@@ -45,6 +50,7 @@ export type DesignerSidebarAdapterInput = {
   activePath?: string;
   activePageId?: string | number;
   tenantId?: string | number;
+  routeOwner?: Record<string, unknown> | null;
   activeKey?: string;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
@@ -75,7 +81,7 @@ const DESIGNER_BRAND_DEFAULTS: SidebarBrandContract = {
 const DESIGNER_FALLBACK_MENU = [
   { id: "objects", label: "Объекты", iconType: "objects" },
   { id: "relations", label: "Связи", iconType: "relations" },
-  { id: "views", label: "Представления", iconType: "views" },
+  { id: "views", label: "Вкладки", iconType: "views" },
   { id: "users", label: "Пользователи", iconType: "users" },
   { id: "settings", label: "Системные настройки", iconType: "settings" },
 ];
@@ -395,6 +401,7 @@ function isPersistableNavigationItem(rawItem: unknown): boolean {
 
 function resolveRuntimeItemLabel(item: UnknownRecord): string {
   return (
+    asString(item.display_title) ??
     asString(item.title) ??
     asString(item.label) ??
     asString(item.name) ??
@@ -437,11 +444,24 @@ function resolveRuntimePageId(item: UnknownRecord): string | number | undefined 
 }
 
 function resolveRuntimeIconType(item: UnknownRecord): string | undefined {
-  return asString(item.icon_type) ?? asString(item.type) ?? asString(item.icon_name);
+  return (
+    asString(item.display_icon_type) ??
+    asString(item.icon_type) ??
+    asString(item.type) ??
+    asString(item.icon_name)
+  );
 }
 
 function resolveRuntimeIconFileUrl(item: UnknownRecord): string | undefined {
-  return asString(item.icon_file_url);
+  return asString(item.display_icon_file_url) ?? asString(item.icon_file_url);
+}
+
+function resolveRuntimeDisplayColor(item: UnknownRecord): string | undefined {
+  return asString(item.display_color) ?? asString(item.color);
+}
+
+function isObjectTypeNavigationItem(item: UnknownRecord): boolean {
+  return asString(item.type) === "object_type" || item.object_type_id != null;
 }
 
 function resolveRuntimeRouteKey(item: UnknownRecord): string | undefined {
@@ -557,8 +577,13 @@ function buildRuntimeItemMeta(
   return {
     source: item,
     iconType,
-    icon_type: item.icon_type,
-    icon_file_url: item.icon_file_url,
+    icon_type: item.display_icon_type ?? item.icon_type,
+    icon_file_url: item.display_icon_file_url ?? item.icon_file_url,
+    display_title: item.display_title,
+    display_icon_type: item.display_icon_type,
+    display_icon_file_url: item.display_icon_file_url,
+    display_color: item.display_color,
+    object_type_id: item.object_type_id,
     type: item.type,
     icon: item.icon,
     icon_name: item.icon_name,
@@ -592,7 +617,8 @@ function isRuntimeItemActive(
   itemId: string,
   pageId: string | number | undefined,
   activePath?: string,
-  activePageId?: string | number
+  activePageId?: string | number,
+  routeOwner?: Record<string, unknown> | null
 ): boolean {
   const path = resolveRuntimeItemPath(item);
 
@@ -606,22 +632,24 @@ function isRuntimeItemActive(
     };
     const normalizedActivePath = normalize(activePath);
     const normalizedPath = normalize(path);
+
+    const isDesignerPath =
+      normalizedActivePath.startsWith("/designer/") &&
+      normalizedPath.startsWith("/designer/");
+
+    if (isDesignerPath && normalizedPath) {
+      return resolveDesignerSidebarItemActive({
+        item,
+        activePathname: normalizedActivePath,
+        itemPath: normalizedPath,
+        routeOwner,
+      });
+    }
+
     if (normalizedPath && normalizedPath === normalizedActivePath) {
       return true;
     }
     if (itemId === normalizedActivePath) {
-      return true;
-    }
-
-    const isDesignerPath =
-      normalizedPath.startsWith("/designer/") &&
-      normalizedActivePath.startsWith("/designer/");
-    if (
-      isDesignerPath &&
-      normalizedPath &&
-      (normalizedActivePath === normalizedPath ||
-        normalizedActivePath.startsWith(`${normalizedPath}/`))
-    ) {
       return true;
     }
   }
@@ -679,6 +707,8 @@ function mapRuntimeNavigationItem(
   const pageId = resolveRuntimePageId(item);
   const iconType = resolveRuntimeIconType(item);
   const iconFileUrl = resolveRuntimeIconFileUrl(item);
+  const displayColor = resolveRuntimeDisplayColor(item);
+  const objectTypeItem = isObjectTypeNavigationItem(item);
   const routeKey = resolveRuntimeRouteKey(item);
   const systemKey = resolveRuntimeSystemKey(item, id);
   const isSystem = isRuntimeSystemItem(item, id);
@@ -695,7 +725,8 @@ function mapRuntimeNavigationItem(
       id,
       pageId,
       context.activePath,
-      context.activePageId
+      context.activePageId,
+      context.routeOwner
     ),
     disabled: asBoolean(item.disabled),
     parentId: context.parentId,
@@ -720,7 +751,11 @@ function mapRuntimeNavigationItem(
     systemKey,
     actionKey: "select-menu-item",
     routeKey,
-    meta: buildRuntimeItemMeta(item, iconType, iconFileUrl),
+    meta: {
+      ...buildRuntimeItemMeta(item, iconType, iconFileUrl),
+      display_color: displayColor,
+      is_object_type: objectTypeItem,
+    },
   };
 
   mappedItem.children = mapRuntimeNavigationChildren(item, context, id);
@@ -740,7 +775,8 @@ function mapRuntimeNavigationItems(
   activePath?: string,
   activePageId?: string,
   isEditMode = false,
-  capabilities: SidebarCapabilitiesContract = {}
+  capabilities: SidebarCapabilitiesContract = {},
+  routeOwner: Record<string, unknown> | null = null
 ): SidebarItemContract[] {
   if (!Array.isArray(navigationItems)) {
     return [];
@@ -752,6 +788,7 @@ function mapRuntimeNavigationItems(
     level: 0,
     isEditMode,
     capabilities,
+    routeOwner,
   };
 
   return navigationItems
@@ -919,6 +956,16 @@ export function createDesignerSidebarContract(
     persistedItems.length > 0
       ? mergeDesignerNavigationItems(persistedItems)
       : filterDesignerPersistedCustomItems(fallbackItems, fallbackRoutes, input.tenantId);
+  const activeItemId =
+    input.activePath && String(input.activePath).startsWith("/designer/")
+      ? resolveActiveDesignerSidebarItemId({
+          activePathname: input.activePath,
+          navigationItems,
+          tenantId: input.tenantId,
+          routeOwner: input.routeOwner ?? null,
+          activePageId,
+        }) ?? undefined
+      : undefined;
 
   return {
     mode: SIDEBAR_MODES.RUNTIME,
@@ -935,6 +982,7 @@ export function createDesignerSidebarContract(
     editMode: Boolean(input.isEditMode),
     menuScale: input.menuScale ?? 1,
     activePageId,
+    activeItemId,
     actions: buildRuntimeActions(
       {
         ...input,
@@ -946,8 +994,10 @@ export function createDesignerSidebarContract(
     navigationItems,
     reloadNavigation: input.reloadNavigation,
     onChangeMenuScale: input.onChangeMenuScale,
+    routeOwner: input.routeOwner ?? null,
   } as AppSidebarContract & {
     navigationItems: unknown[];
     reloadNavigation?: () => void | Promise<void>;
+    routeOwner?: Record<string, unknown> | null;
   };
 }

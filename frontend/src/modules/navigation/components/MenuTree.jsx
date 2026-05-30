@@ -5,7 +5,9 @@ import MenuItem from "./MenuItem";
 export default function MenuTree({
   items = [],
   activePageId,
+  activeSidebarItemId = null,
   onSelectPage,
+  onItemAction,
   isEditMode,
   onUpdateItem,
   onDeleteItem,
@@ -13,6 +15,7 @@ export default function MenuTree({
   scale = 1,
   sidebarCollapsed = false,
   sidebarMode = "runtime",
+  routeOwner = null,
 }) {
   const [openedEditorItemId, setOpenedEditorItemId] = useState(null);
 
@@ -53,7 +56,9 @@ export default function MenuTree({
           key={item.id}
           item={item}
           activePageId={activePageId}
+          activeSidebarItemId={activeSidebarItemId}
           onSelectPage={onSelectPage}
+          onItemAction={onItemAction}
           isEditMode={isEditMode}
           onUpdateItem={onUpdateItem}
           onDeleteItem={onDeleteItem}
@@ -63,6 +68,7 @@ export default function MenuTree({
           setOpenedEditorItemId={setOpenedEditorItemId}
           sidebarCollapsed={sidebarCollapsed}
           sidebarMode={sidebarMode}
+          routeOwner={routeOwner}
         />
       ))}
     </nav>

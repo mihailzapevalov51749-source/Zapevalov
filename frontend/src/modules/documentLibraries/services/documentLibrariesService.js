@@ -5,6 +5,24 @@ export function getFileUrl(document) {
   return `${API_BASE_URL}${document.file_path}`;
 }
 
+export function buildWorkspacePreviewPayload(document) {
+  const fileUrl = getFileUrl(document);
+  if (!fileUrl || fileUrl === "#") {
+    return null;
+  }
+
+  return {
+    fileUrl,
+    fileName:
+      document.original_filename ||
+      document.originalFilename ||
+      document.title ||
+      "Файл",
+    fileType: document.document_type,
+    raw: document,
+  };
+}
+
 export function getTypeLabel(type, isFolder = false) {
   if (isFolder) return "Папка";
 

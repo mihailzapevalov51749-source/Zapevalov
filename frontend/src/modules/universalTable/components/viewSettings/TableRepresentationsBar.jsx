@@ -163,18 +163,18 @@ export default function TableRepresentationsBar({
     isCreatePopoverOpen,
     setIsCreatePopoverOpen,
 
-    settingsRepresentationId,
-    setSettingsRepresentationId,
+    settingsViewId: settingsRepresentationId,
+    setSettingsViewId: setSettingsRepresentationId,
 
-    renameRepresentationId,
-    setRenameRepresentationId,
+    renameViewId: renameRepresentationId,
+    setRenameViewId: setRenameRepresentationId,
     renameValue,
     setRenameValue,
 
-    pendingRepresentation,
+    pendingView: pendingRepresentation,
 
-    normalizedRepresentations = [],
-    pinnedRepresentations = [],
+    normalizedViews: normalizedRepresentations = [],
+    pinnedViews: pinnedRepresentations = [],
 
     getPinnedSlotIndex,
     toggleOverflow,

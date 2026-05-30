@@ -5,7 +5,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.modules.platform.designer.object_types import repository
+from app.modules.navigation.models import NavigationItem
 from app.modules.platform.designer.object_types.models import DesignerObjectType
+from app.modules.platform.designer.view_definitions import service as view_service
 from app.modules.platform.designer.object_types.schemas import (
     DependencyCounts,
     ObjectTypeCreate,
@@ -32,6 +34,8 @@ def _to_read(entity: DesignerObjectType) -> ObjectTypeRead:
         name=entity.name,
         description=entity.description,
         icon=entity.icon,
+        icon_type=entity.icon_type,
+        icon_file_url=entity.icon_file_url,
         color=entity.color,
         sort_order=entity.sort_order,
         status=entity.status,
@@ -93,6 +97,8 @@ def create_object_type(
         name=payload.name,
         description=payload.description,
         icon=payload.icon,
+        icon_type=payload.icon_type,
+        icon_file_url=payload.icon_file_url,
         color=payload.color,
         sort_order=payload.sort_order,
         status=payload.status.value,
@@ -112,6 +118,14 @@ def create_object_type(
             status_code=status.HTTP_409_CONFLICT,
             detail="ObjectType с таким key уже существует в tenant",
         ) from exc
+
+    # Bootstrap canonical default system table view for object-first flow.
+    view_service.create_default_table_view(
+        db,
+        tenant_id,
+        entity.id,
+        current_user=current_user,
+    )
 
     return _to_read(entity)
 
@@ -173,6 +187,12 @@ def update_object_type(
         entity.description = updates["description"]
     if "icon" in updates:
         entity.icon = updates["icon"]
+    if "icon_type" in updates:
+        entity.icon_type = updates["icon_type"]
+        if updates["icon_type"] == "upload":
+            entity.icon = None
+    if "icon_file_url" in updates:
+        entity.icon_file_url = updates["icon_file_url"]
     if "color" in updates:
         entity.color = updates["color"]
     if "sort_order" in updates:
@@ -221,6 +241,11 @@ def delete_object_type(
             detail="Системный ObjectType нельзя удалить",
         )
 
+    db.query(NavigationItem).filter(
+        NavigationItem.object_type_id == object_type_id,
+    ).delete(synchronize_session=False)
+
     entity.updated_by = _actor_user_id(current_user)
     entity = repository.soft_delete_object_type(db, entity)
+    db.commit()
     return _to_read(entity)

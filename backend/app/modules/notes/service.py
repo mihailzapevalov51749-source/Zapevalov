@@ -49,16 +49,13 @@ def normalize_mention_keys(
 
 
 def build_note_notification_context(
+    db: Session,
     *,
     note: Note,
     payload: NotePublish,
     mention: NoteMention,
 ):
-    table_id = (
-        str(payload.table_id)
-        if payload.table_id
-        else None
-    )
+    is_runtime_entity = note.entity_type == "runtime_entity"
 
     published_runtime_ref = None
     if payload.published_runtime_ref:
@@ -69,6 +66,16 @@ def build_note_notification_context(
             "catalog_version": payload.published_runtime_ref.catalog_version,
             "runtime_route": payload.published_runtime_ref.runtime_route,
         }
+    elif is_runtime_entity:
+        from app.modules.comments.service import (
+            resolve_published_runtime_ref_for_comment_entity,
+        )
+
+        published_runtime_ref = resolve_published_runtime_ref_for_comment_entity(
+            db,
+            entity_type=note.entity_type,
+            entity_id=note.entity_id,
+        )
 
     return {
         "source": "card_note",
@@ -76,8 +83,8 @@ def build_note_notification_context(
         "entity_type": note.entity_type,
         "entity_id": note.entity_id,
 
-        "table_id": table_id,
-        "row_id": note.entity_id,
+        "table_id": None,
+        "row_id": None,
 
         "note_id": note.id,
 
@@ -168,6 +175,7 @@ def create_note_mention_notifications(
             entity_type=note.entity_type,
             entity_id=note.entity_id,
             context=build_note_notification_context(
+                db,
                 note=note,
                 payload=payload,
                 mention=mention,

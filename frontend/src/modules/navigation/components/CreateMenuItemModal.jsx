@@ -20,7 +20,6 @@ export default function CreateMenuItemModal({ onCreate, onClose }) {
 
   const getTitlePlaceholder = () => {
     if (type === "document_library") return "Название библиотеки";
-    if (type === "universal_table") return "Название универсальной таблицы";
     if (type === "external_link") return "Название ссылки";
     if (type === "workspace") return "Название раздела";
     if (type === "page") return "Название страницы";
@@ -48,7 +47,6 @@ export default function CreateMenuItemModal({ onCreate, onClose }) {
       >
         <option value="workspace">Раздел</option>
         <option value="page">Страница</option>
-        <option value="universal_table">Универсальная таблица</option>
         <option value="document_library">Библиотека документов</option>
         <option value="external_link">Внешняя ссылка</option>
       </select>

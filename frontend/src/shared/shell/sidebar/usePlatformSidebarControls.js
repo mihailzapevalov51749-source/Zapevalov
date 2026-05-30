@@ -3,12 +3,10 @@ import { useState } from "react";
 import { getPageFull } from "../../../api/pagesApi";
 import { findNavigationItemById } from "../../../portal/utils/portalPageUtils";
 import useMenuEditor from "../../../modules/navigation/hooks/useMenuEditor";
-import { updateLegacyTable } from "../../../modules/runtimeLegacyWriteAdapter";
-import { dispatchUniversalTableTitleChanged } from "../../../modules/universalTable/utils/universalTableTitleEvents";
 import {
-  isUniversalTableNavigationItem,
-  resolvePrimaryTableIdForPage,
-} from "../../../modules/universalTable/utils/resolvePrimaryTableId";
+  isLegacyStorageNavigationItem,
+  renameLegacyStorageForPage,
+} from "../../../shared/legacy/adapters/legacyStorageAdapter";
 import { navigationService } from "../../../modules/navigation/services/navigationService";
 import {
   patchDesignerSystemMenuSettings,
@@ -39,34 +37,39 @@ export function usePlatformSidebarControls({
   const handleUpdateMenuItem = async (itemId, data, navigationItems = []) => {
     try {
       const navigationItem = findNavigationItemById(navigationItems, itemId);
+      const isObjectTypeItem =
+        navigationItem?.type === "object_type" ||
+        Boolean(navigationItem?.object_type_id);
+
+      if (isObjectTypeItem) {
+        await menuEditor.updateItem?.(itemId, {
+          is_bold: data?.is_bold,
+          is_italic: data?.is_italic,
+          is_visible: data?.is_visible,
+        });
+        return;
+      }
+
       const nextTitle = String(data?.title || "").trim();
 
       if (
         navigationItem &&
         nextTitle &&
-        isUniversalTableNavigationItem(navigationItem) &&
+        isLegacyStorageNavigationItem(navigationItem) &&
         navigationItem.page_id
       ) {
         try {
           const linkedPage = await getPageFull(navigationItem.page_id);
-          const tableId = await resolvePrimaryTableIdForPage(linkedPage);
+          const renameResult = await renameLegacyStorageForPage({
+            pageData: linkedPage,
+            title: nextTitle,
+            dedicatedPageId: navigationItem.page_id,
+          });
 
-          if (tableId) {
-            const updatedTable = await updateLegacyTable(tableId, {
-              title: nextTitle,
-            });
-
-            const syncedTitle = updatedTable?.title || nextTitle;
-
-            dispatchUniversalTableTitleChanged({
-              tableId,
-              title: syncedTitle,
-              dedicatedPageId: navigationItem.page_id,
-            });
-
+          if (renameResult?.title) {
             await menuEditor.updateItem?.(itemId, {
               ...data,
-              title: syncedTitle,
+              title: renameResult.title,
             });
 
             return;

@@ -38,6 +38,8 @@ export const entityCardModalStyle = {
   boxSizing: "border-box",
 
   display: "flex",
+  flexDirection: "column",
+  alignItems: "stretch",
 
   border: `1px solid ${entityCardTheme.colors.border}`,
 

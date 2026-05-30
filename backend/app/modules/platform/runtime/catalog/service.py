@@ -165,6 +165,10 @@ class PublishedViewProjectionMetadata:
     title_field: str | None
     default_sort_field: str | None
     default_sort_order: str
+    object_view: dict[str, Any] | None
+    filters_json: dict[str, Any]
+    layout_json: dict[str, Any]
+    view_meta: dict[str, Any]
 
 
 def get_published_view_projection_metadata(
@@ -238,9 +242,38 @@ def get_published_view_projection_metadata(
         )
 
     view_settings = selected_view.get("settings_json") or {}
-    projection = None
-    if isinstance(view_settings, dict):
-        projection = view_settings.get("projection")
+    if not isinstance(view_settings, dict):
+        view_settings = {}
+
+    filters_json = selected_view.get("filters_json") or {}
+    if not isinstance(filters_json, dict):
+        filters_json = {}
+
+    layout_json = selected_view.get("layout_json") or {}
+    if not isinstance(layout_json, dict):
+        layout_json = {}
+
+    object_view_raw = view_settings.get("objectView")
+    object_view: dict[str, Any] | None
+    if isinstance(object_view_raw, dict):
+        object_view = object_view_raw
+    else:
+        object_view = None
+
+    projection = view_settings.get("projection")
+    if not isinstance(projection, dict) or (
+        not (projection.get("visible_fields") or [])
+        and not (projection.get("field_order") or [])
+        and object_view is not None
+    ):
+        from app.modules.platform.designer.publish.object_view_contract import (
+            projection_from_object_view,
+        )
+
+        if object_view is not None:
+            projection = projection_from_object_view(object_view)
+        elif not isinstance(projection, dict):
+            projection = {}
 
     if not isinstance(projection, dict):
         projection = {}
@@ -283,6 +316,18 @@ def get_published_view_projection_metadata(
         if isinstance(raw_field, str):
             default_sort_field = raw_field
 
+    view_meta = {
+        "id": selected_view.get("id"),
+        "key": selected_view.get("key"),
+        "name": selected_view.get("name"),
+        "view_type": selected_view.get("view_type"),
+        "is_default": bool(selected_view.get("is_default")),
+        "is_system": bool(selected_view.get("is_system")),
+        "settings_json": view_settings,
+        "filters_json": filters_json,
+        "layout_json": layout_json,
+    }
+
     return PublishedViewProjectionMetadata(
         tenant_id=tenant_id,
         catalog_version=catalog_version,
@@ -294,4 +339,8 @@ def get_published_view_projection_metadata(
         title_field=title_field,
         default_sort_field=default_sort_field,
         default_sort_order=default_sort_order,
+        object_view=object_view,
+        filters_json=filters_json,
+        layout_json=layout_json,
+        view_meta=view_meta,
     )

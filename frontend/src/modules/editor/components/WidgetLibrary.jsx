@@ -1,3 +1,5 @@
+import LegacyStorageNotice from "../../../shared/legacy/components/LegacyStorageNotice";
+
 const WIDGETS = [
   { type: "section", title: "Раздел", icon: "▦" },
   { type: "text", title: "Текст", icon: "T" },
@@ -6,7 +8,6 @@ const WIDGETS = [
   { type: "link", title: "Ссылка", icon: "↗" },
   { type: "button", title: "Кнопка", icon: "●" },
   { type: "cards", title: "Карточки", icon: "▦" },
-  { type: "universal_table", title: "Таблица", icon: "▦" },
 ];
 
 export default function WidgetLibrary({ onAddSection }) {
@@ -51,6 +52,11 @@ export default function WidgetLibrary({ onAddSection }) {
           />
         ))}
       </div>
+
+      <LegacyStorageNotice
+        title="Universal Table Storage (Legacy)"
+        style={{ marginTop: 14 }}
+      />
     </div>
   );
 }

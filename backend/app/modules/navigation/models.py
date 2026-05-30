@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base
@@ -17,6 +18,11 @@ class NavigationItem(Base):
 
     page_id = Column(Integer, nullable=True)
     library_id = Column(Integer, nullable=True)
+    object_type_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("designer_object_types.id", ondelete="CASCADE"),
+        nullable=True,
+    )
     url = Column(String(1000), nullable=True)
 
     sort_order = Column(Integer, default=0)

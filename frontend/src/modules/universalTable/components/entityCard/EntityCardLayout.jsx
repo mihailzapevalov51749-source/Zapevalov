@@ -5,6 +5,7 @@ import {
   entityCardHeaderContainerStyle,
   entityCardBodyStyle,
   entityCardContentStyle,
+  entityCardMainColumnStyle,
   entityCardSidebarStyle,
 } from "./styles/entityCardLayoutStyles";
 
@@ -29,16 +30,7 @@ export default function EntityCardLayout({
   return (
     <div style={entityCardLayoutStyle}>
       <div style={entityCardBodyStyle}>
-        <div
-          style={{
-            flex: 1,
-            minWidth: 0,
-            minHeight: 0,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          }}
-        >
+        <div style={entityCardMainColumnStyle}>
           <div style={entityCardHeaderContainerStyle}>
             {header}
           </div>

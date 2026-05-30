@@ -1,6 +1,15 @@
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Optional
+
 from . import repository
+from .enrichment import (
+    enrich_navigation_list,
+    enrich_navigation_tree,
+    is_object_type_navigation_item,
+    strip_object_type_metadata_updates,
+    OBJECT_TYPE_NAV_TYPE,
+)
 from .models import NavigationItem
 
 
@@ -69,8 +78,32 @@ def build_tree(items):
     return sort_items(tree)
 
 
+def _guard_object_type_create(data) -> None:
+    if data.type == OBJECT_TYPE_NAV_TYPE and not data.object_type_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="object_type_id обязателен для type=object_type",
+        )
+
+    if data.object_type_id and data.type != OBJECT_TYPE_NAV_TYPE:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="object_type_id допустим только для type=object_type",
+        )
+
+
 def create_item(db: Session, data):
-    return repository.create_item(db, data)
+    _guard_object_type_create(data)
+    if data.type == OBJECT_TYPE_NAV_TYPE:
+        data_dict = data.model_dump()
+        for field in ("icon", "icon_type", "icon_file_url", "color"):
+            data_dict[field] = None
+        from app.modules.navigation.schemas import NavigationItemCreate
+
+        data = NavigationItemCreate(**data_dict)
+    created = repository.create_item(db, data)
+    enriched = enrich_navigation_list(db, [created])
+    return enriched[0] if enriched else created
 
 
 def ensure_designer_system_items(db: Session, portal_id: int):
@@ -133,17 +166,34 @@ def get_navigation_tree(db: Session, portal_id: int, menu_scope: Optional[str] =
     if menu_scope == "designer":
         ensure_designer_system_items(db, portal_id)
     items = repository.get_items_by_portal(db, portal_id, menu_scope)
-    return build_tree(items)
+    tree = build_tree(items)
+    return enrich_navigation_tree(db, tree)
 
 
 def get_navigation_list(db: Session, portal_id: int, menu_scope: Optional[str] = None):
     if menu_scope == "designer":
         ensure_designer_system_items(db, portal_id)
-    return repository.get_items_by_portal(db, portal_id, menu_scope)
+    items = repository.get_items_by_portal(db, portal_id, menu_scope)
+    return enrich_navigation_list(db, items)
 
 
 def update_item(db: Session, item_id: int, data):
-    return repository.update_item(db, item_id, data)
+    item = repository.get_item(db, item_id)
+    if not item:
+        return None
+
+    if is_object_type_navigation_item(item):
+        update_data = strip_object_type_metadata_updates(data.model_dump(exclude_unset=True))
+        from app.modules.navigation.schemas import NavigationItemUpdate
+
+        data = NavigationItemUpdate(**update_data)
+
+    updated = repository.update_item(db, item_id, data)
+    if not updated:
+        return None
+
+    enriched = enrich_navigation_list(db, [updated])
+    return enriched[0] if enriched else updated
 
 
 def delete_item(db: Session, item_id: int):

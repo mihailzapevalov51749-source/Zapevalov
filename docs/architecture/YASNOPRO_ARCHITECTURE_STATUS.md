@@ -1,5 +1,16 @@
 # YASNOPRO ARCHITECTURE STATUS
 
+## Статус документа
+
+```text
+ACTIVE — синхронизирован после Legacy Block Types Isolation COMPLETED (2026-05-30); ADR-001
+```
+
+Нормативные детали recovery: [YASNOPRO_DUAL_SOT_RECOVERY_PLAN.md](./YASNOPRO_DUAL_SOT_RECOVERY_PLAN.md).  
+Стратегическое решение по UT: [adr/ADR-001-universal-table-retirement.md](./adr/ADR-001-universal-table-retirement.md).
+
+---
+
 ## 1. Назначение документа
 
 Документ фиксирует текущее состояние архитектуры ЯсноПро относительно целевой AOBP-модели.
@@ -35,16 +46,64 @@ AOBP = AI-native Object-centric Business Platform.
 
 ## Текущий уровень
 
-Level 1 — Hybrid Architecture
+Level 1 — Hybrid Architecture (с активным object-centric контуром)
 
-## Причины
+## Причины (актуально)
 
-- Universal Table частично является Entity Layer;
-- platform boundaries смешаны;
-- Runtime и Designer не разделены;
-- Event Engine отсутствует;
-- Relation Engine отсутствует;
-- hidden synchronization присутствует.
+- **Целевой SoT** для новых данных: Runtime Entity — **внедрён** (Designer publish → Office).
+- **Рост dual SoT остановлен:** новые `universal_table` blocks / rows как primary path — **заблокированы** (Layer 2).
+- **Legacy UT storage** — **existing-only** (Layer 5); табличный UI на portal не запрещён.
+- Relation Engine, Event Engine, Permission Engine — **не реализованы**.
+- View session / representation — **нестабильны** в legacy UT контуре.
+- Runtime и Designer — **частично** разделены (Designer Shell + object routes; legacy portal смешан).
+
+### Обязательная формулировка
+
+```text
+Table is UI. universal_table_rows is legacy storage. Runtime Entity is the business source of truth.
+```
+
+---
+
+# 2.1. Dual-SoT Recovery — текущий снимок
+
+| Компонент | Статус | Примечание |
+|-----------|--------|------------|
+| **Object Type** (Designer) | **IMPLEMENTED / ACTIVE** | Publish → published catalog |
+| **Runtime Entity** | **IMPLEMENTED / ACTIVE** | `runtime_entities`, gateways read/write |
+| **Object Views** | **IMPLEMENTED / ACTIVE** | `ObjectViewHost`, Table View UI |
+| **Table View → Runtime Entity** | **VERIFIED** | Layer 3, audit-only PR #3 |
+| **Legacy UT storage** | **EXISTING-ONLY / ISOLATED** | Layer 5; markers + creation UI removed |
+| **New legacy creation** | **BLOCKED** | FE guards + `POST /blocks` 422 |
+| **Comments (object path)** | **DONE** | `entity_type=runtime_entity` |
+| **Notes (object path)** | **DONE** | `entity_type=runtime_entity` |
+| **Attachments (object path)** | **DONE** | file fields в `runtime_entities.values` |
+| **Comments/notes (UT path)** | **COMPAT** | legacy identity сохранена |
+| **universal_views** (legacy tables) | **ACTIVE (legacy)** | для existing `table_id`; **retirement active** |
+| **Universal Table migration** | **CANCELLED** | Данные UT неценны; см. ADR-001 |
+| **Universal Table retirement** | **ACTIVE** | Изоляция → удаление legacy-контура |
+
+| Recovery Layer | Статус |
+|----------------|--------|
+| L1 Entity Identity Contract | **DONE** |
+| L2 Stop New Legacy Creation | **DONE** |
+| L3 Table View over Runtime Entity | **VERIFIED** |
+| L4 Communication Identity | **DONE** |
+| L5 Legacy UT Storage Isolation | **DONE** |
+| L6 Documentation Alignment | **DONE** |
+
+---
+
+# 2.2. Universal Table Retirement — статус (ADR-001)
+
+| Область | Старый статус | Новый статус | Причина |
+|---|---|---|---|
+| UT → Runtime Entity migration | REQUIRED / BLOCKER | **CANCELLED** | Данные UT неценны |
+| Dual SoT | CRITICAL | **TEMPORARY LEGACY STATE** | UT будет удалена, не мигрирована |
+| Phase 9.6 | BLOCKED | **UNBLOCKED** | Миграция больше не требуется |
+| Runtime Entity | PARTIAL | **TARGET SOURCE OF TRUTH** | Единственный целевой контур |
+| Universal Table | LEGACY | **RETIREMENT ACTIVE** | Подлежит удалению |
+| Object Platform Independence | — | **IN PROGRESS** | runtimeReadGateway read **REMOVED**; runtimeLegacyWriteAdapter **REMOVED** (2026-05-30) |
 
 ---
 
@@ -55,7 +114,16 @@ Level 1 — Hybrid Architecture
 | PHASE 1 — Stabilization | IN PROGRESS |
 | PHASE 2 — View Session Stabilization | NOT STARTED |
 | PHASE 3 — View Engine Extraction | NOT STARTED |
-| PHASE 4 — Entity Layer | NOT STARTED |
+| PHASE 4 — Entity Layer | **PARTIAL** (Runtime Entity + Object Type в production; legacy rows coexist) |
+| **Dual-SoT Recovery L1–L5** | **DONE** (см. §2.1) |
+| **Phase 9.1 Legacy Freeze** | **ACTIVE** |
+| **Phase 9.3 Block isolation** | **DONE** (Layer 2) |
+| **Legacy Block Types Isolation** | **COMPLETED** (2026-05-30, [LEGACY_BLOCK_TYPES_ISOLATION.md](./YASNOPRO_LEGACY_BLOCK_TYPES_ISOLATION.md)) |
+| **Phase 9.5 Notifications → object card** | **DONE** (PR #8) |
+| **Phase 9.6 Adapter removal** | **UNBLOCKED** (legacy removal program; см. ADR-001) |
+| **Object Platform Independence** | **IN PROGRESS** — read gateway **DONE**; write adapter **DONE** (2026-05-30); entityCardShell pending |
+| **Legacy Isolation (Phase 2)** | **IN PROGRESS** — block types **COMPLETED**; placeholder **COMPLETED** (2026-05-30); nav bridges / PortalPageView separation pending |
+| **Legacy Removal Program** | **ACTIVE** (вместо data migration) |
 | PHASE 5 — Relation Engine | NOT STARTED |
 | PHASE 6 — Event Engine | NOT STARTED |
 | PHASE 7 — Runtime/Designer Split | NOT STARTED |
@@ -70,29 +138,49 @@ Level 1 — Hybrid Architecture
 ## ObjectType
 
 Статус:
-NOT IMPLEMENTED
+**IMPLEMENTED / ACTIVE** (Designer)
 
-Проблемы:
-- table schema = pseudo object model;
-- нет независимого ObjectType registry.
+Реализовано:
+- Object Type workspace, fields, views, publish;
+- published catalog для Runtime.
 
-Целевое состояние:
-- независимый ObjectType Layer.
+Остаточный долг:
+- legacy portal blocks не используют ObjectType model;
+- не все legacy tables имеют published Object Type.
 
 ---
 
-## Entity Layer
+## Entity Layer (Runtime Entity)
 
 Статус:
-PARTIAL / MIXED WITH TABLE
+**IMPLEMENTED / ACTIVE** (целевой path) · **DUAL READ** (legacy rows coexist)
 
-Проблемы:
-- rows используются как entities;
-- Entity ownership отсутствует;
-- table является source of truth.
+Реализовано:
+- `runtime_entities` / runtime query / write gateways;
+- Object Entity Card, Object Views, communication на `runtime_entity`.
 
-Целевое состояние:
-- независимый Entity Layer.
+Legacy (до удаления UT-контура):
+
+- `universal_table_rows` — **не** целевой SoT; disposable legacy storage.
+
+Целевое состояние (post-retirement):
+
+- единственный SoT для всех бизнес-данных — Runtime Entity;
+- Universal Table полностью удалена из платформы.
+
+---
+
+## Object Views (Table View)
+
+Статус:
+**IMPLEMENTED / ACTIVE**
+
+Реализовано:
+- `ObjectViewHost`, `shared/viewEngine`, runtime read/write gateways;
+- Table View — UI adapter, **не** legacy storage.
+
+Верификация:
+- [YASNOPRO_TABLE_VIEW_RUNTIME_ENTITY_VERIFICATION.md](./YASNOPRO_TABLE_VIEW_RUNTIME_ENTITY_VERIFICATION.md) — Layer 3 **VERIFIED**.
 
 ---
 
@@ -142,18 +230,35 @@ NOT IMPLEMENTED
 
 # 5. View Engine Status
 
-## Universal Table
+## Universal Table (разделить storage и UI)
+
+### Universal Table storage (`universal_table_rows`)
 
 Статус:
-PARTIAL VIEW ENGINE
+**LEGACY / EXISTING-ONLY / ISOLATED**
 
-Проблемы:
-- смешение View и Entity;
-- business logic inside table;
-- representation ownership нестабилен.
+- Новое создание blocks / primary row path — **заблокировано** (Layer 2).
+- Existing blocks: render, edit, `universal_views`, lazy `createTableForBlock` — **работают**.
+- Маркеры «режим поддержки» на canvas и в block editor (Layer 5).
 
-Целевое состояние:
-- pure Table View Engine.
+**Не является:** бизнес-сущностью, целевым SoT, Object Type.
+
+### Universal Table View (portal render)
+
+Статус:
+**ACTIVE** — UI над legacy storage для existing portal blocks (`UniversalTableView`).
+
+**Не путать** с Object Views / `viewEngine` (object-centric Table View).
+
+### Table View (object-centric)
+
+Статус:
+**IMPLEMENTED** — UI над **Runtime Entity** (не legacy).
+
+Целевое состояние для legacy storage:
+- retirement adapters (Phase 9.6 / Legacy Removal).
+
+> Superseded by ADR-001: data migration **не выполняется**; legacy removal вместо ETL.
 
 ---
 
@@ -411,13 +516,22 @@ NOT IMPLEMENTED
 
 # 10. Architecture Debt Status
 
-## Критические проблемы
+См. [YASNOPRO_ARCHITECTURE_DEBT.md](./YASNOPRO_ARCHITECTURE_DEBT.md).
 
-- Universal Table как pseudo Entity Layer;
-- split-brain state;
-- hidden synchronization;
-- giant controllers;
-- mixed responsibilities.
+## Снижено (Layers 1–5)
+
+- **Рост dual SoT** — остановлен (новые UT storage sources не создаются).
+- **Legacy creation path** — закрыт (UI + API).
+- **Communication identity split (object path)** — закрыт для comments / notes / attachments.
+
+## Критические проблемы (остаются)
+
+- **Universal Table retirement** — legacy-код и зависимости ещё связаны с Object Platform (см. AD-UT-RETIREMENT);
+- split-brain state в legacy UT session / representations (до удаления UT);
+- hidden synchronization (`window.__`, CustomEvent);
+- giant controllers (`useUniversalTableController`, `PortalPageView`);
+- Relation / Event / Permission engines отсутствуют;
+- legacy notification path → legacy `EntityCardModal` (runtime_entity path — **DONE**, Phase 9.5).
 
 ---
 
@@ -439,7 +553,7 @@ NOT IMPLEMENTED
 
 | Индикатор | Статус |
 |---|---|
-| Source of Truth определён | PARTIAL |
+| Source of Truth определён | **PARTIAL → TARGETING SINGLE SoT** (Runtime Entity; UT retirement active) |
 | Ownership определён | PARTIAL |
 | Runtime deterministic | NO |
 | Hidden sync отсутствует | NO |
@@ -450,11 +564,13 @@ NOT IMPLEMENTED
 
 # 13. Главные текущие приоритеты
 
-1. Stabilization
-2. View Session stabilization
-3. Representation cleanup
-4. Entity abstraction
-5. View Engine extraction
+1. **Object Platform Independence** — entityCardShell/objectEntities; read + write adapters **DONE** (2026-05-30)
+2. Phase **9.6** — legacy adapter removal (**IN PROGRESS** — read + write gateway adapters **DONE**; UT module pending)
+3. **Legacy Removal Program** — изоляция и удаление Universal Table
+4. View Session stabilization (legacy UT — до удаления модуля)
+5. Relation / Event engines (долгосрочно)
+
+> Ранее: «Планирование data migration `universal_table_rows` → `runtime_entities`» — **CANCELLED** (ADR-001).
 
 ---
 

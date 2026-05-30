@@ -17,6 +17,83 @@ export const documentsScrollArea = {
   paddingRight: 4,
 };
 
+export const workspaceSplit = {
+  flex: 1,
+  minHeight: 0,
+  display: "flex",
+  gap: 16,
+  overflow: "hidden",
+};
+
+export const workspaceListPane = {
+  flex: "0 0 380px",
+  minWidth: 280,
+  maxWidth: "42%",
+  minHeight: 0,
+  display: "flex",
+  flexDirection: "column",
+  overflow: "hidden",
+};
+
+export const workspaceListPaneFull = {
+  flex: 1,
+  minWidth: 0,
+  minHeight: 0,
+  display: "flex",
+  flexDirection: "column",
+  overflow: "hidden",
+};
+
+export const workspaceViewerPanel = {
+  flex: 1,
+  minWidth: 0,
+  minHeight: 0,
+  display: "flex",
+  flexDirection: "column",
+  border: "1px solid #e2e8f0",
+  borderRadius: 12,
+  background: "#ffffff",
+  overflow: "hidden",
+  boxShadow: "0 8px 24px rgba(15, 23, 42, 0.06)",
+};
+
+export const workspaceViewerHeader = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 12,
+  padding: "10px 14px",
+  borderBottom: "1px solid #e2e8f0",
+  background: "#f8fafc",
+  flexShrink: 0,
+};
+
+export const workspaceViewerTitle = {
+  fontSize: 14,
+  fontWeight: 700,
+  color: "#0f172a",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap",
+};
+
+export const workspaceViewerClose = {
+  border: "none",
+  background: "transparent",
+  color: "#64748b",
+  fontSize: 22,
+  lineHeight: 1,
+  cursor: "pointer",
+  padding: "0 4px",
+};
+
+export const workspaceViewerBody = {
+  flex: 1,
+  minHeight: 0,
+  overflow: "hidden",
+  background: "#ffffff",
+};
+
 export const header = {
   display: "flex",
   justifyContent: "flex-start",

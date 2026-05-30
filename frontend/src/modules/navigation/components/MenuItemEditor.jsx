@@ -44,6 +44,9 @@ const getColorTitle = (color) => {
 export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
   const fileInputRef = useRef(null);
 
+  const isObjectTypeMenuItem =
+    item?.type === "object_type" || Boolean(item?.object_type_id);
+
   const isProtectedTitle = isProtectedMenuTitle(item?.title);
 
   const isSystem =
@@ -53,10 +56,16 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
     String(item?.id || "").startsWith("system-") ||
     isProtectedTitle;
 
-  const [title, setTitle] = useState(item.title || "");
-  const [iconType, setIconType] = useState(item.icon_type || null);
-  const [iconFileUrl, setIconFileUrl] = useState(item.icon_file_url || null);
-  const [color, setColor] = useState(item.color || "");
+  const [title, setTitle] = useState(
+    item.display_title || item.title || "",
+  );
+  const [iconType, setIconType] = useState(
+    item.display_icon_type || item.icon_type || null,
+  );
+  const [iconFileUrl, setIconFileUrl] = useState(
+    item.display_icon_file_url || item.icon_file_url || null,
+  );
+  const [color, setColor] = useState(item.display_color || item.color || "");
   const [isBold, setIsBold] = useState(Boolean(item.is_bold));
   const [isItalic, setIsItalic] = useState(Boolean(item.is_italic));
   const [isVisible, setIsVisible] = useState(
@@ -88,6 +97,16 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
   };
 
   const handleSave = async () => {
+    if (isObjectTypeMenuItem) {
+      await onSave({
+        is_bold: isBold,
+        is_italic: isItalic,
+        is_visible: isVisible,
+        isSystem,
+      });
+      return;
+    }
+
     if (!title.trim()) return;
 
     await onSave({
@@ -122,15 +141,30 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Название"
+          readOnly={isObjectTypeMenuItem}
+          disabled={isObjectTypeMenuItem}
           style={{
             ...titleInputStyle,
             color: color || "#0f172a",
             fontWeight: isBold ? 700 : 500,
             fontStyle: isItalic ? "italic" : "normal",
+            ...(isObjectTypeMenuItem
+              ? { background: "#f8fafc", cursor: "default" }
+              : {}),
           }}
+          title={
+            isObjectTypeMenuItem
+              ? "Название берётся из Object Type"
+              : undefined
+          }
         />
 
-        <div style={colorPickerWrapperStyle}>
+        <div
+          style={{
+            ...colorPickerWrapperStyle,
+            ...(isObjectTypeMenuItem ? { pointerEvents: "none", opacity: 0.55 } : {}),
+          }}
+        >
           <button
             type="button"
             onClick={() => setIsColorPaletteOpen((prev) => !prev)}
@@ -208,19 +242,25 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
           К
         </button>
 
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          style={iconButtonTextStyle}
-          title={iconFileUrl ? "Заменить иконку" : "Добавить иконку"}
-        >
-          Иконка
-        </button>
+        {!isObjectTypeMenuItem ? (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            style={iconButtonTextStyle}
+            title={iconFileUrl ? "Заменить иконку" : "Добавить иконку"}
+          >
+            Иконка
+          </button>
+        ) : (
+          <span style={{ ...iconButtonTextStyle, cursor: "default", opacity: 0.55 }}>
+            Иконка из Object Type
+          </span>
+        )}
 
         <button
           type="button"
           onClick={handleRemoveIcon}
-          disabled={!iconFileUrl}
+          disabled={!iconFileUrl || isObjectTypeMenuItem}
           style={{
             ...smallIconButtonStyle,
             opacity: iconFileUrl ? 1 : 0.35,

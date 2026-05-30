@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel
 from typing import Optional, List
 
@@ -9,6 +11,7 @@ class NavigationItemCreate(BaseModel):
     title: str
     page_id: Optional[int] = None
     library_id: Optional[int] = None
+    object_type_id: Optional[UUID] = None
     url: Optional[str] = None
     route: Optional[str] = None
     path: Optional[str] = None
@@ -36,6 +39,7 @@ class NavigationItemUpdate(BaseModel):
     title: Optional[str] = None
     page_id: Optional[int] = None
     library_id: Optional[int] = None
+    object_type_id: Optional[UUID] = None
     url: Optional[str] = None
     route: Optional[str] = None
     path: Optional[str] = None
@@ -69,6 +73,7 @@ class NavigationItemResponse(BaseModel):
 
     page_id: Optional[int] = None
     library_id: Optional[int] = None
+    object_type_id: Optional[UUID] = None
     url: Optional[str] = None
     route: Optional[str] = None
     path: Optional[str] = None
@@ -87,6 +92,10 @@ class NavigationItemResponse(BaseModel):
     system_key: Optional[str] = None
     is_system: bool
     is_protected: bool
+    display_title: Optional[str] = None
+    display_icon_type: Optional[str] = None
+    display_icon_file_url: Optional[str] = None
+    display_color: Optional[str] = None
 
     class Config:
         from_attributes = True

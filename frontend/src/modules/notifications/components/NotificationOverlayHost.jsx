@@ -1,15 +1,26 @@
 import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 
-import EntityCardModal from "../../universalTable/components/entityCard/EntityCardModal";
 import FileViewerModal from "../../../shared/files/components/FileViewerModal";
-
-import { uploadFile } from "../../../shared/files/api/filesApi";
-import { updateLegacyTableRow } from "../../runtimeLegacyWriteAdapter";
+import { getPublishedCatalog } from "../../designer/api/runtimeCatalogApi";
+import ObjectEntityCardModal from "../../objectEntities/ObjectEntityCardModal";
+import useObjectEntityCard from "../../objectEntities/hooks/useObjectEntityCard";
+import {
+  buildObjectEntityNotificationContext,
+} from "../../objectEntities/services/buildObjectEntityNotificationContext";
 import { subscribePendingTarget } from "../navigation/notificationNavigationBus";
+import { normalizeNotificationContext } from "../navigation/notificationNavigationMapper";
+import {
+  isBlockedNotificationTarget,
+  isFileNotificationTarget,
+  isRuntimeEntityNotificationTarget,
+  resolveObjectOverlayContext,
+  resolvePortalIdFromPathname,
+} from "../navigation/notificationTargetRouting";
+import { Z_INDEX_TOKENS } from "../../../shared/layout/zIndexTokens";
 import { LAYOUT_MODES } from "../../../shared/layout/layoutModes";
 import { resolveWorkspaceLeftOffset } from "../../../shared/layout/shellGeometry";
 import { apiClient } from "../../../api/apiClient";
-
 import {
   getLibraryDocumentByFileKey,
   getFileUrl,
@@ -21,393 +32,286 @@ function normalizeId(value) {
   return String(value ?? "").trim();
 }
 
-function normalizeContext(detail = {}) {
-  const rawRef =
-    detail?.published_runtime_ref ||
-    detail?.publishedRuntimeRef ||
-    detail?.context?.published_runtime_ref ||
-    detail?.context?.publishedRuntimeRef ||
-    detail?.detail?.context?.published_runtime_ref ||
-    detail?.detail?.context?.publishedRuntimeRef ||
-    null;
-  return {
-    ...(detail?.detail?.context || {}),
-    ...(detail?.context || {}),
-
-    type: detail?.type || null,
-
-    source:
-      detail?.source ||
-      detail?.context?.source ||
-      detail?.detail?.context?.source ||
-      null,
-
-    entity_type:
-      detail?.entityType ||
-      detail?.entity_type ||
-      detail?.context?.entity_type ||
-      detail?.context?.entityType ||
-      null,
-
-    entity_id:
-      detail?.entityId ||
-      detail?.entity_id ||
-      detail?.context?.entity_id ||
-      detail?.context?.entityId ||
-      null,
-
-    table_id:
-      detail?.tableId ||
-      detail?.table_id ||
-      detail?.context?.table_id ||
-      detail?.context?.tableId ||
-      null,
-
-    row_id:
-      detail?.rowId ||
-      detail?.row_id ||
-      detail?.context?.row_id ||
-      detail?.context?.rowId ||
-      null,
-
-    file_id:
-      detail?.fileId ||
-      detail?.file_id ||
-      detail?.context?.file_id ||
-      detail?.context?.fileId ||
-      detail?.detail?.context?.file_id ||
-      detail?.detail?.context?.fileId ||
-      null,
-
-    file_url:
-      detail?.fileUrl ||
-      detail?.file_url ||
-      detail?.context?.file_url ||
-      detail?.context?.fileUrl ||
-      detail?.detail?.context?.file_url ||
-      detail?.detail?.context?.fileUrl ||
-      null,
-
-    file_name:
-      detail?.fileName ||
-      detail?.file_name ||
-      detail?.context?.file_name ||
-      detail?.context?.fileName ||
-      detail?.detail?.context?.file_name ||
-      detail?.detail?.context?.fileName ||
-      null,
-
-    comment_id:
-      detail?.commentId ||
-      detail?.comment_id ||
-      detail?.context?.comment_id ||
-      detail?.context?.commentId ||
-      null,
-
-    parent_comment_id:
-      detail?.parentCommentId ||
-      detail?.parent_comment_id ||
-      detail?.context?.parent_comment_id ||
-      detail?.context?.parentCommentId ||
-      null,
-
-    tab: detail?.tab || detail?.context?.tab || null,
-
-    highlight_id:
-      detail?.highlightId ||
-      detail?.highlight_id ||
-      detail?.context?.highlight_id ||
-      detail?.context?.highlightId ||
-      null,
-    published_runtime_ref:
-      rawRef && typeof rawRef === "object"
-        ? {
-            object_type_key:
-              rawRef?.object_type_key || rawRef?.objectTypeKey || null,
-            runtime_entity_id:
-              rawRef?.runtime_entity_id || rawRef?.runtimeEntityId || null,
-            view_key: rawRef?.view_key || rawRef?.viewKey || null,
-            catalog_version:
-              rawRef?.catalog_version || rawRef?.catalogVersion || null,
-            runtime_route:
-              rawRef?.runtime_route || rawRef?.runtimeRoute || null,
-          }
-        : null,
-  };
-}
-
-function getRowById(rows, rowId) {
-  return (
-    rows.find((row) => normalizeId(row?.id) === normalizeId(rowId)) ||
-    null
-  );
-}
-
 function buildUploadedFileUrl(fileId) {
   if (!fileId) return "";
-
   return `${API_BASE_URL}/files/documents/${fileId}`;
 }
 
-function isFileColumn(column) {
-  const type = String(column?.type || "").toLowerCase();
+const BLOCKED_OVERLAY_STYLE = {
+  position: "fixed",
+  right: 24,
+  top: 24,
+  zIndex: Z_INDEX_TOKENS.overlays.notificationBlocked,
+  width: 420,
+  maxWidth: "calc(100vw - 48px)",
+  padding: "14px 16px",
+  borderRadius: 12,
+  border: "1px solid #FECACA",
+  background: "#FEF2F2",
+  color: "#991B1B",
+  boxShadow: "0 12px 28px rgba(15,23,42,0.12)",
+  boxSizing: "border-box",
+};
 
-  return ["file", "files", "attachment", "attachments"].includes(type);
+function NotificationBlockedOverlay({ title, message, onClose }) {
+  return (
+    <div style={BLOCKED_OVERLAY_STYLE}>
+      <div style={{ fontWeight: 700, marginBottom: 6 }}>{title}</div>
+      <div style={{ fontSize: 13, lineHeight: 1.4 }}>{message}</div>
+      <button
+        type="button"
+        onClick={onClose}
+        style={{
+          marginTop: 10,
+          border: "1px solid #FCA5A5",
+          background: "#FFFFFF",
+          color: "#991B1B",
+          borderRadius: 8,
+          padding: "6px 10px",
+          cursor: "pointer",
+        }}
+      >
+        Закрыть
+      </button>
+    </div>
+  );
 }
 
-function getFileKey(file) {
+function getBlockedCopy(type) {
+  if (type === "access_denied") {
+    return {
+      title: "Нет доступа",
+      message: "У вас нет доступа к этому объекту или разделу.",
+    };
+  }
+
+  if (type === "runtime_context_missing") {
+    return {
+      title: "Контекст уведомления недоступен",
+      message:
+        "Объект не опубликован, удалён или ссылка из уведомления устарела.",
+    };
+  }
+
+  return {
+    title: "Не удалось открыть объект",
+    message: "Уведомление создано по устаревшему формату.",
+  };
+}
+
+function NotificationObjectEntityOverlay({
+  tenantId,
+  target,
+  overlayContext,
+  onClose,
+}) {
+  const [catalog, setCatalog] = useState(null);
+  const openedRef = useRef(false);
+
+  const entityCard = useObjectEntityCard({
+    tenantId,
+    objectTypeKey: overlayContext.objectTypeKey,
+    catalog,
+    listItems: [],
+    enabled: true,
+    mode: "edit",
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const catalogResponse = await getPublishedCatalog(tenantId);
+        if (!cancelled) {
+          setCatalog(catalogResponse);
+        }
+      } catch {
+        if (!cancelled) {
+          setCatalog(null);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tenantId]);
+
+  useEffect(() => {
+    if (openedRef.current || !entityCard.openCard) {
+      return;
+    }
+
+    openedRef.current = true;
+
+    void entityCard.openCard(overlayContext.runtimeEntityId, {
+      objectTypeKey: overlayContext.objectTypeKey,
+      initialContext: buildObjectEntityNotificationContext(target),
+    });
+  }, [entityCard.openCard, overlayContext, target]);
+
+  useEffect(() => {
+    if (!entityCard.openError || entityCard.isOpen) {
+      return;
+    }
+
+    const isAccessDenied = entityCard.openError.includes("доступ");
+    onClose({
+      type: isAccessDenied ? "access_denied" : "runtime_context_missing",
+      message: entityCard.openError,
+    });
+    entityCard.clearOpenError?.();
+  }, [entityCard.openCard, entityCard.openError, entityCard.isOpen, entityCard.clearOpenError, overlayContext, target, onClose]);
+
+  if (entityCard.openError && !entityCard.isOpen) {
+    return null;
+  }
+
   return (
-    file?.stored_file_name ||
-    file?.storedFileName ||
-    file?.id ||
-    file?.fileId ||
-    file?.file_id ||
-    file?.url ||
-    file?.fileUrl ||
-    file?.file_url ||
-    null
+    <ObjectEntityCardModal
+      open={entityCard.isOpen}
+      mode="edit"
+      cardModel={entityCard.cardModel}
+      formValues={entityCard.formValues}
+      fieldErrors={entityCard.fieldErrors}
+      onFieldChange={entityCard.setFieldValue}
+      onClose={() => {
+        entityCard.closeCard();
+        onClose(null);
+      }}
+      onSave={entityCard.save}
+      submitting={entityCard.submitting}
+      submitError={entityCard.submitError}
+      initialContext={entityCard.initialContext}
+      catalog={catalog}
+      onEntityUpdated={entityCard.refreshEntity}
+    />
   );
 }
 
 export default function NotificationOverlayHost() {
-  const [overlayState, setOverlayState] = useState(null);
+  const location = useLocation();
+  const tenantId = resolvePortalIdFromPathname(location.pathname);
 
+  const [overlayState, setOverlayState] = useState(null);
+  const [objectOverlaySession, setObjectOverlaySession] = useState(null);
   const overlayStateRef = useRef(null);
+  const objectOverlaySessionRef = useRef(null);
   const lastTargetKeyRef = useRef("");
+
+  objectOverlaySessionRef.current = objectOverlaySession;
 
   function updateOverlayState(nextState) {
     overlayStateRef.current = nextState;
     setOverlayState(nextState);
   }
 
-  function updateCardRowLocally(nextRow) {
-    const currentState = overlayStateRef.current;
-
-    if (!currentState || currentState.type !== "card") {
-      return;
-    }
-
-    const nextRows = Array.isArray(currentState.rows)
-      ? currentState.rows.map((row) =>
-          String(row?.id) === String(nextRow?.id) ? nextRow : row
-        )
-      : [];
-
-    updateOverlayState({
-      ...currentState,
-      row: nextRow,
-      rows: nextRows,
-    });
+  function clearOverlayState() {
+    updateOverlayState(null);
+    lastTargetKeyRef.current = "";
+    window.__YASNOPRO_PENDING_NOTIFICATION_TARGET__ = null;
   }
 
-  const handleUpdateRowField = async ({ rowId, columnId, value }) => {
-    const currentState = overlayStateRef.current;
+  function clearObjectOverlaySession(blockedState = null) {
+    setObjectOverlaySession(null);
+    lastTargetKeyRef.current = "";
 
-    if (!currentState || currentState.type !== "card") {
-      return;
-    }
-
-    if (!rowId || !columnId) return;
-
-    const targetRow =
-      getRowById(currentState.rows || [], rowId) || currentState.row;
-
-    if (!targetRow) return;
-
-    const nextValues = {
-      ...(targetRow.values || {}),
-      [String(columnId)]: value,
-    };
-
-    await updateLegacyTableRow(rowId, {
-      values: nextValues,
-    });
-
-    updateCardRowLocally({
-      ...targetRow,
-      values: nextValues,
-    });
-  };
-
-  const handleUploadAttachment = async (row) => {
-    const currentState = overlayStateRef.current;
-
-    if (!currentState || currentState.type !== "card") {
-      return;
-    }
-
-    if (!row?.id) return;
-
-    const columns = Array.isArray(currentState.columns)
-      ? currentState.columns
-      : [];
-
-    const fileColumn = columns.find(isFileColumn);
-
-    if (!fileColumn) {
-      console.error("Файловое поле не найдено");
-      return;
-    }
-
-    const input = document.createElement("input");
-
-    input.type = "file";
-    input.multiple = true;
-
-    input.onchange = async (event) => {
-      const selectedFiles = Array.from(event.target.files || []);
-
-      if (!selectedFiles.length) return;
-
-      try {
-        const uploadedFiles = [];
-
-        for (const file of selectedFiles) {
-          const uploaded = await uploadFile({ file });
-
-          if (uploaded) {
-            uploadedFiles.push(uploaded);
-          }
-        }
-
-        if (!uploadedFiles.length) return;
-
-        const columnId = String(fileColumn.id);
-
-        const currentFiles = Array.isArray(row?.values?.[columnId])
-          ? row.values[columnId]
-          : row?.values?.[columnId]
-            ? [row.values[columnId]]
-            : [];
-
-        const nextFiles = [...currentFiles, ...uploadedFiles];
-
-        const nextValues = {
-          ...(row.values || {}),
-          [columnId]: nextFiles,
-        };
-
-        await updateLegacyTableRow(row.id, {
-          values: nextValues,
-        });
-
-        updateCardRowLocally({
-          ...row,
-          values: nextValues,
-        });
-      } catch (error) {
-        console.error("Ошибка загрузки файла", error);
-      }
-    };
-
-    input.click();
-  };
-
-  const handleDeleteAttachment = async (row, fileToDelete) => {
-    const currentState = overlayStateRef.current;
-
-    if (!currentState || currentState.type !== "card") {
-      return;
-    }
-
-    if (!row?.id) return;
-
-    const columns = Array.isArray(currentState.columns)
-      ? currentState.columns
-      : [];
-
-    const fileColumn = columns.find(isFileColumn);
-
-    if (!fileColumn) {
-      console.error("Файловое поле не найдено");
-      return;
-    }
-
-    try {
-      const columnId = String(fileColumn.id);
-
-      const currentFiles = Array.isArray(row?.values?.[columnId])
-        ? row.values[columnId]
-        : row?.values?.[columnId]
-          ? [row.values[columnId]]
-          : [];
-
-      const deleteKey = getFileKey(fileToDelete);
-
-      const nextFiles = currentFiles.filter((file) => {
-        const currentKey = getFileKey(file);
-
-        return String(currentKey) !== String(deleteKey);
+    if (blockedState) {
+      const copy = getBlockedCopy(blockedState.type);
+      updateOverlayState({
+        type: blockedState.type,
+        title: copy.title,
+        message: blockedState.message || copy.message,
       });
-
-      const nextValues = {
-        ...(row.values || {}),
-        [columnId]: nextFiles,
-      };
-
-      await updateLegacyTableRow(row.id, {
-        values: nextValues,
-      });
-
-      updateCardRowLocally({
-        ...row,
-        values: nextValues,
-      });
-    } catch (error) {
-      console.error("Ошибка удаления файла", error);
+      return;
     }
-  };
+
+    window.__YASNOPRO_PENDING_NOTIFICATION_TARGET__ = null;
+  }
 
   useEffect(() => {
     async function handlePendingTarget(event) {
       const rawDetail = event.detail || {};
-      const context = normalizeContext(rawDetail);
+      const context = normalizeNotificationContext(rawDetail);
+      const mergedTarget = { ...rawDetail, ...context };
 
-      console.log("GLOBAL OVERLAY TARGET:", context);
-
-      const source = normalizeId(context.source);
-      const tableId = normalizeId(context.table_id);
-      const rowId = normalizeId(context.row_id);
-      const fileId = normalizeId(context.file_id);
-
-      const targetKey = [
-        source,
-        tableId,
-        rowId,
-        fileId,
-        context.comment_id,
-        context.highlight_id,
-      ]
-        .filter(Boolean)
-        .join(":");
-
-      if (
-        lastTargetKeyRef.current === targetKey &&
-        overlayStateRef.current
-      ) {
+      if (isBlockedNotificationTarget(rawDetail)) {
+        const copy = getBlockedCopy(normalizeId(rawDetail.type));
+        updateOverlayState({
+          type: rawDetail.type,
+          title: copy.title,
+          message: rawDetail.message || copy.message,
+        });
         return;
       }
 
-      if (source === "library_file") {
-        if (!fileId) return;
+      if (
+        isRuntimeEntityNotificationTarget(rawDetail) ||
+        isRuntimeEntityNotificationTarget(context) ||
+        isRuntimeEntityNotificationTarget(mergedTarget)
+      ) {
+        const overlayContext = resolveObjectOverlayContext(mergedTarget);
+
+        if (!overlayContext) {
+          updateOverlayState({
+            type: "runtime_context_missing",
+            ...getBlockedCopy("runtime_context_missing"),
+          });
+          return;
+        }
+
+        const targetKey = [
+          mergedTarget.type,
+          overlayContext.objectTypeKey,
+          overlayContext.runtimeEntityId,
+          context.comment_id,
+        ]
+          .filter(Boolean)
+          .join(":");
+
+        if (
+          lastTargetKeyRef.current === targetKey &&
+          objectOverlaySessionRef.current
+        ) {
+          return;
+        }
+
+        lastTargetKeyRef.current = targetKey;
+        setObjectOverlaySession({
+          target: mergedTarget,
+          overlayContext,
+        });
+        return;
+      }
+
+      const source = normalizeId(context.source || rawDetail.type);
+      const fileId = normalizeId(context.file_id || rawDetail.fileId);
+      const targetKey = [source, fileId, rawDetail.type, context.comment_id]
+        .filter(Boolean)
+        .join(":");
+
+      if (lastTargetKeyRef.current === targetKey && overlayStateRef.current) {
+        return;
+      }
+
+      if (source === "library_file" || rawDetail.type === "library_file") {
+        if (!fileId) {
+          updateOverlayState({
+            type: "runtime_context_missing",
+            ...getBlockedCopy("runtime_context_missing"),
+          });
+          return;
+        }
 
         try {
           const document = await getLibraryDocumentByFileKey(fileId);
           const fileUrl = getFileUrl(document);
-
-          console.log("LIBRARY FILE DOCUMENT LOADED:", {
-            fileId,
-            document,
-            fileUrl,
-          });
-
           const normalizedDocumentId = normalizeId(document?.id) || fileId;
 
           lastTargetKeyRef.current = targetKey;
-
           updateOverlayState({
             type: "library_file",
-
             file: {
               raw: document,
               fileId: normalizedDocumentId,
@@ -415,7 +319,6 @@ export default function NotificationOverlayHost() {
               fileName: document.title,
               fileType: document.document_type,
             },
-
             context: {
               ...context,
               entity_type: "file",
@@ -424,95 +327,71 @@ export default function NotificationOverlayHost() {
               tab: "comments",
               highlight_id:
                 context.highlight_id ||
-                (context.comment_id
-                  ? `comment-${context.comment_id}`
-                  : null),
+                (context.comment_id ? `comment-${context.comment_id}` : null),
             },
           });
         } catch (error) {
-          console.error("FILE LOAD ERROR:", error);
-        }
-
-        return;
-      }
-
-      if (source === "uploaded_file") {
-        if (!fileId) return;
-
-        try {
-          const uploadedFileUrl =
-            context.file_url || buildUploadedFileUrl(fileId);
-
-          console.log("UPLOADED FILE OPEN:", {
-            fileId,
-            uploadedFileUrl,
-          });
-
-          lastTargetKeyRef.current = targetKey;
-
+          console.error("LIBRARY FILE LOAD ERROR:", error);
           updateOverlayState({
-            type: "uploaded_file",
-
-            file: {
-              raw: {
-                id: fileId,
-              },
-
-              fileId,
-              fileUrl: uploadedFileUrl,
-              fileName: context.file_name || "Файл",
-              fileType: "",
-            },
-
-            context: {
-              ...context,
-              entity_type: "file",
-              entity_id: fileId,
-              file_id: fileId,
-              tab: "comments",
-              highlight_id:
-                context.highlight_id ||
-                (context.comment_id
-                  ? `comment-${context.comment_id}`
-                  : null),
-            },
+            type: "runtime_context_missing",
+            ...getBlockedCopy("runtime_context_missing"),
           });
-        } catch (error) {
-          console.error("UPLOADED FILE LOAD ERROR:", error);
         }
 
         return;
       }
 
-      if (context?.published_runtime_ref) {
+      if (
+        source === "uploaded_file" ||
+        rawDetail.type === "uploaded_file" ||
+        (isFileNotificationTarget(rawDetail) && fileId)
+      ) {
+        if (!fileId) {
+          updateOverlayState({
+            type: "notification_unavailable",
+            ...getBlockedCopy("notification_unavailable"),
+          });
+          return;
+        }
+
+        const uploadedFileUrl =
+          context.file_url || buildUploadedFileUrl(fileId);
+
+        if (!uploadedFileUrl) {
+          updateOverlayState({
+            type: "notification_unavailable",
+            ...getBlockedCopy("notification_unavailable"),
+          });
+          return;
+        }
+
         lastTargetKeyRef.current = targetKey;
         updateOverlayState({
-          type: "published_runtime_reference",
-          context,
-          message:
-            "Published Runtime Reference получен. Навигация должна выполняться через runtime route.",
+          type: "uploaded_file",
+          file: {
+            raw: { id: fileId },
+            fileId,
+            fileUrl: uploadedFileUrl,
+            fileName: context.file_name || "Файл",
+            fileType: "",
+          },
+          context: {
+            ...context,
+            entity_type: "file",
+            entity_id: fileId,
+            file_id: fileId,
+            tab: context.tab || "comments",
+            highlight_id:
+              context.highlight_id ||
+              (context.comment_id ? `comment-${context.comment_id}` : null),
+          },
         });
         return;
       }
 
-      if (!tableId || !rowId) return;
-
-      // P0 strict mode: no legacy Universal Table reads from notification overlay.
-      console.error(
-        "[NotificationOverlayHost] Notification context needs migration to published runtime reference.",
-        {
-          source,
-          tableId,
-          rowId,
-          context,
-        }
-      );
-
-      lastTargetKeyRef.current = targetKey;
       updateOverlayState({
-        type: "runtime_context_missing",
-        context,
-        message: "Контекст уведомления не содержит published runtime reference",
+        type: "notification_unavailable",
+        ...getBlockedCopy("notification_unavailable"),
       });
     }
 
@@ -523,157 +402,55 @@ export default function NotificationOverlayHost() {
     };
   }, []);
 
-  if (!overlayState) return null;
-
-  // TODO: Phase 2 — remove explicitWorkspaceLeftOffset after overlay geometry is aligned with shell geometry.
   const workspaceLeftOffset = resolveWorkspaceLeftOffset({
     mode: LAYOUT_MODES.RUNTIME,
     collapsed: localStorage.getItem("yasnopro-sidebar-collapsed") === "true",
     explicitWorkspaceLeftOffset: 240,
   });
 
-  if (
-    overlayState.type === "library_file" ||
-    overlayState.type === "uploaded_file"
-  ) {
-    return (
-      <FileViewerModal
-        isOpen
-        fileUrl={overlayState.file.fileUrl}
-        fileName={overlayState.file.fileName}
-        fileType={overlayState.file.fileType}
-        fileId={overlayState.file.fileId}
-        initialContext={overlayState.context}
-        userId="1"
-        userName="Михаил"
-        mode="view"
-        workspaceLeftOffset={workspaceLeftOffset}
-        workspaceTopOffset={0}
-        onClose={() => {
-          updateOverlayState(null);
-
-          lastTargetKeyRef.current = "";
-
-          window.__YASNOPRO_PENDING_NOTIFICATION_TARGET__ = null;
-        }}
-      />
-    );
-  }
-
-  if (overlayState.type === "runtime_context_missing") {
-    return (
-      <div
-        style={{
-          position: "fixed",
-          right: 24,
-          top: 24,
-          zIndex: 2000,
-          width: 420,
-          maxWidth: "calc(100vw - 48px)",
-          padding: "14px 16px",
-          borderRadius: 12,
-          border: "1px solid #FECACA",
-          background: "#FEF2F2",
-          color: "#991B1B",
-          boxShadow: "0 12px 28px rgba(15,23,42,0.12)",
-          boxSizing: "border-box",
-        }}
-      >
-        <div style={{ fontWeight: 700, marginBottom: 6 }}>
-          Контекст уведомления недоступен
-        </div>
-        <div style={{ fontSize: 13, lineHeight: 1.4 }}>
-          {overlayState.message ||
-            "Контекст уведомления не содержит published runtime reference"}
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            updateOverlayState(null);
-            lastTargetKeyRef.current = "";
-            window.__YASNOPRO_PENDING_NOTIFICATION_TARGET__ = null;
-          }}
-          style={{
-            marginTop: 10,
-            border: "1px solid #FCA5A5",
-            background: "#FFFFFF",
-            color: "#991B1B",
-            borderRadius: 8,
-            padding: "6px 10px",
-            cursor: "pointer",
-          }}
-        >
-          Закрыть
-        </button>
-      </div>
-    );
-  }
-
-  if (overlayState.type === "published_runtime_reference") {
-    return (
-      <div
-        style={{
-          position: "fixed",
-          right: 24,
-          top: 24,
-          zIndex: 2000,
-          width: 420,
-          maxWidth: "calc(100vw - 48px)",
-          padding: "14px 16px",
-          borderRadius: 12,
-          border: "1px solid #BFDBFE",
-          background: "#EFF6FF",
-          color: "#1E3A8A",
-          boxShadow: "0 12px 28px rgba(15,23,42,0.12)",
-          boxSizing: "border-box",
-        }}
-      >
-        <div style={{ fontWeight: 700, marginBottom: 6 }}>
-          Published Runtime Reference
-        </div>
-        <div style={{ fontSize: 13, lineHeight: 1.4 }}>
-          {overlayState.message}
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            updateOverlayState(null);
-            lastTargetKeyRef.current = "";
-            window.__YASNOPRO_PENDING_NOTIFICATION_TARGET__ = null;
-          }}
-          style={{
-            marginTop: 10,
-            border: "1px solid #93C5FD",
-            background: "#FFFFFF",
-            color: "#1E3A8A",
-            borderRadius: 8,
-            padding: "6px 10px",
-            cursor: "pointer",
-          }}
-        >
-          Закрыть
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <EntityCardModal
-      row={overlayState.row}
-      rows={overlayState.rows}
-      columns={overlayState.columns}
-      table={overlayState.table}
-      initialContext={overlayState.context}
-      onUploadAttachment={handleUploadAttachment}
-      onDeleteAttachment={handleDeleteAttachment}
-      onUpdateRowField={handleUpdateRowField}
-      onClose={() => {
-        updateOverlayState(null);
+    <>
+      {objectOverlaySession ? (
+        <NotificationObjectEntityOverlay
+          key={`${objectOverlaySession.overlayContext.objectTypeKey}:${objectOverlaySession.overlayContext.runtimeEntityId}`}
+          tenantId={tenantId}
+          target={objectOverlaySession.target}
+          overlayContext={objectOverlaySession.overlayContext}
+          onClose={clearObjectOverlaySession}
+        />
+      ) : null}
 
-        lastTargetKeyRef.current = "";
+      {!overlayState ? null : (
+        <>
+          {overlayState.type === "notification_unavailable" ||
+          overlayState.type === "runtime_context_missing" ||
+          overlayState.type === "access_denied" ? (
+            <NotificationBlockedOverlay
+              title={overlayState.title}
+              message={overlayState.message}
+              onClose={clearOverlayState}
+            />
+          ) : null}
 
-        window.__YASNOPRO_PENDING_NOTIFICATION_TARGET__ = null;
-      }}
-    />
+          {overlayState.type === "library_file" ||
+          overlayState.type === "uploaded_file" ? (
+            <FileViewerModal
+              isOpen
+              fileUrl={overlayState.file.fileUrl}
+              fileName={overlayState.file.fileName}
+              fileType={overlayState.file.fileType}
+              fileId={overlayState.file.fileId}
+              initialContext={overlayState.context}
+              userId="1"
+              userName="Михаил"
+              mode="view"
+              workspaceLeftOffset={workspaceLeftOffset}
+              workspaceTopOffset={0}
+              onClose={clearOverlayState}
+            />
+          ) : null}
+        </>
+      )}
+    </>
   );
 }

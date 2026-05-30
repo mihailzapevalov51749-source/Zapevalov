@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "check:runtime-boundaries": "node scripts/check-runtime-boundaries.js"
+    "check:runtime-boundaries": "node scripts/check-runtime-boundaries.js",
+    "test:unit": "node --test \"src/modules/notifications/navigation/*.test.js\" \"src/modules/runtimeReadGateway/gateway/*.test.js\" \"src/modules/objectViews/hooks/useObjectViewQuery.test.js\" \"src/shared/search/*.test.js\" \"src/modules/documentLibraries/**/*.test.js\""
   },
   "dependencies": {
     "@onlyoffice/document-editor-react": "^2.1.1",

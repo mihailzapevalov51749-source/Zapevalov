@@ -42,12 +42,14 @@
 
 ### Legacy Runtime
 
-- legacy Universal Table;
-- legacy runtime state;
-- legacy controllers;
-- legacy synchronization;
-- table-centric logic;
-- runtime instability.
+- **Universal Table storage** (`universal_table_rows`) — existing-only, не целевой SoT (Layer 5);
+- legacy portal blocks и `universal_views` для existing data;
+- legacy runtime state / `tableSessionStore`;
+- legacy controllers (`useUniversalTableController`);
+- legacy synchronization (CustomEvent, `window.__`);
+- runtime instability в legacy UT session.
+
+**Не legacy:** Table View / Object Views / `shared/viewEngine` — UI над **Runtime Entity** (Layer 3 verified).
 
 ---
 
@@ -490,6 +492,33 @@ Designer users моделируют платформу.
 
 # Development Governance
 
+## Universal Table Retirement Direction
+
+Universal Table больше не является частью целевой архитектуры.
+
+Ранее Universal Table рассматривалась как legacy-контур с возможной миграцией данных в Runtime Entity.
+
+> Superseded by [ADR-001 Universal Table Retirement](./adr/ADR-001-universal-table-retirement.md).
+
+**Новое решение:**
+
+- данные Universal Table не мигрируются;
+- Universal Table выводится из архитектуры;
+- Object Platform становится единственным направлением развития;
+- Runtime Entity становится целевым source of truth;
+- все новые функции создаются только вокруг Object Type / Runtime Entity / ObjectViewHost.
+
+**Приоритет ближайших фаз:**
+
+1. Object Platform Independence
+2. Legacy Isolation
+3. Legacy Removal
+4. Runtime Foundation
+5. Designer Foundation
+6. AI-native Layer
+
+---
+
 ## Главное правило
 
 ```text
@@ -556,6 +585,16 @@ AI-native Object-centric Business Platform
 с executable process architecture
 и composable runtime environment.
 ```
+
+---
+
+# Development Lifecycle
+
+Этапы разработки ЯсноПро следуют [YASNOPRO_DEVELOPMENT_LIFECYCLE.md](./YASNOPRO_DEVELOPMENT_LIFECYCLE.md).
+
+**Обязательно:** Phase 5 — Documentation & Status Synchronization перед статусом `Completed`.
+
+Промежуточный статус `TECHNICALLY COMPLETE` означает: код и тесты готовы, документация и dashboard ещё не синхронизированы.
 
 ---
 

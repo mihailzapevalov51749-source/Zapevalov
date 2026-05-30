@@ -157,7 +157,6 @@
   transform-origin: center center;
   flex-shrink: 0;
   position: relative;
-  z-index: 30;
 }
 
 .app-header-renderer__notification-wrap.is-disabled {

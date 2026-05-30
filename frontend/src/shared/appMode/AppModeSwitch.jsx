@@ -1,6 +1,10 @@
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { getDesignerPath, getLastRuntimePath } from "./appModeStorage";
+import {
+  getDesignerPath,
+  getLastDesignerPath,
+  getLastRuntimePath,
+} from "./appModeStorage";
 import ModeSwitcherText from "./ModeSwitcherText";
 
 import "./appModeSwitch.css";
@@ -27,7 +31,7 @@ export default function AppModeSwitch({
       return;
     }
 
-    navigate(getDesignerPath(tenantId));
+    navigate(getLastDesignerPath(tenantId) || getDesignerPath(tenantId));
   };
 
   return (

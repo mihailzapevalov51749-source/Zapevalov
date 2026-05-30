@@ -1,11 +1,37 @@
+import {
+  clearGlobalSaveHandler,
+  writeGlobalDirty,
+  writeGlobalSaveHandler,
+} from "./tableDirtySaveCompat";
+
 const sessions = new Map();
 
 export function resolveTableSessionId({ tableId, blockId, pageId } = {}) {
   return String(tableId || blockId || pageId || "default");
 }
 
+function normalizeTableSessionId(sessionRef) {
+  if (
+    sessionRef &&
+    typeof sessionRef === "object" &&
+    !Array.isArray(sessionRef)
+  ) {
+    return resolveTableSessionId(sessionRef);
+  }
+
+  if (
+    sessionRef === undefined ||
+    sessionRef === null ||
+    sessionRef === ""
+  ) {
+    return resolveTableSessionId();
+  }
+
+  return String(sessionRef);
+}
+
 export function getTableSession(sessionId) {
-  const key = String(sessionId || "default");
+  const key = normalizeTableSessionId(sessionId);
 
   if (!sessions.has(key)) {
     sessions.set(key, {
@@ -18,20 +44,31 @@ export function getTableSession(sessionId) {
 }
 
 export function markTableSessionDirty(sessionId, value = true) {
-  const session = getTableSession(sessionId);
+  const normalizedSessionId =
+    normalizeTableSessionId(sessionId);
+
+  const session =
+    getTableSession(normalizedSessionId);
   session.dirty = Boolean(value);
 
-  window.__UNIVERSAL_TABLE_DIRTY__ = session.dirty;
+  writeGlobalDirty(session.dirty);
 
   return session.dirty;
 }
 
 export function isTableSessionDirty(sessionId) {
-  return Boolean(getTableSession(sessionId).dirty);
+  return Boolean(
+    getTableSession(
+      normalizeTableSessionId(sessionId)
+    ).dirty
+  );
 }
 
 export function clearTableSessionDirty(sessionId) {
-  return markTableSessionDirty(sessionId, false);
+  return markTableSessionDirty(
+    normalizeTableSessionId(sessionId),
+    false
+  );
 }
 
 export function registerTableSessionSaveHandler(sessionId, handler) {
@@ -39,19 +76,17 @@ export function registerTableSessionSaveHandler(sessionId, handler) {
 
   session.saveHandler = typeof handler === "function" ? handler : null;
 
-  window.__UNIVERSAL_TABLE_SAVE_HANDLER__ = session.saveHandler;
+  writeGlobalSaveHandler(session.saveHandler);
 
   return () => unregisterTableSessionSaveHandler(sessionId);
 }
 
 export function unregisterTableSessionSaveHandler(sessionId) {
   const session = getTableSession(sessionId);
+  const previousHandler = session.saveHandler;
 
   session.saveHandler = null;
-
-  if (window.__UNIVERSAL_TABLE_SAVE_HANDLER__ === session.saveHandler) {
-    window.__UNIVERSAL_TABLE_SAVE_HANDLER__ = null;
-  }
+  clearGlobalSaveHandler(previousHandler);
 }
 
 export async function saveDirtyTableSession(sessionId) {
@@ -66,7 +101,7 @@ export async function saveDirtyTableSession(sessionId) {
   await session.saveHandler();
 
   session.dirty = false;
-  window.__UNIVERSAL_TABLE_DIRTY__ = false;
+  writeGlobalDirty(false);
 
   return true;
 }

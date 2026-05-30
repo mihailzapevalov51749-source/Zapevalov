@@ -29,6 +29,8 @@ class ObjectTypeCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=OBJECT_TYPE_NAME_MAX_LENGTH)
     description: str | None = None
     icon: str | None = Field(default=None, max_length=64)
+    icon_type: str | None = Field(default=None, max_length=50)
+    icon_file_url: str | None = Field(default=None, max_length=1000)
     color: str | None = Field(default=None, max_length=7)
     sort_order: int = 0
     status: ObjectTypeStatus = ObjectTypeStatus.ACTIVE
@@ -82,6 +84,8 @@ class ObjectTypeUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
     icon: str | None = None
+    icon_type: str | None = Field(default=None, max_length=50)
+    icon_file_url: str | None = Field(default=None, max_length=1000)
     color: str | None = None
     sort_order: int | None = None
     status: ObjectTypeStatus | None = None
@@ -140,6 +144,8 @@ class ObjectTypeRead(BaseModel):
     name: str
     description: str | None = None
     icon: str | None = None
+    icon_type: str | None = None
+    icon_file_url: str | None = None
     color: str | None = None
     sort_order: int
     status: str
@@ -165,6 +171,8 @@ class ObjectTypeListItem(BaseModel):
     name: str
     description: str | None = None
     icon: str | None = None
+    icon_type: str | None = None
+    icon_file_url: str | None = None
     color: str | None = None
     sort_order: int
     status: str

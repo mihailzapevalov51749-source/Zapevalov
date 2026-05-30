@@ -2,11 +2,14 @@ import {
   emitChatNavigateWithRetry,
   emitPendingTargetWithRetry,
   setPendingTargetCompat,
-} from "./notificationNavigationBus";
+} from "./notificationNavigationBus.js";
 import {
   buildPendingTarget,
   mapNotificationNavigateDetail,
-} from "./notificationNavigationMapper";
+} from "./notificationNavigationMapper.js";
+import {
+  resolveNotificationNavigationOutcome,
+} from "./notificationTargetRouting.js";
 
 const DEFAULT_CHAT_PAGE_ID = 35;
 
@@ -15,45 +18,60 @@ export function orchestrateNotificationNavigation({
   activePageId,
   onSelectPage,
   pushNavigationState,
-  navigateToRuntimeRoute,
   chatPageId = DEFAULT_CHAT_PAGE_ID,
+  user = null,
+  pathname = window.location.pathname,
 }) {
   const mapped = mapNotificationNavigateDetail(detail);
-  const { entityType, entityId, fileId, publishedRuntimeRef } = mapped;
-
-  if (!entityType && !fileId) {
-    console.warn("PORTAL NOTIFICATION ROUTER: entity not found", {
-      detail,
-    });
-    return null;
-  }
-
-  pushNavigationState({
-    pageId: activePageId,
-    pathname: window.location.pathname,
-  });
-
   const pendingTarget = buildPendingTarget({
     ...mapped,
     detail,
   });
 
-  setPendingTargetCompat(pendingTarget);
+  const outcome = resolveNotificationNavigationOutcome(pendingTarget, {
+    pathname,
+    user,
+  });
 
-  console.log("PORTAL NOTIFICATION ROUTER:", pendingTarget);
-
-  if (publishedRuntimeRef?.runtime_route) {
-    navigateToRuntimeRoute?.(publishedRuntimeRef.runtime_route);
-    emitPendingTargetWithRetry(pendingTarget, [300]);
-    return pendingTarget;
+  if (outcome.action === "blocked") {
+    setPendingTargetCompat(outcome.blockedTarget);
+    emitPendingTargetWithRetry(outcome.blockedTarget, [0, 150]);
+    return outcome.blockedTarget;
   }
 
-  if (entityType === "chat") {
+  if (outcome.action === "open_chat") {
+    pushNavigationState?.({
+      pageId: activePageId,
+      pathname,
+    });
+    setPendingTargetCompat(pendingTarget);
     onSelectPage?.(chatPageId);
     emitChatNavigateWithRetry(pendingTarget, [300, 800, 1500]);
     return pendingTarget;
   }
 
-  emitPendingTargetWithRetry(pendingTarget, [0, 300, 800, 1500]);
-  return pendingTarget;
+  if (outcome.action === "open_file_overlay") {
+    pushNavigationState?.({
+      pageId: activePageId,
+      pathname,
+    });
+    setPendingTargetCompat(pendingTarget);
+    emitPendingTargetWithRetry(pendingTarget, [0, 300, 800]);
+    return pendingTarget;
+  }
+
+  if (outcome.action === "open_object_overlay") {
+    setPendingTargetCompat(pendingTarget);
+    emitPendingTargetWithRetry(pendingTarget, [0, 300, 800]);
+    return pendingTarget;
+  }
+
+  const fallbackBlocked = {
+    type: "notification_unavailable",
+    message:
+      "Не удалось открыть объект. Уведомление создано по устаревшему формату.",
+  };
+  setPendingTargetCompat(fallbackBlocked);
+  emitPendingTargetWithRetry(fallbackBlocked, [0]);
+  return fallbackBlocked;
 }

@@ -22,6 +22,21 @@ from app.modules.notes.models import (  # noqa: F401
     Note,
 )
 
+# IMPORT QUALITY ISSUES MODELS
+from app.modules.quality_issues.models import (  # noqa: F401
+    QualityIssue,
+    QualityIssueStatusHistory,
+)
+
+# IMPORT PLATFORM DASHBOARD MODELS
+from app.modules.platform_dashboard.models import (  # noqa: F401
+    PlatformActivity,
+    PlatformComponent,
+    PlatformDashboardMeta,
+    PlatformImplementationStage,
+    PlatformTask,
+)
+
 # IMPORT CHATS MODELS
 from app.modules.chats import models as chats_models  # noqa: F401
 
@@ -62,6 +77,110 @@ def init_db():
     Base.metadata.create_all(bind=engine, tables=tables)
     ensure_navigation_scope_column()
     ensure_navigation_system_columns()
+    ensure_quality_issue_ai_fix_columns()
+    ensure_platform_dashboard_analysis_columns()
+    ensure_platform_dashboard_initialized()
+
+
+def ensure_platform_dashboard_analysis_columns():
+    inspector = inspect(engine)
+    column_specs = {
+        "platform_components": [
+            "cached_readiness INTEGER",
+            "dependencies TEXT",
+            "architecture_debt TEXT",
+        ],
+        "platform_implementation_stages": [
+            "cached_readiness INTEGER",
+            "current_tasks TEXT",
+            "next_tasks TEXT",
+            "blockers TEXT",
+        ],
+        "platform_activities": [
+            "meta_json TEXT",
+            "initiated_by_user_id INTEGER",
+            "initiated_by_name VARCHAR(255)",
+        ],
+    }
+
+    statements = []
+    for table_name, columns in column_specs.items():
+        try:
+            existing = {column["name"] for column in inspector.get_columns(table_name)}
+        except Exception:
+            continue
+        for definition in columns:
+            column_name = definition.split()[0]
+            if column_name not in existing:
+                statements.append(f"ALTER TABLE {table_name} ADD COLUMN {definition}")
+
+    if not statements:
+        return
+
+    with engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
+
+
+def ensure_platform_dashboard_initialized():
+    from app.db.session import SessionLocal
+    from app.modules.platform_dashboard.models import PlatformComponent
+    from app.modules.platform_dashboard_analyzer.refresh import refresh_platform_dashboard
+
+    db = SessionLocal()
+    try:
+        has_components = db.query(PlatformComponent.id).limit(1).count() > 0
+        needs_refresh = not has_components or (
+            db.query(PlatformComponent)
+            .filter(PlatformComponent.cached_readiness.is_(None))
+            .limit(1)
+            .count()
+            > 0
+        )
+        if needs_refresh:
+            refresh_platform_dashboard(db)
+    finally:
+        db.close()
+
+
+def ensure_quality_issue_ai_fix_columns():
+    inspector = inspect(engine)
+    try:
+        columns = {column["name"] for column in inspector.get_columns("quality_issues")}
+    except Exception:
+        return
+
+    datetime_type = "TIMESTAMP" if engine.dialect.name == "postgresql" else "DATETIME"
+
+    column_definitions = {
+        "current_behavior": "TEXT",
+        "expected_behavior": "TEXT",
+        "comment": "TEXT",
+        "ai_fix_user_plan": "TEXT",
+        "ai_fix_technical_plan": "TEXT",
+        "ai_fix_status": "VARCHAR(30) DEFAULT 'not_started'",
+        "ai_fix_created_at": datetime_type,
+        "ai_fix_approved_at": datetime_type,
+    }
+
+    statements = [
+        f"ALTER TABLE quality_issues ADD COLUMN {name} {definition}"
+        for name, definition in column_definitions.items()
+        if name not in columns
+    ]
+
+    if not statements:
+        return
+
+    with engine.begin() as connection:
+        for statement in statements:
+            connection.execute(text(statement))
+        connection.execute(
+            text(
+                "UPDATE quality_issues SET ai_fix_status = 'not_started' "
+                "WHERE ai_fix_status IS NULL"
+            )
+        )
 
 
 def ensure_navigation_scope_column():

@@ -9,9 +9,10 @@ const srcRoot = path.join(projectRoot, "src");
 
 const allowedImporterPrefixes = [
   path.join(srcRoot, "modules", "runtimeReadGateway", "providers") + path.sep,
-  path.join(srcRoot, "modules", "runtimeReadGateway", "mappers") + path.sep,
-  path.join(srcRoot, "modules", "runtimeLegacyWriteAdapter") + path.sep,
   path.join(srcRoot, "modules", "universalTable") + path.sep,
+  path.join(srcRoot, "portal") + path.sep,
+  path.join(srcRoot, "modules", "navigation") + path.sep,
+  path.join(srcRoot, "shared", "shell", "sidebar") + path.sep,
 ];
 
 const forbiddenTargets = new Set([

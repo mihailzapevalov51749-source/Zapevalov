@@ -16,6 +16,7 @@ export default function LibraryTable({
   setOpenedMenuId,
 
   selectedIds = [],
+  highlightedDocumentId = null,
   onToggleSelectDocument,
   onDropMoveDocuments,
 
@@ -333,6 +334,10 @@ export default function LibraryTable({
             isSelected={selectedIds.includes(
               documentItem.id
             )}
+            isHighlighted={
+              highlightedDocumentId != null &&
+              Number(highlightedDocumentId) === Number(documentItem.id)
+            }
             selectedIds={selectedIds}
             isMenuOpen={
               openedMenuId ===

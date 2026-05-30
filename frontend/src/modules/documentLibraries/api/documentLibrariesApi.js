@@ -14,6 +14,18 @@ export async function getLibraryDocuments(libraryId, parentId = null) {
   return await response.json();
 }
 
+export async function getLibraryDocumentById(documentId) {
+  const response = await fetch(
+    `${API_BASE_URL}/document-libraries/documents/${documentId}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Не удалось загрузить документ библиотеки");
+  }
+
+  return await response.json();
+}
+
 /* 🔍 ГЛОБАЛЬНЫЙ ПОИСК */
 export async function searchLibraryDocuments(libraryId, searchQuery) {
   const response = await fetch(

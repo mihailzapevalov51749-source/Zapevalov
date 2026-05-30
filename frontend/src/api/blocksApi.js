@@ -1,8 +1,12 @@
 import axios from "axios";
 
+import { assertLegacyStorageBlockCreationAllowed } from "../shared/legacy";
+
 const API = "http://127.0.0.1:8010";
 
 export async function createBlock(sectionId, blockType, position = null) {
+  assertLegacyStorageBlockCreationAllowed(blockType);
+
   const response = await axios.post(`${API}/blocks`, {
     section_id: sectionId,
     type: blockType,

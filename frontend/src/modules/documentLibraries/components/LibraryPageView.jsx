@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
 
 import {
   getFileUrl,
@@ -14,18 +15,20 @@ import LibraryToolbar from "./LibraryToolbar";
 import LibraryBreadcrumbs from "./LibraryBreadcrumbs";
 import LibraryTable from "./LibraryTable";
 import LibraryGrid from "./LibraryGrid";
+import DocumentWorkspaceView from "./DocumentWorkspaceView";
 import DeleteFolderModal from "./DeleteFolderModal";
 import MoveDocumentModal from "./MoveDocumentModal";
-
-import FileViewerModal from "../../../shared/files/components/FileViewerModal";
 
 import * as styles from "./libraryStyles";
 
 export default function LibraryPageView({
-  libraryId,
+  libraryId: libraryIdProp,
   title = "Библиотека документов",
   onContextPathChange,
 }) {
+  const routeParams = useParams();
+  const resolvedLibraryId = libraryIdProp ?? Number(routeParams.libraryId);
+  const enableDeepLinkUrl = Boolean(routeParams.libraryId);
   const fileInputRef = useRef(null);
 
   const [moveTarget, setMoveTarget] = useState(null);
@@ -33,7 +36,8 @@ export default function LibraryPageView({
   const [moveError, setMoveError] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
   const [viewMode, setViewMode] = useState("table");
-  const [previewFile, setPreviewFile] = useState(null);
+  const [embeddedWorkspaceDocumentId, setEmbeddedWorkspaceDocumentId] = useState(null);
+  const [embeddedDocumentTitle, setEmbeddedDocumentTitle] = useState("");
 
   const [sortConfig, setSortConfig] = useState({
     field: "title",
@@ -74,7 +78,16 @@ export default function LibraryPageView({
     handleDeleteFolder,
     closeDeleteModal,
     loadDocuments,
-  } = useLibraryDocuments({ libraryId });
+    highlightDocumentId,
+    pendingWorkspaceDocument,
+    clearPendingWorkspaceDocument,
+    openWorkspaceDocument,
+    closeWorkspaceDocumentUrl,
+    isDeepLinkReady,
+  } = useLibraryDocuments({
+    libraryId: resolvedLibraryId,
+    enableDeepLinkUrl,
+  });
 
   const currentParentId =
     folderPath.length > 0
@@ -91,8 +104,48 @@ export default function LibraryPageView({
     onContextPathChange({
       rootTitle: title,
       folderPath: Array.isArray(folderPath) ? folderPath : [],
+      documentTitle: embeddedWorkspaceDocumentId ? embeddedDocumentTitle : null,
     });
-  }, [title, folderPath, onContextPathChange]);
+  }, [
+    title,
+    folderPath,
+    embeddedWorkspaceDocumentId,
+    embeddedDocumentTitle,
+    onContextPathChange,
+  ]);
+
+  useEffect(() => {
+    if (!pendingWorkspaceDocument) {
+      return;
+    }
+
+    setEmbeddedWorkspaceDocumentId(pendingWorkspaceDocument.id);
+    clearPendingWorkspaceDocument();
+  }, [pendingWorkspaceDocument, clearPendingWorkspaceDocument]);
+
+  const handleOpenFolderNav = (document) => {
+    setEmbeddedWorkspaceDocumentId(null);
+    setEmbeddedDocumentTitle("");
+    handleOpenFolder(document);
+  };
+
+  const handleGoRootNav = () => {
+    setEmbeddedWorkspaceDocumentId(null);
+    setEmbeddedDocumentTitle("");
+    handleGoRoot();
+  };
+
+  const handleGoBackNav = () => {
+    setEmbeddedWorkspaceDocumentId(null);
+    setEmbeddedDocumentTitle("");
+    handleGoBack();
+  };
+
+  const handleGoToBreadcrumbNav = (index) => {
+    setEmbeddedWorkspaceDocumentId(null);
+    setEmbeddedDocumentTitle("");
+    handleGoToBreadcrumb(index);
+  };
 
   useEffect(() => {
     const handleGoRootEvent = (event) => {
@@ -100,11 +153,13 @@ export default function LibraryPageView({
       const targetLibraryId = Number(detail.libraryId);
       if (
         Number.isFinite(targetLibraryId) &&
-        Number(libraryId) !== targetLibraryId
+        Number(resolvedLibraryId) !== targetLibraryId
       ) {
         return;
       }
-      handleGoRoot();
+      setEmbeddedWorkspaceDocumentId(null);
+      setEmbeddedDocumentTitle("");
+      handleGoRootNav();
     };
 
     const handleGoFolder = (event) => {
@@ -114,7 +169,7 @@ export default function LibraryPageView({
 
       if (
         Number.isFinite(targetLibraryId) &&
-        Number(libraryId) !== targetLibraryId
+        Number(resolvedLibraryId) !== targetLibraryId
       ) {
         return;
       }
@@ -126,7 +181,7 @@ export default function LibraryPageView({
       if (targetIndex === -1) {
         return;
       }
-      handleGoToBreadcrumb(targetIndex);
+      handleGoToBreadcrumbNav(targetIndex);
     };
 
     window.addEventListener("yasnopro:library:go-root", handleGoRootEvent);
@@ -135,7 +190,7 @@ export default function LibraryPageView({
       window.removeEventListener("yasnopro:library:go-root", handleGoRootEvent);
       window.removeEventListener("yasnopro:library:go-folder", handleGoFolder);
     };
-  }, [libraryId, folderPath, handleGoToBreadcrumb, handleGoRoot]);
+  }, [resolvedLibraryId, folderPath, handleGoToBreadcrumbNav, handleGoRootNav]);
 
   const start = pagination.offset + 1;
 
@@ -238,19 +293,27 @@ export default function LibraryPageView({
     setSelectedIds([]);
   };
 
-  const handlePreviewFile = (file, initialContext = null) => {
-    if (!file?.fileUrl) return;
-
+  const handlePreviewFile = (file) => {
     setOpenedMenuId(null);
 
-    setPreviewFile({
-      ...file,
-      initialContext,
-    });
+    const documentRecord = file?.raw;
+    if (documentRecord) {
+      const payload = openWorkspaceDocument(documentRecord);
+      if (payload && !enableDeepLinkUrl) {
+        setEmbeddedWorkspaceDocumentId(documentRecord.id);
+      }
+      return;
+    }
   };
 
-  const handleClosePreviewFile = () => {
-    setPreviewFile(null);
+  const handleCloseEmbeddedWorkspaceDocument = () => {
+    setEmbeddedWorkspaceDocumentId(null);
+    setEmbeddedDocumentTitle("");
+    closeWorkspaceDocumentUrl();
+  };
+
+  const handleEmbeddedDocumentLoaded = ({ documentTitle }) => {
+    setEmbeddedDocumentTitle(String(documentTitle || "").trim());
   };
 
   const handleOpenMoveModal = (document) => {
@@ -330,6 +393,18 @@ export default function LibraryPageView({
     await handleDropMoveDocuments(documentsToMove, folder.id);
   };
 
+  if (!enableDeepLinkUrl && embeddedWorkspaceDocumentId) {
+    return (
+      <DocumentWorkspaceView
+        documentId={embeddedWorkspaceDocumentId}
+        libraryId={resolvedLibraryId}
+        folderId={currentParentId}
+        onDocumentLoaded={handleEmbeddedDocumentLoaded}
+        onClose={handleCloseEmbeddedWorkspaceDocument}
+      />
+    );
+  }
+
   return (
     <div style={styles.page}>
       <div style={styles.header}>
@@ -338,7 +413,7 @@ export default function LibraryPageView({
             {folderPath.length > 0 && (
               <button
                 type="button"
-                onClick={handleGoBack}
+                onClick={handleGoBackNav}
                 style={styles.headerBackButton}
                 title="Назад"
               >
@@ -352,8 +427,8 @@ export default function LibraryPageView({
           <LibraryBreadcrumbs
             title={title}
             folderPath={folderPath}
-            onGoRoot={handleGoRoot}
-            onGoToBreadcrumb={handleGoToBreadcrumb}
+            onGoRoot={handleGoRootNav}
+            onGoToBreadcrumb={handleGoToBreadcrumbNav}
             onDropToRoot={handleDropToRoot}
             onDropToBreadcrumb={handleDropToBreadcrumb}
             styles={styles}
@@ -387,97 +462,90 @@ export default function LibraryPageView({
       {error && <div style={styles.errorBox}>{error}</div>}
       {moveError && <div style={styles.errorBox}>{moveError}</div>}
 
-      <div style={styles.documentsScrollArea}>
-        {viewMode === "table" && (
-          <LibraryTable
-            documents={sortedDocuments}
-            isLoading={isLoading}
-            searchQuery={searchQuery}
-            openedMenuId={openedMenuId}
-            setOpenedMenuId={setOpenedMenuId}
-            selectedIds={selectedIds}
-            onToggleSelectDocument={toggleSelectDocument}
-            onOpenFolder={handleOpenFolder}
-            onRenameDocument={handleRenameDocument}
-            onDeleteDocument={requestDeleteDocument}
-            onMoveDocument={handleOpenMoveModal}
-            onPreviewFile={handlePreviewFile}
-            onDropMoveDocument={handleDropMoveDocument}
-            onDropMoveDocuments={handleDropMoveDocuments}
-            getFileUrl={getFileUrl}
-            getTypeLabel={getTypeLabel}
-            getIcon={getIcon}
-            formatDocumentDate={formatDocumentDate}
-            styles={styles}
-          />
-        )}
+      <div style={styles.workspaceSplit}>
+        <div style={styles.workspaceListPaneFull}>
+          <div style={styles.documentsScrollArea}>
+            {viewMode === "table" && (
+              <LibraryTable
+                documents={sortedDocuments}
+                isLoading={isLoading}
+                searchQuery={searchQuery}
+                openedMenuId={openedMenuId}
+                setOpenedMenuId={setOpenedMenuId}
+                selectedIds={selectedIds}
+                highlightedDocumentId={highlightDocumentId}
+                onToggleSelectDocument={toggleSelectDocument}
+                onOpenFolder={handleOpenFolderNav}
+                onRenameDocument={handleRenameDocument}
+                onDeleteDocument={requestDeleteDocument}
+                onMoveDocument={handleOpenMoveModal}
+                onPreviewFile={handlePreviewFile}
+                onDropMoveDocument={handleDropMoveDocument}
+                onDropMoveDocuments={handleDropMoveDocuments}
+                getFileUrl={getFileUrl}
+                getTypeLabel={getTypeLabel}
+                getIcon={getIcon}
+                formatDocumentDate={formatDocumentDate}
+                styles={styles}
+              />
+            )}
 
-        {viewMode === "grid" && (
-          <LibraryGrid
-            documents={sortedDocuments}
-            isLoading={isLoading}
-            searchQuery={searchQuery}
-            openedMenuId={openedMenuId}
-            setOpenedMenuId={setOpenedMenuId}
-            selectedIds={selectedIds}
-            onToggleSelectDocument={toggleSelectDocument}
-            onOpenFolder={handleOpenFolder}
-            onRenameDocument={handleRenameDocument}
-            onDeleteDocument={requestDeleteDocument}
-            onMoveDocument={handleOpenMoveModal}
-            onPreviewFile={handlePreviewFile}
-            onDropMoveDocument={handleDropMoveDocument}
-            onDropMoveDocuments={handleDropMoveDocuments}
-            getFileUrl={getFileUrl}
-            getTypeLabel={getTypeLabel}
-            getIcon={getIcon}
-            formatDocumentDate={formatDocumentDate}
-            styles={styles}
-          />
-        )}
+            {viewMode === "grid" && (
+              <LibraryGrid
+                documents={sortedDocuments}
+                isLoading={isLoading}
+                searchQuery={searchQuery}
+                openedMenuId={openedMenuId}
+                setOpenedMenuId={setOpenedMenuId}
+                selectedIds={selectedIds}
+                highlightedDocumentId={highlightDocumentId}
+                onToggleSelectDocument={toggleSelectDocument}
+                onOpenFolder={handleOpenFolderNav}
+                onRenameDocument={handleRenameDocument}
+                onDeleteDocument={requestDeleteDocument}
+                onMoveDocument={handleOpenMoveModal}
+                onPreviewFile={handlePreviewFile}
+                onDropMoveDocument={handleDropMoveDocument}
+                onDropMoveDocuments={handleDropMoveDocuments}
+                getFileUrl={getFileUrl}
+                getTypeLabel={getTypeLabel}
+                getIcon={getIcon}
+                formatDocumentDate={formatDocumentDate}
+                styles={styles}
+              />
+            )}
+          </div>
+
+          <div style={styles.pagination}>
+            <span>
+              {pagination.total === 0 ? "0" : `${start}–${end}`} из{" "}
+              {pagination.total}
+            </span>
+
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              onClick={() => goToPage(currentPage - 1)}
+              style={styles.pageButton}
+            >
+              ‹
+            </button>
+
+            <span style={styles.pageInfo}>
+              {currentPage} / {totalPages || 1}
+            </span>
+
+            <button
+              type="button"
+              disabled={currentPage === totalPages || totalPages === 0}
+              onClick={() => goToPage(currentPage + 1)}
+              style={styles.pageButton}
+            >
+              ›
+            </button>
+          </div>
+        </div>
       </div>
-
-      <div style={styles.pagination}>
-        <span>
-          {pagination.total === 0 ? "0" : `${start}–${end}`} из{" "}
-          {pagination.total}
-        </span>
-
-        <button
-          type="button"
-          disabled={currentPage === 1}
-          onClick={() => goToPage(currentPage - 1)}
-          style={styles.pageButton}
-        >
-          ‹
-        </button>
-
-        <span style={styles.pageInfo}>
-          {currentPage} / {totalPages || 1}
-        </span>
-
-        <button
-          type="button"
-          disabled={currentPage === totalPages || totalPages === 0}
-          onClick={() => goToPage(currentPage + 1)}
-          style={styles.pageButton}
-        >
-          ›
-        </button>
-      </div>
-
-      <FileViewerModal
-        isOpen={Boolean(previewFile)}
-        fileUrl={previewFile?.fileUrl}
-        fileName={previewFile?.fileName}
-        fileType={previewFile?.fileType}
-        fileId={previewFile?.raw?.id}
-        initialContext={previewFile?.initialContext}
-        userId="1"
-        userName="Михаил"
-        mode="view"
-        onClose={handleClosePreviewFile}
-      />
 
       <DeleteFolderModal
         folder={deleteTarget}

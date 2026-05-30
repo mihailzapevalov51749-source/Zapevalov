@@ -5,6 +5,8 @@ import { getMe } from "../../../../api/authApi";
 import CreateMenuItemModal from "../../../../modules/navigation/components/CreateMenuItemModal";
 import ProfileSidePanel from "../../../../profile/components/ProfileSidePanel";
 import useNotifications from "../../../../modules/notifications/hooks/useNotifications";
+import useNotificationNavigationOrchestrator from "../../../../modules/notifications/hooks/useNotificationNavigationOrchestrator";
+import NotificationOverlayHost from "../../../../modules/notifications/components/NotificationOverlayHost";
 import { useDesignerShell } from "../../context/DesignerShellContext";
 import { TRANSITION_TOKENS } from "../../../../shared/layout/transitionTokens";
 import { createDesignerHeaderContract } from "../../../../shared/shell/header";
@@ -20,6 +22,25 @@ import { emitDesignerShadowSnapshot } from "../../../../shared/shell/shadow/desi
 import { getLastRuntimePath } from "../../../../shared/appMode/appModeStorage";
 import useNavigationTree from "../../../../modules/navigation/hooks/useNavigationTree";
 import * as designerApi from "../../api/designerApi";
+import { mergeDesignerSidebarNavigation } from "../../utils/mergeDesignerSidebarNavigation";
+import { DESIGNER_OBJECT_VIEW_HEADER_EVENT } from "../../utils/designerObjectViewHeaderBridge";
+import {
+  buildDesignerBreadcrumbs,
+  resolveDesignerActiveSectionKey,
+  resolveObjectTypeNameFromNavigation,
+} from "../../../../shared/shell/designer/designerNavigationResolver";
+import {
+  publishObjectShortcutRouteOwner,
+  publishObjectsSectionRouteOwner,
+  publishRootSectionRouteOwner,
+  resolveDesignerRouteOwner,
+  setDesignerRouteOwner,
+} from "../../../../shared/shell/designer/designerRouteOwnership";
+import SearchResultsOverlay from "../../../../shared/search/SearchResultsOverlay";
+import { useHeaderSearchContext } from "../../../../shared/search/useHeaderSearchContext";
+import { useHeaderSearchController } from "../../../../shared/search/useHeaderSearchController";
+import { canUseHeaderSearch } from "../../../../shared/search/searchRoleUtils";
+import { SEARCH_MODES } from "../../../../shared/search/searchScopes";
 
 const DEFAULT_AVATAR_SETTINGS = {
   x: 0,
@@ -59,40 +80,6 @@ function normalizeAvatarSettings(settings) {
   }
 
   return DEFAULT_AVATAR_SETTINGS;
-}
-
-function resolveDesignerActiveKey(pathname) {
-  if (pathname.includes("/administration")) {
-    return "administration";
-  }
-  if (pathname.includes("/navigation")) {
-    return "navigation";
-  }
-  if (pathname.includes("/processes")) {
-    return "processes";
-  }
-  if (pathname.includes("/workspaces")) {
-    return "workspaces";
-  }
-  if (pathname.includes("/publishing")) {
-    return "publishing";
-  }
-  if (pathname.includes("/pages")) {
-    return "pages";
-  }
-  if (pathname.includes("/relations")) {
-    return "relations";
-  }
-
-  if (pathname.includes("/views")) {
-    return "views";
-  }
-
-  if (pathname.includes("/object-types")) {
-    return "objects";
-  }
-
-  return "objects";
 }
 
 function resolveRoleName(user) {
@@ -169,7 +156,7 @@ function buildDesignerMetaNavigation(tenantId, isSuperadmin) {
     },
     {
       id: "system-designer-views",
-      title: "Представления",
+      title: "Вкладки",
       type: "system_page",
       route: `${base}/views`,
       path: `${base}/views`,
@@ -245,121 +232,24 @@ function buildDesignerMetaNavigation(tenantId, isSuperadmin) {
       is_protected: true,
       sort_order: 80,
     },
+    {
+      id: "system-designer-platform",
+      title: "Платформа",
+      type: "system_page",
+      route: `${base}/platform/architecture`,
+      path: `${base}/platform/architecture`,
+      system_key: "platform",
+      section: "platform",
+      menu_scope: "designer",
+      scope: "designer",
+      mode: "designer",
+      is_system: true,
+      is_protected: true,
+      sort_order: 85,
+    },
   ];
 
   return appendDesignerAdministrationItem(items, tenantId, isSuperadmin);
-}
-
-function resolveDesignerTabLabel(tabKey) {
-  const normalized = String(tabKey || "").toLowerCase();
-  if (normalized === "general") return "Общие";
-  if (normalized === "fields") return "Поля";
-  if (normalized === "relations") return "Связи";
-  if (normalized === "views") return "Представления";
-  if (normalized === "runtime-preview") return "Runtime Preview";
-  return normalized ? normalized : "Раздел";
-}
-
-function resolveDesignerPageLabel(pathname, navigationItems) {
-  const pageId = Number(pathname.match(/\/page\/(\d+)/)?.[1]);
-  if (!Number.isFinite(pageId)) return "Страница";
-  if (!Array.isArray(navigationItems)) return `Страница ${pageId}`;
-
-  const match = navigationItems.find((item) => {
-    const itemPageId = Number(item?.pageId ?? item?.page_id ?? item?.meta?.page_id);
-    return Number.isFinite(itemPageId) && itemPageId === pageId;
-  });
-  return String(match?.title || match?.label || "").trim() || `Страница ${pageId}`;
-}
-
-function buildDesignerPathChain(pathname, tenantId, objectTypeName, navigationItems) {
-  const normalizedTenantId = Number(tenantId) || 1;
-  const base = `/designer/tenant/${normalizedTenantId}`;
-
-  if (pathname.includes("/object-types")) {
-    const chain = [
-      { id: "designer-objects", label: "Объекты", path: `${base}/object-types` },
-    ];
-    const objectMatch = pathname.match(/\/object-types\/([^/?]+)/);
-    if (objectMatch) {
-      const objectTypeId = objectMatch[1];
-      const normalizedObjectName = String(objectTypeName || "").trim();
-      chain.push({
-        id: "designer-object",
-        label: normalizedObjectName || objectTypeId,
-        path: `${base}/object-types/${objectTypeId}/general`,
-      });
-      const tabMatch = pathname.match(/\/object-types\/[^/]+\/([^/?]+)/);
-      if (tabMatch) {
-        const tabKey = String(tabMatch[1] || "");
-        chain.push({
-          id: "designer-tab",
-          label: resolveDesignerTabLabel(tabKey),
-        });
-      }
-    }
-    return chain;
-  }
-
-  if (pathname.includes("/page/")) {
-    const pageLabel = resolveDesignerPageLabel(pathname, navigationItems);
-    return [{ id: "designer-page", label: pageLabel, active: true }];
-  }
-
-  if (pathname.includes("/relations")) {
-    return [{ id: "designer-relations", label: "Связи", path: `${base}/relations`, active: true }];
-  }
-  if (pathname.includes("/views")) {
-    return [
-      { id: "designer-views", label: "Представления", path: `${base}/views`, active: true },
-    ];
-  }
-  if (pathname.includes("/pages")) {
-    return [{ id: "designer-pages", label: "Страницы", active: true }];
-  }
-  if (pathname.includes("/navigation")) {
-    return [{ id: "designer-navigation", label: "Навигация", active: true }];
-  }
-  if (pathname.includes("/processes")) {
-    return [{ id: "designer-processes", label: "Бизнес-процессы", active: true }];
-  }
-  if (pathname.includes("/workspaces")) {
-    return [{ id: "designer-workspaces", label: "Рабочие пространства", active: true }];
-  }
-  if (pathname.includes("/publishing")) {
-    return [{ id: "designer-publishing", label: "Публикация", active: true }];
-  }
-  if (pathname.includes("/administration")) {
-    const normalized = pathname.replace(/\/+$/, "");
-    const root = `${base}/administration`;
-    if (normalized === root) {
-      return [{ id: "designer-administration", label: "Администрирование", active: true }];
-    }
-    const section = normalized.slice(root.length + 1).split("/")[0];
-    const sectionLabelMap = {
-      users: "Пользователи системы",
-      roles: "Роли и доступы",
-      "org-structure": "Оргструктура",
-      departments: "Подразделения",
-      modules: "Модули",
-      integrations: "Интеграции",
-      "audit-log": "Журнал событий",
-      audit: "Журнал событий",
-      "ai-assistants": "AI-ассистенты",
-      "system-settings": "Настройка системы",
-      system: "Настройка системы",
-    };
-    return [
-      { id: "designer-administration", label: "Администрирование", path: root },
-      {
-        id: "designer-administration-section",
-        label: sectionLabelMap[section] || "Раздел",
-        active: true,
-      },
-    ];
-  }
-
-  return [{ id: "designer-root", label: "Студия", path: base, active: true }];
 }
 
 export default function DesignerShell() {
@@ -376,6 +266,7 @@ export default function DesignerShell() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isPageEditMode, setIsPageEditMode] = useState(false);
   const [activeObjectTypeName, setActiveObjectTypeName] = useState("");
+  const [activeObjectAdapterLabel, setActiveObjectAdapterLabel] = useState("");
   const [systemSettingsVersion, setSystemSettingsVersion] = useState(0);
   const { notifications, unreadCount, markAsRead } = useNotifications();
   const isSuperadmin = isSuperadminUser(headerUser ?? user);
@@ -392,6 +283,21 @@ export default function DesignerShell() {
     resolvedPortalId,
     navigationQuery
   );
+
+  const headerSearchContextInput = useMemo(
+    () => ({
+      pathname: location.pathname,
+      routeParams: { tenantId: resolvedPortalId },
+    }),
+    [location.pathname, resolvedPortalId],
+  );
+  const searchContext = useHeaderSearchContext(headerSearchContextInput);
+  const canSearch = canUseHeaderSearch(SEARCH_MODES.DESIGNER, headerUser ?? user);
+  const headerSearch = useHeaderSearchController({
+    searchContext,
+    enabled: canSearch,
+    user: headerUser ?? user,
+  });
 
   const handleMenuScaleChange = useCallback((value) => {
     const rounded = Math.max(0.8, Math.min(1.4, Number(value ?? 1)));
@@ -417,19 +323,61 @@ export default function DesignerShell() {
     },
   });
 
-  const designerActiveKey = resolveDesignerActiveKey(location.pathname);
+  const designerActiveKey = resolveDesignerActiveSectionKey(
+    location.pathname,
+    resolvedPortalId,
+  );
   const activeDesignerObjectId =
     location.pathname.match(/object-types\/([^/]+)/)?.[1] ?? null;
   const activeDesignerPageId = Number(
     location.pathname.match(/\/designer\/tenant\/\d+\/page\/(\d+)/)?.[1]
   );
 
+  useNotificationNavigationOrchestrator({
+    activePageId: Number.isFinite(activeDesignerPageId)
+      ? activeDesignerPageId
+      : null,
+    onSelectPage: (pageId) => {
+      if (pageId == null) {
+        return;
+      }
+      navigate(`/designer/tenant/${resolvedPortalId}/page/${pageId}`);
+    },
+    user: headerUser ?? user,
+  });
+
   const designerSidebarNavigation = useMemo(() => {
     const baseItems = buildDesignerMetaNavigation(resolvedPortalId, isSuperadmin);
-    return applyDesignerSystemMenuSettings(baseItems, resolvedPortalId, isSuperadmin, {
-      showHiddenInEditMode: sidebarControls.isEditMode,
-    });
-  }, [resolvedPortalId, isSuperadmin, sidebarControls.isEditMode, systemSettingsVersion]);
+    const withSettings = applyDesignerSystemMenuSettings(
+      baseItems,
+      resolvedPortalId,
+      isSuperadmin,
+      {
+        showHiddenInEditMode: sidebarControls.isEditMode,
+      },
+    );
+    return mergeDesignerSidebarNavigation(withSettings, navigation);
+  }, [
+    resolvedPortalId,
+    isSuperadmin,
+    sidebarControls.isEditMode,
+    systemSettingsVersion,
+    navigation,
+  ]);
+
+  useEffect(() => {
+    const handleNavigationReload = () => {
+      reloadNavigation();
+    };
+
+    window.addEventListener("yasnopro:designer-navigation:reload", handleNavigationReload);
+    return () => {
+      window.removeEventListener(
+        "yasnopro:designer-navigation:reload",
+        handleNavigationReload,
+      );
+    };
+  }, [reloadNavigation]);
 
   useEffect(() => {
     const eventName = getDesignerSystemMenuSettingsEventName();
@@ -442,6 +390,22 @@ export default function DesignerShell() {
     };
   }, []);
 
+  const designerRouteOwner = useMemo(
+    () =>
+      resolveDesignerRouteOwner(
+        location.pathname,
+        designerSidebarNavigation,
+        resolvedPortalId,
+      ),
+    [location.pathname, designerSidebarNavigation, resolvedPortalId],
+  );
+
+  useEffect(() => {
+    if (designerRouteOwner) {
+      setDesignerRouteOwner(designerRouteOwner);
+    }
+  }, [designerRouteOwner]);
+
   const designerSidebarContract = useMemo(() => {
     const base = createDesignerSidebarContract({
       navigationItems: designerSidebarNavigation,
@@ -452,6 +416,7 @@ export default function DesignerShell() {
         ? activeDesignerPageId
         : undefined,
       tenantId: resolvedPortalId,
+      routeOwner: designerRouteOwner,
       menuScale,
       isEditMode: sidebarControls.isEditMode,
       onChangeMenuScale: handleMenuScaleChange,
@@ -479,6 +444,7 @@ export default function DesignerShell() {
     sidebarControls.isEditMode,
     sidebarControls.isSaving,
     handleMenuScaleChange,
+    designerRouteOwner,
   ]);
 
   const loadHeaderUser = useCallback(async () => {
@@ -523,10 +489,17 @@ export default function DesignerShell() {
         const data = await designerApi.getObjectType(resolvedPortalId, objectTypeId);
         if (cancelled) return;
         const nextName = String(data?.name || data?.title || "").trim();
-        setActiveObjectTypeName(nextName || objectTypeId);
+        setActiveObjectTypeName(
+          nextName ||
+            resolveObjectTypeNameFromNavigation(navigation, objectTypeId) ||
+            objectTypeId,
+        );
       } catch {
         if (!cancelled) {
-          setActiveObjectTypeName(objectTypeId);
+          setActiveObjectTypeName(
+            resolveObjectTypeNameFromNavigation(navigation, objectTypeId) ||
+              objectTypeId,
+          );
         }
       }
     };
@@ -535,9 +508,68 @@ export default function DesignerShell() {
     return () => {
       cancelled = true;
     };
-  }, [location.pathname, resolvedPortalId]);
+  }, [location.pathname, resolvedPortalId, navigation]);
+
+  useEffect(() => {
+    const handleObjectViewHeader = (event) => {
+      const detail = event?.detail;
+      if (!detail) {
+        setActiveObjectAdapterLabel("");
+        return;
+      }
+
+      const isDataRoute = /\/object-types\/[^/]+\/data\/?$/.test(location.pathname);
+      if (!isDataRoute) {
+        return;
+      }
+
+      const routeObjectTypeId = location.pathname.match(
+        /\/object-types\/([^/?]+)/,
+      )?.[1];
+
+      if (
+        detail.objectTypeId &&
+        routeObjectTypeId &&
+        String(detail.objectTypeId) !== String(routeObjectTypeId)
+      ) {
+        return;
+      }
+
+      setActiveObjectAdapterLabel(String(detail.activeAdapterLabel || "").trim());
+    };
+
+    window.addEventListener(DESIGNER_OBJECT_VIEW_HEADER_EVENT, handleObjectViewHeader);
+
+    return () => {
+      window.removeEventListener(
+        DESIGNER_OBJECT_VIEW_HEADER_EVENT,
+        handleObjectViewHeader,
+      );
+    };
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!/\/object-types\/[^/]+\/data\/?$/.test(location.pathname)) {
+      setActiveObjectAdapterLabel("");
+    }
+  }, [location.pathname]);
 
   const designerHeaderContract = useMemo(() => {
+    const breadcrumbNavigationItems =
+      designerSidebarContract.navigationItems ?? designerSidebarNavigation;
+    const breadcrumbActiveItemId = designerSidebarContract.activeItemId ?? null;
+    const pathChain = buildDesignerBreadcrumbs(location.pathname, {
+      tenantId: resolvedPortalId,
+      objectTypeName: activeObjectTypeName,
+      navigationItems: breadcrumbNavigationItems,
+      activeItemId: breadcrumbActiveItemId,
+      activePageId: Number.isFinite(activeDesignerPageId)
+        ? activeDesignerPageId
+        : null,
+      activeObjectAdapterLabel,
+      routeOwner: designerRouteOwner,
+    });
+
     return createDesignerHeaderContract({
       tenantId,
       user: {
@@ -547,22 +579,21 @@ export default function DesignerShell() {
         avatarUrl: headerUser?.avatar_url ?? user?.avatar_url,
       },
       pathname: location.pathname,
-      searchQuery: "",
+      searchQuery: headerSearch.searchQuery,
+      searchPlaceholder: searchContext.label,
       notificationUnreadCount: unreadCount,
       notificationItems: notifications,
       onReadNotification: markAsRead,
       avatarSettings,
-      canSearch: false,
+      canSearch,
       canViewNotifications: true,
       canEditPage: isDesignerCustomPage,
       canOpenSettings: isDesignerCustomPage,
       isEditMode: isPageEditMode,
-      pathChain: buildDesignerPathChain(
-        location.pathname,
-        resolvedPortalId,
-        activeObjectTypeName,
-        navigation
-      ),
+      pathChain,
+      activeItemId: breadcrumbActiveItemId,
+      navigationItems: breadcrumbNavigationItems,
+      routeOwner: designerRouteOwner,
       meta: {
         canGoBack: window.history.length > 1,
       },
@@ -576,10 +607,16 @@ export default function DesignerShell() {
     notifications,
     markAsRead,
     avatarSettings,
+    canSearch,
+    headerSearch.searchQuery,
+    searchContext.label,
     isDesignerCustomPage,
     isPageEditMode,
     activeObjectTypeName,
-    navigation,
+    activeObjectAdapterLabel,
+    designerSidebarNavigation,
+    designerSidebarContract,
+    designerRouteOwner,
   ]);
 
   const handleHeaderAction = useCallback(
@@ -588,16 +625,36 @@ export default function DesignerShell() {
         case "app-mode-switch":
           navigate(getLastRuntimePath());
           return;
+        case "search-change":
+        case "search":
+          headerSearch.onQueryChange?.(String(payload?.value ?? ""));
+          return;
+        case "search-open-first":
+        case "search-submit": {
+          const firstPath = headerSearch.openFirstResult?.();
+          if (typeof firstPath === "string" && firstPath.trim()) {
+            navigate(firstPath);
+            headerSearch.closeResults?.();
+          }
+          return;
+        }
+        case "search-clear":
+          headerSearch.onQueryChange?.("");
+          headerSearch.clearResults?.();
+          return;
         case "profile":
           setIsProfileOpen(true);
           return;
         case "breadcrumb-navigate":
-          if (typeof payload?.path === "string" && payload.path.trim().length > 0) {
-            navigate(payload.path);
-          }
-          return;
         case "context-path-navigate":
           if (typeof payload?.path === "string" && payload.path.trim().length > 0) {
+            const breadcrumbId = String(payload?.item?.id ?? "").trim();
+            if (breadcrumbId === "designer-objects") {
+              publishObjectsSectionRouteOwner(resolvedPortalId);
+            }
+            if (breadcrumbId === "designer-platform") {
+              publishRootSectionRouteOwner("platform", resolvedPortalId);
+            }
             navigate(payload.path);
           }
           return;
@@ -635,12 +692,35 @@ export default function DesignerShell() {
       isDesignerCustomPage,
       location.pathname,
       resolvedPortalId,
+      headerSearch,
     ]
   );
 
   const handleSidebarItemAction = (item, event) => {
     if (item?.disabled) {
       return;
+    }
+
+    const isObjectTypeItem =
+      item?.type === "object_type" ||
+      item?.meta?.is_object_type === true ||
+      Boolean(item?.object_type_id) ||
+      Boolean(item?.meta?.object_type_id);
+
+    if (isObjectTypeItem) {
+      const objectTypePath =
+        item?.path ||
+        item?.url ||
+        item?.route ||
+        item?.meta?.url ||
+        item?.meta?.route;
+
+      if (typeof objectTypePath === "string" && objectTypePath.trim().length > 0) {
+        event?.preventDefault?.();
+        publishObjectShortcutRouteOwner(item, resolvedPortalId);
+        navigate(objectTypePath);
+        return;
+      }
     }
 
     const itemScope =
@@ -673,6 +753,20 @@ export default function DesignerShell() {
 
     if (targetPath) {
       event.preventDefault();
+      const normalizedTarget = String(targetPath).trim().replace(/\/+$/, "");
+      const objectsSectionPath = `/designer/tenant/${resolvedPortalId}/object-types`;
+      const platformSectionPath = `/designer/tenant/${resolvedPortalId}/platform`;
+      if (
+        normalizedTarget === objectsSectionPath ||
+        String(item?.id || "") === "system-designer-objects"
+      ) {
+        publishObjectsSectionRouteOwner(resolvedPortalId);
+      } else if (
+        normalizedTarget === platformSectionPath ||
+        String(item?.id || "") === "system-designer-platform"
+      ) {
+        publishRootSectionRouteOwner("platform", resolvedPortalId);
+      }
       navigate(targetPath);
       return;
     }
@@ -698,7 +792,7 @@ export default function DesignerShell() {
       navigation: [
         { id: "designer-objects", label: "Объекты" },
         { id: "designer-relations", label: "Связи" },
-        { id: "designer-views", label: "Представления" },
+        { id: "designer-views", label: "Вкладки" },
         { id: "designer-users", label: "Пользователи" },
         { id: "designer-settings", label: "Системные настройки" },
       ],
@@ -740,8 +834,10 @@ export default function DesignerShell() {
         workspaceTransition={TRANSITION_TOKENS.shell.workspaceLeft}
         workspace={
           <div
+            className="designer-root"
             style={{
-              flex: 1,
+              flex: "1 1 auto",
+              height: "100%",
               minHeight: 0,
               overflow: "auto",
               padding: "20px 24px 32px",
@@ -751,6 +847,14 @@ export default function DesignerShell() {
             <Outlet />
           </div>
         }
+      />
+      <SearchResultsOverlay
+        isVisible={headerSearch.isOverlayVisible}
+        isLoading={headerSearch.isLoading}
+        error={headerSearch.error}
+        results={headerSearch.results}
+        scopeLabel={searchContext.label}
+        onClose={headerSearch.closeResults}
       />
       {sidebarControls.isEditMode && sidebarControls.isCreateMenuOpen ? (
         <div
@@ -771,6 +875,7 @@ export default function DesignerShell() {
           />
         </div>
       ) : null}
+      <NotificationOverlayHost />
       <ProfileSidePanel
         isOpen={isProfileOpen}
         onClose={() => {

@@ -12,6 +12,7 @@ import {
 } from "../../shared/shell/header";
 import {
   getDesignerPath,
+  getLastDesignerPath,
   getLastRuntimePath,
 } from "../../shared/appMode/appModeStorage";
 import { emitRuntimeShadowSnapshot } from "../../shared/shell/shadow/runtime";
@@ -88,7 +89,11 @@ export default function WorkspaceTopBar({
   sectionTitle,
   breadcrumbItems,
   searchQuery,
-  onChangeSearchQuery,
+  searchPlaceholder,
+  onQueryChange,
+  onOpenFirstResult,
+  onCloseSearchResults,
+  onClearSearch,
   isEditMode,
   isPageTitleEditable = false,
   pageTitleDraft = "",
@@ -178,6 +183,7 @@ const effectiveShowBackButton = true;
         tenantId,
         showBackButton: effectiveShowBackButton,
         searchQuery,
+        searchPlaceholder,
         isEditMode,
         isPageTitleEditable,
         pageTitleDraft,
@@ -210,6 +216,7 @@ const effectiveShowBackButton = true;
       effectiveShowBackButton,
       showBackButton,
       searchQuery,
+      searchPlaceholder,
       isEditMode,
       isPageTitleEditable,
       pageTitleDraft,
@@ -230,15 +237,25 @@ const effectiveShowBackButton = true;
           if (pathname.startsWith("/designer")) {
             navigate(getLastRuntimePath());
           } else {
-            navigate(getDesignerPath(tenantId));
+            navigate(getLastDesignerPath(tenantId) || getDesignerPath(tenantId));
           }
           return;
         case "search-change":
         case "search":
-          onChangeSearchQuery?.(String(payload?.value ?? ""));
+          onQueryChange?.(String(payload?.value ?? ""));
           return;
+        case "search-open-first":
+        case "search-submit": {
+          const firstPath = onOpenFirstResult?.();
+          if (typeof firstPath === "string" && firstPath.trim()) {
+            navigate(firstPath);
+            onCloseSearchResults?.();
+          }
+          return;
+        }
         case "search-clear":
-          onChangeSearchQuery?.("");
+          onQueryChange?.("");
+          onClearSearch?.();
           return;
         case "context-path-navigate":
           if (payload?.item?.meta?.scope === "document-library-root") {
@@ -303,7 +320,10 @@ const effectiveShowBackButton = true;
       handleBack,
       tenantId,
       navigate,
-      onChangeSearchQuery,
+      onQueryChange,
+      onOpenFirstResult,
+      onCloseSearchResults,
+      onClearSearch,
       onEnterEditMode,
       onExitEditMode,
       onSavePageTitle,

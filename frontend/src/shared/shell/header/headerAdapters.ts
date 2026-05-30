@@ -12,6 +12,7 @@ import type {
 } from "./headerContracts";
 import type { HeaderActionContract } from "./headerTypes";
 import { HEADER_MODES } from "./headerMode";
+import { buildDesignerBreadcrumbs as resolveDesignerPathChain } from "../designer/designerNavigationResolver";
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -32,6 +33,7 @@ export type RuntimeHeaderAdapterInput = {
   tenantId?: number | string;
   showBackButton?: boolean;
   searchQuery?: string;
+  searchPlaceholder?: string;
   isEditMode?: boolean;
   isPageTitleEditable?: boolean;
   pageTitleDraft?: string;
@@ -68,6 +70,7 @@ export type DesignerHeaderAdapterInput = {
   pathname?: string;
   showBackButton?: boolean;
   searchQuery?: string;
+  searchPlaceholder?: string;
   notificationUnreadCount?: number;
   notificationItems?: unknown[];
   onReadNotification?: ((notificationId: string | number) => void) | undefined;
@@ -78,6 +81,9 @@ export type DesignerHeaderAdapterInput = {
   canOpenSettings?: boolean;
   isEditMode?: boolean;
   meta?: Record<string, unknown>;
+  activeItemId?: string | number | null;
+  navigationItems?: unknown[];
+  routeOwner?: Record<string, unknown> | null;
 };
 
 function asRecord(value: unknown): UnknownRecord | null {
@@ -556,14 +562,18 @@ function buildRuntimeSearch(
   capabilities: HeaderCapabilitiesContract
 ): HeaderSearchContract {
   const enabled = capabilities.canSearch !== false;
+  const placeholder =
+    asString(input.searchPlaceholder)?.trim() || "Поиск по системе...";
 
   return {
     enabled,
     value: input.searchQuery ?? "",
-    placeholder: "Поиск по системе...",
+    placeholder,
     actionKey: "search",
     changeActionKey: input.onSearchChangeKey ?? "search-change",
     clearActionKey: input.onSearchClearKey ?? "search-clear",
+    submitActionKey: "search-open-first",
+    openFirstActionKey: "search-open-first",
   };
 }
 
@@ -626,7 +636,7 @@ function resolveDesignerTitle(pathname?: string, explicitTitle?: string): string
     return "Связи";
   }
   if (pathname.includes("/views")) {
-    return "Представления";
+    return "Вкладки";
   }
   if (pathname.includes("/users")) {
     return "Пользователи";
@@ -636,76 +646,6 @@ function resolveDesignerTitle(pathname?: string, explicitTitle?: string): string
   }
 
   return "Студия";
-}
-
-function buildDesignerBreadcrumbs(
-  pathname?: string,
-  tenantId?: string | number
-): HeaderBreadcrumbContract[] {
-  if (!pathname || !pathname.startsWith("/designer/")) {
-    return [];
-  }
-
-  const normalizedTenantId = String(tenantId ?? "1");
-  const base = `/designer/tenant/${normalizedTenantId}`;
-  const items: HeaderBreadcrumbContract[] = [];
-
-  if (pathname.includes("/object-types")) {
-    items.push({ id: "designer-objects", label: "Объекты", path: `${base}/object-types` });
-    const objectMatch = pathname.match(/\/object-types\/([^/]+)/);
-    if (objectMatch) {
-      items.push({
-        id: "designer-object-current",
-        label: "Объект",
-      });
-
-      const tabMatch = pathname.match(/\/object-types\/[^/]+\/([^/]+)/);
-      if (tabMatch) {
-        items.push({
-          id: "designer-object-tab",
-          label: resolveDesignerTabLabel(tabMatch[1]),
-        });
-      }
-    }
-    return items;
-  }
-
-  if (pathname.includes("/page/")) {
-    items.push({ id: "designer-objects", label: "Объекты", path: `${base}/object-types` });
-    items.push({ id: "designer-page", label: "Страница" });
-    return items;
-  }
-
-  if (pathname.includes("/relations")) {
-    items.push({ id: "designer-relations", label: "Связи", path: `${base}/relations` });
-    return items;
-  }
-
-  if (pathname.includes("/views")) {
-    items.push({ id: "designer-views", label: "Представления", path: `${base}/views` });
-    return items;
-  }
-
-  if (pathname.includes("/users")) {
-    items.push({ id: "designer-users", label: "Пользователи", path: `${base}/users` });
-    return items;
-  }
-
-  if (pathname.includes("/settings")) {
-    items.push({ id: "designer-settings", label: "Системные настройки", path: `${base}/settings` });
-    return items;
-  }
-
-  return [{ id: "designer-root", label: "Студия", path: base }];
-}
-
-function resolveDesignerTabLabel(tabSegment: string): string {
-  const segment = String(tabSegment || "").toLowerCase();
-  if (segment === "general") return "Общие";
-  if (segment === "fields") return "Поля";
-  if (segment === "relations") return "Связи";
-  if (segment === "views") return "Представления";
-  return "Раздел";
 }
 
 function buildDesignerModeActions(
@@ -771,6 +711,7 @@ function toDesignerRuntimeLikeInput(
     tenantId: input.tenantId,
     user: input.user,
     searchQuery: input.searchQuery ?? "",
+    searchPlaceholder: input.searchPlaceholder,
     notificationUnreadCount: input.notificationUnreadCount,
     notificationItems: input.notificationItems,
     onReadNotification: input.onReadNotification,
@@ -857,15 +798,28 @@ export function createDesignerHeaderContract(
   const capabilities = resolveDesignerCapabilities(input);
   const runtimeLikeInput = toDesignerRuntimeLikeInput(input, title, subtitle);
   const breadcrumbs = mapBreadcrumbs(input.breadcrumbs);
-  const resolvedBreadcrumbs =
-    breadcrumbs.length > 0
-      ? breadcrumbs
-      : buildDesignerBreadcrumbs(input.pathname, input.tenantId);
-  const pathChain = normalizePathChain({
-    pathChain: input.pathChain,
-    title,
-    breadcrumbs: resolvedBreadcrumbs,
-  });
+  const breadcrumbContext = {
+    tenantId: input.tenantId,
+    activeItemId: input.activeItemId ?? null,
+    navigationItems: input.navigationItems ?? [],
+    routeOwner: input.routeOwner ?? null,
+  };
+  const explicitPathChain = Array.isArray(input.pathChain) ? input.pathChain : null;
+  const pathChain =
+    explicitPathChain && explicitPathChain.length > 0
+      ? normalizePathChain({
+          pathChain: explicitPathChain,
+          title: undefined,
+          breadcrumbs: [],
+        })
+      : normalizePathChain({
+          pathChain: undefined,
+          title,
+          breadcrumbs:
+            breadcrumbs.length > 0
+              ? breadcrumbs
+              : resolveDesignerPathChain(input.pathname, breadcrumbContext),
+        });
   const search = buildRuntimeSearch(runtimeLikeInput, capabilities);
   const notifications = {
     ...buildRuntimeNotifications(runtimeLikeInput, capabilities),

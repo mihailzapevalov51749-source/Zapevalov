@@ -1,4 +1,8 @@
 import { useState } from "react";
+import {
+  clearTableSessionDirty,
+  markTableSessionDirty,
+} from "../../universalTable/session/tableSessionStore";
 
 export default function useTableDirtyState({
   activeRepresentationId,
@@ -7,7 +11,7 @@ export default function useTableDirtyState({
   const [isBaseStateDirty, setIsBaseStateDirty] = useState(false);
 
   const markCurrentViewDirty = () => {
-    window.__UNIVERSAL_TABLE_DIRTY__ = true;
+    markTableSessionDirty();
 
     if (activeRepresentationId) {
       markRepresentationDirty?.();
@@ -19,11 +23,11 @@ export default function useTableDirtyState({
 
   const clearDirty = () => {
     setIsBaseStateDirty(false);
-    window.__UNIVERSAL_TABLE_DIRTY__ = false;
+    clearTableSessionDirty();
   };
 
   const markBaseStateDirty = () => {
-    window.__UNIVERSAL_TABLE_DIRTY__ = true;
+    markTableSessionDirty();
     setIsBaseStateDirty(true);
   };
 

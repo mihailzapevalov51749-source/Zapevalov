@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Plus, Search } from "lucide-react";
 
 import { useDesignerShell } from "../../context/DesignerShellContext";
+import { publishObjectsSectionRouteOwner } from "../../../../shared/shell/designer/designerRouteOwnership";
 
 function formatDate(value) {
   if (!value) {
@@ -115,11 +116,12 @@ export default function ObjectTypesList({
             {filtered.map((item) => (
               <tr
                 key={item.id}
-                onClick={() =>
+                onClick={() => {
+                  publishObjectsSectionRouteOwner(tenantId);
                   navigate(
                     `/designer/tenant/${tenantId}/object-types/${item.id}/general`,
-                  )
-                }
+                  );
+                }}
               >
                 <td>
                   <div style={{ fontWeight: 700 }}>{item.name}</div>

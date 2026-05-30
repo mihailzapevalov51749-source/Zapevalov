@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { navigationService } from "../services/navigationService";
+import {
+  isObjectTypeNavigationItem,
+  transformRuntimeNavigationForPortal,
+} from "../../../portal/utils/portalObjectRoutes";
 
 function resolveItemScope(item) {
   const explicitScope =
@@ -39,7 +43,13 @@ function filterNavigationByScope(items, scope) {
       const childrenSource = Array.isArray(item?.children) ? item.children : [];
       const filteredChildren = filterNavigationByScope(childrenSource, scope);
       const itemScope = resolveItemScope(item);
-      const matchesScope = !scope || itemScope === scope;
+      const objectTypeItem = isObjectTypeNavigationItem(item);
+      // Portal runtime: show object_type placements (often menu_scope=designer) with portal URLs.
+      // Studio (scope=designer): object_type keeps designer scope via menu_scope / /designer URL.
+      const matchesScope =
+        !scope ||
+        itemScope === scope ||
+        (scope === "runtime" && objectTypeItem);
       const includeItem = matchesScope || filteredChildren.length > 0;
 
       if (!includeItem) {
@@ -73,12 +83,19 @@ export default function useNavigationTree(portalId, options = {}) {
         mode,
         context,
       });
-      const scopedNavigation =
+      let scopedNavigation =
         scope === "designer" || scope === "runtime"
           ? filterNavigationByScope(result, scope)
           : Array.isArray(result)
             ? result
             : [];
+
+      if (scope === "runtime") {
+        scopedNavigation = transformRuntimeNavigationForPortal(
+          scopedNavigation,
+          portalId,
+        );
+      }
 
       setNavigation(scopedNavigation);
       if (scope === "designer") {

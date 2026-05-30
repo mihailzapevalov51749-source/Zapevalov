@@ -2,7 +2,7 @@ export const DESIGNER_TABS = [
   { id: "general", label: "Общие" },
   { id: "fields", label: "Поля" },
   { id: "relations", label: "Связи" },
-  { id: "views", label: "Представления" },
+  { id: "views", label: "Вкладки" },
   { id: "runtime-preview", label: "Runtime Preview" },
 ];
 

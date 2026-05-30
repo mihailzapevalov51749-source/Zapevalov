@@ -3,12 +3,15 @@ import { entityCardTheme } from "./entityCardTheme";
 export const entityCardCommentsStyle = {
   width: "100%",
   height: "100%",
+  minWidth: 0,
+  maxWidth: "100%",
   display: "flex",
   flexDirection: "column",
   gap: 12,
   padding: "14px",
   boxSizing: "border-box",
   background: entityCardTheme.colors.bg,
+  overflow: "hidden",
 };
 
 export const entityCardCommentsHeaderStyle = {

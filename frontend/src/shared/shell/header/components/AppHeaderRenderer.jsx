@@ -257,6 +257,17 @@ export default function AppHeaderRenderer({ contract, onAction }) {
               { value: event.target.value }
             );
           }}
+          onKeyDown={(event) => {
+            if (!searchInteractive || event.key !== "Enter") return;
+            event.preventDefault();
+            invokeAction(
+              event,
+              search.openFirstActionKey ||
+                search.submitActionKey ||
+                "search-open-first",
+              { value: searchValue }
+            );
+          }}
           placeholder={search.placeholder || "Поиск по системе..."}
           className="app-header-renderer__search"
           disabled={!searchInteractive}

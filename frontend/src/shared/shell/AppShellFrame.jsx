@@ -90,6 +90,8 @@ export default function AppShellFrame({
             width: "100%",
             overflow: "hidden",
             boxSizing: "border-box",
+            display: "flex",
+            flexDirection: "column",
           }}
         >
           {workspace}

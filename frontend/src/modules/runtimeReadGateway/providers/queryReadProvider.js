@@ -53,6 +53,9 @@ export const queryReadProvider = {
       objectTypeKey: response?.object_type_key ?? objectTypeKey,
       viewKey: response?.view_key ?? viewKey,
       projection: response?.projection || {},
+      objectView: response?.object_view ?? response?.objectView ?? null,
+      filtersJson: response?.filters_json ?? response?.filtersJson ?? null,
+      publishedView: response?.view ?? null,
       warnings: [],
     });
   },

@@ -5,10 +5,12 @@ import ButtonBlockView from "../../blockTypes/button/ButtonBlockView";
 import LinkBlockView from "../../blockTypes/link/LinkBlockView";
 import CardsBlockView from "../../blockTypes/cards/CardsBlockView";
 
-import { UniversalTableView } from "../../universalTable";
+import LegacyStorageBlockPlaceholderView from "../../../shared/legacy/components/LegacyStorageBlockPlaceholderView";
 
 import AdminDashboardBlock from "../../admin/blocks/AdminDashboardBlock";
 import AdminSystemBlock from "../../admin/blocks/AdminSystemBlock";
+
+const LEGACY_STORAGE_BLOCK_PLACEHOLDER = LegacyStorageBlockPlaceholderView;
 
 export const blockViewRegistry = {
   text: TextBlockView,
@@ -22,10 +24,10 @@ export const blockViewRegistry = {
   admin_dashboard: AdminDashboardBlock,
   admin_system: AdminSystemBlock,
 
-  // Старый тип table теперь тоже открываем через новую универсальную таблицу.
-  // Это нужно, чтобы старые блоки не ломались после удаления старого модуля table.
-  table: UniversalTableView,
-  universal_table: UniversalTableView,
+  table: LEGACY_STORAGE_BLOCK_PLACEHOLDER,
+  universal_table: LEGACY_STORAGE_BLOCK_PLACEHOLDER,
+  tableBlock: LEGACY_STORAGE_BLOCK_PLACEHOLDER,
+  table_block: LEGACY_STORAGE_BLOCK_PLACEHOLDER,
 };
 
 export function getBlockTypeTitle(type) {
@@ -41,8 +43,8 @@ export function getBlockTypeTitle(type) {
     admin_dashboard: "Администрирование",
     admin_system: "Настройка системы",
 
-    table: "Таблица",
-    universal_table: "Универсальная таблица",
+    table: "Таблица (legacy storage)",
+    universal_table: "Универсальная таблица (legacy storage)",
   };
 
   return titles[type] || "Блок";

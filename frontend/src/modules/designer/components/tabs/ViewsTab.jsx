@@ -19,6 +19,7 @@ export default function ViewsTab({ tenantId, objectTypeId }) {
   const navigate = useNavigate();
 
   const selected = items.find((item) => item.id === selectedId) || null;
+  const isSelectedSystemDefault = Boolean(selected?.is_system && selected?.is_default);
 
   const fieldOptions = useMemo(() => {
     return (fields || []).map((f) => ({
@@ -81,7 +82,7 @@ export default function ViewsTab({ tenantId, objectTypeId }) {
       const data = await designerApi.listViews(tenantId, objectTypeId);
       setItems(data);
     } catch (err) {
-      setError(getApiErrorMessage(err, "Не удалось загрузить представления"));
+      setError(getApiErrorMessage(err, "Не удалось загрузить вкладки"));
     } finally {
       setLoading(false);
     }
@@ -122,10 +123,10 @@ export default function ViewsTab({ tenantId, objectTypeId }) {
   }, [selected, normalizeProjection]);
 
   const handleCreate = async () => {
-    const name = window.prompt("Название представления", "Новое представление");
+    const name = window.prompt("Название вкладки", "Новая вкладка");
     if (!name) return;
 
-    const key = window.prompt("Key представления", "new_view");
+    const key = window.prompt("Key вкладки", "new_view");
     if (!key) return;
 
     try {
@@ -137,7 +138,7 @@ export default function ViewsTab({ tenantId, objectTypeId }) {
       });
       await loadItems();
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Не удалось создать представление"));
+      window.alert(getApiErrorMessage(err, "Не удалось создать вкладку"));
     }
   };
 
@@ -172,7 +173,7 @@ export default function ViewsTab({ tenantId, objectTypeId }) {
       });
       await loadItems();
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Не удалось сохранить представление"));
+      window.alert(getApiErrorMessage(err, "Не удалось сохранить вкладку"));
     } finally {
       setSaving(false);
     }
@@ -180,18 +181,22 @@ export default function ViewsTab({ tenantId, objectTypeId }) {
 
   const handleDelete = async () => {
     if (!selected) return;
-    if (!window.confirm(`Удалить представление "${selected.name}"?`)) return;
+    if (selected.is_system && selected.is_default) {
+      window.alert("Системную default вкладку нельзя удалить");
+      return;
+    }
+    if (!window.confirm(`Удалить вкладку "${selected.name}"?`)) return;
 
     try {
       await designerApi.deleteView(tenantId, selected.id);
       setSelectedId(null);
       await loadItems();
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Не удалось удалить представление"));
+      window.alert(getApiErrorMessage(err, "Не удалось удалить вкладку"));
     }
   };
 
-  if (loading) return <div className="designer-loading">Загрузка представлений...</div>;
+  if (loading) return <div className="designer-loading">Загрузка вкладок...</div>;
   if (error) return <div className="designer-error">{error}</div>;
 
   const toggleVisibleField = (fieldKey) => {
@@ -267,7 +272,7 @@ export default function ViewsTab({ tenantId, objectTypeId }) {
           }}
         >
           <h3 style={{ margin: 0 }}>
-            Представления объекта{" "}
+            Вкладки объекта{" "}
             <span className="designer-badge">{items.length}</span>
           </h3>
           <button
@@ -275,7 +280,7 @@ export default function ViewsTab({ tenantId, objectTypeId }) {
             className="designer-btn designer-btn--primary"
             onClick={handleCreate}
           >
-            + Создать представление
+            + Создать вкладку
           </button>
         </div>
 
@@ -296,7 +301,21 @@ export default function ViewsTab({ tenantId, objectTypeId }) {
                   className={item.id === selectedId ? "is-selected" : ""}
                   onClick={() => setSelectedId(item.id)}
                 >
-                  <td>{item.name}</td>
+                  <td>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span>{item.name}</span>
+                      {item.is_system ? (
+                        <span className="designer-badge" title="Системная вкладка">
+                          System
+                        </span>
+                      ) : null}
+                      {item.is_default ? (
+                        <span className="designer-badge" title="Вкладка по умолчанию">
+                          Default
+                        </span>
+                      ) : null}
+                    </div>
+                  </td>
                   <td>
                     <code>{item.key}</code>
                   </td>
@@ -311,7 +330,7 @@ export default function ViewsTab({ tenantId, objectTypeId }) {
 
       {selected && draft ? (
         <PropertiesPanel
-          title="Свойства представления"
+          title="Свойства вкладки"
           onClose={() => setSelectedId(null)}
           footer={
             <>
@@ -319,6 +338,7 @@ export default function ViewsTab({ tenantId, objectTypeId }) {
                 type="button"
                 className="designer-btn designer-btn--danger"
                 onClick={handleDelete}
+                disabled={isSelectedSystemDefault}
               >
                 Удалить
               </button>
@@ -342,6 +362,11 @@ export default function ViewsTab({ tenantId, objectTypeId }) {
           <div style={{ height: 10 }} />
           <label className="designer-label">Key</label>
           <input className="designer-input" value={draft.key} disabled />
+          {isSelectedSystemDefault ? (
+            <div className="designer-field-hint">
+              System/default key заблокирован для изменения.
+            </div>
+          ) : null}
           <div style={{ height: 10 }} />
           <label className="designer-label">Тип</label>
           <select

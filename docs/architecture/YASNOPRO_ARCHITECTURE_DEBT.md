@@ -1,5 +1,15 @@
 # YASNOPRO ARCHITECTURE DEBT
 
+## Статус реестра
+
+```text
+ACTIVE — обновлён после Dual-SoT Recovery L1–L5 (PR #6, 2026-05-29)
+```
+
+Снимок платформы: [YASNOPRO_ARCHITECTURE_STATUS.md](./YASNOPRO_ARCHITECTURE_STATUS.md) §2.1, §10.
+
+---
+
 ## 1. Назначение документа
 
 Документ фиксирует архитектурный долг платформы ЯсноПро.
@@ -62,49 +72,49 @@ Architecture Debt — это:
 
 ## Название
 
-Universal Table как pseudo Entity Layer
+Universal Table storage как pseudo Entity Layer (legacy path)
 
 ## Риск
 
-CRITICAL
+CRITICAL (для **новых** данных) · HIGH (для **existing** legacy rows)
 
 ## Статус
 
-ACTIVE
+**PARTIAL** — рост dual SoT остановлен; Runtime Entity — SoT для новых данных; legacy rows остаются
 
-## Проблема
+## Проблема (историческая)
 
-Universal Table одновременно выполняет роли:
+Legacy path `universal_table_rows` использовался как source of truth для portal-данных. Табличный UI и storage были смешаны в одном модуле.
 
-- View;
-- Entity storage;
-- schema layer;
-- runtime logic;
-- representation logic;
-- workflow-like behavior.
+## Что исправлено (Layers 1–5)
 
-## Нарушенные принципы
+- **Runtime Entity** — целевой SoT для новых бизнес-данных (Object Type → publish).
+- **Table View (object path)** — UI над Runtime Entity, verified (Layer 3).
+- **Новое создание** UT storage blocks / primary row path — **заблокировано** (Layer 2).
+- **Existing-only** режим для legacy storage + маркеры (Layer 5).
 
-- View != Entity
-- Table is not source of truth
-- One responsibility per layer
+## Что остаётся
 
-## Последствия
+- **Existing** данные в `universal_table_rows` — **disposable** (ADR-001); не мигрируются;
+- `universal_views` привязаны к legacy `table_id`;
+- `UniversalTableView` + `tableSessionStore` для portal;
+- риск путаницы «Universal Table = сущность» в старых страницах.
 
-- невозможность выделить Entity Layer;
-- giant controllers;
-- regressions;
-- mixed ownership;
-- platform instability.
+## Нарушенные принципы (остаточно в legacy контуре)
+
+- legacy storage ≠ Entity Layer
+- Table View (object) ≠ legacy storage
 
 ## Целевое решение
 
-- выделение Entity Layer;
-- превращение Universal Table в pure View Engine.
+- Universal Table **retirement** (Phase 9.6 / Legacy Removal);
+
+> Superseded: «data migration → Runtime Entity» — **CANCELLED** (ADR-001).
+- legacy portal blocks retire или read-only bridge.
 
 ## Migration Phase
 
-PHASE 3 / PHASE 4
+Dual-SoT L1–L5 **DONE** · UT migration **CANCELLED** · Legacy Removal **ACTIVE**
 
 ---
 
@@ -479,6 +489,195 @@ Lookup partially заменяет semantic relations.
 ## Migration Phase
 
 PHASE 5
+
+---
+
+# 14.1. AD-011 — Dual Source of Truth (legacy rows vs Runtime Entity)
+
+## Риск
+
+CRITICAL (пока coexist без migration)
+
+## Статус
+
+**PARTIAL** — **рост** остановлен; **миграция не выполняется**; долг закрывается **удалением** legacy-контура
+
+## Проблема
+
+Два хранилища бизнес-данных: `universal_table_rows` (legacy) и `runtime_entities` (target).
+
+> Исторически: планировался ETL legacy rows → Runtime Entity.  
+> Superseded by [ADR-001 Universal Table Retirement](./adr/ADR-001-universal-table-retirement.md).
+
+## Mitigation (DONE)
+
+Layers 2, 3, 4, 5 — см. [YASNOPRO_DUAL_SOT_RECOVERY_PLAN.md](./YASNOPRO_DUAL_SOT_RECOVERY_PLAN.md).
+
+## Остаток
+
+Universal Table **retirement** (не migration): Phase 9.6 adapters, удаление `modules/universalTable`, backend routers, UT UI bridges. См. **AD-UT-RETIREMENT**.
+
+---
+
+# 14.2. AD-012 — Communication identity split (legacy vs runtime)
+
+## Риск
+
+HIGH
+
+## Статус
+
+**PARTIAL** — object-centric path **RESOLVED**; UT path **COMPAT**
+
+## Resolved (Layer 4)
+
+Comments, notes, attachments из Object Entity Card → `runtime_entity`.
+
+## Remaining
+
+Legacy UT comments/notes identity; object-path notifications → Object Card (**9.5 DONE**).
+
+---
+
+# 14.3. AD-013 — Legacy creation path
+
+## Риск
+
+CRITICAL
+
+## Статус
+
+**RESOLVED** (Layer 2 + 2b + Layer 5 cleanup)
+
+## Resolution
+
+FE guards, backend `legacy_storage_creation_forbidden`, удалён `TableBlockAddModal`.
+
+---
+
+# 14.4. AD-014 — Existing universal_table_rows data
+
+## Риск
+
+HIGH
+
+## Статус
+
+**ACTIVE → RETIREMENT** — данные disposable; блокер снят (ADR-001)
+
+## Проблема
+
+Исторические строки в legacy storage. Ранее считалось, что они блокируют Phase 9.6 до ETL.
+
+> Superseded by ADR-001: **Existing UT data no longer blocks Phase 9.6. Data is disposable.**
+
+## Текущий блокер (не данные, а зависимости)
+
+- objectEntities → UT styles/layout
+- PortalPageView → UniversalTableView
+- blockRegistry → table block types
+- runtimeReadGateway legacy fallback — **REMOVED** (2026-05-30, см. [RUNTIME_READ_GATEWAY_CLEANUP.md](./YASNOPRO_RUNTIME_READ_GATEWAY_CLEANUP.md))
+- NotificationOverlayHost legacy path — **object path DONE** (Phase 9.5); UT overlay остаётся isolated
+- navigation UT bridges
+- comments/notes/files universal_table compatibility
+
+## Не путать
+
+Table View UI **не** deprecated; deprecated как SoT — только **Universal Table storage path**.
+
+---
+
+# 14.4.1. AD-UT-RETIREMENT — Universal Table Retirement
+
+## Статус
+
+**ACTIVE**
+
+## Приоритет
+
+**P0**
+
+## Проблема
+
+Universal Table больше не является целевым источником данных, но всё ещё связан с Object Platform через UI, styles, notifications, navigation, portal canvas и runtime fallbacks.
+
+> Принято решение ADR-001: данные UT не мигрируются; legacy removal вместо ETL.
+
+## Блокеры удаления
+
+1. objectEntities imports from universalTable styles/layout
+2. PortalPageView renders UniversalTableView
+3. blockRegistry supports table/universal_table block types
+4. ~~runtimeReadGateway contains legacy providers~~ — **DONE** (read gateway query-only, 2026-05-30)
+5. ~~runtimeLegacyWriteAdapter write bridge~~ — **DONE** (module removed, 2026-05-30)
+6. NotificationOverlayHost supports universal_table targets
+7. navigation/sidebar contains UT bridges
+8. comments/notes/files contain universal_table compatibility
+
+## Цель
+
+Полностью удалить Universal Table из целевой платформы.
+
+## Definition of Done
+
+- `rg "universalTable" frontend/src` не находит runtime-зависимостей object-centric модулей
+- нет UniversalTableView в blockRegistry
+- нет universal_table routes
+- нет universal_table notification targets
+- нет universal_table comments/notes branches
+- ~~нет runtimeReadGateway legacy fallback~~ — **DONE** (2026-05-30)
+- ~~нет runtimeLegacyWriteAdapter~~ — **DONE** (2026-05-30)
+- backend universal_tables/universal_views routers отключены или удалены
+
+См. [adr/ADR-001-universal-table-retirement.md](./adr/ADR-001-universal-table-retirement.md).
+
+---
+
+# 14.5. AD-015 — /universal-table system route
+
+## Риск
+
+MEDIUM
+
+## Статус
+
+**ACTIVE**
+
+## Проблема
+
+Системный маршрут legacy UT; судьба — ADR (Recovery Plan Q6).
+
+---
+
+# 14.6. AD-016 — Permission engine
+
+## Риск
+
+HIGH
+
+## Статус
+
+**NOT IMPLEMENTED**
+
+## Проблема
+
+Нет единого permission engine для object-centric и legacy контуров.
+
+---
+
+# 14.7. AD-017 — Representation store (object vs legacy views)
+
+## Риск
+
+MEDIUM
+
+## Статус
+
+**PARTIAL**
+
+## Проблема
+
+Object Views используют Designer view definitions; legacy tables — `universal_views`. Два механизма представлений до унификации.
 
 ---
 

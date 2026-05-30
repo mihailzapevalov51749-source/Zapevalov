@@ -1,8 +1,14 @@
 import { entityCardTheme } from "./entityCardTheme";
 
+/** Fixed comments column width — must match UT Card sidebar. */
+export const ENTITY_CARD_SIDEBAR_WIDTH = 300;
+
 export const entityCardLayoutStyle = {
   width: "100%",
   height: "100%",
+  flex: "1 1 auto",
+  minHeight: 0,
+  minWidth: 0,
 
   display: "flex",
 
@@ -39,11 +45,19 @@ export const entityCardBodyStyle = {
   background: entityCardTheme.colors.bg,
 };
 
-export const entityCardContentStyle = {
-  flex: 1,
+export const entityCardMainColumnStyle = {
+  flex: "1 1 0%",
+  minWidth: 0,
+  minHeight: 0,
+  display: "flex",
+  flexDirection: "column",
+  overflow: "hidden",
+};
 
-  minWidth:
-    entityCardTheme.layout.leftPanelMinWidth,
+export const entityCardContentStyle = {
+  flex: "1 1 0%",
+
+  minWidth: 0,
 
   overflowY: "auto",
   overflowX: "hidden",
@@ -61,9 +75,10 @@ export const entityCardContentStyle = {
 };
 
 export const entityCardSidebarStyle = {
-  width:300,
-  minWidth: 300,
-  maxWidth: 300,
+  width: ENTITY_CARD_SIDEBAR_WIDTH,
+  minWidth: ENTITY_CARD_SIDEBAR_WIDTH,
+  maxWidth: ENTITY_CARD_SIDEBAR_WIDTH,
+  flex: `0 0 ${ENTITY_CARD_SIDEBAR_WIDTH}px`,
 
   height: "100%",
 

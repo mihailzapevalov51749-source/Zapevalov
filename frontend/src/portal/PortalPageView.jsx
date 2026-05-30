@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { getPageFull, updatePage } from "../api/pagesApi";
@@ -7,7 +7,16 @@ import { createSection } from "../api/sectionsApi";
 import { createBlock } from "../api/blocksApi";
 
 import useNavigationTree from "../modules/navigation/hooks/useNavigationTree";
+import {
+  getEntityLocationRegistry,
+  setEntityLocationRegistryEntry,
+} from "../modules/navigation/entityLocationRegistry";
 import useWidgetDragAndDrop from "../modules/editor/hooks/useWidgetDragAndDrop";
+import {
+  getLegacyStorageCreationNoticeMessage,
+  isLegacyStorageBlockType,
+  isLegacyUniversalTableStorageBlockType,
+} from "../shared/legacy";
 
 import useBlockDragAndDrop from "../modules/blocks/hooks/useBlockDragAndDrop";
 import {
@@ -25,16 +34,17 @@ import {
 } from "../modules/sections/services/sectionService";
 
 import LibraryPageView from "../modules/documentLibraries/components/LibraryPageView";
-import { UniversalTableView } from "../modules/universalTable";
+import LegacyStorageSystemRouteView from "../shared/legacy/components/LegacyStorageSystemRouteView";
 
 import PortalLayout from "../layouts/PortalLayout";
+import { resolvePortalObjectNavigationPath } from "./utils/portalObjectRoutes";
+import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../modules/designer/utils/navigationReload";
 
 import WorkspaceTopBar from "./components/WorkspaceTopBar";
 import DeleteSectionModal from "./components/DeleteSectionModal";
 import EmptyDropZone from "./components/EmptyDropZone";
 import PageCanvasContextMenu from "./components/PageCanvasContextMenu";
 import BlockSettingsModal from "./components/BlockSettingsModal";
-import TableBlockAddModal from "./components/TableBlockAddModal";
 import PageSettingsPopover from "./components/PageSettingsPopover";
 import PageCanvasToast from "./components/PageCanvasToast";
 import SystemMessage from "../system/SystemMessage";
@@ -63,22 +73,22 @@ import {
   calculateDropPosition,
 } from "./utils/portalPageUtils";
 
-import { updateLegacyTable } from "../modules/runtimeLegacyWriteAdapter";
 import {
-  dispatchUniversalTableTitleChanged,
-  UNIVERSAL_TABLE_TITLE_CHANGED_EVENT,
-} from "../modules/universalTable/utils/universalTableTitleEvents";
-import {
-  isUniversalTableNavigationItem,
-  resolvePrimaryTableIdForPage,
-} from "../modules/universalTable/utils/resolvePrimaryTableId";
-import { syncUniversalTableTitleAcrossUi } from "../modules/universalTable/utils/syncUniversalTableTitle";
+  isLegacyStorageNavigationItem,
+  renameLegacyStorage,
+  resolveLegacyStorageTableIdForPage,
+  subscribeToLegacyStorageTitle,
+  syncLegacyStorageTitleAcrossUi,
+} from "../shared/legacy/adapters/legacyStorageAdapter";
 import { LAYOUT_MODES } from "../shared/layout/layoutModes";
 import { resolveSidebarWidth, resolveWorkspaceLeftOffset } from "../shared/layout/shellGeometry";
 import { SHELL_FEATURE_FLAGS } from "../shared/shell/shellFeatureFlags";
 import { resolveAppSidebarWidth } from "../shared/shell/shellSidebarGeometry";
 import { readShellSidebarCollapsed } from "../shared/shell/useShellSidebarState";
 import { emitRuntimeShadowSnapshot } from "../shared/shell/shadow/runtime";
+import SearchResultsOverlay from "../shared/search/SearchResultsOverlay";
+import { useHeaderSearchContext } from "../shared/search/useHeaderSearchContext";
+import { useHeaderSearchController } from "../shared/search/useHeaderSearchController";
 
 const CORPORATE_CHAT_PAGE_ID = 35;
 
@@ -90,25 +100,6 @@ const EMPTY_DELETE_SECTION_STATE = {
 
 function normalizeId(value) {
   return String(value ?? "").trim();
-}
-
-function ensureEntityLocationRegistry() {
-  if (!window.__YASNOPRO_ENTITY_LOCATION_REGISTRY__) {
-    window.__YASNOPRO_ENTITY_LOCATION_REGISTRY__ = {
-      tables: {},
-      files: {},
-    };
-  }
-
-  if (!window.__YASNOPRO_ENTITY_LOCATION_REGISTRY__.tables) {
-    window.__YASNOPRO_ENTITY_LOCATION_REGISTRY__.tables = {};
-  }
-
-  if (!window.__YASNOPRO_ENTITY_LOCATION_REGISTRY__.files) {
-    window.__YASNOPRO_ENTITY_LOCATION_REGISTRY__.files = {};
-  }
-
-  return window.__YASNOPRO_ENTITY_LOCATION_REGISTRY__;
 }
 
 function collectBlockTableIds(block) {
@@ -180,8 +171,6 @@ function registerPageEntities(sections, pageId) {
 
   if (!normalizedPageId || !Array.isArray(sections)) return;
 
-  const registry = ensureEntityLocationRegistry();
-
   for (const sectionItem of sections) {
     const sectionId = sectionItem?.section?.id || sectionItem?.id || null;
     const blocks = Array.isArray(sectionItem?.blocks) ? sectionItem.blocks : [];
@@ -192,24 +181,26 @@ function registerPageEntities(sections, pageId) {
       const fileUrls = collectBlockFileUrls(block);
 
       for (const tableId of tableIds) {
-        registry.tables[tableId] = {
+        const location = {
           pageId: normalizedPageId,
           blockId,
           sectionId: normalizeId(sectionId),
         };
+        setEntityLocationRegistryEntry(`tables.${tableId}`, location);
       }
 
       for (const fileUrl of fileUrls) {
-        registry.files[fileUrl] = {
+        const location = {
           pageId: normalizedPageId,
           blockId,
           sectionId: normalizeId(sectionId),
         };
+        setEntityLocationRegistryEntry(`files.${fileUrl}`, location);
       }
     }
   }
 
-  console.log("ENTITY LOCATION REGISTRY:", registry);
+  console.log("ENTITY LOCATION REGISTRY:", getEntityLocationRegistry());
 }
 
 function getAdminPageByPath(pathname) {
@@ -387,7 +378,7 @@ function resolveDesignerSectionTitle(pathname) {
   if (pathname.includes("/administration")) return "Администрирование";
   if (pathname.includes("/object-types")) return "Объекты";
   if (pathname.includes("/relations")) return "Связи";
-  if (pathname.includes("/views")) return "Представления";
+  if (pathname.includes("/views")) return "Вкладки";
   if (pathname.includes("/users")) return "Пользователи";
   if (pathname.includes("/settings")) return "Системные настройки";
   if (pathname.includes("/page/")) return "Объекты";
@@ -420,7 +411,6 @@ export default function PortalPageView() {
 
   const [selectedSection, setSelectedSection] = useState(null);
   const [selectedBlock, setSelectedBlock] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
 
   const [deleteSectionState, setDeleteSectionState] = useState(
     EMPTY_DELETE_SECTION_STATE
@@ -435,15 +425,33 @@ export default function PortalPageView() {
 
   const [pageTitleDraft, setPageTitleDraft] = useState("");
   const [pageSettingsAnchor, setPageSettingsAnchor] = useState(null);
-  const [tableBlockAddState, setTableBlockAddState] = useState(null);
   const [runtimeHeaderModel, setRuntimeHeaderModel] = useState(null);
   const [libraryContextPath, setLibraryContextPath] = useState({
     rootTitle: "",
     folderPath: [],
+    documentTitle: null,
   });
 
   const { navigation, navigationError, reloadNavigation } =
     useNavigationTree(portalId);
+
+  useEffect(() => {
+    const handlePortalNavigationReload = () => {
+      reloadNavigation();
+    };
+
+    window.addEventListener(
+      PORTAL_NAVIGATION_RELOAD_EVENT,
+      handlePortalNavigationReload,
+    );
+
+    return () => {
+      window.removeEventListener(
+        PORTAL_NAVIGATION_RELOAD_EVENT,
+        handlePortalNavigationReload,
+      );
+    };
+  }, [reloadNavigation]);
 
   const activeNavigationItem = pageId
     ? findNavigationItemByPageId(navigation, pageId)
@@ -502,7 +510,69 @@ export default function PortalPageView() {
         },
       });
     });
+
+    const documentTitle = String(libraryContextPath.documentTitle || "").trim();
+    if (documentTitle) {
+      headerBreadcrumbItems.push({
+        id: "library-document",
+        label: documentTitle,
+        path: location.pathname,
+        meta: {
+          scope: "document-library-document",
+        },
+      });
+    }
   }
+
+  const headerSearchContextInput = useMemo(
+    () => ({
+      pathname: location.pathname,
+      routeParams: {
+        portalId,
+        pageId,
+        tenantId: portalId,
+      },
+      currentPage: {
+        tenantId: portalId,
+        pageId,
+        isHome: pageId === 1,
+      },
+      currentSection: activeNavigationItem
+        ? {
+            id: activeNavigationItem.id,
+            type: activeNavigationItem.type,
+            libraryId: activeNavigationItem.library_id,
+            objectTypeId: activeNavigationItem.object_type_id,
+            objectTypeKey: activeNavigationItem.object_type_key,
+          }
+        : undefined,
+      currentLibrary:
+        isDocumentLibraryPage && activeNavigationItem?.library_id
+          ? {
+              libraryId: activeNavigationItem.library_id,
+              folderPath: libraryContextPath.folderPath ?? [],
+            }
+          : undefined,
+      currentObjectType:
+        activeNavigationItem?.object_type_id || activeNavigationItem?.object_type_key
+          ? {
+              objectTypeId: activeNavigationItem.object_type_id,
+              objectTypeKey: activeNavigationItem.object_type_key,
+            }
+          : undefined,
+    }),
+    [
+      location.pathname,
+      portalId,
+      pageId,
+      activeNavigationItem,
+      isDocumentLibraryPage,
+      libraryContextPath.folderPath,
+    ],
+  );
+
+  const searchContext = useHeaderSearchContext(headerSearchContextInput);
+  const headerSearch = useHeaderSearchController({ searchContext, enabled: true });
 
   const isCanvasEditPage =
     !isUniversalTablePage &&
@@ -622,7 +692,7 @@ export default function PortalPageView() {
       collapsed,
       search: {
         enabled: true,
-        value: String(searchQuery ?? ""),
+        value: String(headerSearch.searchQuery ?? ""),
       },
       notifications: {
         enabled: true,
@@ -643,7 +713,7 @@ export default function PortalPageView() {
     pageId,
     activeNavigationItem?.id,
     isUniversalTablePage,
-    searchQuery,
+    headerSearch.searchQuery,
   ]);
 
   const sections = pageData?.sections || [];
@@ -664,7 +734,7 @@ export default function PortalPageView() {
       if (!tableId || !normalizedTitle) return;
 
       try {
-        await syncUniversalTableTitleAcrossUi({
+        await syncLegacyStorageTitleAcrossUi({
           tableId,
           title: normalizedTitle,
           pageId,
@@ -696,17 +766,7 @@ export default function PortalPageView() {
       }
     };
 
-    window.addEventListener(
-      UNIVERSAL_TABLE_TITLE_CHANGED_EVENT,
-      handleTableTitleChanged
-    );
-
-    return () => {
-      window.removeEventListener(
-        UNIVERSAL_TABLE_TITLE_CHANGED_EVENT,
-        handleTableTitleChanged
-      );
-    };
+    return subscribeToLegacyStorageTitle(handleTableTitleChanged);
   }, [navigation, pageId, pageData, activeNavigationItem, reloadNavigation]);
 
   const preserveScrollAndReload = async () => {
@@ -734,6 +794,24 @@ export default function PortalPageView() {
       navigate(`/portal/${portalId}/page/${nextPageId}`);
     },
     [navigate, portalId]
+  );
+
+  const handleSidebarItemAction = useCallback(
+    (item, event) => {
+      const objectTypePath = resolvePortalObjectNavigationPath(item, portalId);
+      if (objectTypePath) {
+        event?.preventDefault?.();
+        navigate(objectTypePath);
+        return;
+      }
+
+      const nextPageId = item?.pageId ?? item?.page_id ?? item?.meta?.page_id;
+      if (nextPageId != null) {
+        event?.preventDefault?.();
+        handleSelectPage(nextPageId);
+      }
+    },
+    [navigate, portalId, handleSelectPage],
   );
 
   const handleSectionUpdated = (updatedSection) => {
@@ -934,49 +1012,11 @@ export default function PortalPageView() {
     }
   };
 
-  const isUniversalTableBlockType = (blockType) =>
-    ["table", "universal_table", "tableBlock", "table_block"].includes(
-      blockType
-    );
-
-  const createUniversalTableBlock = async (
-    sectionId,
-    dropPoint,
-    { existingTableId = null } = {}
-  ) => {
-    const sectionItem = getSectionItemById(pageData?.sections, sectionId);
-    const position = calculateDropPosition({
-      sectionId,
-      blockType: "universal_table",
-      dropPoint,
-      blocks: sectionItem?.blocks || [],
-    });
-
-    const createdBlock = await createBlock(
-      sectionId,
-      "universal_table",
-      position
-    );
-
-    if (existingTableId) {
-      await updateBlock(createdBlock.id, {
-        title: createdBlock.title,
-        content: {
-          ...(createdBlock.content || {}),
-          table_id: Number(existingTableId),
-        },
-        settings: createdBlock.settings,
-      });
-    }
-
-    await preserveScrollAndReload();
-  };
-
   const handleAddBlockToSection = async (sectionId, blockType, dropPoint) => {
     if (isUniversalTablePage || isAdminPage || isCorporateChatPage) return;
 
-    if (isUniversalTableBlockType(blockType)) {
-      setTableBlockAddState({ sectionId, dropPoint });
+    if (isLegacyStorageBlockType(blockType)) {
+      showCanvasError(getLegacyStorageCreationNoticeMessage(), dropPoint);
       return;
     }
 
@@ -1009,7 +1049,7 @@ export default function PortalPageView() {
   };
 
   const handleEditBlock = (block) => {
-    if (block?.type === "universal_table") {
+    if (isLegacyUniversalTableStorageBlockType(block?.type)) {
       return;
     }
 
@@ -1106,39 +1146,6 @@ export default function PortalPageView() {
 
   const handleRemoveBlockFromSection = async (block) => {
     await handleDeleteBlock(block, { skipConfirm: true });
-  };
-
-  const handleTableBlockAddCreateNew = async () => {
-    if (!tableBlockAddState?.sectionId) return;
-
-    try {
-      setError("");
-      await createUniversalTableBlock(
-        tableBlockAddState.sectionId,
-        tableBlockAddState.dropPoint
-      );
-      setTableBlockAddState(null);
-    } catch (e) {
-      console.error(e);
-      showCanvasError("Ошибка создания блока таблицы");
-    }
-  };
-
-  const handleTableBlockAddExisting = async (existingTableId) => {
-    if (!tableBlockAddState?.sectionId || !existingTableId) return;
-
-    try {
-      setError("");
-      await createUniversalTableBlock(
-        tableBlockAddState.sectionId,
-        tableBlockAddState.dropPoint,
-        { existingTableId }
-      );
-      setTableBlockAddState(null);
-    } catch (e) {
-      console.error(e);
-      showCanvasError("Ошибка добавления таблицы");
-    }
   };
 
   const handleMoveBlock = async ({
@@ -1238,20 +1245,14 @@ export default function PortalPageView() {
     try {
       setError("");
 
-      const primaryTableId = await resolvePrimaryTableIdForPage(pageData);
+      const primaryTableId = await resolveLegacyStorageTableIdForPage(pageData);
       const isDedicatedTablePage =
-        isUniversalTableNavigationItem(activeNavigationItem);
+        isLegacyStorageNavigationItem(activeNavigationItem);
 
       if (isDedicatedTablePage && primaryTableId) {
-        const updated = await updateLegacyTable(primaryTableId, {
-          title: nextTitle,
-        });
-
-        const tableTitle = updated?.title || nextTitle;
-
-        dispatchUniversalTableTitleChanged({
+        await renameLegacyStorage({
           tableId: primaryTableId,
-          title: tableTitle,
+          title: nextTitle,
           dedicatedPageId: pageId,
         });
 
@@ -1362,22 +1363,15 @@ export default function PortalPageView() {
       return;
     }
 
+    if (isLegacyStorageBlockType(blockType)) {
+      showCanvasError(getLegacyStorageCreationNoticeMessage(), dropPoint);
+      return;
+    }
+
     const sectionId = findSectionIdFromPoint(dropPoint);
 
     if (!sectionId) {
       showCanvasError("Блоки можно добавлять только внутрь раздела", dropPoint);
-      return;
-    }
-
-    const isTableWidget = [
-      "table",
-      "universal_table",
-      "tableBlock",
-      "table_block",
-    ].includes(blockType);
-
-    if (isTableWidget && !isFlexibleSection(sectionId)) {
-      showCanvasError("Таблицу можно добавлять только в гибкий раздел", dropPoint);
       return;
     }
 
@@ -1386,14 +1380,27 @@ export default function PortalPageView() {
 
   return (
     <PortalLayout
+      portalId={portalId}
       navigation={navigation}
       activePageId={isUniversalTablePage ? "system-universal-table" : pageId}
       onSelectPage={handleSelectPage}
+      onNavigateToPath={(path) => navigate(path)}
+      onSidebarItemAction={handleSidebarItemAction}
       reloadNavigation={reloadNavigation}
       menuScale={menuScale}
       onChangeMenuScale={changeMenuScale}
       headerContract={runtimeHeaderModel?.contract}
       onHeaderAction={runtimeHeaderModel?.onAction}
+      searchOverlay={
+        <SearchResultsOverlay
+          isVisible={headerSearch.isOverlayVisible}
+          isLoading={headerSearch.isLoading}
+          error={headerSearch.error}
+          results={headerSearch.results}
+          scopeLabel={searchContext.label}
+          onClose={headerSearch.closeResults}
+        />
+      }
     >
     
 <div
@@ -1432,8 +1439,12 @@ export default function PortalPageView() {
     subtitle={topBarMeta.subtitle}
     sectionTitle={headerSectionTitle}
     breadcrumbItems={headerBreadcrumbItems}
-    searchQuery={searchQuery}
-    onChangeSearchQuery={setSearchQuery}
+    searchQuery={headerSearch.searchQuery}
+    onQueryChange={headerSearch.onQueryChange}
+    searchPlaceholder={searchContext.label}
+    onOpenFirstResult={headerSearch.openFirstResult}
+    onCloseSearchResults={headerSearch.closeResults}
+    onClearSearch={headerSearch.clearResults}
     isEditMode={isEditMode}
     isPageTitleEditable={isEditMode && isCanvasEditPage}
     pageTitleDraft={pageTitleDraft}
@@ -1480,7 +1491,7 @@ export default function PortalPageView() {
           overflow: "hidden",
         }}
       >
-        <UniversalTableView blockId={999999} isEditMode={isEditMode} />
+        <LegacyStorageSystemRouteView isEditMode={isEditMode} />
       </div>
     )}
 
@@ -1612,13 +1623,6 @@ export default function PortalPageView() {
     onRemoveBlockFromSection={handleRemoveBlockFromSection}
     onSaveSection={handleSaveSection}
     onCloseSectionEditor={() => setSelectedSection(null)}
-  />
-
-  <TableBlockAddModal
-    isOpen={Boolean(tableBlockAddState)}
-    onClose={() => setTableBlockAddState(null)}
-    onCreateNew={handleTableBlockAddCreateNew}
-    onAddExisting={handleTableBlockAddExisting}
   />
 
   <PageCanvasToast

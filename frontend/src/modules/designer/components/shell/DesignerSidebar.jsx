@@ -39,7 +39,7 @@ export default function DesignerSidebar({ collapsed = false, onToggleCollapse })
         <img src={logo} alt="YasnoPro" className="designer-sidebar__brand-logo" />
         <div className="designer-sidebar__brand-text">
           <div className="designer-sidebar__brand-title">YasnoPro</div>
-          <div className="designer-sidebar__brand-subtitle">Режим аналитика</div>
+          <div className="designer-sidebar__brand-subtitle">Режим настроек</div>
         </div>
       </div>
 

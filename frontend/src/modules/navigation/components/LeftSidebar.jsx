@@ -13,12 +13,11 @@ import MenuTree from "./MenuTree";
 import CreateMenuItemModal from "./CreateMenuItemModal";
 
 import { getPageFull } from "../../../api/pagesApi";
-import { updateLegacyTable } from "../../runtimeLegacyWriteAdapter";
-import { dispatchUniversalTableTitleChanged } from "../../universalTable/utils/universalTableTitleEvents";
 import {
-  isUniversalTableNavigationItem,
-  resolvePrimaryTableIdForPage,
-} from "../../universalTable/utils/resolvePrimaryTableId";
+  isLegacyStorageNavigationItem,
+  renameLegacyStorageForPage,
+  requestLegacyLeaveConfirmation,
+} from "../../../shared/legacy/adapters/legacyStorageAdapter";
 import { findNavigationItemById } from "../../../portal/utils/portalPageUtils";
 
 import useMenuEditor from "../hooks/useMenuEditor";
@@ -132,32 +131,7 @@ function insertMyTasksAfterMainPage(tree = [], myTasksItem) {
 }
 
 async function canLeaveCurrentPage() {
-  if (window.__UNIVERSAL_TABLE_DIRTY__ !== true) return true;
-
-  return new Promise((resolve) => {
-    window.dispatchEvent(
-      new CustomEvent("universal-table:request-leave-confirm", {
-        detail: {
-          onConfirm: async () => {
-            try {
-              const saveHandler = window.__UNIVERSAL_TABLE_SAVE_HANDLER__;
-
-              if (typeof saveHandler === "function") {
-                await saveHandler();
-              }
-
-              window.__UNIVERSAL_TABLE_DIRTY__ = false;
-              resolve(true);
-            } catch (error) {
-              console.error("Ошибка сохранения представления:", error);
-              resolve(false);
-            }
-          },
-          onCancel: () => resolve(false),
-        },
-      })
-    );
-  });
+  return requestLegacyLeaveConfirmation();
 }
 
 export default function LeftSidebar({
@@ -277,29 +251,21 @@ export default function LeftSidebar({
       if (
         navigationItem &&
         nextTitle &&
-        isUniversalTableNavigationItem(navigationItem) &&
+        isLegacyStorageNavigationItem(navigationItem) &&
         navigationItem.page_id
       ) {
         try {
           const linkedPage = await getPageFull(navigationItem.page_id);
-          const tableId = await resolvePrimaryTableIdForPage(linkedPage);
+          const renameResult = await renameLegacyStorageForPage({
+            pageData: linkedPage,
+            title: nextTitle,
+            dedicatedPageId: navigationItem.page_id,
+          });
 
-          if (tableId) {
-            const updatedTable = await updateLegacyTable(tableId, {
-              title: nextTitle,
-            });
-
-            const syncedTitle = updatedTable?.title || nextTitle;
-
-            dispatchUniversalTableTitleChanged({
-              tableId,
-              title: syncedTitle,
-              dedicatedPageId: navigationItem.page_id,
-            });
-
+          if (renameResult?.title) {
             await editor.updateItem(itemId, {
               ...data,
-              title: syncedTitle,
+              title: renameResult.title,
             });
 
             return;
@@ -493,8 +459,14 @@ export default function LeftSidebar({
       {!collapsed && editor.isEditMode && isCreateOpen && (
         <CreateMenuItemModal
           onCreate={async (data) => {
-            await editor.createItem(data);
-            setIsCreateOpen(false);
+            try {
+              await editor.createItem(data);
+              setIsCreateOpen(false);
+            } catch (error) {
+              window.alert(
+                error?.message || "Не удалось создать пункт меню",
+              );
+            }
           }}
           onClose={() => setIsCreateOpen(false)}
         />

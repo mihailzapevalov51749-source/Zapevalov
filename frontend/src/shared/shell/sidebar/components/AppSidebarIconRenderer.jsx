@@ -1,8 +1,7 @@
+import { hasUploadedIcon } from "../../../icons/iconFileUtils";
 import { SIDEBAR_MODES } from "../sidebarMode";
 import SidebarMenuIcon from "./SidebarMenuIcon";
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8010";
+import SidebarNavigationItemIcon from "./SidebarNavigationItemIcon";
 
 const DEFAULT_ICON_SYMBOLS = {
   section: "▣",
@@ -13,6 +12,7 @@ const DEFAULT_ICON_SYMBOLS = {
   document_library: "▤",
   system_page: "⚙",
   table: "▦",
+  object_type: "◆",
 };
 
 function readMetaString(meta, key) {
@@ -30,11 +30,14 @@ function resolveRuntimeMenuType(meta, item) {
   );
 }
 
-function hasRuntimeUploadIcon(meta) {
-  return (
-    readMetaString(meta, "icon_type") === "upload" &&
-    Boolean(readMetaString(meta, "icon_file_url"))
-  );
+function resolveMetaIconSource(meta) {
+  return {
+    iconType:
+      readMetaString(meta, "display_icon_type") ?? readMetaString(meta, "icon_type"),
+    iconFileUrl:
+      readMetaString(meta, "display_icon_file_url") ??
+      readMetaString(meta, "icon_file_url"),
+  };
 }
 
 /**
@@ -44,20 +47,19 @@ function hasRuntimeUploadIcon(meta) {
  */
 export default function AppSidebarIconRenderer({ item, mode }) {
   const meta = item.meta ?? {};
+  const { iconType, iconFileUrl } = resolveMetaIconSource(meta);
+
+  if (hasUploadedIcon(iconType, iconFileUrl)) {
+    return (
+      <SidebarNavigationItemIcon
+        iconType={iconType}
+        iconFileUrl={iconFileUrl}
+        size={16}
+      />
+    );
+  }
 
   if (mode !== SIDEBAR_MODES.DESIGNER) {
-    const iconFileUrl = readMetaString(meta, "icon_file_url");
-
-    if (hasRuntimeUploadIcon(meta) && iconFileUrl) {
-      return (
-        <img
-          src={`${API_BASE_URL}${iconFileUrl}`}
-          alt=""
-          className="app-sidebar-renderer__item-icon-image"
-        />
-      );
-    }
-
     const menuType = resolveRuntimeMenuType(meta, item);
     const symbol =
       (menuType && DEFAULT_ICON_SYMBOLS[menuType]) ||

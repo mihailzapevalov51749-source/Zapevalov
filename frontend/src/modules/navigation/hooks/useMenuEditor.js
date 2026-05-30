@@ -1,4 +1,6 @@
 import { useState } from "react";
+
+import { getLegacyStorageBlockedMessageForNavigationType } from "../../../shared/legacy";
 import { navigationService } from "../services/navigationService";
 
 export default function useMenuEditor({ portalId, reload }) {
@@ -20,66 +22,19 @@ export default function useMenuEditor({ portalId, reload }) {
     setIsSaving(true);
 
     try {
+      const legacyNavBlockedMessage =
+        getLegacyStorageBlockedMessageForNavigationType(type);
+
+      if (legacyNavBlockedMessage) {
+        throw new Error(legacyNavBlockedMessage);
+      }
+
       if (type === "document_library") {
         await navigationService.createDocumentLibrary({
           portal_id: portalId,
           parent_id,
           title,
           description: "",
-        });
-
-        await reload();
-        return;
-      }
-
-      if (type === "universal_table") {
-        const page = await navigationService.createPage({
-          portal_id: portalId,
-          title,
-          description: "",
-          status: "published",
-          is_home: false,
-          is_visible: true,
-          sort_order: 0,
-        });
-
-        await navigationService.createItem({
-          portal_id: portalId,
-          parent_id,
-          type: "universal_table",
-          title,
-          page_id: page.id,
-          url: null,
-          sort_order: 0,
-          is_visible: true,
-          icon: null,
-          icon_type: null,
-          icon_file_url: null,
-          color: null,
-          is_bold: false,
-          is_italic: false,
-          scope,
-          mode,
-          context,
-        });
-
-        const section = await navigationService.createSection({
-          page_id: page.id,
-          title: "",
-          description: "",
-          layout: "one_column",
-          sort_order: 0,
-        });
-
-        await navigationService.createBlock({
-          section_id: section.id,
-          type: "universal_table",
-          title,
-          content: {},
-          settings: {
-            show_title: true,
-          },
-          sort_order: 0,
         });
 
         await reload();

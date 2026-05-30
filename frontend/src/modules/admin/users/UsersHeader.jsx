@@ -1,5 +1,5 @@
 import { styles } from "./usersStyles";
-import updateIcon from "../../../assets/icons/update.png";
+import RefreshIconButton from "../../../shared/ui/RefreshIconButton";
 
 export default function UsersHeader({
   onRefresh,
@@ -17,18 +17,7 @@ export default function UsersHeader({
           +
         </button>
 
-        <button
-          type="button"
-          onClick={onRefresh}
-          style={styles.headerIconButton}
-          title="Обновить"
-        >
-          <img
-            src={updateIcon}
-            alt=""
-            style={styles.headerIcon}
-          />
-        </button>
+        <RefreshIconButton onClick={onRefresh} title="Обновить" />
       </div>
     </section>
   );

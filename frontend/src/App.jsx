@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import PortalPageView from "./portal/PortalPageView";
-import LibraryPageView from "./modules/documentLibraries/components/LibraryPageView";
+import PortalObjectRuntimePage from "./portal/PortalObjectRuntimePage";
+import PortalLibraryRuntimePage from "./portal/PortalLibraryRuntimePage";
 import LoginPage from "./pages/login/LoginPage";
 import ProfilePage from "./profile/components/ProfilePage";
 
@@ -13,13 +14,18 @@ import AppShellShadowRuntimePreview from "./shared/shell/shadow/dev/AppShellShad
 import AppShellShadowDesignerPreview from "./shared/shell/shadow/dev/AppShellShadowDesignerPreview";
 
 import { getMe } from "./api/authApi";
-import { saveLastRuntimePath } from "./shared/appMode/appModeStorage";
+import {
+  saveLastDesignerPath,
+  saveLastRuntimePath,
+} from "./shared/appMode/appModeStorage";
 
 import DesignerAccessGate from "./modules/designer/pages/DesignerAccessGate";
 import DesignerTenantLayout from "./modules/designer/pages/DesignerTenantLayout";
 import ObjectTypesPage from "./modules/designer/pages/ObjectTypesPage";
 import ObjectTypeWorkspacePage from "./modules/designer/pages/ObjectTypeWorkspacePage";
+import ObjectTypeDataPage from "./modules/designer/pages/ObjectTypeDataPage";
 import DesignerSectionPlaceholderPage from "./modules/designer/pages/DesignerSectionPlaceholderPage";
+import PlatformDevelopmentPage from "./modules/platformDashboard/pages/PlatformDevelopmentPage";
 
 function isSuperadmin(user) {
   if (!user) return false;
@@ -40,12 +46,14 @@ function ProtectedSuperadminRoute({ user, children }) {
   return children;
 }
 
-function RuntimePathTracker() {
+function ModePathTracker() {
   const location = useLocation();
 
   useEffect(() => {
-    saveLastRuntimePath(location.pathname);
-  }, [location.pathname]);
+    const fullPath = `${location.pathname}${location.search}${location.hash}`;
+    saveLastRuntimePath(fullPath);
+    saveLastDesignerPath(fullPath);
+  }, [location.pathname, location.search, location.hash]);
 
   return null;
 }
@@ -89,7 +97,7 @@ export default function App() {
 
   return (
     <>
-      <RuntimePathTracker />
+      <ModePathTracker />
       <Routes>
       <Route path="/" element={<Navigate to="/portal/1/page/1" replace />} />
 
@@ -133,8 +141,18 @@ export default function App() {
       />
 
       <Route
+        path="/portal/:portalId/object-types/:objectTypeRef/data"
+        element={<PortalObjectRuntimePage />}
+      />
+
+      <Route
+        path="/portal/:portalId/object-types/:objectTypeRef"
+        element={<PortalObjectRuntimePage />}
+      />
+
+      <Route
         path="/portal/:portalId/library/:libraryId"
-        element={<LibraryPageView />}
+        element={<PortalLibraryRuntimePage />}
       />
 
       <Route path="/profile" element={<ProfilePage />} />
@@ -171,6 +189,7 @@ export default function App() {
             path="publishing"
             element={<DesignerSectionPlaceholderPage title="Публикация" />}
           />
+          <Route path="platform/*" element={<PlatformDevelopmentPage />} />
           <Route
             path="administration/*"
             element={
@@ -183,6 +202,10 @@ export default function App() {
           <Route
             path="object-types/:objectTypeId"
             element={<Navigate to="general" replace relative="path" />}
+          />
+          <Route
+            path="object-types/:objectTypeId/data"
+            element={<ObjectTypeDataPage />}
           />
           <Route
             path="object-types/:objectTypeId/:tab"

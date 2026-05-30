@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { setEntityLocationRegistryEntry } from "../../navigation/entityLocationRegistry";
 
 import {
   normalizeId,
@@ -20,28 +21,7 @@ export default function useTableLocationRegistry({
       resolvedBlockId
     );
 
-    if (
-      !window.__YASNOPRO_ENTITY_LOCATION_REGISTRY__
-    ) {
-      window.__YASNOPRO_ENTITY_LOCATION_REGISTRY__ =
-        {
-          tables: {},
-          files: {},
-        };
-    }
-
-    if (
-      !window
-        .__YASNOPRO_ENTITY_LOCATION_REGISTRY__
-        .tables
-    ) {
-      window.__YASNOPRO_ENTITY_LOCATION_REGISTRY__.tables =
-        {};
-    }
-
-    window.__YASNOPRO_ENTITY_LOCATION_REGISTRY__.tables[
-      currentTableId
-    ] = {
+    setEntityLocationRegistryEntry(`tables.${currentTableId}`, {
       tableId: currentTableId,
 
       blockId: currentBlockId,
@@ -51,7 +31,7 @@ export default function useTableLocationRegistry({
 
       originalTableId:
         table?.id || tableId || null,
-    };
+    });
   }, [
     table?.id,
     tableId,

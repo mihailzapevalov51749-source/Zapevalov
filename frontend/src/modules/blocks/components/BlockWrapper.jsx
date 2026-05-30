@@ -1,5 +1,9 @@
 import { useRef, useState } from "react";
 
+import {
+  isLegacyUniversalTableStorageBlockType,
+  LegacyStorageExistingBadge,
+} from "../../../shared/legacy";
 import BlockToolbar from "./BlockToolbar";
 
 export default function BlockWrapper({
@@ -22,10 +26,12 @@ export default function BlockWrapper({
   const suppressClickRef = useRef(false);
   const pointerRef = useRef({ x: 0, y: 0, moved: false });
 
-  const isUniversalTableBlock = block?.type === "universal_table";
+  const isLegacyUtStorageBlock = isLegacyUniversalTableStorageBlockType(
+    block?.type
+  );
 
   const isTableBlock =
-    isUniversalTableBlock ||
+    isLegacyUtStorageBlock ||
     ["table", "tables", "table_block", "tableBlock"].includes(block?.type) ||
     Array.isArray(block?.content?.columns) ||
     Array.isArray(block?.content?.rows);
@@ -40,7 +46,7 @@ export default function BlockWrapper({
     borderRadius: isTableBlock ? 0 : 12,
     overflow: "hidden",
     cursor:
-      isEditMode && onEdit && !isUniversalTableBlock ? "pointer" : "default",
+      isEditMode && onEdit && !isLegacyUtStorageBlock ? "pointer" : "default",
     opacity: isDragged ? 0.35 : 1,
     transition:
       "border 120ms ease, background 120ms ease, box-shadow 120ms ease, opacity 120ms ease",
@@ -101,7 +107,7 @@ export default function BlockWrapper({
   };
 
   const handleClick = (event) => {
-    if (!isEditMode || !onEdit || isUniversalTableBlock) return;
+    if (!isEditMode || !onEdit || isLegacyUtStorageBlock) return;
     if (suppressClickRef.current || pointerRef.current.moved) return;
 
     const inlineEditor = event.target.closest?.(
@@ -141,6 +147,10 @@ export default function BlockWrapper({
       {isEditMode && isHovered && !isTableBlock && (
         <BlockToolbar onDelete={() => onDelete?.()} />
       )}
+
+      {isEditMode && isLegacyUtStorageBlock ? (
+        <LegacyStorageExistingBadge />
+      ) : null}
 
       <div
         data-block-content-area="true"

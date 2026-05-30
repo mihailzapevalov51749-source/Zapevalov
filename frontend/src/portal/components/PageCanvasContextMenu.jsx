@@ -1,4 +1,4 @@
-import { PAGE_CANVAS_BLOCK_TYPES } from "../constants/pageCanvasBlockTypes";
+import { getCreatablePageCanvasBlockTypes } from "../constants/pageCanvasBlockTypes";
 
 export default function PageCanvasContextMenu({
   menuState,
@@ -27,7 +27,7 @@ export default function PageCanvasContextMenu({
           boxSizing: "border-box",
         }}
       >
-        {PAGE_CANVAS_BLOCK_TYPES.map((item) => (
+        {getCreatablePageCanvasBlockTypes().map((item) => (
           <button
             key={item.type}
             type="button"

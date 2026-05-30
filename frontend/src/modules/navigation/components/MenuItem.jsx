@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 
 import MenuItemEditor from "./MenuItemEditor";
+import { hasUploadedIcon } from "../../../shared/icons/iconFileUtils";
+import SidebarNavigationItemIcon from "../../../shared/shell/sidebar/components/SidebarNavigationItemIcon";
+import { resolveSidebarNavigationIconSource } from "../../../shared/shell/sidebar/utils/resolveSidebarNavigationIconSource";
 import { theme } from "../../../styles/theme";
 import { LAYOUT_TOKENS } from "../../../shared/layout/layoutTokens";
 
-const API_BASE_URL = "http://127.0.0.1:8010";
+import { resolveDesignerSidebarItemActive } from "../../../shared/shell/designer/designerNavigationResolver";
 
 const BASE = {
   rowHeight: 40,
@@ -39,13 +42,58 @@ function isProtectedMenuTitle(title) {
 }
 
 function hasCustomMenuIcon(item) {
-  return item?.icon_type === "upload" && Boolean(item?.icon_file_url);
+  const { iconType, iconFileUrl } = resolveSidebarNavigationIconSource(item);
+  return hasUploadedIcon(iconType, iconFileUrl);
+}
+
+function resolveNavigationPath(item) {
+  return (
+    item?.url ||
+    item?.path ||
+    item?.route ||
+    item?.meta?.url ||
+    item?.meta?.route ||
+    null
+  );
+}
+
+function isObjectTypeNavigationItem(item) {
+  return item?.type === "object_type" || item?.object_type_id != null;
+}
+
+function normalizeMenuPath(value) {
+  if (!value) return "";
+  const trimmed = String(value).trim();
+  if (!trimmed) return "";
+  if (trimmed === "/") return "/";
+  return trimmed.replace(/\/+$/, "");
+}
+
+function resolveDesignerMenuRouteActive({
+  item,
+  itemRoute,
+  currentPathname,
+  isDesignerRoute,
+  routeOwner = null,
+}) {
+  if (!itemRoute || !isDesignerRoute) {
+    return false;
+  }
+
+  return resolveDesignerSidebarItemActive({
+    item,
+    activePathname: currentPathname,
+    itemPath: itemRoute,
+    routeOwner,
+  });
 }
 
 export default function MenuItem({
   item,
   activePageId,
+  activeSidebarItemId = null,
   onSelectPage,
+  onItemAction,
   isEditMode,
   onUpdateItem,
   onDeleteItem,
@@ -55,7 +103,10 @@ export default function MenuItem({
   setOpenedEditorItemId,
   sidebarCollapsed = false,
   sidebarMode = "runtime",
+  routeOwner = null,
 }) {
+  const iconSource = useMemo(() => resolveSidebarNavigationIconSource(item), [item]);
+
   const [isHovered, setIsHovered] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const state = getCollapsedState();
@@ -89,22 +140,27 @@ export default function MenuItem({
     return null;
   }
 
-  const normalizePath = (value) => {
-    if (!value) return "";
-    const trimmed = String(value).trim();
-    if (!trimmed) return "";
-    if (trimmed === "/") return "/";
-    return trimmed.replace(/\/+$/, "");
-  };
-  const currentPathname = normalizePath(window.location.pathname);
-  const itemRoute = normalizePath(item.route || item.path || item.url);
+  const currentPathname = normalizeMenuPath(window.location.pathname);
+  const navigationPath = resolveNavigationPath(item);
+  const itemRoute = normalizeMenuPath(navigationPath);
+  const objectTypeItem = isObjectTypeNavigationItem(item);
+  const useDesignerRouteOwnerRules =
+    sidebarMode === "designer" && currentPathname.startsWith("/designer/");
   const isDesignerRoute =
-    itemRoute.startsWith("/designer/") && currentPathname.startsWith("/designer/");
-  const isRouteActive = Boolean(
-    itemRoute &&
-      (currentPathname === itemRoute ||
-        (isDesignerRoute && currentPathname.startsWith(`${itemRoute}/`)))
-  );
+    useDesignerRouteOwnerRules && itemRoute.startsWith("/designer/");
+  const isRouteActive = useDesignerRouteOwnerRules
+    ? resolveDesignerMenuRouteActive({
+        item,
+        itemRoute,
+        currentPathname,
+        isDesignerRoute: true,
+        routeOwner,
+      })
+    : Boolean(
+        itemRoute &&
+          (currentPathname === itemRoute ||
+            currentPathname.startsWith(`${itemRoute}/`)),
+      );
   const resolveNumericId = (value) => {
     const numeric = Number(value);
     return Number.isFinite(numeric) ? numeric : null;
@@ -122,10 +178,13 @@ export default function MenuItem({
       (activeNumericPageId == null &&
         currentDesignerPageId != null &&
         itemPageId === currentDesignerPageId));
-  const isActive =
-    item.active === true ||
-    isPageActiveById ||
-    isRouteActive;
+  const useDesignerSingleActiveItem =
+    sidebarMode === "designer" &&
+    activeSidebarItemId != null &&
+    currentPathname.startsWith("/designer/");
+  const isActive = useDesignerSingleActiveItem
+    ? String(item.id) === String(activeSidebarItemId)
+    : item.active === true || isPageActiveById || isRouteActive;
 
   const visibleChildren = isEditMode
     ? item.children || []
@@ -147,6 +206,7 @@ export default function MenuItem({
     ((isPageLike && item.page_id) ||
       (item.type === "external_link" && item.url) ||
       (item.type === "system_page" && item.route) ||
+      (objectTypeItem && navigationPath) ||
       isSection);
 
   const allowSystemDrag = sidebarMode === "designer" && isSystem;
@@ -211,6 +271,17 @@ export default function MenuItem({
 
     if (isEditMode) return;
     if (!item.is_visible && !isSystem) return;
+
+    if (objectTypeItem && navigationPath) {
+      if (typeof onItemAction === "function") {
+        onItemAction(item, { preventDefault: () => {} });
+        return;
+      }
+
+      window.history.pushState({}, "", navigationPath);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+      return;
+    }
 
     if (item.type === "system_page" && item.route) {
       window.history.pushState({}, "", item.route);
@@ -308,11 +379,10 @@ export default function MenuItem({
 
           {sidebarCollapsed ? (
             hasCustomMenuIcon(item) ? (
-              <IconRenderer
-                iconType={item.icon_type}
-                iconFileUrl={item.icon_file_url}
-                scale={1}
-                iconSize={iconSize}
+              <SidebarNavigationItemIcon
+                iconType={iconSource.iconType}
+                iconFileUrl={iconSource.iconFileUrl}
+                size={iconSize}
               />
             ) : (
               <DefaultIcon
@@ -325,11 +395,10 @@ export default function MenuItem({
             )
           ) : (
             <>
-              <IconRenderer
-                iconType={item.icon_type}
-                iconFileUrl={item.icon_file_url}
-                scale={scale}
-                iconSize={iconSize}
+              <SidebarNavigationItemIcon
+                iconType={iconSource.iconType}
+                iconFileUrl={iconSource.iconFileUrl}
+                size={iconSize}
               />
 
               {isEditMode && item.type === "system_page" && !item.icon_type && (
@@ -353,9 +422,9 @@ export default function MenuItem({
               minWidth: 0,
               color: itemTextColor,
             }}
-            title={item.title}
+            title={iconSource.title}
           >
-            {item.title}
+            {iconSource.title}
           </span>
           )}
         </div>
@@ -429,7 +498,9 @@ export default function MenuItem({
               key={child.id}
               item={child}
               activePageId={activePageId}
+              activeSidebarItemId={activeSidebarItemId}
               onSelectPage={onSelectPage}
+              onItemAction={onItemAction}
               isEditMode={isEditMode}
               onUpdateItem={onUpdateItem}
               onDeleteItem={onDeleteItem}
@@ -441,6 +512,7 @@ export default function MenuItem({
               setOpenedEditorItemId={setOpenedEditorItemId}
               sidebarCollapsed={sidebarCollapsed}
               sidebarMode={sidebarMode}
+              routeOwner={routeOwner}
             />
           ))}
         </div>
@@ -518,6 +590,7 @@ function DefaultIcon({
     external_link: "↗",
     document_library: "▤",
     system_page: "⚙",
+    object_type: "◆",
     table: "▦",
   };
 
@@ -552,31 +625,11 @@ function itemTypeLabel(type) {
     external_link: "Ссылка",
     document_library: "Библиотека документов",
     system_page: "Системная страница",
+    object_type: "Объект",
     table: "Таблица",
   };
 
   return labels[type] || "Пункт меню";
-}
-
-function IconRenderer({ iconType, iconFileUrl, scale = 1, iconSize }) {
-  const size = iconSize ?? BASE.iconSize * scale;
-
-  if (iconType === "upload" && iconFileUrl) {
-    return (
-      <img
-        src={`${API_BASE_URL}${iconFileUrl}`}
-        alt=""
-        style={{
-          width: size,
-          height: size,
-          objectFit: "contain",
-          flexShrink: 0,
-        }}
-      />
-    );
-  }
-
-  return null;
 }
 
 function DropLine({ scale = 1 }) {

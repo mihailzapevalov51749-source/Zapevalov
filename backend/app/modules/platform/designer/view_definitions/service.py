@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.modules.platform.designer.field_definitions.models import DesignerFieldDefinition
 from app.modules.platform.designer.object_types import repository as object_type_repository
 from app.modules.platform.designer.object_types.models import DesignerObjectType
 from app.modules.platform.designer.view_definitions import repository
@@ -17,6 +18,10 @@ from app.modules.platform.designer.view_definitions.schemas import (
     ViewDefinitionUpdate,
 )
 from app.modules.users.models import User
+
+DEFAULT_TABLE_VIEW_KEY = "default_table"
+DEFAULT_TABLE_VIEW_NAME = "Таблица"
+TEXT_LIKE_FIELD_TYPES = {"text", "textarea"}
 
 
 def _actor_user_id(current_user: User | None) -> int | None:
@@ -185,6 +190,114 @@ def _to_list_item(
     object_type: DesignerObjectType,
 ) -> ViewDefinitionListItem:
     return ViewDefinitionListItem(**_to_read(entity, object_type).model_dump())
+
+
+def _build_default_projection(
+    db: Session,
+    tenant_id: int,
+    object_type_id: UUID,
+) -> dict[str, Any]:
+    fields = (
+        db.query(DesignerFieldDefinition)
+        .filter(
+            DesignerFieldDefinition.tenant_id == tenant_id,
+            DesignerFieldDefinition.object_type_id == object_type_id,
+            DesignerFieldDefinition.deleted_at.is_(None),
+        )
+        .order_by(
+            DesignerFieldDefinition.sort_order.asc(),
+            DesignerFieldDefinition.key.asc(),
+        )
+        .all()
+    )
+
+    visible_fields = [field.key for field in fields]
+    field_order = list(visible_fields)
+
+    title_field = None
+    for field in fields:
+        if str(field.field_type or "").lower() in TEXT_LIKE_FIELD_TYPES:
+            title_field = field.key
+            break
+
+    return {
+        "visible_fields": visible_fields,
+        "field_order": field_order,
+        "title_field": title_field,
+        "default_sort": {
+            "field": None,
+            "order": "desc",
+        },
+    }
+
+
+def create_default_table_view(
+    db: Session,
+    tenant_id: int,
+    object_type_id: UUID,
+    current_user: User | None = None,
+) -> ViewDefinitionRead:
+    object_type = _get_object_type_or_404(db, tenant_id, object_type_id)
+
+    existing_views = repository.list_views(db, tenant_id, object_type_id)
+    existing_default = next((view for view in existing_views if view.is_default), None)
+    if existing_default:
+        return _to_read(existing_default, object_type)
+
+    existing_default_table = repository.get_by_key(
+        db,
+        tenant_id,
+        object_type_id,
+        DEFAULT_TABLE_VIEW_KEY,
+    )
+    if existing_default_table:
+        return _to_read(existing_default_table, object_type)
+
+    user_id = _actor_user_id(current_user)
+
+    entity = DesignerViewDefinition(
+        tenant_id=tenant_id,
+        object_type_id=object_type_id,
+        key=DEFAULT_TABLE_VIEW_KEY,
+        name=DEFAULT_TABLE_VIEW_NAME,
+        description="Системное табличное представление по умолчанию",
+        view_type="table",
+        is_default=True,
+        is_system=True,
+        is_active=True,
+        sort_order=0,
+        settings_json={
+            "projection": _build_default_projection(
+                db,
+                tenant_id,
+                object_type_id,
+            )
+        },
+        layout_json={},
+        filters_json={},
+        visibility_json={},
+        created_by=user_id,
+        updated_by=user_id,
+    )
+
+    try:
+        entity = repository.create_view(db, entity)
+    except IntegrityError as exc:
+        db.rollback()
+        fallback_view = repository.get_by_key(
+            db,
+            tenant_id,
+            object_type_id,
+            DEFAULT_TABLE_VIEW_KEY,
+        )
+        if fallback_view:
+            return _to_read(fallback_view, object_type)
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Не удалось создать default table view",
+        ) from exc
+
+    return _to_read(entity, object_type)
 
 
 def list_views(

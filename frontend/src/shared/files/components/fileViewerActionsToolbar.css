@@ -1,0 +1,29 @@
+.file-viewer-actions-toolbar {
+  position: absolute;
+  top: 4px;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: none;
+}
+
+.file-viewer-actions-toolbar__button {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.82;
+  transition: opacity 0.15s ease;
+}
+
+.file-viewer-actions-toolbar__icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}

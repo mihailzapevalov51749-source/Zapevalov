@@ -17,6 +17,7 @@ export default function LibraryCard({
   document,
 
   isSelected,
+  isHighlighted = false,
   selectedIds,
   onToggleSelect,
 
@@ -177,6 +178,7 @@ export default function LibraryCard({
 
   return (
     <div
+      data-library-item-id={document.id}
       draggable
       onClick={handleOpen}
       onDragStart={handleDragStart}
@@ -186,6 +188,12 @@ export default function LibraryCard({
       style={{
         ...gridCard,
         ...(isSelected ? gridCardSelected : {}),
+        ...(isHighlighted
+          ? {
+              outline: "2px solid #2563eb",
+              background: "#eff6ff",
+            }
+          : {}),
         ...(isHovered
           ? {
               boxShadow: "0 10px 24px rgba(15, 23, 42, 0.12)",

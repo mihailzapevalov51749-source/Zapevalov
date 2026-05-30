@@ -5,6 +5,9 @@ from typing import Any
 from uuid import UUID
 
 from app.modules.platform.designer.publish.draft_loader import TenantDraftCatalog
+from app.modules.platform.designer.publish.object_view_contract import (
+    normalize_settings_json_for_publish,
+)
 
 
 SCHEMA_VERSION = 1
@@ -28,7 +31,22 @@ def _serialize_field(field) -> dict[str, Any]:
     }
 
 
-def _serialize_view(view) -> dict[str, Any]:
+def _serialize_view(
+    view,
+    *,
+    field_keys: set[str] | None = None,
+    ordered_field_keys: list[str] | None = None,
+) -> dict[str, Any]:
+    settings_json = view.settings_json or {}
+    if field_keys is not None:
+        settings_json = normalize_settings_json_for_publish(
+            settings_json if isinstance(settings_json, dict) else {},
+            view_key=str(view.key or ""),
+            view_type=str(view.view_type or ""),
+            field_keys=field_keys,
+            ordered_field_keys=ordered_field_keys,
+        )
+
     return {
         "id": str(view.id),
         "key": view.key,
@@ -39,7 +57,7 @@ def _serialize_view(view) -> dict[str, Any]:
         "is_system": view.is_system,
         "is_active": view.is_active,
         "sort_order": view.sort_order,
-        "settings_json": view.settings_json or {},
+        "settings_json": settings_json,
         "layout_json": view.layout_json or {},
         "filters_json": view.filters_json or {},
         "visibility_json": view.visibility_json or {},
@@ -93,7 +111,19 @@ def build_snapshot_payload(
                     for field in fields_by_object_type.get(object_type.id, [])
                 ],
                 "views": [
-                    _serialize_view(view)
+                    _serialize_view(
+                        view,
+                        field_keys={
+                            field.key
+                            for field in fields_by_object_type.get(object_type.id, [])
+                            if getattr(field, "key", None)
+                        },
+                        ordered_field_keys=[
+                            field.key
+                            for field in fields_by_object_type.get(object_type.id, [])
+                            if getattr(field, "key", None)
+                        ],
+                    )
                     for view in views_by_object_type.get(object_type.id, [])
                 ],
             },

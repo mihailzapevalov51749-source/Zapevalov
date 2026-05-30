@@ -58,6 +58,9 @@ export function createProjectionResult({
   objectTypeKey,
   viewKey = null,
   projection = {},
+  objectView = null,
+  filtersJson = null,
+  publishedView = null,
   warnings = [],
 }) {
   return {
@@ -66,10 +69,19 @@ export function createProjectionResult({
     objectTypeKey,
     viewKey,
     projection: projection && typeof projection === "object" ? projection : {},
+    objectView: objectView && typeof objectView === "object" ? objectView : null,
+    filtersJson:
+      filtersJson && typeof filtersJson === "object" ? filtersJson : null,
+    publishedView:
+      publishedView && typeof publishedView === "object" ? publishedView : null,
     warnings: normalizeWarnings(warnings),
     // Compatibility fields for existing consumers.
     tenant_id: tenantId,
     object_type_key: objectTypeKey,
     view_key: viewKey,
+    object_view: objectView && typeof objectView === "object" ? objectView : null,
+    filters_json:
+      filtersJson && typeof filtersJson === "object" ? filtersJson : null,
+    view: publishedView && typeof publishedView === "object" ? publishedView : null,
   };
 }

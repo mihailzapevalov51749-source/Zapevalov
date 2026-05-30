@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { markTableSessionDirty } from "../session/tableSessionStore";
 
 export default function useTableDirtyState({
   resolvedBlockId,
@@ -10,7 +11,10 @@ export default function useTableDirtyState({
     if (!resolvedBlockId) return;
 
     setIsRepresentationDirty(true);
-    window.__UNIVERSAL_TABLE_DIRTY__ = true;
+    markTableSessionDirty({
+      tableId,
+      blockId: resolvedBlockId,
+    });
 
     window.dispatchEvent(
       new CustomEvent("universal-table:mark-dirty", {

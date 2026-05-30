@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { clearTableSessionDirty } from "../session/tableSessionStore";
 
 import { normalizeSavedFilter } from "../services/tableFilterUtils";
 
@@ -56,7 +57,9 @@ export default function useUniversalTableEvents({
 
   const clearRepresentationDirtyState = () => {
     setIsRepresentationDirty?.(false);
-    window.__UNIVERSAL_TABLE_DIRTY__ = false;
+    clearTableSessionDirty({
+      blockId: resolvedBlockId,
+    });
   };
 
   const handleOpenFiltersModal = () => {

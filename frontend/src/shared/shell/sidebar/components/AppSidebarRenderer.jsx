@@ -55,10 +55,12 @@ function ShellSidebarView({
     isSaving = false,
     menuScale = 1,
     activePageId,
+    activeItemId,
     onChangeMenuScale,
   } = contract;
 
   const navigationItems = contract.navigationItems ?? [];
+  const routeOwner = contract.routeOwner ?? null;
   const hasDesignerScope = hasMenuScope(navigationItems, "designer");
   const reloadNavigation =
     typeof contract.reloadNavigation === "function"
@@ -282,7 +284,9 @@ function ShellSidebarView({
         <MenuTree
           items={finalTree}
           activePageId={menuActivePageId}
+          activeSidebarItemId={activeItemId ?? null}
           onSelectPage={handleSelectPage}
+          onItemAction={onItemAction}
           isEditMode={editMode}
           onUpdateItem={handleUpdateItem}
           onDeleteItem={handleDeleteItem}
@@ -290,6 +294,7 @@ function ShellSidebarView({
           scale={menuScale}
           sidebarCollapsed={collapsed}
           sidebarMode={hasDesignerScope ? "designer" : "runtime"}
+          routeOwner={routeOwner}
         />
 
         {!collapsed && editMode ? (

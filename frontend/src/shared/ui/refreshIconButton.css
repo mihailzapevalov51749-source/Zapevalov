@@ -1,0 +1,60 @@
+.refresh-icon-button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.refresh-icon-button:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.refresh-icon-button:focus-visible {
+  outline: 2px solid #7c3aed;
+  outline-offset: 2px;
+}
+
+.refresh-icon-button.is-stale-needed {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+}
+
+.refresh-icon-button.is-stale-needed:hover:not(:disabled) {
+  background: #fef3c7;
+  border-color: #d97706;
+}
+
+.refresh-icon-button__icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+}
+
+.refresh-icon-button__icon.is-spinning {
+  animation: refresh-icon-button-spin 900ms linear infinite;
+}
+
+@keyframes refresh-icon-button-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}

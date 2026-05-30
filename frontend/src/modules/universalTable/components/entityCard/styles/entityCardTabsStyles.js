@@ -87,3 +87,43 @@ export const entityCardTabsContentStyle = {
 
   background: entityCardTheme.colors.bg,
 };
+
+export const entityCardTabCountBadgeStyle = {
+  minWidth: 18,
+  height: 18,
+  padding: "0 6px",
+  borderRadius: 999,
+  background: "#EEF2FF",
+  color: "#2563EB",
+  fontSize: 11,
+  fontWeight: 700,
+  lineHeight: "18px",
+  textAlign: "center",
+  boxSizing: "border-box",
+};
+
+export const entityCardTabsExpandWrapperStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 12,
+  marginTop: 14,
+  padding: "2px 20px 14px",
+};
+
+export const entityCardTabsExpandLineStyle = {
+  height: 1,
+  flex: 1,
+  background: "#CBD5E1",
+};
+
+export const entityCardTabsExpandButtonStyle = {
+  border: "none",
+  background: "transparent",
+  color: "#94A3B8",
+  fontSize: 11,
+  fontWeight: 700,
+  lineHeight: "16px",
+  cursor: "pointer",
+  padding: "0 8px",
+};

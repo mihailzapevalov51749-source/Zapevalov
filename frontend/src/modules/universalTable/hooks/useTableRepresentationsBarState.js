@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import { writeGlobalDirty } from "../session/tableDirtySaveCompat";
 
 const clearUniversalTableDirty = () => {
-  window.__UNIVERSAL_TABLE_DIRTY__ = false;
+  writeGlobalDirty(false);
 };
 
 const normalizeVisibleSlotsCount = (value) => {
@@ -113,23 +114,37 @@ function compactPinnedIds({
 }
 
 export default function useUniversalViewsBarState({
-  views = [],
+  views,
+  representations,
 
-  activeViewId = null,
+  activeViewId,
+  activeRepresentationId,
 
-  isViewDirty = false,
+  isViewDirty,
+  isRepresentationDirty,
   isBaseStateDirty = false,
 
   onSelectView,
+  onSelectRepresentation,
+  onSetActiveView,
+  onSetActiveRepresentation,
   onCreateView,
+  onCreateRepresentation,
   onDeleteView,
+  onDeleteRepresentation,
   onToggleViewVisibility,
+  onToggleRepresentationVisibility,
 
   onRenameView,
+  onRenameRepresentation,
   onSaveView,
+  onSaveRepresentation,
   onSaveAsView,
+  onSaveAsRepresentation,
   onDuplicateView,
+  onDuplicateRepresentation,
   onSetDefaultView,
+  onSetDefaultRepresentation,
 
   visibleSlotsCount = 2,
 }) {
@@ -137,6 +152,46 @@ export default function useUniversalViewsBarState({
     normalizeVisibleSlotsCount(
       visibleSlotsCount
     );
+
+  const resolvedViews =
+    views ?? representations ?? [];
+
+  const resolvedActiveViewId =
+    activeViewId ?? activeRepresentationId ?? null;
+
+  const resolvedIsViewDirty =
+    isViewDirty ?? isRepresentationDirty ?? false;
+
+  const resolvedOnSelectView =
+    onSelectView ??
+    onSelectRepresentation ??
+    onSetActiveView ??
+    onSetActiveRepresentation;
+
+  const resolvedOnDeleteView =
+    onDeleteView ?? onDeleteRepresentation;
+
+  const resolvedOnCreateView =
+    onCreateView ?? onCreateRepresentation;
+
+  const resolvedOnToggleViewVisibility =
+    onToggleViewVisibility ??
+    onToggleRepresentationVisibility;
+
+  const resolvedOnRenameView =
+    onRenameView ?? onRenameRepresentation;
+
+  const resolvedOnSaveView =
+    onSaveView ?? onSaveRepresentation;
+
+  const resolvedOnSaveAsView =
+    onSaveAsView ?? onSaveAsRepresentation;
+
+  const resolvedOnDuplicateView =
+    onDuplicateView ?? onDuplicateRepresentation;
+
+  const resolvedOnSetDefaultView =
+    onSetDefaultView ?? onSetDefaultRepresentation;
 
   const [isOverflowOpen, setIsOverflowOpen] =
     useState(false);
@@ -164,12 +219,12 @@ export default function useUniversalViewsBarState({
     useState(null);
 
   const hasUnsavedChanges = Boolean(
-    isViewDirty || isBaseStateDirty
+    resolvedIsViewDirty || isBaseStateDirty
   );
 
   const normalizedViews = useMemo(() => {
-    return Array.isArray(views)
-      ? views
+    return Array.isArray(resolvedViews)
+      ? resolvedViews
           .map((item, index) =>
             normalizeView(item, index)
           )
@@ -177,7 +232,7 @@ export default function useUniversalViewsBarState({
             (a, b) => a.position - b.position
           )
       : [];
-  }, [views]);
+  }, [resolvedViews]);
 
   const visibleViews = useMemo(() => {
     return normalizedViews.filter(
@@ -190,13 +245,15 @@ export default function useUniversalViewsBarState({
       normalizedViews.find(
         (item) =>
           String(item.id) ===
-          String(activeViewId)
+          String(resolvedActiveViewId)
       ) || null
     );
-  }, [normalizedViews, activeViewId]);
+  }, [normalizedViews, resolvedActiveViewId]);
 
   const pinnedIdsSyncKey = useMemo(() => {
-    const items = Array.isArray(views) ? views : [];
+    const items = Array.isArray(resolvedViews)
+      ? resolvedViews
+      : [];
 
     const allIds = items
       .map((view, index) => String(view?.id ?? index))
@@ -217,7 +274,7 @@ export default function useUniversalViewsBarState({
       .join(",");
 
     return `${allIds}::${visibleIds}::${safeVisibleSlotsCount}`;
-  }, [views, safeVisibleSlotsCount]);
+  }, [resolvedViews, safeVisibleSlotsCount]);
 
   useEffect(() => {
     const existingIds = new Set(
@@ -278,14 +335,14 @@ export default function useUniversalViewsBarState({
   }, [normalizedViews, pinnedViews]);
 
   useEffect(() => {
-    if (!activeViewId) {
+    if (!resolvedActiveViewId) {
       return;
     }
 
     const active = normalizedViews.find(
       (item) =>
         String(item.id) ===
-        String(activeViewId)
+        String(resolvedActiveViewId)
     );
 
     if (
@@ -298,20 +355,21 @@ export default function useUniversalViewsBarState({
     const nextVisible = visibleViews.find(
       (item) =>
         String(item.id) !==
-        String(activeViewId)
+          String(resolvedActiveViewId)
     );
 
     if (
       nextVisible &&
-      String(nextVisible.id) !== String(activeViewId)
+      String(nextVisible.id) !==
+        String(resolvedActiveViewId)
     ) {
-      onSelectView?.(nextVisible.raw);
+      resolvedOnSelectView?.(nextVisible.raw);
     }
   }, [
-    activeViewId,
+    resolvedActiveViewId,
     normalizedViews,
     visibleViews,
-    onSelectView,
+    resolvedOnSelectView,
   ]);
 
   const getPinnedSlotIndex = (view) => {
@@ -356,7 +414,7 @@ export default function useUniversalViewsBarState({
       return;
     }
 
-    onSelectView?.(view.raw);
+    resolvedOnSelectView?.(view.raw);
 
     closeAllMenus();
   };
@@ -368,7 +426,7 @@ export default function useUniversalViewsBarState({
 
     const isSame =
       String(view.id) ===
-      String(activeViewId);
+      String(resolvedActiveViewId);
 
     if (!isSame && hasUnsavedChanges) {
       setPendingView(view);
@@ -384,7 +442,7 @@ export default function useUniversalViewsBarState({
       return null;
     }
 
-    await onSaveView?.(activeView.raw);
+    await resolvedOnSaveView?.(activeView.raw);
 
     clearUniversalTableDirty();
 
@@ -438,7 +496,7 @@ export default function useUniversalViewsBarState({
   const handleCreateSave = async (
     payload
   ) => {
-    await onCreateView?.(payload);
+    await resolvedOnCreateView?.(payload);
 
     setIsCreatePopoverOpen(false);
   };
@@ -553,7 +611,7 @@ export default function useUniversalViewsBarState({
     ).trim();
 
     if (nextName !== currentName) {
-      await onRenameView?.(
+      await resolvedOnRenameView?.(
         view.raw,
         nextName
       );
@@ -668,7 +726,7 @@ export default function useUniversalViewsBarState({
         view?.id || ""
       );
 
-      await onToggleViewVisibility?.(
+      await resolvedOnToggleViewVisibility?.(
         view.raw
       );
 
@@ -757,7 +815,7 @@ export default function useUniversalViewsBarState({
       return null;
     }
 
-    await onSaveAsView?.(
+    await resolvedOnSaveAsView?.(
       targetView.raw
     );
 
@@ -776,7 +834,7 @@ export default function useUniversalViewsBarState({
 
     event?.stopPropagation?.();
 
-    await onDuplicateView?.(
+    await resolvedOnDuplicateView?.(
       view.raw
     );
 
@@ -791,7 +849,7 @@ export default function useUniversalViewsBarState({
 
     event?.stopPropagation?.();
 
-    await onSetDefaultView?.(
+    await resolvedOnSetDefaultView?.(
       view.raw
     );
 
@@ -818,7 +876,7 @@ export default function useUniversalViewsBarState({
       )
     );
 
-    await onDeleteView?.(view.raw);
+    await resolvedOnDeleteView?.(view.raw);
 
     setSettingsViewId(null);
 

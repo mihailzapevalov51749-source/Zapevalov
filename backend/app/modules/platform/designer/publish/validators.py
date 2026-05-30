@@ -1,13 +1,20 @@
 from collections import defaultdict
+from types import SimpleNamespace
+from uuid import uuid4
 from uuid import UUID
 
 from app.modules.platform.designer.publish.draft_loader import TenantDraftCatalog
+from app.modules.platform.designer.publish.object_view_contract import (
+    validate_object_view_for_publish,
+)
 from app.modules.platform.designer.publish.schemas import (
     PublishSummaryCounts,
     PublishValidationReport,
     ValidationIssue,
 )
 from app.modules.platform.shared.enums import FieldType, RelationType, ViewType
+
+TEXT_LIKE_FIELD_TYPES = {"text", "textarea"}
 
 
 def _error(code: str, path: str, message: str) -> ValidationIssue:
@@ -27,7 +34,105 @@ def _collect_layout_field_keys(layout_json: dict) -> list[str]:
     return keys
 
 
+def _build_default_projection(fields: list[object]) -> dict:
+    sorted_fields = sorted(
+        fields,
+        key=lambda row: (row.sort_order, row.key),
+    )
+    visible_fields = [field.key for field in sorted_fields]
+    field_order = list(visible_fields)
+
+    title_field = None
+    for field in sorted_fields:
+        if str(field.field_type or "").lower() in TEXT_LIKE_FIELD_TYPES:
+            title_field = field.key
+            break
+
+    return {
+        "visible_fields": visible_fields,
+        "field_order": field_order,
+        "title_field": title_field,
+        "default_sort": {
+            "field": None,
+            "order": "desc",
+        },
+    }
+
+
+def _bootstrap_default_table_views(catalog: TenantDraftCatalog) -> None:
+    fields_by_object_type: dict[UUID, list] = defaultdict(list)
+    views_by_object_type: dict[UUID, list] = defaultdict(list)
+
+    for field in catalog.fields:
+        fields_by_object_type[field.object_type_id].append(field)
+
+    for view in catalog.views:
+        views_by_object_type[view.object_type_id].append(view)
+
+    for object_type in catalog.object_types:
+        object_views = views_by_object_type.get(object_type.id, [])
+        object_fields = fields_by_object_type.get(object_type.id, [])
+
+        if not object_views:
+            catalog.views.append(
+                SimpleNamespace(
+                    id=uuid4(),
+                    tenant_id=object_type.tenant_id,
+                    object_type_id=object_type.id,
+                    key="default_table",
+                    name="Таблица",
+                    description="Системное табличное представление по умолчанию",
+                    view_type=ViewType.TABLE.value,
+                    is_default=True,
+                    is_system=True,
+                    is_active=True,
+                    sort_order=0,
+                    settings_json={
+                        "projection": _build_default_projection(object_fields),
+                    },
+                    layout_json={},
+                    filters_json={},
+                    visibility_json={},
+                )
+            )
+            continue
+
+        default_system_table_view = next(
+            (
+                view
+                for view in object_views
+                if view.is_system and view.view_type == ViewType.TABLE.value and view.is_default
+            ),
+            None,
+        )
+        if not default_system_table_view:
+            continue
+
+        settings = (
+            default_system_table_view.settings_json
+            if isinstance(default_system_table_view.settings_json, dict)
+            else {}
+        )
+        projection = settings.get("projection") if isinstance(settings, dict) else None
+
+        projection_is_empty = (
+            not isinstance(projection, dict)
+            or (
+                not (projection.get("visible_fields") or [])
+                and not (projection.get("field_order") or [])
+            )
+        )
+        if not projection_is_empty:
+            continue
+
+        next_settings = dict(settings)
+        next_settings["projection"] = _build_default_projection(object_fields)
+        default_system_table_view.settings_json = next_settings
+
+
 def validate_tenant_draft_catalog(catalog: TenantDraftCatalog) -> PublishValidationReport:
+    _bootstrap_default_table_views(catalog)
+
     errors: list[ValidationIssue] = []
     warnings: list[ValidationIssue] = []
 
@@ -238,6 +343,26 @@ def validate_tenant_draft_catalog(catalog: TenantDraftCatalog) -> PublishValidat
                         f"Поле '{layout_key}' не найдено среди FieldDefinition ObjectType",
                     ),
                 )
+
+        settings_json = view.settings_json if isinstance(view.settings_json, dict) else {}
+        for code, message in validate_object_view_for_publish(
+            view_key=str(view.key or ""),
+            view_type=str(view.view_type or ""),
+            settings_json=settings_json,
+            field_keys=field_keys,
+        ):
+            errors.append(_error(code, f"{view_path}.settings_json", message))
+
+        projection = settings_json.get("projection") if isinstance(settings_json, dict) else None
+        object_view = settings_json.get("objectView") if isinstance(settings_json, dict) else None
+        if isinstance(object_view, dict) and not isinstance(projection, dict):
+            warnings.append(
+                _warning(
+                    "view_missing_projection_compatibility",
+                    f"{view_path}.settings_json",
+                    "objectView без projection: при publish будет создана compatibility projection",
+                ),
+            )
 
     summary = PublishSummaryCounts(
         object_types=len(object_types),

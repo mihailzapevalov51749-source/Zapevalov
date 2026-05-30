@@ -18,11 +18,25 @@ class ViewProjectionMeta(BaseModel):
     default_sort: DefaultSortMeta = Field(default_factory=DefaultSortMeta)
 
 
+class PublishedViewMeta(BaseModel):
+    key: str
+    name: str | None = None
+    view_type: str | None = None
+    is_default: bool = False
+    is_system: bool = False
+    settings_json: dict = Field(default_factory=dict)
+    filters_json: dict = Field(default_factory=dict)
+    layout_json: dict = Field(default_factory=dict)
+
+
 class ViewProjectionResponse(BaseModel):
     tenant_id: int
     object_type_key: str
     view_key: str | None
     projection: ViewProjectionMeta = Field(default_factory=ViewProjectionMeta)
+    object_view: dict | None = None
+    filters_json: dict = Field(default_factory=dict)
+    view: PublishedViewMeta | None = None
 
 
 class PaginationMeta(BaseModel):

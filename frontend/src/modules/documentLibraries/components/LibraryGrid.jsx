@@ -8,6 +8,7 @@ export default function LibraryGrid({
   setOpenedMenuId,
 
   selectedIds = [],
+  highlightedDocumentId = null,
   onToggleSelectDocument,
 
   onOpenFolder,
@@ -45,6 +46,10 @@ export default function LibraryGrid({
           key={documentItem.id}
           document={documentItem}
           isSelected={selectedIds.includes(documentItem.id)}
+          isHighlighted={
+            highlightedDocumentId != null &&
+            Number(highlightedDocumentId) === Number(documentItem.id)
+          }
           selectedIds={selectedIds}
           isMenuOpen={openedMenuId === documentItem.id}
           onToggleSelect={onToggleSelectDocument}

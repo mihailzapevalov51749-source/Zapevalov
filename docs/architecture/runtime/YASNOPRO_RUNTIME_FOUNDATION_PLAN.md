@@ -79,6 +79,16 @@ Designer отвечает за конфигурацию; Runtime — за исп
 
 Фильтрация, сортировка, пагинация списков entity без View Engine UI. Использует catalog для допустимых полей и типов.
 
+### Runtime Read Gateway (object-centric path)
+
+**Статус:** **query only** — legacy read fallback **REMOVED** (2026-05-30).
+
+```text
+ObjectViewHost → useObjectViewQuery → runtimeReadGateway → queryReadProvider → /runtime/query/...
+```
+
+См. [YASNOPRO_RUNTIME_READ_GATEWAY_CLEANUP.md](../YASNOPRO_RUNTIME_READ_GATEWAY_CLEANUP.md).
+
 ---
 
 ## 8. Runtime View Engine

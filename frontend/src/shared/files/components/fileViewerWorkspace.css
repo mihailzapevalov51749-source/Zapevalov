@@ -1,0 +1,51 @@
+.file-viewer-workspace {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.file-viewer-workspace__viewer {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.file-viewer-workspace--comments-open .file-viewer-workspace__viewer {
+  width: calc(100% - 380px);
+  flex: none;
+}
+
+.file-viewer-workspace__comments {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 380px;
+  z-index: 2000;
+  pointer-events: auto;
+  border-left: 1px solid #e2e8f0;
+  box-shadow: -12px 0 32px rgba(15, 23, 42, 0.08);
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  padding-top: 14px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.file-viewer-workspace__comments-unavailable {
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #64748b;
+}
+

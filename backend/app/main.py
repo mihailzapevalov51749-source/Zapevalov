@@ -42,9 +42,18 @@ from app.modules.notes.router import (
     router as notes_router,
 )
 
+from app.modules.quality_issues.router import (
+    router as quality_issues_router,
+)
+
+from app.modules.platform_dashboard.router import (
+    router as platform_dashboard_router,
+)
+
 from app.modules.chats.router import router as chats_router
 
 from app.modules.platform.designer.router import router as platform_designer_router
+from app.modules.platform.search.router import platform_search_router
 from app.modules.platform.runtime.router import router as platform_runtime_router
 
 # Регистрация ORM в metadata (legacy + platform). Platform DDL — только через Alembic.
@@ -117,11 +126,20 @@ app.include_router(checklists_router)
 # NOTES
 app.include_router(notes_router)
 
+# QUALITY ISSUES
+app.include_router(quality_issues_router)
+
+# PLATFORM DASHBOARD
+app.include_router(platform_dashboard_router)
+
 # PLATFORM DESIGNER
 app.include_router(platform_designer_router)
 
 # PLATFORM RUNTIME (published metadata catalog)
 app.include_router(platform_runtime_router)
+
+# PLATFORM SEARCH (unified runtime + designer)
+app.include_router(platform_search_router)
 
 
 @app.get("/")

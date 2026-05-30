@@ -1,5 +1,8 @@
 # YASNOPRO PLATFORM IMPLEMENTATION ROADMAP
 
+> **Снимок Dual-SoT (2026-05-29):** Layers 1–6 **DONE**. **ADR-001 (2026-05-30):** UT migration **cancelled**; Legacy Removal **active**. Статус: [YASNOPRO_ARCHITECTURE_STATUS.md](./YASNOPRO_ARCHITECTURE_STATUS.md), [YASNOPRO_MIGRATION_MAP.md](./YASNOPRO_MIGRATION_MAP.md).  
+> Формулировка: *Table is UI · `universal_table_rows` is legacy storage · Runtime Entity is SoT.*
+
 ## 1. Назначение документа
 
 Документ описывает стратегию трансформации текущего ЯсноПро в полноценную AOBP-платформу.
@@ -567,7 +570,75 @@ AI-native Object-centric Business Platform.
 
 Это путь трансформации ЯсноПро в полноценную AOBP-платформу.
 
-## Migration Data Strategy
+## Legacy Removal Program
+
+> **Supersedes «Migration Data Strategy» как операционный план.** См. [ADR-001](./adr/ADR-001-universal-table-retirement.md).
+
+**Цель:** полностью отвязать Object Platform от Universal Table **без миграции данных**.
+
+Данные Universal Table считаются **неценными** и **disposable**.
+
+**Приоритеты:**
+
+1. Object Platform Independence
+2. Legacy Isolation
+3. Legacy Removal
+4. Runtime Entity as single SoT
+
+---
+
+## Milestone: Object Platform Independence
+
+### Цель
+
+Object Platform не импортирует и не использует Universal Table.
+
+### Проверки
+
+```bash
+rg "universalTable" frontend/src/modules/objectEntities
+rg "UniversalTableView" frontend/src
+rg "universal_table" frontend/src
+```
+
+### Acceptance Criteria
+
+- Object Type → Publish → Office → Object Card работает без UT imports
+- Runtime Entity read/write не имеет fallback в UT
+- Runtime Read Gateway — **query only** (**DONE** 2026-05-30, см. [RUNTIME_READ_GATEWAY_CLEANUP.md](./YASNOPRO_RUNTIME_READ_GATEWAY_CLEANUP.md))
+- Notifications ведут только на runtime_entity/files (legacy UT path removed)
+- Новые страницы не создают UT blocks
+
+---
+
+## Milestone: Legacy Isolation
+
+### Цель
+
+Universal Table остаётся только как изолированный legacy island; новые portal-сценарии не создают legacy storage blocks.
+
+### Work items
+
+| Work item | Статус |
+|-----------|--------|
+| Запретить создание новых UT blocks | **COMPLETED** (Layer 2 / 2b) |
+| Убрать `table` / `universal_table` из новых сценариев | **COMPLETED** (2026-05-30, [LEGACY_BLOCK_TYPES_ISOLATION.md](./YASNOPRO_LEGACY_BLOCK_TYPES_ISOLATION.md)) |
+| Заменить старые table blocks на placeholder | **COMPLETED** (2026-05-30, [LEGACY_TABLE_PLACEHOLDER_ISOLATION.md](./YASNOPRO_LEGACY_TABLE_PLACEHOLDER_ISOLATION.md)) |
+| Убрать UT bridges из navigation/sidebar | **PENDING** |
+| Отделить `PortalPageView` от `UniversalTableView` | **PENDING** |
+
+### Проверки (block types isolation — COMPLETED)
+
+- Widget Library — нет legacy block types в drag list
+- Canvas context menu — только creatable non-legacy types
+- `POST /blocks` с `type=universal_table` / `table` → 422 `legacy_storage_creation_forbidden`
+- Existing UT blocks рендерятся через placeholder boundary → lazy `UniversalTableView` ([LEGACY_TABLE_PLACEHOLDER_ISOLATION.md](./YASNOPRO_LEGACY_TABLE_PLACEHOLDER_ISOLATION.md))
+
+---
+
+## Migration Data Strategy (historical)
+
+> Superseded by ADR-001. Universal Table data is **not migrated**.
 
 Существующие пользовательские данные важны, но не критичны.
 

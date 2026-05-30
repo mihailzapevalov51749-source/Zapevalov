@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import eyeOpenIcon from "../../../assets/icons/eye-open.png";
 import eyeClosedIcon from "../../../assets/icons/eye-closed.png";
 
+import { LegacyStorageExistingSupportNotice } from "../../../shared/legacy";
 import { resolveBlockShowTitle } from "../../universalTable/utils/resolveBlockShowTitle";
 import {
   hiddenVisibilityIconStyle,
@@ -83,6 +84,8 @@ export default function UniversalTableBlockEditor({
         color: "#e5f0ff",
       }}
     >
+      <LegacyStorageExistingSupportNotice />
+
       <div style={rowStyle}>
         <div style={labelGroupStyle}>
           <span style={labelStyle}>Название таблицы</span>

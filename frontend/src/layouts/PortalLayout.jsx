@@ -1,11 +1,8 @@
-import { useEffect, useMemo } from "react";
+import { cloneElement, useMemo } from "react";
 
 import NotificationOverlayHost from "../modules/notifications/components/NotificationOverlayHost";
 import CreateMenuItemModal from "../modules/navigation/components/CreateMenuItemModal";
-import {
-  subscribeNotificationNavigate,
-} from "../modules/notifications/navigation/notificationNavigationBus";
-import { orchestrateNotificationNavigation } from "../modules/notifications/navigation/notificationNavigationOrchestrator";
+import useNotificationNavigationOrchestrator from "../modules/notifications/hooks/useNotificationNavigationOrchestrator";
 import { TRANSITION_TOKENS } from "../shared/layout/transitionTokens";
 import AppShellFrame from "../shared/shell/AppShellFrame";
 import {
@@ -15,59 +12,24 @@ import { resolveAppSidebarWidth } from "../shared/shell/shellSidebarGeometry";
 import { usePlatformSidebarControls } from "../shared/shell/sidebar/usePlatformSidebarControls";
 import { useShellSidebarState } from "../shared/shell/useShellSidebarState";
 
-function normalizeId(value) {
-  return String(value ?? "").trim();
-}
-
-function ensureNavigationState() {
-  if (!window.__YASNOPRO_NAVIGATION_STATE__) {
-    window.__YASNOPRO_NAVIGATION_STATE__ = {
-      stack: [],
-      current: null,
-    };
-  }
-
-  return window.__YASNOPRO_NAVIGATION_STATE__;
-}
-
-function pushNavigationState(state) {
-  const navigationState = ensureNavigationState();
-
-  if (navigationState.current) {
-    navigationState.stack.push(navigationState.current);
-  }
-
-  navigationState.current = state;
-
-  console.log("PUSH NAVIGATION STATE:", navigationState);
-}
-
-function popNavigationState() {
-  const navigationState = ensureNavigationState();
-
-  const previous = navigationState.stack.pop() || null;
-
-  navigationState.current = previous;
-
-  console.log("POP NAVIGATION STATE:", navigationState);
-
-  return previous;
-}
-
 export default function PortalLayout({
+  portalId = 1,
   navigation,
   activePageId,
   onSelectPage,
+  onNavigateToPath,
+  onSidebarItemAction,
   reloadNavigation,
   menuScale,
   onChangeMenuScale,
   headerContract,
   onHeaderAction,
+  searchOverlay = null,
   children,
 }) {
   const { sidebarCollapsed, toggleSidebarCollapsed } = useShellSidebarState();
   const sidebarControls = usePlatformSidebarControls({
-    portalId: 1,
+    portalId,
     reloadNavigation,
     menuScale,
     onChangeMenuScale,
@@ -76,6 +38,11 @@ export default function PortalLayout({
   const pathname = window.location.pathname;
   const sidebarWidth = resolveAppSidebarWidth(sidebarCollapsed);
   const workspaceLeftOffset = resolveAppSidebarWidth(sidebarCollapsed);
+
+  useNotificationNavigationOrchestrator({
+    activePageId,
+    onSelectPage,
+  });
 
   const runtimeSidebarContract = useMemo(() => {
     return createRuntimeSidebarContract({
@@ -107,64 +74,33 @@ export default function PortalLayout({
     pathname.startsWith("/admin/") && !isAdminRootPage;
 
   const handleRuntimeSidebarItemAction = (item, event) => {
+    if (typeof onSidebarItemAction === "function") {
+      onSidebarItemAction(item, event);
+      return;
+    }
+
+    if (typeof onNavigateToPath === "function") {
+      const path =
+        item?.path || item?.url || item?.route || item?.meta?.url || item?.meta?.route;
+      if (path && String(path).startsWith("/portal/")) {
+        event?.preventDefault?.();
+        onNavigateToPath(path);
+        return;
+      }
+    }
+
     if (typeof onSelectPage !== "function") {
       return;
     }
 
-    if (item?.pageId == null) {
+    const pageId = item?.pageId ?? item?.page_id ?? item?.meta?.page_id;
+    if (pageId == null) {
       return;
     }
 
-    event.preventDefault();
-    onSelectPage(item.pageId);
+    event?.preventDefault?.();
+    onSelectPage(pageId);
   };
-
-  useEffect(() => {
-    function handleNotificationNavigate(event) {
-      const detail = event.detail || {};
-      orchestrateNotificationNavigation({
-        detail,
-        activePageId,
-        onSelectPage,
-        pushNavigationState,
-        navigateToRuntimeRoute: (runtimeRoute) => {
-          window.history.pushState({}, "", runtimeRoute);
-          window.dispatchEvent(new PopStateEvent("popstate"));
-        },
-      });
-    }
-
-    function handleReturnToPreviousLocation() {
-      const previous = popNavigationState();
-
-      if (!previous) return;
-
-      if (
-        previous.pageId &&
-        normalizeId(previous.pageId) !== normalizeId(activePageId)
-      ) {
-        onSelectPage?.(previous.pageId);
-      }
-    }
-
-    const unsubscribeNotificationNavigate = subscribeNotificationNavigate(
-      handleNotificationNavigate
-    );
-
-    window.addEventListener(
-      "yasnopro:navigation:return",
-      handleReturnToPreviousLocation
-    );
-
-    return () => {
-      unsubscribeNotificationNavigate();
-
-      window.removeEventListener(
-        "yasnopro:navigation:return",
-        handleReturnToPreviousLocation
-      );
-    };
-  }, [activePageId, onSelectPage, navigation]);
 
   const workspace =
     typeof children === "function"
@@ -190,6 +126,9 @@ export default function PortalLayout({
         sidebarTransition={TRANSITION_TOKENS.shell.sidebarWidth}
         workspaceTransition={TRANSITION_TOKENS.shell.workspaceLeft}
       />
+      {searchOverlay
+        ? cloneElement(searchOverlay, { workspaceLeftOffset })
+        : null}
       <NotificationOverlayHost />
       {sidebarControls.isEditMode && sidebarControls.isCreateMenuOpen ? (
         <div

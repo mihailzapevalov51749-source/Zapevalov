@@ -47,6 +47,8 @@ export type HeaderSearchContract = {
   actionKey?: string;
   changeActionKey?: string;
   clearActionKey?: string;
+  submitActionKey?: string;
+  openFirstActionKey?: string;
 };
 
 export type HeaderNotificationContract = {

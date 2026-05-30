@@ -8,6 +8,9 @@ from app.db.session import get_db
 from app.modules.platform.designer.object_types import service
 from app.modules.platform.shared.dependencies import require_designer_user
 from app.modules.users.models import User
+from app.modules.platform.designer.object_types.menu_placements.router import (
+    router as menu_placements_router,
+)
 from app.modules.platform.designer.object_types.schemas import (
     ObjectTypeCreate,
     ObjectTypeListItem,
@@ -16,6 +19,7 @@ from app.modules.platform.designer.object_types.schemas import (
 )
 
 router = APIRouter(tags=["designer-object-types"])
+router.include_router(menu_placements_router)
 
 TenantIdPath = Annotated[
     int,

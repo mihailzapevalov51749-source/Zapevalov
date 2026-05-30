@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session, joinedload
@@ -19,6 +20,7 @@ from app.modules.comments.schemas import (
     SystemCommentCreate,
 )
 from app.modules.document_libraries.models import LibraryDocument
+from app.modules.platform.runtime.entities.models import RuntimeEntity
 from app.modules.notifications.constants import (
     NOTIFICATION_CATEGORY_COMMENTS,
     NOTIFICATION_PRIORITY_NORMAL,
@@ -139,6 +141,43 @@ def resolve_file_notification_source(
     return "uploaded_file"
 
 
+def resolve_published_runtime_ref_for_comment_entity(
+    db: Session,
+    *,
+    entity_type: str,
+    entity_id: str,
+) -> dict | None:
+    if entity_type != "runtime_entity":
+        return None
+
+    try:
+        entity_uuid = uuid.UUID(str(entity_id).strip())
+    except (TypeError, ValueError):
+        return None
+
+    entity = (
+        db.query(RuntimeEntity)
+        .filter(
+            RuntimeEntity.id == entity_uuid,
+            RuntimeEntity.deleted_at.is_(None),
+        )
+        .first()
+    )
+
+    if not entity:
+        return None
+
+    return {
+        "object_type_key": entity.object_type_key,
+        "runtime_entity_id": str(entity.id),
+        "view_key": None,
+        "catalog_version": entity.catalog_version,
+        "runtime_route": (
+            f"/portal/{entity.tenant_id}/object-types/{entity.object_type_key}"
+        ),
+    }
+
+
 def build_comment_notification_context(
     db: Session,
     *,
@@ -149,6 +188,12 @@ def build_comment_notification_context(
     parent_comment_id: int | None = None,
 ):
     is_file_comment = entity_type == "file"
+
+    published_runtime_ref = resolve_published_runtime_ref_for_comment_entity(
+        db,
+        entity_type=entity_type,
+        entity_id=entity_id,
+    )
 
     return {
         "source": resolve_file_notification_source(
@@ -165,7 +210,7 @@ def build_comment_notification_context(
 
         "table_id": None,
 
-        "row_id": entity_id if not is_file_comment else None,
+        "row_id": None,
 
         "comment_id": comment_id,
 
@@ -178,6 +223,8 @@ def build_comment_notification_context(
             if comment_id
             else None
         ),
+
+        "published_runtime_ref": published_runtime_ref,
     }
 
 

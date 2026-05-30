@@ -1,3 +1,8 @@
+import {
+  getLegacyStorageCreationNoticeMessage,
+  isLegacyStorageBlockType,
+} from "../../../shared/legacy";
+
 export default function useWidgetDragAndDrop({
   onAddSection,
   onAddBlockToSection,
@@ -13,15 +18,6 @@ export default function useWidgetDragAndDrop({
       clientX: event.clientX,
       clientY: event.clientY,
     };
-  };
-
-  const isTableWidget = (widgetType) => {
-    return [
-      "table",
-      "universal_table",
-      "tableBlock",
-      "table_block",
-    ].includes(widgetType);
   };
 
   const handlePageDragOver = (event) => {
@@ -46,8 +42,8 @@ export default function useWidgetDragAndDrop({
       return;
     }
 
-    if (isTableWidget(widgetType)) {
-      onError?.("Таблицу можно добавлять только в гибкий раздел");
+    if (isLegacyStorageBlockType(widgetType)) {
+      onError?.(getLegacyStorageCreationNoticeMessage());
       return;
     }
 
@@ -63,7 +59,7 @@ export default function useWidgetDragAndDrop({
     if (!widgetType) return;
 
     if (
-      isTableWidget(widgetType) &&
+      isLegacyStorageBlockType(widgetType) &&
       typeof isFlexibleSection === "function" &&
       !isFlexibleSection(sectionId)
     ) {
@@ -87,12 +83,8 @@ export default function useWidgetDragAndDrop({
       return;
     }
 
-    if (
-      isTableWidget(widgetType) &&
-      typeof isFlexibleSection === "function" &&
-      !isFlexibleSection(sectionId)
-    ) {
-      onError?.("Таблицу можно добавлять только в гибкий раздел");
+    if (isLegacyStorageBlockType(widgetType)) {
+      onError?.(getLegacyStorageCreationNoticeMessage());
       return;
     }
 
