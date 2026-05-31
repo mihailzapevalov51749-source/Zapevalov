@@ -125,7 +125,11 @@ def ensure_platform_dashboard_analysis_columns():
 def ensure_platform_dashboard_initialized():
     from app.db.session import SessionLocal
     from app.modules.platform_dashboard.models import PlatformComponent
-    from app.modules.platform_dashboard_analyzer.refresh import refresh_platform_dashboard
+    from app.modules.platform_dashboard.yasii_sync import ensure_yasii_track_loaded
+    from app.modules.platform_dashboard_analyzer.refresh import (
+        build_scan_context,
+        refresh_platform_dashboard,
+    )
 
     db = SessionLocal()
     try:
@@ -139,6 +143,10 @@ def ensure_platform_dashboard_initialized():
         )
         if needs_refresh:
             refresh_platform_dashboard(db)
+        else:
+            ctx = build_scan_context()
+            if ensure_yasii_track_loaded(db, ctx) is not None:
+                db.commit()
     finally:
         db.close()
 

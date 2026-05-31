@@ -16,12 +16,117 @@ AI-ориентированная объектно-центричная бизн
 - Event Engine хранит историю;
 - View Engine отвечает только за отображение;
 - Runtime Personalization Layer позволяет пользователям настраивать рабочую среду;
-- AI Context Engine формирует понимание компании.
+- AI Context Engine нормализует HostContext и формирует ContextSnapshot и PermissionBoundary для handoff в ЯСИИ; EffectiveScope вычисляется на входе YASII Runtime.
+
+---
+
+## ЯСИИ — цифровой интеллектуальный сотрудник
+
+**ЯСИИ** (YASII) — встроенный цифровой интеллектуальный сотрудник платформы ЯсноПро. AI Developer — **первая роль** внутри ЯСИИ, а не отдельная система.
+
+### Точка входа (начать здесь)
+
+**[YASII_MASTER_MAP.md](./YASII_MASTER_MAP.md)** — **MASTER OVERVIEW DOCUMENT**  
+Единая карта ЯСИИ за 10–15 минут: что это, как устроен, роли, MVP, этапы развития.  
+Главный обзорный документ для архитекторов, разработчиков, аналитиков и владельца платформы.
+
+### Фундаментальные документы
+
+1. **[YASII_CONSTITUTION.md](./YASII_CONSTITUTION.md)** — **FOUNDATIONAL ARCHITECTURE DOCUMENT**  
+   Архитектурная конституция ЯСИИ. Наивысший приоритет для всех решений по ЯСИИ.  
+   Любой Roadmap, Work Item, MVP Plan и реализация **обязаны** соответствовать Конституции.
+
+2. **[YASII_DOMAIN_MODEL.md](./YASII_DOMAIN_MODEL.md)** — **FOUNDATIONAL DOMAIN ARCHITECTURE DOCUMENT (v1.3.1)**  
+   Единая доменная модель ЯСИИ: сущности, связи, инварианты, версионность.  
+   Нормативный источник истины для Core, Runtime, Knowledge, Graph, Memory, Audit, Roles и контрактов.
+
+3. **[ADR_YASII_AI_CONTEXT_BOUNDARY.md](./ADR_YASII_AI_CONTEXT_BOUNDARY.md)** — **ARCHITECTURE DECISION RECORD**  
+   Граница **AI Context Engine** (platform infra, ContextSnapshot, PermissionBoundary) и **YASII** (reasoning, Evidence, Verdict, Response).  
+   Host Surfaces работают только через ACE; YASII не собирает контекст напрямую.
+
+4. **[YASII_HOST_INTEGRATION_CONTRACT.md](./YASII_HOST_INTEGRATION_CONTRACT.md)** — **FOUNDATIONAL INTEGRATION ARCHITECTURE DOCUMENT**  
+   Контракт Host Surface → AI Context Engine: HostContext, Surface Profiles, normalization, capability matrix, integration errors.  
+   Единый формат входа для Dashboard, Designer, Registry, Object Card, Document, Process.
+
+5. **[YASII_PERMISSION_MODEL.md](./YASII_PERMISSION_MODEL.md)** — **FOUNDATIONAL SECURITY ARCHITECTURE DOCUMENT**  
+   Permission Resolution, PermissionBoundary, Effective Scope, permission layers, graph/knowledge isolation, audit, failure scenarios.  
+   ACE вычисляет boundary; YASII работает read-only внутри Effective Scope.
+
+6. **[YASII_EVIDENCE_SNAPSHOT_SPEC.md](./YASII_EVIDENCE_SNAPSHOT_SPEC.md)** — **FOUNDATIONAL EVIDENCE ARCHITECTURE DOCUMENT**  
+   Evidence, Citation, EvidenceSnapshot, GraphSnapshot, RuleEvaluationSnapshot, DecisionSnapshot, RedactionLog, replay и failure behavior.  
+   Закрывает explainability, auditability и воспроизводимость ответа без live data.
+
+7. **[YASII_SYSTEM_MAP.md](./YASII_SYSTEM_MAP.md)** — **SYSTEM ARCHITECTURE MAP**  
+   Полная карта ЯСИИ: Core, Knowledge, Runtime, Roles, Capabilities, Integrations.  
+   Основа для Roadmap, Dashboard Work Items, Knowledge Graph и MVP Planning.
+
+8. **[YASII_IMPLEMENTATION_ROADMAP.md](./YASII_IMPLEMENTATION_ROADMAP.md)** — **IMPLEMENTATION GOVERNANCE DOCUMENT**  
+   Официальный план реализации: фазы 1–10, work items, readiness, evidence, MVP gate.  
+   Источник для Platform Dashboard Work Items и Analyzer.
+
+9. **[YASII_DASHBOARD_WORK_ITEMS.md](./YASII_DASHBOARD_WORK_ITEMS.md)** — **EXECUTION PLANNING DOCUMENT**  
+   Декомпозиция Roadmap в Dashboard: 74 work item, analyzer checks, seed data, critical path.
+
+### Архитектура ЯСИИ (детализация, подчинена Конституции)
+
+| Документ | Статус | Содержание |
+|----------|--------|------------|
+| YASII Master Map | **overview** | Единая карта за 15 мин — точка входа |
+| YASII Constitution | **foundational** | Инварианты, принципы, запреты |
+| YASII Domain Model | **foundational domain** | Сущности, связи, инварианты, версионность (v1.3.1) |
+| ADR YASII / AI Context Boundary | **ADR** | Граница ACE vs YASII, ownership ContextSnapshot |
+| YASII Host Integration Contract | **foundational integration** | HostContext, Surface Profiles, ACE normalization |
+| YASII Permission Model | **foundational security** | PermissionBoundary, Effective Scope, graph/knowledge isolation |
+| YASII Evidence Snapshot Spec | **foundational evidence** | Evidence, Citation, snapshots, redaction, audit replay |
+| YASII System Map | **map** | Структура системы, зависимости, MVP scope, roadmap phases |
+| YASII Implementation Roadmap | **roadmap** | Фазы реализации, work items, readiness, evidence, MVP gate |
+| YASII Dashboard Work Items | **execution** | 74 work items, analyzer checks, seed data, critical path |
+| YASII Architecture v1 | design | Core, Roles, Knowledge Domains, MVP scope |
+| AI Developer Knowledge Architecture | design | Tier 0–7, conflict rules, evidence |
+| AI Developer Knowledge Graph | design | Nodes, edges, traversal |
+| AI Developer Code Knowledge Architecture | design | Repo, modules, legacy, impact |
+| AI Developer Runtime Architecture | design | Pipeline, Verdict Engine, Answer Builder |
+| Owner Control Layer | design | Owner Assistant, reality check, reports |
+| Strategy Layer | design | Strategy Capability, ranked actions |
+
+> Детализирующие ADD по ЯСИИ будут оформлены как отдельные файлы в `docs/architecture/`. Источник истины для сущностей — **YASII Domain Model**; для инвариантов — **YASII Constitution**.
+
+### Рекомендуемый порядок чтения (ЯСИИ)
+
+**Обзор (опционально, ~15 мин):** [YASII_MASTER_MAP.md](./YASII_MASTER_MAP.md)
+
+**Нормативный порядок:**
+
+1. [YASII_CONSTITUTION.md](./YASII_CONSTITUTION.md) — принципы и инварианты
+2. [YASII_DOMAIN_MODEL.md](./YASII_DOMAIN_MODEL.md) — доменная модель и сущности (v1.3.1)
+3. [ADR_YASII_AI_CONTEXT_BOUNDARY.md](./ADR_YASII_AI_CONTEXT_BOUNDARY.md) — граница ACE и YASII
+4. [YASII_HOST_INTEGRATION_CONTRACT.md](./YASII_HOST_INTEGRATION_CONTRACT.md) — контракт Host → ACE
+5. [YASII_PERMISSION_MODEL.md](./YASII_PERMISSION_MODEL.md) — модель безопасности и PermissionBoundary
+6. [YASII_EVIDENCE_SNAPSHOT_SPEC.md](./YASII_EVIDENCE_SNAPSHOT_SPEC.md) — evidence, citation, snapshots, replay
+7. [YASII_SYSTEM_MAP.md](./YASII_SYSTEM_MAP.md) — детальная структура и зависимости
+8. [YASII_IMPLEMENTATION_ROADMAP.md](./YASII_IMPLEMENTATION_ROADMAP.md) — план реализации
+9. [YASII_DASHBOARD_WORK_ITEMS.md](./YASII_DASHBOARD_WORK_ITEMS.md) — work items для Dashboard
+
+**Design-детализация (после нормативного стека):**
+
+- YASII Architecture v1 (design)
+- Knowledge Architecture → Knowledge Graph → Code Knowledge → Runtime Architecture
+- Owner Control Layer → Strategy Layer
 
 ---
 
 ## Документы
 
+- **YASII_MASTER_MAP** — единая обзорная карта ЯСИИ (MASTER OVERVIEW)
+- **YASII_CONSTITUTION** — архитектурная конституция ЯСИИ (FOUNDATIONAL)
+- **YASII_DOMAIN_MODEL** — доменная модель ЯСИИ (FOUNDATIONAL DOMAIN, v1.3.1)
+- **ADR_YASII_AI_CONTEXT_BOUNDARY** — граница AI Context Engine и YASII (ADR)
+- **YASII_HOST_INTEGRATION_CONTRACT** — контракт Host Surface → ACE (FOUNDATIONAL INTEGRATION)
+- **YASII_PERMISSION_MODEL** — модель безопасности PermissionBoundary (FOUNDATIONAL SECURITY)
+- **YASII_EVIDENCE_SNAPSHOT_SPEC** — evidence/snapshot слой, citation, redaction, audit replay (FOUNDATIONAL EVIDENCE)
+- **YASII_SYSTEM_MAP** — карта системы ЯСИИ (Core, Roles, Capabilities, MVP)
+- **YASII_IMPLEMENTATION_ROADMAP** — план реализации ЯСИИ (фазы, work items, readiness)
+- **YASII_DASHBOARD_WORK_ITEMS** — work items для Platform Dashboard (74 items, analyzer)
 - **ADR-001** — Universal Table Retirement (accepted)
 - **ARCHITECTURE_DIRECTION** — стратегический arbiter
 - **PLATFORM_CORE** — фундамент платформы
@@ -163,7 +268,7 @@ Runtime users создают рабочую среду внутри этих о�
 - Layout Engine != Entity Layer
 - Event Engine owns history
 - Relation Engine owns graph logic
-- AI Context Engine owns semantic understanding
+- AI Context Engine normalizes HostContext and produces ContextSnapshot (не semantic reasoning layer)
 - View never owns business truth
 
 ---
@@ -324,11 +429,23 @@ Relation Engine отвечает за:
 ### AI Context Engine
 
 AI Context Engine отвечает за:
-- semantic understanding;
-- context graph;
-- AI reasoning;
-- organizational memory;
-- AI recommendations.
+- сбор и нормализацию контекста с Host Surfaces;
+- формирование **ContextSnapshot** и **PermissionBoundary**;
+- проверку доступности контекста;
+- передачу нормализованного контекста потребителям.
+
+AI Context Engine **не принимает решений**, не формирует Verdict/Recommendation и **не работает с Knowledge Graph**.
+
+**ЯСИИ** (см. [YASII_CONSTITUTION.md](./YASII_CONSTITUTION.md)) — normative intelligence layer: interpretation, Knowledge, Graph, Evidence, Verdict, Response. Host Surfaces **не обращаются к YASII напрямую** — только через AI Context Engine.
+
+Граница зафиксирована в [ADR_YASII_AI_CONTEXT_BOUNDARY.md](./ADR_YASII_AI_CONTEXT_BOUNDARY.md).
+
+**Platform Dashboard — этап «Встроенный ИИ»** (`ai-native-layer`) отражает **два трека** внутри одного этапа платформы, без отдельных верхнеуровневых этапов ACE/YASII:
+
+- **ACE Track** (`ACE Foundation`) — HostContext, Identity, Permission, ContextSnapshot, PermissionBoundary
+- **YASII Track** (`YASII Core Foundation`) — EffectiveScope (Runtime Entry), Core, Knowledge, Graph, Runtime, роли Developer и Owner Assistant
+
+Текущий этап реализации определяется по **активному фокусу команды** (этап «Встроенный ИИ», пока не завершён), а не по первому этапу с readiness &lt; 100%. Общая готовность этапа = `(done ACE + done YASII) / (total ACE + total YASII)`; ACE readiness и YASII readiness считаются отдельно по весам work items соответственно.
 
 ---
 
@@ -369,6 +486,8 @@ AI Context Engine отвечает за:
 - не нарушаются ли platform boundaries;
 - не ломается ли Runtime behavior;
 - не появляется ли hidden synchronization.
+
+**Для изменений, затрагивающих ЯСИИ:** проверить соответствие [YASII_CONSTITUTION.md](./YASII_CONSTITUTION.md) (Constitution Compliance Checklist), [YASII_DOMAIN_MODEL.md](./YASII_DOMAIN_MODEL.md) v1.3.1 (сущности и инварианты), [ADR_YASII_AI_CONTEXT_BOUNDARY.md](./ADR_YASII_AI_CONTEXT_BOUNDARY.md) (граница ACE / YASII), [YASII_HOST_INTEGRATION_CONTRACT.md](./YASII_HOST_INTEGRATION_CONTRACT.md) (Host → ACE контракт), [YASII_PERMISSION_MODEL.md](./YASII_PERMISSION_MODEL.md) (PermissionBoundary и Effective Scope) и [YASII_EVIDENCE_SNAPSHOT_SPEC.md](./YASII_EVIDENCE_SNAPSHOT_SPEC.md) (Evidence, snapshots, replay).
 
 ---
 

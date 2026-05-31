@@ -17,14 +17,6 @@ export default function AppShellFrame({
   const sidebarWidth = resolveAppSidebarWidth(sidebarCollapsed);
   const workspaceLeftOffset = resolveAppSidebarWidth(sidebarCollapsed);
 
-  console.log("[RENDER AppShellFrame]", {
-    hasHeaderContract: Boolean(headerContract),
-    hasSidebarContract: Boolean(sidebarContract),
-    sidebarCollapsed,
-    sidebarWidth,
-    workspaceLeftOffset,
-  });
-
   return (
     <div
       style={{

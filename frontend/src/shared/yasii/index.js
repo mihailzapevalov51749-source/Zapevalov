@@ -1,0 +1,1 @@
+export { default as YasiiLogo } from "./YasiiLogo";

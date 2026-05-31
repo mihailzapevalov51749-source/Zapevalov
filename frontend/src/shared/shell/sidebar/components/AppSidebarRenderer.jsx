@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import defaultBrandLogo from "../../../../assets/icons/logo.png";
 import chevronLeftIcon from "../../../../assets/icons/Chevronleft.png";
@@ -21,10 +21,6 @@ export default function AppSidebarRenderer({
   onItemAction,
   onAction,
 }) {
-  console.log("[RENDER AppSidebarRenderer]", {
-    mode: contract?.mode,
-    collapsed,
-  });
   if (!contract) {
     return null;
   }
@@ -87,17 +83,6 @@ function ShellSidebarView({
     },
   });
 
-  console.log("[SIDEBAR collapsed value]", { collapsed });
-
-  useEffect(() => {
-    if (!dragAndDrop?.dropTarget && !dragAndDrop?.draggedId) return;
-    console.log("[SIDEBAR drag drop payload]", {
-      draggedId: dragAndDrop?.draggedId,
-      dropTarget: dragAndDrop?.dropTarget,
-      treeSize: Array.isArray(dragAndDrop?.tree) ? dragAndDrop.tree.length : 0,
-    });
-  }, [dragAndDrop?.draggedId, dragAndDrop?.dropTarget, dragAndDrop?.tree]);
-
   const finalTree = useMemo(() => {
     if (hasDesignerScope) {
       return dragAndDrop.tree;
@@ -145,7 +130,6 @@ function ShellSidebarView({
   };
 
   const handleUpdateItem = async (itemId, data) => {
-    console.log("[SIDEBAR update item payload]", { itemId, data });
     if (String(itemId).startsWith("system-designer-fallback-")) {
       return;
     }
@@ -326,10 +310,7 @@ function ShellSidebarView({
       >
         <button
           type="button"
-          onClick={() => {
-            console.log("[SIDEBAR collapse click]", { collapsed });
-            onToggleCollapse();
-          }}
+          onClick={onToggleCollapse}
           title={collapsed ? "Развернуть меню" : "Свернуть меню"}
           aria-label={collapsed ? "Развернуть меню" : "Свернуть меню"}
           style={{

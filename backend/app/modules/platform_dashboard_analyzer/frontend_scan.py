@@ -10,6 +10,7 @@ SCANNED_FRONTEND_PATHS = (
     "modules/designer",
     "modules/navigation",
     "modules/notifications",
+    "yasii",
     # Legacy block isolation guards (portal canvas, editor palette, API, registry)
     "portal",
     "api",

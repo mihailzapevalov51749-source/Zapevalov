@@ -47,6 +47,8 @@ from app.modules.platform_dashboard_analyzer.frontend_scan import scan_frontend
 from app.modules.platform_dashboard_analyzer.paths import get_backend_dir, get_frontend_dir, get_repo_root
 
 from app.modules.platform_dashboard_analyzer.types import RefreshResult, ScanContext
+from app.modules.platform_dashboard.yasii_catalog import YASII_IMPLEMENTATION_STAGE_SLUG
+from app.modules.platform_dashboard.yasii_sync import sync_yasii_track
 
 from app.modules.quality_issues.constants import QualityIssueStatus
 
@@ -428,6 +430,10 @@ def refresh_platform_dashboard(db: Session, repo_root=None, initiated_by=None) -
 
     for analysis in stages:
 
+        if analysis.slug == YASII_IMPLEMENTATION_STAGE_SLUG:
+
+            continue
+
         stage = (
 
             db.query(PlatformImplementationStage)
@@ -730,7 +736,7 @@ def refresh_platform_dashboard(db: Session, repo_root=None, initiated_by=None) -
 
     meta.overall_readiness = overall
 
-
+    sync_yasii_track(db, ctx)
 
     db.commit()
 

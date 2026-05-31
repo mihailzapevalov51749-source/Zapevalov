@@ -55,6 +55,8 @@ from app.modules.chats.router import router as chats_router
 from app.modules.platform.designer.router import router as platform_designer_router
 from app.modules.platform.search.router import platform_search_router
 from app.modules.platform.runtime.router import router as platform_runtime_router
+from app.modules.ai_context.router import router as ai_context_router
+from app.modules.yasii.router import router as yasii_router
 
 # Регистрация ORM в metadata (legacy + platform). Platform DDL — только через Alembic.
 from app.modules.universal_views import models as universal_views_models  # noqa: F401
@@ -140,6 +142,12 @@ app.include_router(platform_runtime_router)
 
 # PLATFORM SEARCH (unified runtime + designer)
 app.include_router(platform_search_router)
+
+# YASII (skeleton — P1-W01)
+app.include_router(yasii_router)
+
+# AI Context Engine / ACE (skeleton — P1-W02)
+app.include_router(ai_context_router)
 
 
 @app.get("/")

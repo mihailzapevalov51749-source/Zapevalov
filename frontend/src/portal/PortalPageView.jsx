@@ -7,10 +7,7 @@ import { createSection } from "../api/sectionsApi";
 import { createBlock } from "../api/blocksApi";
 
 import useNavigationTree from "../modules/navigation/hooks/useNavigationTree";
-import {
-  getEntityLocationRegistry,
-  setEntityLocationRegistryEntry,
-} from "../modules/navigation/entityLocationRegistry";
+import { setEntityLocationRegistryEntry } from "../modules/navigation/entityLocationRegistry";
 import useWidgetDragAndDrop from "../modules/editor/hooks/useWidgetDragAndDrop";
 import {
   getLegacyStorageCreationNoticeMessage,
@@ -91,6 +88,16 @@ import { useHeaderSearchContext } from "../shared/search/useHeaderSearchContext"
 import { useHeaderSearchController } from "../shared/search/useHeaderSearchController";
 
 const CORPORATE_CHAT_PAGE_ID = 35;
+
+const EMPTY_SECTIONS = [];
+
+const EMPTY_FOLDER_PATH = [];
+
+const EMPTY_LIBRARY_CONTEXT_PATH = {
+  rootTitle: "",
+  folderPath: [],
+  documentTitle: null,
+};
 
 const EMPTY_DELETE_SECTION_STATE = {
   isOpen: false,
@@ -199,8 +206,6 @@ function registerPageEntities(sections, pageId) {
       }
     }
   }
-
-  console.log("ENTITY LOCATION REGISTRY:", getEntityLocationRegistry());
 }
 
 function getAdminPageByPath(pathname) {
@@ -432,6 +437,9 @@ export default function PortalPageView() {
     documentTitle: null,
   });
 
+  const pageSections = pageData?.sections;
+  const sections = pageSections ?? EMPTY_SECTIONS;
+
   const { navigation, navigationError, reloadNavigation } =
     useNavigationTree(portalId);
 
@@ -481,24 +489,36 @@ export default function PortalPageView() {
         libraryContextPath.rootTitle || activeNavigationItem?.title || "Документы"
       )
     : designerSectionTitle || activeNavigationItem?.title || topBarMeta.title;
-  const headerBreadcrumbItems = [];
-  if (isDocumentLibraryContext) {
-    headerBreadcrumbItems.push({
-      id: "library-root",
-      label: String(
-        libraryContextPath.rootTitle || activeNavigationItem?.title || "Документы"
-      ),
-      path: location.pathname,
-      meta: {
-        scope: "document-library-root",
-        libraryId: activeNavigationItem?.library_id,
+
+  const headerBreadcrumbItems = useMemo(() => {
+    if (!isDocumentLibraryContext) {
+      return [];
+    }
+
+    const items = [
+      {
+        id: "library-root",
+        label: String(
+          libraryContextPath.rootTitle || activeNavigationItem?.title || "Документы"
+        ),
+        path: location.pathname,
+        meta: {
+          scope: "document-library-root",
+          libraryId: activeNavigationItem?.library_id,
+        },
       },
-    });
-    libraryContextPath.folderPath.forEach((folder, index) => {
+    ];
+
+    const folderPath = Array.isArray(libraryContextPath.folderPath)
+      ? libraryContextPath.folderPath
+      : EMPTY_FOLDER_PATH;
+
+    folderPath.forEach((folder, index) => {
       const folderId = Number(folder?.id);
       const label = String(folder?.title || "").trim();
       if (!label || !Number.isFinite(folderId)) return;
-      headerBreadcrumbItems.push({
+
+      items.push({
         id: `library-folder-${folderId}`,
         label,
         path: location.pathname,
@@ -513,7 +533,7 @@ export default function PortalPageView() {
 
     const documentTitle = String(libraryContextPath.documentTitle || "").trim();
     if (documentTitle) {
-      headerBreadcrumbItems.push({
+      items.push({
         id: "library-document",
         label: documentTitle,
         path: location.pathname,
@@ -522,7 +542,17 @@ export default function PortalPageView() {
         },
       });
     }
-  }
+
+    return items;
+  }, [
+    isDocumentLibraryContext,
+    libraryContextPath.rootTitle,
+    libraryContextPath.folderPath,
+    libraryContextPath.documentTitle,
+    activeNavigationItem?.title,
+    activeNavigationItem?.library_id,
+    location.pathname,
+  ]);
 
   const headerSearchContextInput = useMemo(
     () => ({
@@ -550,7 +580,9 @@ export default function PortalPageView() {
         isDocumentLibraryPage && activeNavigationItem?.library_id
           ? {
               libraryId: activeNavigationItem.library_id,
-              folderPath: libraryContextPath.folderPath ?? [],
+              folderPath: Array.isArray(libraryContextPath.folderPath)
+                ? libraryContextPath.folderPath
+                : EMPTY_FOLDER_PATH,
             }
           : undefined,
       currentObjectType:
@@ -598,7 +630,10 @@ export default function PortalPageView() {
 
   const handleUnifiedHeaderModel = useCallback((nextModel) => {
     setRuntimeHeaderModel((previous) => {
-      if (previous?.contract === nextModel?.contract) {
+      if (
+        previous?.contract === nextModel?.contract &&
+        previous?.onAction === nextModel?.onAction
+      ) {
         return previous;
       }
 
@@ -606,10 +641,54 @@ export default function PortalPageView() {
     });
   }, []);
 
+  const handleLibraryContextPathChange = useCallback((nextContext) => {
+    const nextPath = {
+      rootTitle: String(nextContext?.rootTitle || ""),
+      folderPath: Array.isArray(nextContext?.folderPath)
+        ? nextContext.folderPath
+        : EMPTY_FOLDER_PATH,
+      documentTitle:
+        nextContext?.documentTitle == null
+          ? null
+          : String(nextContext.documentTitle),
+    };
+
+    setLibraryContextPath((previous) => {
+      if (
+        previous.rootTitle === nextPath.rootTitle &&
+        previous.documentTitle === nextPath.documentTitle &&
+        previous.folderPath.length === nextPath.folderPath.length &&
+        previous.folderPath.every((folder, index) => {
+          const nextFolder = nextPath.folderPath[index];
+          return (
+            Number(folder?.id) === Number(nextFolder?.id) &&
+            String(folder?.title || "") === String(nextFolder?.title || "")
+          );
+        })
+      ) {
+        return previous;
+      }
+
+      return nextPath;
+    });
+  }, []);
+
   useEffect(() => {
-    if (!isDocumentLibraryPage) {
-      setLibraryContextPath({ rootTitle: "", folderPath: [] });
+    if (isDocumentLibraryPage) {
+      return;
     }
+
+    setLibraryContextPath((previous) => {
+      if (
+        previous.rootTitle === EMPTY_LIBRARY_CONTEXT_PATH.rootTitle &&
+        previous.folderPath.length === 0 &&
+        (previous.documentTitle == null || previous.documentTitle === "")
+      ) {
+        return previous;
+      }
+
+      return { ...EMPTY_LIBRARY_CONTEXT_PATH };
+    });
   }, [isDocumentLibraryPage, activeNavigationItem?.library_id]);
 
   const loadCurrentPage = async ({ keepPrevious = false } = {}) => {
@@ -649,7 +728,9 @@ export default function PortalPageView() {
   ]);
 
   useEffect(() => {
-    setPageTitleDraft(pageData?.page?.title || topBarMeta.title || "");
+    const nextTitle = pageData?.page?.title || topBarMeta.title || "";
+
+    setPageTitleDraft((previous) => (previous === nextTitle ? previous : nextTitle));
   }, [pageData?.page?.title, topBarMeta.title]);
 
   useEffect(() => {
@@ -716,15 +797,13 @@ export default function PortalPageView() {
     headerSearch.searchQuery,
   ]);
 
-  const sections = pageData?.sections || [];
-
   useEffect(() => {
     if (!pageId) return;
-    if (!sections.length) return;
+    if (!Array.isArray(pageSections) || pageSections.length === 0) return;
     if (isCorporateChatPage) return;
 
-    registerPageEntities(sections, pageId);
-  }, [sections, pageId, isCorporateChatPage]);
+    registerPageEntities(pageSections, pageId);
+  }, [pageSections, pageId, isCorporateChatPage]);
 
   useEffect(() => {
     const handleTableTitleChanged = async (event) => {
@@ -1520,7 +1599,7 @@ export default function PortalPageView() {
         <LibraryPageView
           libraryId={activeNavigationItem.library_id}
           title={activeNavigationItem.title}
-          onContextPathChange={setLibraryContextPath}
+          onContextPathChange={handleLibraryContextPathChange}
         />
       ) : (
         <SystemMessage>

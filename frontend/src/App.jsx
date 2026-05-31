@@ -26,6 +26,7 @@ import ObjectTypeWorkspacePage from "./modules/designer/pages/ObjectTypeWorkspac
 import ObjectTypeDataPage from "./modules/designer/pages/ObjectTypeDataPage";
 import DesignerSectionPlaceholderPage from "./modules/designer/pages/DesignerSectionPlaceholderPage";
 import PlatformDevelopmentPage from "./modules/platformDashboard/pages/PlatformDevelopmentPage";
+import { YasiiFloatingButton } from "./yasii";
 
 function isSuperadmin(user) {
   if (!user) return false;
@@ -98,6 +99,7 @@ export default function App() {
   return (
     <>
       <ModePathTracker />
+      <YasiiFloatingButton />
       <Routes>
       <Route path="/" element={<Navigate to="/portal/1/page/1" replace />} />
 

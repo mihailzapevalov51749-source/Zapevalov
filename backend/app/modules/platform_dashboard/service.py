@@ -12,6 +12,7 @@ from app.modules.platform_dashboard.models import (
     PlatformTask,
 )
 from app.modules.platform_dashboard.schemas import (
+    EmbeddedAiTrackRead,
     PlatformActivityRead,
     PlatformComponentRead,
     PlatformComponentRelatedIssueRead,
@@ -24,6 +25,7 @@ from app.modules.platform_dashboard.schemas import (
     parse_json_list,
     parse_json_object,
 )
+from app.modules.platform_dashboard.yasii_catalog import YASII_IMPLEMENTATION_STAGE_SLUG
 from app.modules.platform_dashboard_analyzer.fingerprint import compute_analyzer_fingerprint
 from app.modules.platform_dashboard_analyzer.paths import get_repo_root
 from app.modules.quality_issues.constants import QualityIssueStatus
@@ -120,7 +122,44 @@ def serialize_component(
     )
 
 
-def serialize_stage(stage: PlatformImplementationStage) -> PlatformImplementationStageRead:
+def _serialize_embedded_ai_tracks(
+    rollups,
+) -> tuple[int | None, int | None, list[EmbeddedAiTrackRead] | None]:
+    if rollups is None:
+        return None, None, None
+    tracks = [
+        EmbeddedAiTrackRead(
+            slug=rollups.ace.slug,
+            title=rollups.ace.title,
+            readiness=rollups.ace.readiness,
+            current_tasks=list(rollups.ace.current_tasks),
+            next_tasks=list(rollups.ace.next_tasks),
+            checks_passed=rollups.ace.checks_passed,
+            checks_total=rollups.ace.checks_total,
+        ),
+        EmbeddedAiTrackRead(
+            slug=rollups.yasii.slug,
+            title=rollups.yasii.title,
+            readiness=rollups.yasii.readiness,
+            current_tasks=list(rollups.yasii.current_tasks),
+            next_tasks=list(rollups.yasii.next_tasks),
+            checks_passed=rollups.yasii.checks_passed,
+            checks_total=rollups.yasii.checks_total,
+        ),
+    ]
+    return rollups.ace.readiness, rollups.yasii.readiness, tracks
+
+
+def serialize_stage(
+    stage: PlatformImplementationStage,
+    *,
+    embedded_ai_rollups=None,
+) -> PlatformImplementationStageRead:
+    ace_readiness, yasii_readiness, embedded_ai_tracks = _serialize_embedded_ai_tracks(
+        embedded_ai_rollups
+        if stage.slug == YASII_IMPLEMENTATION_STAGE_SLUG
+        else None
+    )
     return PlatformImplementationStageRead(
         id=stage.id,
         slug=stage.slug,
@@ -128,6 +167,9 @@ def serialize_stage(stage: PlatformImplementationStage) -> PlatformImplementatio
         description=stage.description,
         status=stage.status,
         readiness=stage.cached_readiness,
+        ace_readiness=ace_readiness,
+        yasii_readiness=yasii_readiness,
+        embedded_ai_tracks=embedded_ai_tracks,
         order_index=stage.order_index,
         current_position=stage.current_position,
         completed_items=parse_json_list(stage.completed_items),
@@ -156,12 +198,34 @@ def list_components(db: Session) -> PlatformComponentsResponse:
 
 
 def list_stages(db: Session) -> PlatformStagesResponse:
+    from app.modules.platform_dashboard.yasii_sync import (
+        compute_embedded_ai_rollups,
+        ensure_yasii_track_loaded,
+        refresh_yasii_stage_display,
+    )
+    from app.modules.platform_dashboard_analyzer.refresh import build_scan_context
+
+    ctx = build_scan_context()
+    ensure_yasii_track_loaded(db, ctx)
+    refresh_yasii_stage_display(db, ctx)
+    db.commit()
+
+    embedded_ai_rollups = compute_embedded_ai_rollups(ctx)
+
     stages = (
         db.query(PlatformImplementationStage)
         .order_by(PlatformImplementationStage.order_index.asc(), PlatformImplementationStage.id.asc())
         .all()
     )
-    items = [serialize_stage(stage) for stage in stages]
+    items = [
+        serialize_stage(
+            stage,
+            embedded_ai_rollups=embedded_ai_rollups
+            if stage.slug == YASII_IMPLEMENTATION_STAGE_SLUG
+            else None,
+        )
+        for stage in stages
+    ]
     return PlatformStagesResponse(items=items, freshness=build_dashboard_freshness(db))
 
 

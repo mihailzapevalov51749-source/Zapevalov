@@ -1,5 +1,5 @@
 export const platformDevelopmentManifest = {
-  updatedAt: "2026-05-30T14:35:00",
+  updatedAt: "2026-05-31T12:00:00",
 
   title: "Развитие платформы ЯсноПро",
 
@@ -266,11 +266,14 @@ export const platformDevelopmentManifest = {
       key: "ai-context",
       title: "AI Context",
       description:
-        "Контекст для AI: понимание типов объектов, связей и событий платформы компании.",
-      status: "planned",
-      readiness: 0,
+        "ACE + YASII skeleton (P1-W01/W02): /ai-context/health, /yasii/health. Полный контекст и handoff — Phase 1 (P1-W03+).",
+      status: "in_progress",
+      readiness: 1,
       dependencies: ["Object Platform", "Relations", "Search"],
-      risks: ["Слой не подключён", "Зависит от зрелости runtime-контура"],
+      risks: [
+        "Identity/Permission/ContextSnapshot ещё не реализованы (P1-W03–W06)",
+        "Зависит от зрелости runtime-контура",
+      ],
     },
   ],
 
@@ -512,30 +515,33 @@ export const platformDevelopmentManifest = {
     },
     {
       key: "ai-native-layer",
-      title: "AI-native Layer",
+      title: "Встроенный ИИ",
       description:
-        "AI понимает объекты, связи и события платформы компании.",
+        "Создание встроенного цифрового интеллектуального сотрудника платформы. ACE обеспечивает контекст, права доступа и безопасную область анализа. YASII обеспечивает интеллектуальный анализ, рекомендации и поддержку пользователей на основе контекста платформы.",
       status: "planned",
       readiness: 0,
       ownerFocus:
-        "Определить, какие данные платформы должны быть доступны AI-контексту.",
+        "Разделить прогресс ACE Foundation и YASII Core Foundation внутри единого этапа платформы.",
       result:
-        "AI работает поверх объектной модели, а не разрозненных legacy-источников.",
-      nextMilestone: "Согласован контур AI Context с архитектурой объектов.",
+        "Host Surface → ACE → YASII: контекст нормализуется в ACE, reasoning и Knowledge — в YASII.",
+      nextMilestone: "ACE Foundation: ContextSnapshot и PermissionBoundary; YASII: runtime skeleton.",
       linkedContours: ["AI Context", "Relations", "Search"],
       linkedDebt: [],
       keyWorks: [
-        "Контур AI Context для типов объектов и связей",
-        "Согласование событий платформы для AI",
-        "Пилотный сценарий AI поверх object platform",
+        "ACE Track: HostContext, Identity, Permission, ContextSnapshot, PermissionBoundary",
+        "YASII Track: EffectiveScope (Runtime Entry), Core, Knowledge, Graph, Runtime",
+        "YASII Track: Core, Knowledge, Graph, Runtime, Developer и Owner Assistant",
+        "Platform Dashboard: отдельная готовность ACE и YASII",
       ],
       risks: [
-        "AI-слой зависит от зрелости runtime-контура",
-        "Разрозненные источники данных снижают качество AI",
+        "Смешение ownership ACE и YASII скрывает реальный прогресс",
+        "YASII Track зависит от handoff ACE",
       ],
       completionCriteria: [
-        "AI использует object platform как источник контекста",
-        "Связи и события доступны для AI-сценариев",
+        "ACE Foundation: HostContext → PermissionBoundary → ContextSnapshot",
+        "YASII Runtime Entry: EffectiveScope (= PermissionBoundary ∩ Current Context)",
+        "YASII Track: Core, Knowledge, Graph, Runtime, роли Developer и Owner Assistant",
+        "ЯСИИ работает из контекста платформы; Dashboard — источник контроля реализации",
       ],
     },
   ],

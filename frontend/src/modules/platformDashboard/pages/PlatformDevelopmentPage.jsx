@@ -3,6 +3,12 @@ import { NavLink, Navigate, useLocation, useParams } from "react-router-dom";
 
 import { getApiErrorMessage } from "../../designer/api/platformApiClient";
 import RefreshIconButton from "../../../shared/ui/RefreshIconButton";
+import {
+  buildPlatformDashboardMetadata,
+  resolvePlatformDashboardUserId,
+} from "../../../yasii/hostContextBuilders";
+import { YasiiSurfaceContextProvider } from "../../../yasii/context/YasiiSurfaceContext.jsx";
+import { EMBEDDED_SURFACE_IDS } from "../../../yasii/embedded/embeddedSurfaceTypes.js";
 import * as platformDashboardApi from "../api/platformDashboardApi";
 import * as qualityIssuesApi from "../api/qualityIssuesApi";
 import { formatAbsoluteDateTime, formatDateTimeAudit, formatRelativeDateTime, parseApiDateTime } from "../utils/formatDateTime";
@@ -1049,13 +1055,30 @@ export default function PlatformDevelopmentPage() {
     setDashboardError("");
 
     try {
-      const [summary, components, stages, tasks, activities] = await Promise.all([
+      const results = await Promise.allSettled([
         platformDashboardApi.getPlatformDashboardSummary(),
         platformDashboardApi.listPlatformComponents(),
         platformDashboardApi.listPlatformStages(),
         platformDashboardApi.listPlatformTasks(),
         platformDashboardApi.listPlatformActivities(),
       ]);
+
+      const summary = results[0].status === "fulfilled" ? results[0].value : null;
+      const components = results[1].status === "fulfilled" ? results[1].value : [];
+      const stages = results[2].status === "fulfilled" ? results[2].value : [];
+      const tasks = results[3].status === "fulfilled" ? results[3].value : [];
+      const activities = results[4].status === "fulfilled" ? results[4].value : [];
+
+      const failedRequests = results.filter((result) => result.status === "rejected");
+      if (failedRequests.length > 0) {
+        const firstError = failedRequests[0];
+        setDashboardError(
+          getApiErrorMessage(
+            firstError.reason,
+            "Не удалось загрузить часть данных Platform Dashboard",
+          ),
+        );
+      }
 
       setDashboardSummary(summary);
       setPlatformComponents(Array.isArray(components) ? components : []);
@@ -1192,6 +1215,67 @@ export default function PlatformDevelopmentPage() {
   const selectedImplementationPhase = useMemo(
     () => implementationStages.find((phase) => phase.id === expandedPhaseId) ?? null,
     [implementationStages, expandedPhaseId],
+  );
+
+  const platformDashboardUserId = useMemo(() => resolvePlatformDashboardUserId(), []);
+
+  const yasiiWidgetId = activeTabKey || "platform-dashboard";
+
+  const yasiiSelectedScope = useMemo(() => {
+    if (activeTabKey === "implementation") {
+      if (selectedImplementationPhase?.slug) {
+        return String(selectedImplementationPhase.slug);
+      }
+
+      if (expandedPhaseId != null) {
+        return String(expandedPhaseId);
+      }
+    }
+
+    return activeTabKey || "platform-dashboard";
+  }, [activeTabKey, expandedPhaseId, selectedImplementationPhase]);
+
+  const yasiiContextPhase = useMemo(() => {
+    if (activeTabKey === "implementation") {
+      return selectedImplementationPhase;
+    }
+
+    return (
+      implementationStages.find((phase) => phase.current_position)
+      ?? implementationStages.find((phase) => phase.status === "in_progress")
+      ?? null
+    );
+  }, [activeTabKey, implementationStages, selectedImplementationPhase]);
+
+  const yasiiDashboardMetadata = useMemo(
+    () =>
+      buildPlatformDashboardMetadata({
+        activeTabKey,
+        phase: yasiiContextPhase,
+        dashboardSummary,
+      }),
+    [activeTabKey, dashboardSummary, yasiiContextPhase],
+  );
+
+  const yasiiSurfaceValue = useMemo(
+    () => ({
+      surfaceId: EMBEDDED_SURFACE_IDS.DASHBOARD,
+      contextData: {
+        tenantId,
+        userId: platformDashboardUserId,
+        widgetId: yasiiWidgetId,
+        selectedScope: yasiiSelectedScope,
+        metadata: yasiiDashboardMetadata,
+      },
+      inputPlaceholder: "Спросите ЯСИИ о roadmap или текущем этапе...",
+    }),
+    [
+      tenantId,
+      platformDashboardUserId,
+      yasiiDashboardMetadata,
+      yasiiSelectedScope,
+      yasiiWidgetId,
+    ],
   );
 
   const selectedContour = useMemo(
@@ -1453,7 +1537,8 @@ export default function PlatformDevelopmentPage() {
   };
 
   return (
-    <div className="platform-dev">
+    <YasiiSurfaceContextProvider value={yasiiSurfaceValue}>
+      <div className="platform-dev">
       <div className="platform-dev__tab-bar">
         <nav className="platform-dev__tabs" aria-label="Разделы Platform Dashboard">
           {PLATFORM_TABS.map((tab) => (
@@ -1519,6 +1604,7 @@ export default function PlatformDevelopmentPage() {
           submitError={submitIssueError}
         />
       ) : null}
-    </div>
+      </div>
+    </YasiiSurfaceContextProvider>
   );
 }

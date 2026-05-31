@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 from datetime import datetime
 from typing import Any
@@ -75,6 +77,16 @@ class PlatformComponentRead(BaseModel):
         return parse_json_list(value)
 
 
+class EmbeddedAiTrackRead(BaseModel):
+    slug: str
+    title: str
+    readiness: int
+    current_tasks: list[str] = Field(default_factory=list)
+    next_tasks: list[str] = Field(default_factory=list)
+    checks_passed: int = 0
+    checks_total: int = 0
+
+
 class PlatformImplementationStageRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -84,6 +96,9 @@ class PlatformImplementationStageRead(BaseModel):
     description: str | None = None
     status: str
     readiness: int | None = None
+    ace_readiness: int | None = None
+    yasii_readiness: int | None = None
+    embedded_ai_tracks: list[EmbeddedAiTrackRead] | None = None
     order_index: int
     current_position: bool
     completed_items: list[str] = Field(default_factory=list)

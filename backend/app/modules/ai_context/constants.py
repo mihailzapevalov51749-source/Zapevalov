@@ -1,0 +1,5 @@
+MODULE_NAME = "ai_context"
+MODULE_VERSION = "0.1.0"
+ARCHITECTURE_VERSION = "1.3"
+PHASE = "P1-W02"
+API_PREFIX = "/ai-context"
