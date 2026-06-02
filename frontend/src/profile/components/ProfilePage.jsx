@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { getMe, updateMe, logout } from "../../api/authApi";
+import { closeActivitySession } from "../../api/userActivityApi";
 import { useNavigate } from "react-router-dom";
+import ProfileActivityPanel from "./ProfileActivityPanel";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -8,6 +10,7 @@ export default function ProfilePage() {
   const [user, setUser] = useState(null);
   const [form, setForm] = useState({});
   const [isEdit, setIsEdit] = useState(false);
+  const [activeTab, setActiveTab] = useState("profile");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -46,7 +49,8 @@ export default function ProfilePage() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await closeActivitySession({ reason: "logout" });
     logout();
     navigate("/login");
   };
@@ -65,10 +69,31 @@ export default function ProfilePage() {
     >
       <h1 style={{ marginBottom: 24 }}>Личный кабинет</h1>
 
+      <div style={tabsRow}>
+        <button
+          type="button"
+          style={activeTab === "profile" ? tabActive : tabButton}
+          onClick={() => setActiveTab("profile")}
+        >
+          Профиль
+        </button>
+        <button
+          type="button"
+          style={activeTab === "activity" ? tabActive : tabButton}
+          onClick={() => setActiveTab("activity")}
+        >
+          Активность
+        </button>
+      </div>
+
       {error && (
         <div style={{ color: "red", marginBottom: 16 }}>{error}</div>
       )}
 
+      {activeTab === "activity" ? (
+        <ProfileActivityPanel />
+      ) : (
+        <>
       {/* Профиль */}
       <div style={card}>
         <h2>Профиль</h2>
@@ -132,6 +157,8 @@ export default function ProfilePage() {
           Выйти
         </button>
       </div>
+        </>
+      )}
     </div>
   );
 }
@@ -197,5 +224,31 @@ const danger = {
   border: "none",
   background: "#dc2626",
   color: "#fff",
+  cursor: "pointer",
+};
+
+const tabsRow = {
+  display: "flex",
+  gap: 8,
+  marginBottom: 20,
+};
+
+const tabButton = {
+  height: 36,
+  padding: "0 16px",
+  borderRadius: 8,
+  border: "1px solid #cbd5e1",
+  background: "#fff",
+  cursor: "pointer",
+};
+
+const tabActive = {
+  height: 36,
+  padding: "0 16px",
+  borderRadius: 8,
+  border: "1px solid #2563eb",
+  background: "#eff6ff",
+  color: "#1d4ed8",
+  fontWeight: 700,
   cursor: "pointer",
 };

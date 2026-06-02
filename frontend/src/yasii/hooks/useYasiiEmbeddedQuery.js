@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { useYasiiAssistantSession } from "../context/YasiiAssistantContext.jsx";
 import { createAceHandoff, sendEmbeddedQuery } from "../yasiiEmbeddedApi.js";
 import { isEmbeddedHandoffStale } from "../yasiiEmbeddedContext.js";
 
@@ -29,13 +30,16 @@ export default function useYasiiEmbeddedQuery({  buildHostContext,
   welcomeMessage = "ЯСИИ подключён через Embedded Entry Framework.",
   handoffErrorMessage = "Не удалось создать ACE handoff.",
 }) {
-  const [messages, setMessages] = useState([
+  const session = useYasiiAssistantSession();
+  const [localMessages, setLocalMessages] = useState([
     {
       id: "yasii-embedded-welcome",
       role: "yasii",
       text: welcomeMessage,
     },
   ]);
+  const messages = session?.messages ?? localMessages;
+  const setMessages = session?.setMessages ?? setLocalMessages;
   const [handoff, setHandoff] = useState(null);
   const [handoffCreatedAt, setHandoffCreatedAt] = useState(null);
   const [handoffScopeKey, setHandoffScopeKey] = useState(null);

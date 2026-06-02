@@ -69,6 +69,8 @@ class EmbeddedAiTrackRollup:
     slug: str
     title: str
     readiness: int
+    implementation_readiness: int
+    release_readiness: int
     current_tasks: tuple[str, ...]
     next_tasks: tuple[str, ...]
     checks_passed: int
@@ -78,8 +80,15 @@ class EmbeddedAiTrackRollup:
 @dataclass(frozen=True)
 class EmbeddedAiRollups:
     container_readiness: int
+    container_implementation_readiness: int
+    container_release_readiness: int
     ace: EmbeddedAiTrackRollup
     yasii: EmbeddedAiTrackRollup
+    implementation_done_keys: frozenset[str] = frozenset()
+    release_done_keys: frozenset[str] = frozenset()
+    governance_release_blocker_key: str | None = None
+    governance_release_blocker_label: str | None = None
+    governance_blocked_work_items: tuple[str, ...] = ()
 
 
 def _task_meta(item: YasiiWorkItemDefinition, *, passed: bool) -> str:
@@ -225,18 +234,180 @@ def count_track_checks(track: str, item_passed: dict[str, bool]) -> tuple[int, i
     return passed, len(items)
 
 
-def build_embedded_ai_rollups(
-    done_keys: set[str],
+def compute_implementation_done_keys(item_passed: dict[str, bool]) -> set[str]:
+    """WI is implemented when analyzer passes (technical readiness)."""
+    return {item.key for item in YASII_WORK_ITEMS if item_passed.get(item.key, False)}
+
+
+def compute_resolved_done_keys(item_passed: dict[str, bool]) -> set[str]:
+    """WI is done only when analyzer passed and catalog dependencies are satisfied."""
+    done: set[str] = set()
+    changed = True
+    while changed:
+        changed = False
+        for item in YASII_WORK_ITEMS:
+            if item.key in done:
+                continue
+            if not item_passed.get(item.key, False):
+                continue
+            if _dependencies_satisfied(item, done):
+                done.add(item.key)
+                changed = True
+    return done
+
+
+compute_release_done_keys = compute_resolved_done_keys
+
+
+def _resolve_release_blocker_key(
+    item: YasiiWorkItemDefinition,
     item_passed: dict[str, bool],
+    release_done_keys: set[str],
+    *,
+    visiting: set[str] | None = None,
+) -> str:
+    visiting = visiting or set()
+    if item.key in visiting:
+        return item.key
+    visiting.add(item.key)
+    if not item_passed.get(item.key, False):
+        return item.key
+    for dep in item.depends_on:
+        if dep == "MVP_PHASES_COMPLETE":
+            mvp_stage_slugs = {
+                "yasii-core-foundation",
+                "yasii-knowledge-foundation",
+                "yasii-graph-foundation",
+                "yasii-runtime-foundation",
+                "yasii-developer-mvp",
+                "yasii-owner-mvp",
+                "yasii-embedded-intelligence",
+            }
+            mvp_stage_items = [wi for wi in YASII_WORK_ITEMS if wi.stage_slug in mvp_stage_slugs]
+            for mvp_item in mvp_stage_items:
+                if mvp_item.key not in release_done_keys:
+                    return _resolve_release_blocker_key(
+                        mvp_item, item_passed, release_done_keys, visiting=visiting
+                    )
+            continue
+        if dep == "MVP_WORK_ITEMS_COMPLETE":
+            for key in MVP_WORK_ITEM_KEYS:
+                if key.startswith("P10-"):
+                    continue
+                dep_item = _WORK_ITEM_BY_KEY.get(key)
+                if dep_item is not None and dep_item.key not in release_done_keys:
+                    return _resolve_release_blocker_key(
+                        dep_item, item_passed, release_done_keys, visiting=visiting
+                    )
+            continue
+        if dep not in release_done_keys:
+            dep_item = _WORK_ITEM_BY_KEY.get(dep)
+            if dep_item is None:
+                return dep
+            return _resolve_release_blocker_key(dep_item, item_passed, release_done_keys, visiting=visiting)
+    return item.key
+
+
+def _format_governance_block_chain(
+    item: YasiiWorkItemDefinition,
+    item_passed: dict[str, bool],
+    release_done_keys: set[str],
+) -> str:
+    chain: list[str] = []
+    current_key = item.key
+    seen: set[str] = set()
+    for _ in range(24):
+        if current_key in seen:
+            break
+        seen.add(current_key)
+        chain.append(current_key)
+        current = _WORK_ITEM_BY_KEY.get(current_key)
+        if current is None:
+            break
+        if not item_passed.get(current_key, False):
+            break
+        if current_key in release_done_keys:
+            break
+        blocker: str | None = None
+        for dep in current.depends_on:
+            if dep in ("MVP_PHASES_COMPLETE", "MVP_WORK_ITEMS_COMPLETE"):
+                continue
+            if dep not in release_done_keys:
+                blocker = dep
+                break
+        if blocker is None:
+            break
+        current_key = blocker
+    return " → ".join(chain)
+
+
+def detect_governance_release_blocker(
+    item_passed: dict[str, bool],
+    implementation_done_keys: set[str],
+    release_done_keys: set[str],
+) -> tuple[str | None, str | None]:
+    for item in YASII_WORK_ITEMS:
+        if not item_passed.get(item.key, False):
+            return item.key, _work_item_label(item)
+    for item in YASII_WORK_ITEMS:
+        if item.key in release_done_keys:
+            continue
+        if item.key not in implementation_done_keys:
+            continue
+        root_key = _resolve_release_blocker_key(item, item_passed, release_done_keys)
+        root_item = _WORK_ITEM_BY_KEY.get(root_key)
+        return root_key, _work_item_label(root_item) if root_item else root_key
+    return None, None
+
+
+def build_governance_blocked_work_item_labels(
+    item_passed: dict[str, bool],
+    implementation_done_keys: set[str],
+    release_done_keys: set[str],
+) -> list[str]:
+    labels: list[str] = []
+    for item in YASII_WORK_ITEMS:
+        if item.key not in implementation_done_keys or item.key in release_done_keys:
+            continue
+        chain = _format_governance_block_chain(item, item_passed, release_done_keys)
+        labels.append(f"{_work_item_label(item)}\nРеализовано, но заблокировано: {chain}")
+    return labels
+
+
+def build_embedded_ai_rollups(
+    release_done_keys: set[str],
+    item_passed: dict[str, bool],
+    *,
+    implementation_done_keys: set[str] | None = None,
 ) -> EmbeddedAiRollups:
-    ace_current, ace_next = classify_track_work_items("ace", done_keys)
-    yasii_current, yasii_next = classify_track_work_items("yasii", done_keys)
+    impl_keys = (
+        implementation_done_keys
+        if implementation_done_keys is not None
+        else compute_implementation_done_keys(item_passed)
+    )
+    release_keys = release_done_keys
+    blocker_key, blocker_label = detect_governance_release_blocker(item_passed, impl_keys, release_keys)
+    governance_blocked = tuple(
+        build_governance_blocked_work_item_labels(item_passed, impl_keys, release_keys)
+    )
+
+    ace_current, ace_next = classify_track_work_items("ace", release_keys)
+    yasii_current, yasii_next = classify_track_work_items("yasii", release_keys)
     ace_passed, ace_total = count_track_checks("ace", item_passed)
     yasii_passed, yasii_total = count_track_checks("yasii", item_passed)
+    ace_release = compute_ace_readiness(release_keys)
+    ace_impl = compute_ace_readiness(impl_keys)
+    yasii_release = compute_yasii_track_readiness(release_keys)
+    yasii_impl = compute_yasii_track_readiness(impl_keys)
+    container_release = compute_container_readiness(release_keys)
+    container_impl = compute_container_readiness(impl_keys)
+
     ace = EmbeddedAiTrackRollup(
         slug="ace",
         title=ACE_TRACK_TITLE,
-        readiness=compute_ace_readiness(done_keys),
+        readiness=ace_release,
+        implementation_readiness=ace_impl,
+        release_readiness=ace_release,
         current_tasks=tuple(ace_current),
         next_tasks=tuple(ace_next),
         checks_passed=ace_passed,
@@ -245,31 +416,72 @@ def build_embedded_ai_rollups(
     yasii = EmbeddedAiTrackRollup(
         slug="yasii",
         title=YASII_TRACK_TITLE,
-        readiness=compute_yasii_track_readiness(done_keys),
+        readiness=yasii_release,
+        implementation_readiness=yasii_impl,
+        release_readiness=yasii_release,
         current_tasks=tuple(yasii_current),
         next_tasks=tuple(yasii_next),
         checks_passed=yasii_passed,
         checks_total=yasii_total,
     )
     return EmbeddedAiRollups(
-        container_readiness=compute_container_readiness(done_keys),
+        container_readiness=container_release,
+        container_implementation_readiness=container_impl,
+        container_release_readiness=container_release,
         ace=ace,
         yasii=yasii,
+        implementation_done_keys=frozenset(impl_keys),
+        release_done_keys=frozenset(release_keys),
+        governance_release_blocker_key=blocker_key,
+        governance_release_blocker_label=blocker_label,
+        governance_blocked_work_items=governance_blocked,
     )
+
+
+def load_yasii_item_passed_from_db(db: Session) -> dict[str, bool]:
+    """Read analyzer results from platform_tasks — no repo scan (Dashboard GET path)."""
+    item_passed = {item.key: False for item in YASII_WORK_ITEMS}
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == YASII_IMPLEMENTATION_STAGE_SLUG)
+        .one_or_none()
+    )
+    if stage is None:
+        return item_passed
+
+    for task in db.query(PlatformTask).filter(PlatformTask.stage_id == stage.id).all():
+        meta = parse_yasii_task_meta(task.description)
+        if meta.get("kind") != YASII_TASK_KIND:
+            continue
+        key = str(meta.get("key") or "").strip()
+        if key not in item_passed:
+            continue
+        passed = meta.get("analyzer_passed") is True
+        if task.status == PlatformTaskStatus.DONE.value:
+            passed = True
+        item_passed[key] = passed
+    return item_passed
+
+
+def compute_embedded_ai_rollups_from_db(db: Session) -> EmbeddedAiRollups:
+    item_passed = load_yasii_item_passed_from_db(db)
+    impl_keys = compute_implementation_done_keys(item_passed)
+    release_keys = compute_release_done_keys(item_passed)
+    return build_embedded_ai_rollups(release_keys, item_passed, implementation_done_keys=impl_keys)
 
 
 def compute_embedded_ai_rollups(ctx: ScanContext) -> EmbeddedAiRollups:
     item_passed = _run_yasii_analyzer_pass(ctx)
-    done_keys = {key for key, passed in item_passed.items() if passed}
-    return build_embedded_ai_rollups(done_keys, item_passed)
+    impl_keys = compute_implementation_done_keys(item_passed)
+    release_keys = compute_release_done_keys(item_passed)
+    return build_embedded_ai_rollups(release_keys, item_passed, implementation_done_keys=impl_keys)
 
 
 def classify_yasii_phases(done_keys: set[str]) -> tuple[list[str], list[str], list[str], dict[str, int]]:
     phase_readiness: dict[str, int] = {}
     for stage in YASII_STAGES:
         items = work_items_by_stage(stage.slug)
-        mvp_only = stage.slug == "yasii-embedded-intelligence"
-        phase_readiness[stage.slug] = compute_item_list_readiness(items, done_keys, mvp_only=mvp_only)
+        phase_readiness[stage.slug] = compute_item_list_readiness(items, done_keys)
 
     if not any(value > 0 for value in phase_readiness.values()) and not any(
         value >= 100 for value in phase_readiness.values()
@@ -302,6 +514,34 @@ def resolve_active_yasii_phase_slug(done_keys: set[str]) -> str:
         if phase_readiness.get(stage.slug, 0) < 100:
             return stage.slug
     return YASII_STAGES[-1].slug if YASII_STAGES else "yasii-core-foundation"
+
+
+def classify_yasii_phase_work_items(
+    stage_slug: str,
+    done_keys: set[str],
+) -> tuple[list[str], list[str], list[str], int]:
+    """Per YASII catalog stage: completed labels, current focus, next labels, readiness %."""
+    phase_items = work_items_by_stage(stage_slug)
+    completed = [_work_item_label(item) for item in phase_items if item.key in done_keys]
+    readiness = compute_item_list_readiness(phase_items, done_keys)
+
+    current: list[str] = []
+    for item in phase_items:
+        if item.key in done_keys:
+            continue
+        if _dependencies_satisfied(item, done_keys):
+            current = [_work_item_label(item)]
+            break
+
+    next_items: list[str] = []
+    for item in phase_items:
+        if item.key in done_keys:
+            continue
+        if current and _work_item_label(item) == current[0]:
+            continue
+        if not _dependencies_satisfied(item, done_keys):
+            next_items.append(_work_item_label(item))
+    return completed, current, next_items[:8], readiness
 
 
 def classify_embedded_ai_stage_work_items(
@@ -468,12 +708,7 @@ def _run_yasii_analyzer_pass(ctx: ScanContext) -> dict[str, bool]:
     stage_readiness_preview: dict[str, int | None] = {}
     for stage in YASII_STAGES:
         items = work_items_by_stage(stage.slug)
-        mvp_only = stage.slug == "yasii-embedded-intelligence"
-        stage_readiness_preview[stage.slug] = compute_item_list_readiness(
-            items,
-            done_preview,
-            mvp_only=mvp_only,
-        )
+        stage_readiness_preview[stage.slug] = compute_item_list_readiness(items, done_preview)
 
     configure_dynamic_checks(
         stage_readiness=stage_readiness_preview,
@@ -486,22 +721,29 @@ def _run_yasii_analyzer_pass(ctx: ScanContext) -> dict[str, bool]:
 
 def _apply_yasii_stage_card(
     stage: PlatformImplementationStage,
-    done_keys: set[str],
+    rollups: EmbeddedAiRollups,
     *,
     now,
 ) -> None:
-    completed_work, current_work, next_work = classify_embedded_ai_stage_work_items(done_keys)
-    readiness = compute_yasii_readiness(done_keys)
-    status = _derive_stage_status(readiness, current_work)
+    release_keys = set(rollups.release_done_keys)
+    impl_keys = set(rollups.implementation_done_keys)
+    release_completed, current_work, next_work = classify_embedded_ai_stage_work_items(release_keys)
+    impl_completed, _, _ = classify_embedded_ai_stage_work_items(impl_keys)
+    release_readiness = rollups.container_release_readiness
+    status = _derive_stage_status(release_readiness, current_work)
+
+    blockers: list[str] = []
+    if rollups.governance_release_blocker_label:
+        blockers.append(f"Блокер выпуска: {rollups.governance_release_blocker_label}")
 
     stage.title = "Встроенный ИИ"
     stage.description = YASII_CONTAINER_DESCRIPTION
-    stage.cached_readiness = readiness
-    stage.completed_items = dump_json_list(completed_work)
-    stage.remaining_items = dump_json_list([])
+    stage.cached_readiness = release_readiness
+    stage.completed_items = dump_json_list(release_completed)
+    stage.remaining_items = dump_json_list(impl_completed)
     stage.current_tasks = dump_json_list(current_work)
     stage.next_tasks = dump_json_list(next_work)
-    stage.blockers = dump_json_list([])
+    stage.blockers = dump_json_list(blockers)
     stage.completion_criteria = dump_json_list(list(YASII_CONTAINER_COMPLETION_CRITERIA))
     stage.status = status
     stage.updated_at = now
@@ -510,10 +752,10 @@ def _apply_yasii_stage_card(
 def refresh_yasii_stage_display(db: Session, ctx: ScanContext) -> None:
     """Recalculate «Встроенный ИИ» card fields from YASII work items (active phase focus)."""
     item_passed = _run_yasii_analyzer_pass(ctx)
-    done_keys = {key for key, passed in item_passed.items() if passed}
+    rollups = compute_embedded_ai_rollups(ctx)
     now = utc_now().replace(tzinfo=None)
     container_stage = _resolve_container_stage(db)
-    _apply_yasii_stage_card(container_stage, done_keys, now=now)
+    _apply_yasii_stage_card(container_stage, rollups, now=now)
     reconcile_implementation_current_position(db)
     db.flush()
 
@@ -542,7 +784,9 @@ def sync_yasii_track(db: Session, ctx: ScanContext) -> YasiiSyncResult:
     now = utc_now().replace(tzinfo=None)
 
     item_passed = _run_yasii_analyzer_pass(ctx)
-    done_keys = {key for key, passed in item_passed.items() if passed}
+    impl_keys = compute_implementation_done_keys(item_passed)
+    release_keys = compute_release_done_keys(item_passed)
+    rollups = build_embedded_ai_rollups(release_keys, item_passed, implementation_done_keys=impl_keys)
 
     _cleanup_legacy_yasii_stages(db)
     _cleanup_legacy_yasii_components(db)
@@ -554,8 +798,9 @@ def sync_yasii_track(db: Session, ctx: ScanContext) -> YasiiSyncResult:
 
     tasks_created = 0
     for item in YASII_WORK_ITEMS:
-        passed = item_passed[item.key]
-        deps_ok = _dependencies_satisfied(item, done_keys)
+        passed_analyzer = item_passed[item.key]
+        deps_ok = _dependencies_satisfied(item, release_keys)
+        passed = passed_analyzer and deps_ok
 
         if passed:
             status = PlatformTaskStatus.DONE.value
@@ -586,7 +831,7 @@ def sync_yasii_track(db: Session, ctx: ScanContext) -> YasiiSyncResult:
         )
         tasks_created += 1
 
-    _apply_yasii_stage_card(container_stage, done_keys, now=now)
+    _apply_yasii_stage_card(container_stage, rollups, now=now)
     reconcile_implementation_current_position(db)
 
     db.flush()

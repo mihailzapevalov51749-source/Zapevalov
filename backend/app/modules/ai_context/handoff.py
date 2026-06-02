@@ -22,8 +22,40 @@ class ACEHandoff(BaseModel):
     dashboardId: str | None = None
     selectedScope: str | None = None
     widgetId: str | None = None
+    objectTypeId: str | None = None
+    objectTypeName: str | None = None
+    objectId: str | None = None
+    objectTitle: str | None = None
+    activeTab: str | None = None
+    registryId: str | None = None
+    registryName: str | None = None
+    viewId: str | None = None
+    viewName: str | None = None
+    selectedCount: str | None = None
+    activeFilters: str | None = None
+    activeSorts: str | None = None
+    searchQuery: str | None = None
+    designerArea: str | None = None
+    designerEntityType: str | None = None
+    designerEntityId: str | None = None
+    designerEntityName: str | None = None
+    selectedNodeId: str | None = None
+    selectedNodeName: str | None = None
+    documentId: str | None = None
+    documentName: str | None = None
+    documentType: str | None = None
+    documentLibraryId: str | None = None
+    documentLibraryName: str | None = None
+    processId: str | None = None
+    processName: str | None = None
+    processType: str | None = None
+    processStatus: str | None = None
+    activeStepId: str | None = None
+    activeStepName: str | None = None
     tenantId: str | None = None
     userId: str | None = None
+    sessionId: str | None = None
+    userIdentity: dict[str, object] | None = None
     metadata: dict[str, str] = Field(default_factory=dict)
 
 

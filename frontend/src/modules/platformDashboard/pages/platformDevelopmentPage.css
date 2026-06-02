@@ -37,6 +37,60 @@
   font-size: var(--pd-body);
 }
 
+.platform-dev__layer-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0 4px;
+  border-bottom: 1px solid var(--pd-gray-200);
+}
+
+.platform-dev__layers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.platform-dev__layer-btn {
+  border: 1px solid var(--pd-gray-200);
+  background: #fff;
+  color: var(--pd-gray-700);
+  border-radius: var(--pd-radius-tab);
+  padding: 6px 14px;
+  font-size: var(--pd-secondary);
+  cursor: pointer;
+}
+
+.platform-dev__layer-btn.is-active {
+  border-color: var(--pd-accent);
+  background: #f5f3ff;
+  color: var(--pd-accent);
+  font-weight: 600;
+}
+
+.platform-dev__layer-hint,
+.platform-dev__detail-preline {
+  white-space: pre-line;
+}
+
+.platform-dev__company-card {
+  border-top: 1px solid var(--platform-dev-border, #e5e7eb);
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.platform-dev__company-card:first-of-type {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.platform-dev__governance-summary {
+  margin: 0;
+  font-size: var(--pd-secondary);
+  color: var(--pd-gray-500);
+}
+
 .platform-dev__tab-bar {
   display: flex;
   align-items: center;
@@ -252,6 +306,173 @@
 .platform-dev__master-list {
   display: flex;
   flex-direction: column;
+}
+
+.platform-dev__stage-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.platform-dev__stage-row {
+  border-bottom: 1px solid var(--pd-gray-200);
+}
+
+.platform-dev__stage-row.is-selected {
+  background: #f5f3ff;
+  box-shadow: inset 3px 0 0 var(--pd-accent);
+}
+
+.platform-dev__stage-row-main {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 40px;
+  padding: 4px 8px 4px 4px;
+}
+
+.platform-dev__stage-info-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--pd-gray-500);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.platform-dev__stage-info-btn:hover {
+  background: var(--pd-gray-100);
+  color: var(--pd-accent);
+}
+
+.platform-dev__stage-select-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.platform-dev__stage-title-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.platform-dev__stage-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.platform-dev__stage-subtitle {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--pd-gray-500);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.platform-dev__stage-readiness {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pd-gray-500);
+}
+
+.platform-dev__stage-description {
+  margin: 0;
+  padding: 0 12px 10px 40px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--pd-gray-700);
+  white-space: pre-line;
+}
+
+.platform-dev__detail-view--owner .platform-dev__owner-readiness {
+  margin-bottom: 16px;
+}
+
+.platform-dev__owner-readiness-label {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--pd-gray-500);
+}
+
+.platform-dev__owner-readiness-value {
+  margin: 0;
+  font-size: var(--pd-metric);
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.platform-dev__owner-readiness-status {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pd-gray-600);
+}
+
+.platform-dev__owner-work-block {
+  margin-bottom: 16px;
+}
+
+.platform-dev__owner-work-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.platform-dev__owner-work-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.platform-dev__owner-work-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--pd-gray-700);
+}
+
+.platform-dev__owner-work-icon {
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  color: var(--pd-gray-500);
+}
+
+.platform-dev__owner-work-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--pd-gray-500);
 }
 
 .platform-dev__master-item {

@@ -22,6 +22,15 @@ from app.modules.notes.models import (  # noqa: F401
     Note,
 )
 
+# IMPORT USER ACTIVITY MODELS
+from app.modules.user_activity.models import (  # noqa: F401
+    UserActivitySession,
+    UserPresenceState,
+)
+
+# IMPORT USERS (required by QualityIssue.created_by_user before mapper configure)
+from app.modules.users.models import Role, User  # noqa: F401
+
 # IMPORT QUALITY ISSUES MODELS
 from app.modules.quality_issues.models import (  # noqa: F401
     QualityIssue,
@@ -58,6 +67,10 @@ from app.modules.platform.designer.publish.models import (  # noqa: F401
     DesignerMetadataSnapshot,
     DesignerPublishRecord,
 )
+from app.modules.platform.designer.workspaces.models import (  # noqa: F401
+    DesignerWorkspace,
+    DesignerWorkspaceTab,
+)
 from app.modules.platform.runtime.entities.models import (  # noqa: F401
     RuntimeEntity,
     RuntimeEntityValue,
@@ -77,6 +90,7 @@ def init_db():
     Base.metadata.create_all(bind=engine, tables=tables)
     ensure_navigation_scope_column()
     ensure_navigation_system_columns()
+    ensure_designer_workspace_home_page_column()
     ensure_quality_issue_ai_fix_columns()
     ensure_platform_dashboard_analysis_columns()
     ensure_platform_dashboard_initialized()
@@ -240,6 +254,22 @@ def ensure_navigation_system_columns():
             text(
                 "UPDATE navigation_items SET is_protected = FALSE WHERE is_protected IS NULL"
             )
+        )
+
+
+def ensure_designer_workspace_home_page_column():
+    inspector = inspect(engine)
+    try:
+        columns = {column["name"] for column in inspector.get_columns("designer_workspaces")}
+    except Exception:
+        return
+
+    if "home_page_id" in columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(
+            text("ALTER TABLE designer_workspaces ADD COLUMN home_page_id INTEGER")
         )
 
 

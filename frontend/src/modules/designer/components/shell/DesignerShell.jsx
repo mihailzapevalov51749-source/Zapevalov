@@ -41,6 +41,9 @@ import { useHeaderSearchContext } from "../../../../shared/search/useHeaderSearc
 import { useHeaderSearchController } from "../../../../shared/search/useHeaderSearchController";
 import { canUseHeaderSearch } from "../../../../shared/search/searchRoleUtils";
 import { SEARCH_MODES } from "../../../../shared/search/searchScopes";
+import { YasiiSurfaceContextProvider } from "../../../../yasii/context/YasiiSurfaceContext.jsx";
+import { buildDesignerYasiiSurfaceValue } from "../../../../yasii/designer/buildDesignerContextData.js";
+import { resolvePlatformDashboardUserId } from "../../../../yasii/hostContextBuilders.js";
 
 const DEFAULT_AVATAR_SETTINGS = {
   x: 0,
@@ -236,8 +239,8 @@ function buildDesignerMetaNavigation(tenantId, isSuperadmin) {
       id: "system-designer-platform",
       title: "Платформа",
       type: "system_page",
-      route: `${base}/platform/architecture`,
-      path: `${base}/platform/architecture`,
+      route: `${base}/platform/platform`,
+      path: `${base}/platform/platform`,
       system_key: "platform",
       section: "platform",
       menu_scope: "designer",
@@ -267,6 +270,7 @@ export default function DesignerShell() {
   const [isPageEditMode, setIsPageEditMode] = useState(false);
   const [activeObjectTypeName, setActiveObjectTypeName] = useState("");
   const [activeObjectAdapterLabel, setActiveObjectAdapterLabel] = useState("");
+  const [activeWorkspaceTitle, setActiveWorkspaceTitle] = useState("");
   const [systemSettingsVersion, setSystemSettingsVersion] = useState(0);
   const { notifications, unreadCount, markAsRead } = useNotifications();
   const isSuperadmin = isSuperadminUser(headerUser ?? user);
@@ -405,6 +409,33 @@ export default function DesignerShell() {
       setDesignerRouteOwner(designerRouteOwner);
     }
   }, [designerRouteOwner]);
+
+  const workspaceBreadcrumbContext = useMemo(() => {
+    const params = new URLSearchParams(location.search || "");
+    const workspaceSlug = String(params.get("workspaceSlug") || "").trim();
+    const workspaceTitle = String(params.get("workspaceTitle") || "").trim();
+    const homePageId = Number(params.get("workspaceHomePageId"));
+    if (workspaceSlug && workspaceTitle && Number.isFinite(homePageId)) {
+      return {
+        slug: workspaceSlug,
+        title: workspaceTitle,
+        homePageId,
+      };
+    }
+    const workspaceMatch = location.pathname.match(/\/designer\/tenant\/\d+\/workspaces\/([^/?]+)/);
+    if (!workspaceMatch) {
+      return null;
+    }
+    const detailSlug = decodeURIComponent(String(workspaceMatch[1] || "")).trim();
+    if (!detailSlug) {
+      return null;
+    }
+    return {
+      slug: detailSlug,
+      title: activeWorkspaceTitle,
+      homePageId: null,
+    };
+  }, [activeWorkspaceTitle, location.pathname, location.search]);
 
   const designerSidebarContract = useMemo(() => {
     const base = createDesignerSidebarContract({
@@ -554,6 +585,57 @@ export default function DesignerShell() {
     }
   }, [location.pathname]);
 
+  useEffect(() => {
+    const workspaceMatch = location.pathname.match(/\/designer\/tenant\/\d+\/workspaces\/([^/?]+)/);
+    if (!workspaceMatch) {
+      setActiveWorkspaceTitle("");
+      return;
+    }
+    const workspaceSlug = decodeURIComponent(String(workspaceMatch[1] || "")).trim();
+    if (!workspaceSlug) {
+      setActiveWorkspaceTitle("");
+      return;
+    }
+    let cancelled = false;
+    const loadWorkspaceTitle = async () => {
+      try {
+        const workspace = await designerApi.getDesignerWorkspaceBySlug(resolvedPortalId, workspaceSlug);
+        if (!cancelled) {
+          setActiveWorkspaceTitle(String(workspace?.title || "").trim());
+        }
+      } catch {
+        if (!cancelled) {
+          setActiveWorkspaceTitle("");
+        }
+      }
+    };
+    void loadWorkspaceTitle();
+    return () => {
+      cancelled = true;
+    };
+  }, [location.pathname, resolvedPortalId]);
+
+  const yasiiSurfaceContext = useMemo(
+    () =>
+      buildDesignerYasiiSurfaceValue({
+        pathname: location.pathname,
+        tenantId: resolvedPortalId,
+        userId: resolvePlatformDashboardUserId(),
+        objectTypeName: activeObjectTypeName,
+        navigationItems: designerSidebarNavigation,
+        activeObjectAdapterLabel,
+        routeOwner: designerRouteOwner,
+      }),
+    [
+      activeObjectAdapterLabel,
+      activeObjectTypeName,
+      designerRouteOwner,
+      designerSidebarNavigation,
+      location.pathname,
+      resolvedPortalId,
+    ],
+  );
+
   const designerHeaderContract = useMemo(() => {
     const breadcrumbNavigationItems =
       designerSidebarContract.navigationItems ?? designerSidebarNavigation;
@@ -568,6 +650,7 @@ export default function DesignerShell() {
         : null,
       activeObjectAdapterLabel,
       routeOwner: designerRouteOwner,
+      workspaceContext: workspaceBreadcrumbContext,
     });
 
     return createDesignerHeaderContract({
@@ -617,6 +700,7 @@ export default function DesignerShell() {
     designerSidebarNavigation,
     designerSidebarContract,
     designerRouteOwner,
+    workspaceBreadcrumbContext,
   ]);
 
   const handleHeaderAction = useCallback(
@@ -732,6 +816,22 @@ export default function DesignerShell() {
       item?.scope ||
       item?.mode ||
       item?.context;
+    const itemType = String(item?.type || item?.meta?.type || "").trim().toLowerCase();
+    const isWorkspaceItem = itemType === "workspace";
+
+    const targetPath =
+      item?.path ||
+      item?.route ||
+      item?.url ||
+      item?.meta?.route ||
+      item?.meta?.url;
+
+    // Workspace routes must win over legacy page_id links.
+    if (isWorkspaceItem && targetPath) {
+      event?.preventDefault?.();
+      navigate(targetPath);
+      return;
+    }
 
     const pageId = item?.pageId ?? item?.page_id ?? item?.meta?.page_id;
     if (
@@ -743,13 +843,6 @@ export default function DesignerShell() {
       navigate(`/designer/tenant/${resolvedPortalId}/page/${pageId}`);
       return;
     }
-
-    const targetPath =
-      item?.path ||
-      item?.route ||
-      item?.url ||
-      item?.meta?.route ||
-      item?.meta?.url;
 
     if (targetPath) {
       event.preventDefault();
@@ -833,19 +926,21 @@ export default function DesignerShell() {
         sidebarTransition={TRANSITION_TOKENS.shell.sidebarWidth}
         workspaceTransition={TRANSITION_TOKENS.shell.workspaceLeft}
         workspace={
-          <div
-            className="designer-root"
-            style={{
-              flex: "1 1 auto",
-              height: "100%",
-              minHeight: 0,
-              overflow: "auto",
-              padding: "20px 24px 32px",
-              boxSizing: "border-box",
-            }}
-          >
-            <Outlet />
-          </div>
+          <YasiiSurfaceContextProvider value={yasiiSurfaceContext}>
+            <div
+              className="designer-root"
+              style={{
+                flex: "1 1 auto",
+                height: "100%",
+                minHeight: 0,
+                overflow: "auto",
+                padding: "20px 24px 32px",
+                boxSizing: "border-box",
+              }}
+            >
+              <Outlet />
+            </div>
+          </YasiiSurfaceContextProvider>
         }
       />
       <SearchResultsOverlay

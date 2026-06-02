@@ -14,7 +14,7 @@ export default function EmptyDropZone() {
         boxSizing: "border-box",
       }}
     >
-      Перетащи сюда виджет «Раздел»
+      Создайте Раздел
     </div>
   );
 }

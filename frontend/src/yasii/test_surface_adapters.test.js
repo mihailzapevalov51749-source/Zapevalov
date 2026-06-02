@@ -43,19 +43,95 @@ describe("surfaceAdapters", () => {
     assert.equal(hostContext.widgetId, "global-entry");
   });
 
-  it("exposes stub adapters for future surfaces", () => {
-    const objectCard = buildObjectCardContext({ selectedScope: "stub" });
-    const registry = buildRegistryContext({ selectedScope: "stub" });
-    const designer = buildDesignerContext({ selectedScope: "stub" });
-    const document = buildDocumentContext({ selectedScope: "stub" });
-    const process = buildProcessContext({ selectedScope: "stub" });
+  it("builds object card HostContext through adapter", () => {
+    const objectCard = buildObjectCardContext({
+      tenantId: "7",
+      userId: "42",
+      objectTypeId: "contacts",
+      objectTypeName: "Контрагент",
+      objectId: "obj-101",
+      objectTitle: "ООО Ромашка",
+      activeTab: "documents",
+      metadata: {
+        objectStatus: "active",
+        objectOwner: "owner-1",
+      },
+    });
 
     assert.equal(objectCard.hostSurface, "object_card");
+    assert.equal(objectCard.objectTypeId, "contacts");
+    assert.equal(objectCard.objectTypeName, "Контрагент");
+    assert.equal(objectCard.objectId, "obj-101");
+    assert.equal(objectCard.objectTitle, "ООО Ромашка");
+    assert.equal(objectCard.activeTab, "documents");
+    assert.equal(objectCard.metadata.objectStatus, "active");
+  });
+
+  it("builds registry HostContext through adapter", () => {
+    const registry = buildRegistryContext({
+      registryId: "projects",
+      registryName: "Проекты",
+      viewId: "default",
+      viewName: "Таблица",
+      metadata: { recordCount: "12" },
+    });
+
     assert.equal(registry.hostSurface, "registry");
+    assert.equal(registry.registryName, "Проекты");
+    assert.equal(registry.metadata.recordCount, "12");
+    assert.equal(registry._stubOnly, undefined);
+  });
+
+  it("builds designer host context through adapter", () => {
+    const designer = buildDesignerContext({
+      tenantId: "1",
+      designerArea: "Объекты",
+      designerEntityType: "object_type",
+      designerEntityId: "mikhail",
+      designerEntityName: "Михаил",
+      selectedNodeId: "mikhail:fields",
+      selectedNodeName: "Поля",
+      selectedScope: "designer:objects:mikhail:fields",
+      metadata: {
+        designerMode: "designer",
+        designerPath: "/designer/tenant/1/object-types/mikhail/fields",
+        designerSection: "Поля",
+      },
+    });
+
     assert.equal(designer.hostSurface, "designer");
+    assert.equal(designer.designerEntityName, "Михаил");
+    assert.equal(designer._stubOnly, undefined);
+  });
+
+  it("builds document host context with required fields", () => {
+    const document = buildDocumentContext({
+      documentId: "10",
+      documentName: "Техническое задание",
+      documentType: "PDF",
+      documentLibraryId: "3",
+      documentLibraryName: "Библиотека",
+      selectedScope: "document:3:10",
+      metadata: { viewerType: "file_viewer", fileExtension: "pdf" },
+    });
+
     assert.equal(document.hostSurface, "document");
+    assert.equal(document.documentType, "PDF");
+    assert.equal(document._stubOnly, undefined);
+  });
+
+  it("builds process host context with required fields", () => {
+    const process = buildProcessContext({
+      processId: "wf-1",
+      processName: "Согласование документации",
+      processType: "workflow",
+      processStatus: "active",
+      activeStepName: "Проверка документации",
+      selectedScope: "process:wf-1:step-review",
+    });
     assert.equal(process.hostSurface, "process");
-    assert.equal(objectCard._stubOnly, true);
+    assert.equal(process.processName, "Согласование документации");
+    assert.equal(process._stubOnly, undefined);
   });
 
   it("wires dashboard adapter into registry", () => {

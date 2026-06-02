@@ -20,6 +20,19 @@ class ContextSnapshotBuildContext(BaseModel):
     dashboardId: str | None = None
     selectedScope: str | None = None
     widgetId: str | None = None
+    objectTypeId: str | None = None
+    objectTypeName: str | None = None
+    objectId: str | None = None
+    objectTitle: str | None = None
+    activeTab: str | None = None
+    registryId: str | None = None
+    registryName: str | None = None
+    viewId: str | None = None
+    viewName: str | None = None
+    selectedCount: str | None = None
+    activeFilters: str | None = None
+    activeSorts: str | None = None
+    searchQuery: str | None = None
     metadata: dict[str, str] = Field(default_factory=dict)
 
 
@@ -47,6 +60,32 @@ def build_context_snapshot(
             metadata["selectedScope"] = context.selectedScope
         if context.widgetId:
             metadata["widgetId"] = context.widgetId
+        if context.objectTypeId:
+            metadata["objectTypeId"] = context.objectTypeId
+        if context.objectTypeName:
+            metadata["objectTypeName"] = context.objectTypeName
+        if context.objectId:
+            metadata["objectId"] = context.objectId
+        if context.objectTitle:
+            metadata["objectTitle"] = context.objectTitle
+        if context.activeTab:
+            metadata["activeTab"] = context.activeTab
+        if context.registryId:
+            metadata["registryId"] = context.registryId
+        if context.registryName:
+            metadata["registryName"] = context.registryName
+        if context.viewId:
+            metadata["viewId"] = context.viewId
+        if context.viewName:
+            metadata["viewName"] = context.viewName
+        if context.selectedCount:
+            metadata["selectedCount"] = context.selectedCount
+        if context.activeFilters:
+            metadata["activeFilters"] = context.activeFilters
+        if context.activeSorts:
+            metadata["activeSorts"] = context.activeSorts
+        if context.searchQuery:
+            metadata["searchQuery"] = context.searchQuery
         if context.boundaryId:
             metadata["permissionBoundaryRef"] = context.boundaryId
         for key, value in (context.metadata or {}).items():

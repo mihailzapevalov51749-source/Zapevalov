@@ -16,6 +16,9 @@ from app.modules.platform.designer.object_types.router import (
     router as object_types_router,
 )
 from app.modules.platform.designer.publish.router import publish_router
+from app.modules.platform.designer.workspaces.router import (
+    router as workspaces_router,
+)
 from app.modules.platform.shared.dependencies import (
     require_designer_user,
     require_tenant,
@@ -68,5 +71,6 @@ tenant_router.include_router(
 )
 
 tenant_router.include_router(publish_router)
+tenant_router.include_router(workspaces_router)
 
 router.include_router(tenant_router)

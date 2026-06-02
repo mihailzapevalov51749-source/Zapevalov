@@ -162,3 +162,123 @@ export async function getLatestPublish(tenantId) {
   );
   return data;
 }
+
+export async function listDesignerWorkspaces(tenantId) {
+  const { data } = await platformApiClient.get(`${tenantBase(tenantId)}/workspaces`);
+  return data;
+}
+
+export async function listPortalPages(portalId) {
+  const { data } = await platformApiClient.get(`/pages/portal/${portalId}`);
+  return data;
+}
+
+export async function createDesignerWorkspace(tenantId, payload) {
+  const { data } = await platformApiClient.post(
+    `${tenantBase(tenantId)}/workspaces`,
+    payload,
+  );
+  return data;
+}
+
+export async function getDesignerWorkspaceBySlug(tenantId, slug) {
+  const { data } = await platformApiClient.get(
+    `${tenantBase(tenantId)}/workspaces/${encodeURIComponent(slug)}`,
+  );
+  return data;
+}
+
+export async function ensureDesignerWorkspaceHomePage(tenantId, workspaceId) {
+  const { data } = await platformApiClient.post(
+    `${tenantBase(tenantId)}/workspaces/${workspaceId}/ensure-home-page`,
+  );
+  return data;
+}
+
+export async function ensureDesignerWorkspaceTabs(tenantId, workspaceId) {
+  const { data } = await platformApiClient.post(
+    `${tenantBase(tenantId)}/workspaces/${workspaceId}/ensure-tabs`,
+  );
+  return data;
+}
+
+export async function listDesignerWorkspaceTabs(tenantId, workspaceId) {
+  const { data } = await platformApiClient.get(
+    `${tenantBase(tenantId)}/workspaces/${workspaceId}/tabs`,
+  );
+  return data;
+}
+
+export async function createDesignerWorkspaceTab(tenantId, workspaceId, payload) {
+  const { data } = await platformApiClient.post(
+    `${tenantBase(tenantId)}/workspaces/${workspaceId}/tabs`,
+    payload,
+  );
+  return data;
+}
+
+export async function updateDesignerWorkspaceTab(tenantId, workspaceId, tabId, payload) {
+  const { data } = await platformApiClient.patch(
+    `${tenantBase(tenantId)}/workspaces/${workspaceId}/tabs/${tabId}`,
+    payload,
+  );
+  return data;
+}
+
+export async function deleteDesignerWorkspaceTab(tenantId, workspaceId, tabId) {
+  const { data } = await platformApiClient.delete(
+    `${tenantBase(tenantId)}/workspaces/${workspaceId}/tabs/${tabId}`,
+  );
+  return data;
+}
+
+export async function publishDesignerWorkspace(tenantId, workspaceId) {
+  const { data } = await platformApiClient.post(
+    `${tenantBase(tenantId)}/workspaces/${workspaceId}/publish`,
+  );
+  return data;
+}
+
+export async function publishWorkspaceMenuPlacements(tenantId, workspaceId, payload) {
+  const { data } = await platformApiClient.post(
+    `${tenantBase(tenantId)}/workspaces/${workspaceId}/menu-placements`,
+    payload,
+  );
+  return data;
+}
+
+export async function getWorkspaceMenuPlacements(tenantId, workspaceId) {
+  const { data } = await platformApiClient.get(
+    `${tenantBase(tenantId)}/workspaces/${workspaceId}/menu-placements`,
+  );
+  return data;
+}
+
+export async function unpublishDesignerWorkspace(tenantId, workspaceId) {
+  const { data } = await platformApiClient.post(
+    `${tenantBase(tenantId)}/workspaces/${workspaceId}/unpublish`,
+  );
+  return data;
+}
+
+export async function archiveDesignerWorkspace(tenantId, workspaceId) {
+  const { data } = await platformApiClient.post(
+    `${tenantBase(tenantId)}/workspaces/${workspaceId}/archive`,
+  );
+  return data;
+}
+
+export async function updateDesignerWorkspace(tenantId, workspaceId, payload) {
+  const { data } = await platformApiClient.patch(
+    `${tenantBase(tenantId)}/workspaces/${workspaceId}`,
+    payload,
+  );
+  return data;
+}
+
+export async function deleteDesignerWorkspace(tenantId, workspaceId) {
+  const { data } = await platformApiClient.delete(
+    `${tenantBase(tenantId)}/workspaces/${workspaceId}`,
+  );
+  return data;
+}

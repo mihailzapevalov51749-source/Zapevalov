@@ -16,7 +16,7 @@ describe("embeddedEntryRegistry", () => {
     const dashboard = getEmbeddedSurfaceConfig(EMBEDDED_SURFACE_IDS.DASHBOARD);
 
     assert.ok(dashboard);
-    assert.equal(dashboard.surfaceName, "Platform Dashboard");
+    assert.equal(dashboard.surfaceName, "Dashboard");
     assert.equal(typeof dashboard.buildHostContext, "function");
     assert.equal(dashboard.enabled, true);
     assert.equal(dashboard.stubOnly, false);
@@ -33,14 +33,20 @@ describe("embeddedEntryRegistry", () => {
 
     assert.ok(ids.includes(EMBEDDED_SURFACE_IDS.DASHBOARD));
     assert.ok(ids.includes(EMBEDDED_SURFACE_IDS.GLOBAL));
-    assert.ok(!ids.includes(EMBEDDED_SURFACE_IDS.OBJECT_CARD));
+    assert.ok(ids.includes(EMBEDDED_SURFACE_IDS.OBJECT_CARD));
+    assert.ok(ids.includes(EMBEDDED_SURFACE_IDS.REGISTRY));
+    assert.ok(ids.includes(EMBEDDED_SURFACE_IDS.DESIGNER));
+    assert.ok(ids.includes(EMBEDDED_SURFACE_IDS.DOCUMENT));
   });
 
-  it("keeps stub surfaces registered but disabled", () => {
+  it("enables document and process integration surfaces", () => {
     const registryIds = getRegisteredEmbeddedSurfaceIds();
 
-    assert.ok(registryIds.includes(EMBEDDED_SURFACE_IDS.REGISTRY));
-    assert.equal(getEmbeddedSurfaceConfig(EMBEDDED_SURFACE_IDS.REGISTRY).enabled, false);
+    assert.ok(registryIds.includes(EMBEDDED_SURFACE_IDS.DESIGNER));
+    assert.equal(getEmbeddedSurfaceConfig(EMBEDDED_SURFACE_IDS.DESIGNER).enabled, true);
+    assert.equal(getEmbeddedSurfaceConfig(EMBEDDED_SURFACE_IDS.DOCUMENT).enabled, true);
+    assert.equal(getEmbeddedSurfaceConfig(EMBEDDED_SURFACE_IDS.PROCESS).enabled, true);
+    assert.equal(getEmbeddedSurfaceConfig(EMBEDDED_SURFACE_IDS.PROCESS).stubOnly, false);
   });
 
   it("allows custom surface registration", () => {

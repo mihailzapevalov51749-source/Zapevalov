@@ -38,6 +38,7 @@ import { resolvePortalObjectNavigationPath } from "./utils/portalObjectRoutes";
 import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../modules/designer/utils/navigationReload";
 
 import WorkspaceTopBar from "./components/WorkspaceTopBar";
+import WorkspaceRuntimeTabsBar from "./components/WorkspaceRuntimeTabsBar";
 import DeleteSectionModal from "./components/DeleteSectionModal";
 import EmptyDropZone from "./components/EmptyDropZone";
 import PageCanvasContextMenu from "./components/PageCanvasContextMenu";
@@ -86,6 +87,10 @@ import { emitRuntimeShadowSnapshot } from "../shared/shell/shadow/runtime";
 import SearchResultsOverlay from "../shared/search/SearchResultsOverlay";
 import { useHeaderSearchContext } from "../shared/search/useHeaderSearchContext";
 import { useHeaderSearchController } from "../shared/search/useHeaderSearchController";
+import {
+  buildBreadcrumbsFromNavigationChain,
+  resolveNavigationContext,
+} from "../shared/navigation/navigationContextResolver";
 
 const CORPORATE_CHAT_PAGE_ID = 35;
 
@@ -461,9 +466,25 @@ export default function PortalPageView() {
     };
   }, [reloadNavigation]);
 
-  const activeNavigationItem = pageId
-    ? findNavigationItemByPageId(navigation, pageId)
-    : null;
+  const navigationContext = useMemo(() => {
+    const entityRefs = {};
+    const params = new URLSearchParams(location.search || "");
+    const workspaceSlug = String(params.get("workspaceSlug") || "").trim();
+    if (workspaceSlug) {
+      entityRefs.workspaceSlug = workspaceSlug;
+    }
+    return resolveNavigationContext({
+      navigationItems: navigation,
+      currentPath: location.pathname,
+      entityType: workspaceSlug ? "workspace" : "page",
+      entityId: pageId,
+      entityRefs,
+    });
+  }, [navigation, location.pathname, location.search, pageId]);
+
+  const activeNavigationItem =
+    navigationContext.currentNavigationItem ||
+    (pageId ? findNavigationItemByPageId(navigation, pageId) : null);
 
   const isDocumentLibraryPage =
     !isUniversalTablePage &&
@@ -482,15 +503,62 @@ export default function PortalPageView() {
   });
 
   const designerSectionTitle = resolveDesignerSectionTitle(location.pathname);
+  const workspaceRuntimeContext = useMemo(() => {
+    const params = new URLSearchParams(location.search || "");
+    const workspaceSlug = String(params.get("workspaceSlug") || "").trim();
+    const workspaceTitle = String(params.get("workspaceTitle") || "").trim();
+    const workspaceHomePageId = Number(params.get("workspaceHomePageId"));
+    const workspaceTabSlug = String(params.get("workspaceTabSlug") || "").trim();
+    const workspaceTabTitle = String(params.get("workspaceTabTitle") || "").trim() || "Главная";
+    const pageIdFromPath = Number(location.pathname.match(/\/page\/(\d+)/)?.[1]);
+    if (
+      !workspaceSlug ||
+      !workspaceTitle ||
+      !Number.isFinite(workspaceHomePageId) ||
+      !Number.isFinite(pageIdFromPath) ||
+      workspaceHomePageId !== pageIdFromPath
+    ) {
+      return null;
+    }
+    return {
+      slug: workspaceSlug,
+      title: workspaceTitle,
+      pageId: workspaceHomePageId,
+      tabSlug: workspaceTabSlug || "home",
+      tabTitle: workspaceTabTitle,
+    };
+  }, [location.pathname, location.search]);
   const isDocumentLibraryContext =
     isDocumentLibraryPage && Array.isArray(libraryContextPath.folderPath);
   const headerSectionTitle = isDocumentLibraryContext
     ? String(
         libraryContextPath.rootTitle || activeNavigationItem?.title || "Документы"
       )
-    : designerSectionTitle || activeNavigationItem?.title || topBarMeta.title;
-
+    : workspaceRuntimeContext?.title
+      ? workspaceRuntimeContext.title
+      : designerSectionTitle || activeNavigationItem?.title || topBarMeta.title;
   const headerBreadcrumbItems = useMemo(() => {
+    if (workspaceRuntimeContext) {
+      return [
+        {
+          id: "workspace-root",
+          label: "Рабочие пространства",
+          path: `/portal/${portalId}/workspaces/${workspaceRuntimeContext.slug}/${workspaceRuntimeContext.tabSlug || "home"}`,
+        },
+        {
+          id: "workspace-title",
+          label: workspaceRuntimeContext.title,
+          path: `/portal/${portalId}/workspaces/${workspaceRuntimeContext.slug}/${workspaceRuntimeContext.tabSlug || "home"}`,
+        },
+        {
+          id: "workspace-tab",
+          label: workspaceRuntimeContext.tabTitle || "Главная",
+        },
+      ];
+    }
+    if (navigationContext.chain.length > 0) {
+      return buildBreadcrumbsFromNavigationChain(navigationContext.chain, "Офис");
+    }
     if (!isDocumentLibraryContext) {
       return [];
     }
@@ -545,6 +613,8 @@ export default function PortalPageView() {
 
     return items;
   }, [
+    navigationContext.chain,
+    workspaceRuntimeContext,
     isDocumentLibraryContext,
     libraryContextPath.rootTitle,
     libraryContextPath.folderPath,
@@ -552,6 +622,7 @@ export default function PortalPageView() {
     activeNavigationItem?.title,
     activeNavigationItem?.library_id,
     location.pathname,
+    portalId,
   ]);
 
   const headerSearchContextInput = useMemo(
@@ -615,6 +686,27 @@ export default function PortalPageView() {
   const isDesignerCustomPageRoute = /^\/designer\/tenant\/[^/]+\/page\/\d+/.test(
     location.pathname
   );
+
+  useEffect(() => {
+    if (location.state?.enterEditMode !== true || !isCanvasEditPage) {
+      return;
+    }
+
+    setIsEditMode(true);
+
+    const nextState = { ...(location.state || {}) };
+    delete nextState.enterEditMode;
+    navigate(
+      { pathname: location.pathname, search: location.search },
+      { replace: true, state: Object.keys(nextState).length > 0 ? nextState : null },
+    );
+  }, [
+    isCanvasEditPage,
+    location.pathname,
+    location.search,
+    location.state,
+    navigate,
+  ]);
 
   const canvasContextMenu = usePageCanvasContextMenu({
     isEnabled: isEditMode && isCanvasEditPage,
@@ -849,13 +941,13 @@ export default function PortalPageView() {
   }, [navigation, pageId, pageData, activeNavigationItem, reloadNavigation]);
 
   const preserveScrollAndReload = async () => {
-    const scrollElement = document.querySelector("[data-page-scroll]");
+    const scrollElement = document.querySelector("[data-page-canvas]");
     const previousScrollTop = scrollElement?.scrollTop || 0;
 
     await loadCurrentPage({ keepPrevious: true });
 
     requestAnimationFrame(() => {
-      const nextScrollElement = document.querySelector("[data-page-scroll]");
+      const nextScrollElement = document.querySelector("[data-page-canvas]");
 
       if (nextScrollElement) {
         nextScrollElement.scrollTop = previousScrollTop;
@@ -881,6 +973,15 @@ export default function PortalPageView() {
       if (objectTypePath) {
         event?.preventDefault?.();
         navigate(objectTypePath);
+        return;
+      }
+
+      const targetPath = String(
+        item?.path || item?.route || item?.url || item?.meta?.path || item?.meta?.route || item?.meta?.url || "",
+      ).trim();
+      if (targetPath) {
+        event?.preventDefault?.();
+        navigate(targetPath);
         return;
       }
 
@@ -1462,6 +1563,8 @@ export default function PortalPageView() {
       portalId={portalId}
       navigation={navigation}
       activePageId={isUniversalTablePage ? "system-universal-table" : pageId}
+      activeSidebarItemId={navigationContext.currentNavigationItemId}
+      activeSidebarParentIds={navigationContext.activeParentIds}
       onSelectPage={handleSelectPage}
       onNavigateToPath={(path) => navigate(path)}
       onSidebarItemAction={handleSidebarItemAction}
@@ -1484,24 +1587,6 @@ export default function PortalPageView() {
     
 <div
   data-page-scroll
-  onDragOver={
-    isEditMode &&
-    !isUniversalTablePage &&
-    !isDocumentLibraryPage &&
-    !isAdminPage &&
-    !isCorporateChatPage
-      ? widgetDnD.handlePageDragOver
-      : undefined
-  }
-  onDrop={
-    isEditMode &&
-    !isUniversalTablePage &&
-    !isDocumentLibraryPage &&
-    !isAdminPage &&
-    !isCorporateChatPage
-      ? widgetDnD.handlePageDrop
-      : undefined
-  }
   style={{
     width: "100%",
     height: "100%",
@@ -1509,7 +1594,7 @@ export default function PortalPageView() {
     display: "flex",
     flexDirection: "column",
     boxSizing: "border-box",
-    overflow: isUniversalTablePage || isCorporateChatPage ? "hidden" : "auto",
+    overflow: "hidden",
     background: "#f1f5f9",
   }}
 >
@@ -1537,9 +1622,35 @@ export default function PortalPageView() {
     inlineRender={false}
     onUnifiedHeaderModel={handleUnifiedHeaderModel}
   />
+  {workspaceRuntimeContext ? (
+    <WorkspaceRuntimeTabsBar
+      portalId={portalId}
+      workspaceSlug={workspaceRuntimeContext.slug}
+      activeTabSlug={workspaceRuntimeContext.tabSlug}
+      mode="runtime"
+    />
+  ) : null}
 
   <div
     data-page-canvas
+    onDragOver={
+      isEditMode &&
+      !isUniversalTablePage &&
+      !isDocumentLibraryPage &&
+      !isAdminPage &&
+      !isCorporateChatPage
+        ? widgetDnD.handlePageDragOver
+        : undefined
+    }
+    onDrop={
+      isEditMode &&
+      !isUniversalTablePage &&
+      !isDocumentLibraryPage &&
+      !isAdminPage &&
+      !isCorporateChatPage
+        ? widgetDnD.handlePageDrop
+        : undefined
+    }
     onContextMenu={handleCanvasContextMenu}
     style={{
       flex: 1,
@@ -1548,9 +1659,12 @@ export default function PortalPageView() {
       display: "flex",
       flexDirection: "column",
       overflow:
-        isUniversalTablePage || isCorporateChatPage ? "hidden" : "visible",
+        isUniversalTablePage || isCorporateChatPage ? "hidden" : "auto",
       padding:
-        isDocumentLibraryPage || isUniversalTablePage || isCorporateChatPage
+        isDocumentLibraryPage ||
+        isUniversalTablePage ||
+        isCorporateChatPage ||
+        Boolean(workspaceRuntimeContext)
           ? 0
           : "10px 16px 16px",
       boxSizing: "border-box",

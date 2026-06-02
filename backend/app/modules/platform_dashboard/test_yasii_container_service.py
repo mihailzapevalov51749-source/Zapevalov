@@ -6,7 +6,11 @@ from app.modules.platform_dashboard.yasii_catalog import (
 )
 from app.modules.platform_dashboard.yasii_sync import (
     classify_embedded_ai_stage_work_items,
+    classify_track_work_items,
+    classify_yasii_phase_work_items,
     classify_yasii_phases,
+    compute_item_list_readiness,
+    resolve_active_yasii_phase_slug,
 )
 
 
@@ -123,7 +127,7 @@ def test_embedded_ai_stage_work_items_focus_after_p1_w08():
 
 
 def _phase_one_done_keys() -> set[str]:
-    return {item.key for item in work_items_by_stage("yasii-core-foundation")
+    return {item.key for item in work_items_by_stage("yasii-core-foundation")}
 
 
 def _phase_two_done_keys() -> set[str]:
@@ -156,8 +160,7 @@ def test_embedded_ai_stage_work_items_after_phase_one_complete():
     completed, current, next_items = classify_embedded_ai_stage_work_items(done)
     phase_completed, phase_current, phase_next, _ = classify_yasii_phases(done)
 
-    assert len(completed) == 12
-    assert "P1-W12 Memory Layer Basic" in completed
+    assert completed == []
     assert phase_completed == ["YASII Core Foundation"]
     assert phase_current == ["YASII Knowledge Foundation"]
     assert current == [f"{work_item_by_key('P2-W01').key} {work_item_by_key('P2-W01').title}"]
@@ -445,6 +448,134 @@ def test_embedded_ai_stage_work_items_after_phase_four_complete():
     assert phase_current == ["YASII Developer MVP"]
     assert current == ["P5-W01 Developer Profile"]
     assert "P5-W02 Architecture Review" in next_items
+
+
+def _phases_one_through_six_done_keys() -> set[str]:
+    keys: set[str] = set()
+    for slug in (
+        "yasii-core-foundation",
+        "yasii-knowledge-foundation",
+        "yasii-graph-foundation",
+        "yasii-runtime-foundation",
+        "yasii-developer-mvp",
+        "yasii-owner-mvp",
+    ):
+        keys |= {item.key for item in work_items_by_stage(slug)}
+    return keys
+
+
+def _phase_seven_after_p7_w05_done_keys() -> set[str]:
+    return _phases_one_through_six_done_keys() | {
+        "P7-W01",
+        "P7-W02",
+        "P7-W03",
+        "P7-W04",
+        "P7-W05",
+        "P7-W08",
+    }
+
+
+def test_phase_seven_readiness_uses_all_work_items_not_mvp_subset():
+    done = _phase_seven_after_p7_w05_done_keys()
+    items = work_items_by_stage("yasii-embedded-intelligence")
+
+    readiness = compute_item_list_readiness(items, done)
+
+    assert readiness == 84
+
+
+def test_classify_yasii_phases_keeps_embedded_current_when_w06_w07_pending():
+    done = _phase_seven_after_p7_w05_done_keys()
+
+    _completed, phase_current, phase_next, phase_readiness = classify_yasii_phases(done)
+
+    assert phase_readiness["yasii-embedded-intelligence"] == 84
+    assert "YASII Embedded Intelligence" in phase_current
+    assert phase_current == ["YASII Embedded Intelligence"]
+    assert "YASII Memory Foundation" not in phase_current
+    assert "YASII Memory Foundation" in phase_next
+
+
+def test_resolve_active_yasii_phase_slug_returns_embedded_after_p7_w05():
+    done = _phase_seven_after_p7_w05_done_keys()
+
+    assert resolve_active_yasii_phase_slug(done) == "yasii-embedded-intelligence"
+
+
+def test_embedded_stage_focus_after_p7_w06_stays_in_phase_seven():
+    done = _phase_seven_after_p7_w05_done_keys() | {"P7-W06"}
+
+    _completed, current, next_items = classify_embedded_ai_stage_work_items(done)
+    _phase_completed, phase_current, _phase_next, phase_readiness = classify_yasii_phases(done)
+
+    assert phase_readiness["yasii-embedded-intelligence"] == 92
+    assert phase_current == ["YASII Embedded Intelligence"]
+    assert current == ["P7-W07 Process Integration"]
+
+
+def test_embedded_stage_focus_after_p7_w05_targets_p7_w06():
+    done = _phase_seven_after_p7_w05_done_keys()
+
+    _completed, current, next_items = classify_embedded_ai_stage_work_items(done)
+    yasii_current, _yasii_next = classify_track_work_items("yasii", done)
+
+    assert current == ["P7-W06 Document Integration"]
+    assert yasii_current[0] == "P7-W06 Document Integration"
+    assert "P7-W07 Process Integration" in next_items
+
+
+def test_classify_yasii_phases_phase_seven_complete_after_p7_w07():
+    done = _phases_one_through_six_done_keys() | {
+        item.key for item in work_items_by_stage("yasii-embedded-intelligence")
+    }
+
+    phase_completed, phase_current, _phase_next, phase_readiness = classify_yasii_phases(done)
+
+    assert phase_readiness["yasii-embedded-intelligence"] == 100
+    assert "YASII Embedded Intelligence" in phase_completed
+    assert phase_current == ["YASII Memory Foundation"]
+
+
+def test_classify_yasii_phases_moves_to_memory_after_phase_seven_complete():
+    done = _phases_one_through_six_done_keys() | {
+        item.key for item in work_items_by_stage("yasii-embedded-intelligence")
+    }
+
+    phase_completed, phase_current, _phase_next, phase_readiness = classify_yasii_phases(done)
+
+    assert phase_readiness["yasii-embedded-intelligence"] == 100
+    assert "YASII Embedded Intelligence" in phase_completed
+    assert phase_current == ["YASII Memory Foundation"]
+
+
+def test_platform_readiness_phase_complete_when_p10_w03_done():
+    p10_keys = {item.key for item in work_items_by_stage("yasii-platform-readiness")}
+
+    completed, current, _next_items, readiness = classify_yasii_phase_work_items(
+        "yasii-platform-readiness",
+        p10_keys,
+    )
+
+    assert readiness == 100
+    assert "P10-W03" in " ".join(completed)
+    assert current == []
+
+
+def test_memory_foundation_phase_complete_when_p8_w03_done():
+    memory_keys = {item.key for item in work_items_by_stage("yasii-memory-foundation")}
+    done = _phases_one_through_six_done_keys() | {
+        item.key for item in work_items_by_stage("yasii-embedded-intelligence")
+    } | memory_keys
+
+    completed, current, _next_items, readiness = classify_yasii_phase_work_items(
+        "yasii-memory-foundation",
+        done,
+    )
+
+    assert readiness == 100
+    assert "P8-W03" in " ".join(completed)
+    assert current == []
+    assert "P8-W03 Decision Memory" not in " ".join(_next_items)
 
 
 

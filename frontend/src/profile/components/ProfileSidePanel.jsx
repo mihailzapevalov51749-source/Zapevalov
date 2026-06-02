@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getMe, updateMe, logout, uploadAvatar } from "../../api/authApi";
+import { closeActivitySession } from "../../api/userActivityApi";
+import ProfileActivityPanel from "./ProfileActivityPanel";
 
 import settingsIcon from "../../assets/icons/settings.gif";
 import saveIcon from "../../assets/icons/save.gif";
@@ -153,6 +155,7 @@ export default function ProfileSidePanel({ isOpen, onClose }) {
   const [loading, setLoading] = useState(false);
   const [isAvatarUploading, setIsAvatarUploading] = useState(false);
   const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState("contacts");
 
   const avatarSettings = normalizeAvatarSettings(form.avatar_settings);
 
@@ -381,7 +384,8 @@ export default function ProfileSidePanel({ isOpen, onClose }) {
     setError("");
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await closeActivitySession({ reason: "logout" });
     logout();
     window.location.reload();
   };
@@ -652,12 +656,27 @@ export default function ProfileSidePanel({ isOpen, onClose }) {
               <div style={styles.mainDivider} />
 
               <div style={styles.tabs}>
-                <div style={styles.tabActive}>Контакты</div>
-                <div style={styles.tab}>Организация</div>
+                <button
+                  type="button"
+                  style={activeTab === "contacts" ? styles.tabActiveButton : styles.tabButton}
+                  onClick={() => setActiveTab("contacts")}
+                >
+                  Контакты
+                </button>
+                <button
+                  type="button"
+                  style={activeTab === "activity" ? styles.tabActiveButton : styles.tabButton}
+                  onClick={() => setActiveTab("activity")}
+                >
+                  Активность
+                </button>
               </div>
 
               <div style={styles.tabDivider} />
 
+              {activeTab === "activity" ? (
+                <ProfileActivityPanel />
+              ) : (
               <div style={styles.infoGrid}>
                 <InfoTile
                   icon={cityIcon}
@@ -701,6 +720,7 @@ export default function ProfileSidePanel({ isOpen, onClose }) {
                   onChange={(v) => handleChange("mentor", v)}
                 />
               </div>
+              )}
             </section>
           </div>
         )}

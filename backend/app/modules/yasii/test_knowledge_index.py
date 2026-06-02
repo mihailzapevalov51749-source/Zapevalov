@@ -57,9 +57,9 @@ def test_build_index_returns_true():
     )
 
 
-def test_get_index_snapshot_returns_empty_placeholder():
+def test_get_index_snapshot_returns_corpus_records():
     snapshot = get_index_snapshot(KnowledgeIndexContext(indexId="index-1"))
 
     assert isinstance(snapshot, KnowledgeIndexSnapshot)
-    assert snapshot.snapshotId == "knowledge-index-placeholder"
-    assert snapshot.records == []
+    assert snapshot.records
+    assert snapshot.snapshotId.startswith("corpus-")

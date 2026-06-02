@@ -21,6 +21,26 @@ def _ctx_with_yasii_files(file_contents: dict[str, str]) -> ScanContext:
     )
 
 
+def test_p11_w01_knowledge_corpus_integration_passes():
+    ctx = build_scan_context()
+    assert run_yasii_check("yasii_p11_w01_knowledge_corpus_integration", ctx) is True
+
+
+def test_p12_w01_development_intelligence_passes():
+    ctx = build_scan_context()
+    assert run_yasii_check("yasii_p12_w01_development_intelligence", ctx) is True
+
+
+def test_p13_w02_platform_governance_model_passes():
+    ctx = build_scan_context()
+    assert run_yasii_check("yasii_p13_w02_platform_governance_model", ctx) is True
+
+
+def test_p13_w03_dual_readiness_model_passes():
+    ctx = build_scan_context()
+    assert run_yasii_check("yasii_p13_w03_dual_readiness_model", ctx) is True
+
+
 def test_p1_w01_through_w06_checks_pass_with_repo_files():
     ctx = build_scan_context()
     assert run_yasii_check("yasii_p1_w01_module_skeleton_exists", ctx) is True
@@ -575,6 +595,69 @@ def test_failure_response_in_schemas_passes_w08():
         }
     )
     assert run_yasii_check("yasii_p1_w08_failure_response_defined", mocked) is True
+
+
+def test_yasii_workspace_modes_check_passes():
+    assert run_yasii_check("yasii_workspace_modes", build_scan_context()) is True
+
+
+def test_yasii_p8_w01_user_memory_store_check_passes():
+    assert run_yasii_check("yasii_p8_w01_user_memory_store", build_scan_context()) is True
+
+
+def test_yasii_p8_w02_tenant_memory_store_check_passes():
+    assert run_yasii_check("yasii_p8_w02_tenant_memory_store", build_scan_context()) is True
+
+
+def test_yasii_p8_w03_decision_memory_linked_check_passes():
+    assert run_yasii_check("yasii_p8_w03_decision_memory_linked", build_scan_context()) is True
+
+
+def test_yasii_p8_w05_process_memory_schema_check_passes():
+    assert run_yasii_check("yasii_p8_w05_process_memory_schema", build_scan_context()) is True
+
+
+def test_yasii_p8_w06_memory_graph_linked_check_passes():
+    assert run_yasii_check("yasii_p8_w06_memory_graph_linked", build_scan_context()) is True
+
+
+def test_yasii_p9_w01_strategy_engine_operational_check_passes():
+    assert run_yasii_check("yasii_p9_w01_strategy_engine_operational", build_scan_context()) is True
+
+
+def test_yasii_p9_w02_unlock_score_ranking_check_passes():
+    assert run_yasii_check("yasii_p9_w02_unlock_score_ranking", build_scan_context()) is True
+
+
+def test_yasii_p9_w03_blocker_detection_check_passes():
+    assert run_yasii_check("yasii_p9_w03_blocker_detection", build_scan_context()) is True
+
+
+def test_yasii_p9_w04_strategy_recommendation_templates_check_passes():
+    assert (
+        run_yasii_check("yasii_p9_w04_strategy_recommendation_templates", build_scan_context())
+        is True
+    )
+
+
+def test_yasii_p9_w05_architect_profile_active_check_passes():
+    assert run_yasii_check("yasii_p9_w05_architect_profile_active", build_scan_context()) is True
+
+
+def test_yasii_p9_w06_improvement_query_standalone_check_passes():
+    assert run_yasii_check("yasii_p9_w06_improvement_query_standalone", build_scan_context()) is True
+
+
+def test_yasii_p10_w03_e2e_mvp_scenarios_pass_check_passes():
+    assert run_yasii_check("yasii_p10_w03_e2e_mvp_scenarios_pass", build_scan_context()) is True
+
+
+def test_yasii_user_identity_integration_check_passes():
+    assert run_yasii_check("yasii_user_identity_integration", build_scan_context()) is True
+
+
+def test_yasii_p8_w04_session_memory_multiturn_check_passes():
+    assert run_yasii_check("yasii_p8_w04_session_memory_multiturn", build_scan_context()) is True
 
 
 def test_current_work_item_after_w01_through_w06_is_p1_w07():

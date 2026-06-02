@@ -18,6 +18,8 @@ export { createAceHandoff, sendEmbeddedQuery } from "./yasiiEmbeddedApi.js";
 export {
   buildPlatformDashboardHostContext,
   buildPlatformDashboardMetadata,
+  buildObjectCardHostContext,
+  buildObjectCardScopeKey,
 } from "./hostContextBuilders.js";
 export {
   registerEmbeddedSurface,

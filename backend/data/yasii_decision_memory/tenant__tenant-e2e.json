@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "0.1.0",
+  "tenantId": "tenant-e2e",
+  "decisions": [
+    {
+      "decisionId": "dec-fd124312a229",
+      "title": "В платформе существует только один ЯСИИ.",
+      "decisionText": "В платформе существует только один ЯСИИ.",
+      "createdAt": "2026-06-01T15:01:41+00:00",
+      "tenantId": "tenant-e2e",
+      "userId": "user-e2e",
+      "sessionId": "session-e2e",
+      "source": "explicit_command",
+      "status": "active"
+    }
+  ],
+  "updatedAt": "2026-06-01T15:01:41+00:00"
+}

@@ -1,0 +1,57 @@
+{
+  "schemaVersion": "0.1.0",
+  "tenantId": "tenant-e2e",
+  "nodes": [
+    {
+      "nodeId": "tenant:tenant-e2e",
+      "nodeType": "tenant",
+      "sourceType": "tenant_memory",
+      "sourceId": "tenant-e2e"
+    },
+    {
+      "nodeId": "decision:dec-fd124312a229",
+      "nodeType": "decision",
+      "sourceType": "decision_memory",
+      "sourceId": "dec-fd124312a229"
+    },
+    {
+      "nodeId": "user:user-e2e",
+      "nodeType": "user",
+      "sourceType": "user_memory",
+      "sourceId": "user-e2e"
+    },
+    {
+      "nodeId": "session:user-e2e::session-e2e",
+      "nodeType": "session",
+      "sourceType": "session_memory",
+      "sourceId": "user-e2e::session-e2e"
+    }
+  ],
+  "links": [
+    {
+      "linkId": "link-0dca20e75b45",
+      "sourceNodeId": "decision:dec-fd124312a229",
+      "targetNodeId": "tenant:tenant-e2e",
+      "relationType": "belongs_to"
+    },
+    {
+      "linkId": "link-cb7f72ba5b74",
+      "sourceNodeId": "user:user-e2e",
+      "targetNodeId": "decision:dec-fd124312a229",
+      "relationType": "initiated"
+    },
+    {
+      "linkId": "link-a2e39086a7bc",
+      "sourceNodeId": "user:user-e2e",
+      "targetNodeId": "session:user-e2e::session-e2e",
+      "relationType": "belongs_to"
+    },
+    {
+      "linkId": "link-2a0bf6d20a76",
+      "sourceNodeId": "session:user-e2e::session-e2e",
+      "targetNodeId": "decision:dec-fd124312a229",
+      "relationType": "discussed_in"
+    }
+  ],
+  "updatedAt": "2026-06-01T15:01:41+00:00"
+}

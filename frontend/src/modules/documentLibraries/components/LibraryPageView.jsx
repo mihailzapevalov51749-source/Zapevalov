@@ -398,6 +398,8 @@ export default function LibraryPageView({
       <DocumentWorkspaceView
         documentId={embeddedWorkspaceDocumentId}
         libraryId={resolvedLibraryId}
+        libraryName={title}
+        tenantId={routeParams.portalId ?? routeParams.tenantId ?? resolvedLibraryId}
         folderId={currentParentId}
         onDocumentLoaded={handleEmbeddedDocumentLoaded}
         onClose={handleCloseEmbeddedWorkspaceDocument}

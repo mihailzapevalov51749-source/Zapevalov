@@ -685,6 +685,8 @@ export default function PortalLibraryRuntimePage() {
             <DocumentWorkspaceView
               documentId={deepLink.documentId}
               libraryId={libraryId}
+              libraryName={topBarTitle}
+              tenantId={tenantId}
               folderId={deepLink.folderId}
               onDocumentLoaded={handleDocumentLoaded}
               onClose={handleCloseDocument}

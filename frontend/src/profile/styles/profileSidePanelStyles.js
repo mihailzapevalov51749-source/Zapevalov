@@ -406,6 +406,27 @@ export const styles = {
     paddingBottom: 10,
   },
 
+  tabButton: {
+    border: "none",
+    background: "transparent",
+    color: "#475569",
+    padding: "0 0 10px",
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+
+  tabActiveButton: {
+    border: "none",
+    background: "transparent",
+    color: "#2563eb",
+    padding: "0 0 10px",
+    fontSize: 14,
+    fontWeight: 700,
+    borderBottom: "2px solid #2563eb",
+    cursor: "pointer",
+  },
+
   tabDivider: {
     height: 1,
     background: "#e5edf7",

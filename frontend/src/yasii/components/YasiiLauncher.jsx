@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 
 import yasiiLogo from "../../assets/yasii.png";
+import {
+  isTopOverlay,
+  registerOverlay,
+  unregisterOverlay,
+} from "../../shared/overlay/overlayStack.js";
+import { useYasiiAssistantSession } from "../context/YasiiAssistantContext.jsx";
+import { shouldCloseFloatingOnOutsideClick } from "../workspace/yasiiFloatingDismiss.js";
 import YasiiEmbeddedPanel from "./YasiiEmbeddedPanel.jsx";
 
 import "../styles.css";
@@ -15,9 +22,26 @@ export default function YasiiLauncher({
   inputPlaceholder,
   className = "",
 }) {
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const session = useYasiiAssistantSession();
+  const [localPanelOpen, setLocalPanelOpen] = useState(false);
+  const isPanelOpen = session?.isFloatingOpen ?? localPanelOpen;
+  const setIsPanelOpen = session?.setFloatingOpen ?? setLocalPanelOpen;
+  const isPinned = session?.isPinned ?? false;
   const buttonRef = useRef(null);
   const panelRef = useRef(null);
+  const overlayIdRef = useRef(`yasii-launcher-${Math.random().toString(36).slice(2, 10)}`);
+
+  useEffect(() => {
+    if (!isPanelOpen) {
+      unregisterOverlay(overlayIdRef.current);
+      return undefined;
+    }
+
+    registerOverlay(overlayIdRef.current);
+    return () => {
+      unregisterOverlay(overlayIdRef.current);
+    };
+  }, [isPanelOpen]);
 
   useEffect(() => {
     if (!isPanelOpen) {
@@ -35,15 +59,56 @@ export default function YasiiLauncher({
         return;
       }
 
+      if (!isTopOverlay(overlayIdRef.current)) {
+        return;
+      }
+
+      if (
+        !shouldCloseFloatingOnOutsideClick(target, {
+          panelElement: panelRef.current,
+          buttonElement: buttonRef.current,
+          isPinned,
+        })
+      ) {
+        return;
+      }
+
       setIsPanelOpen(false);
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
     };
 
-    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("pointerdown", handlePointerDown, true);
 
     return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("pointerdown", handlePointerDown, true);
     };
-  }, [isPanelOpen]);
+  }, [isPanelOpen, isPinned, setIsPanelOpen]);
+
+  useEffect(() => {
+    if (!isPanelOpen) {
+      return undefined;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key !== "Escape") {
+        return;
+      }
+
+      if (isPinned) {
+        return;
+      }
+
+      setIsPanelOpen(false);
+      event.preventDefault();
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isPanelOpen, isPinned, setIsPanelOpen]);
 
   const wrapperClassName = ["yasii-launcher", "yasii-launcher--floating", className]
     .filter(Boolean)

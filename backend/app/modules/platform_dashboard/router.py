@@ -10,11 +10,17 @@ from app.modules.platform_dashboard.schemas import (
     PlatformComponentsResponse,
     PlatformDashboardRefreshRead,
     PlatformDashboardSummaryRead,
+    PlatformGovernanceRead,
     PlatformStagesResponse,
     PlatformTaskRead,
 )
+from app.modules.platform_dashboard.owner_read_adapter import (
+    OwnerDashboardView,
+    build_owner_dashboard_view,
+)
 from app.modules.platform_dashboard.service import (
     get_dashboard_summary,
+    get_governance_model,
     list_activities,
     list_components,
     list_stages,
@@ -44,6 +50,14 @@ def get_platform_stages(
     return list_stages(db)
 
 
+@router.get("/governance", response_model=PlatformGovernanceRead)
+def get_platform_governance(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return get_governance_model(db)
+
+
 @router.get("/tasks", response_model=list[PlatformTaskRead])
 def get_platform_tasks(
     stage_id: int | None = Query(default=None),
@@ -68,6 +82,14 @@ def get_platform_dashboard_summary(
     current_user=Depends(get_current_user),
 ):
     return get_dashboard_summary(db)
+
+
+@router.get("/owner", response_model=OwnerDashboardView)
+def get_owner_dashboard_view(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    return build_owner_dashboard_view(db)
 
 
 @router.post("/refresh", response_model=PlatformDashboardRefreshRead)

@@ -13,11 +13,21 @@ describe("resolveSurfaceFromRoute", () => {
     assert.equal(resolved.contextData.widgetId, "platform-dashboard");
   });
 
-  it("resolves object runtime route to object_card surface", () => {
+  it("resolves object table data route to registry surface", () => {
     const resolved = resolveSurfaceFromRoute("/portal/1/object-types/contacts/data");
 
-    assert.equal(resolved.surfaceId, EMBEDDED_SURFACE_IDS.OBJECT_CARD);
-    assert.equal(resolved.contextData.widgetId, "object-card");
+    assert.equal(resolved.surfaceId, EMBEDDED_SURFACE_IDS.REGISTRY);
+    assert.equal(resolved.contextData.registryId, "contacts");
+    assert.match(resolved.contextData.widgetId, /^registry-/);
+  });
+
+  it("resolves designer object data route to registry surface", () => {
+    const resolved = resolveSurfaceFromRoute(
+      "/designer/tenant/7/object-types/projects/data",
+    );
+
+    assert.equal(resolved.surfaceId, EMBEDDED_SURFACE_IDS.REGISTRY);
+    assert.equal(resolved.contextData.registryId, "projects");
   });
 
   it("resolves designer route to designer surface", () => {

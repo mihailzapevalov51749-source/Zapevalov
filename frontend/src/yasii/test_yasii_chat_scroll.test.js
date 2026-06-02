@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  findMessageElement,
   resolveMessageScrollIntent,
+  scrollAssistantMessageToStart,
   scrollContainerToBottom,
 } from "./yasiiChatScroll.js";
 
@@ -50,5 +52,51 @@ describe("scrollContainerToBottom", () => {
 
     scrollContainerToBottom(container);
     assert.equal(container.scrollTop, 420);
+  });
+});
+
+describe("findMessageElement", () => {
+  it("returns the last matching node when several share the same id", () => {
+    const first = { id: "first" };
+    const last = { id: "last" };
+    const container = {
+      querySelectorAll: (selector) => {
+        assert.match(selector, /yasii-3/);
+        return [first, last];
+      },
+    };
+
+    assert.equal(findMessageElement(container, "yasii-3"), last);
+  });
+
+  it("returns null when message is missing", () => {
+    const container = { querySelectorAll: () => [] };
+    assert.equal(findMessageElement(container, "missing"), null);
+  });
+});
+
+describe("scrollAssistantMessageToStart", () => {
+  it("aligns message top with container viewport top", () => {
+    const message = {
+      getBoundingClientRect: () => ({ top: 280 }),
+    };
+    const container = {
+      contains: () => true,
+      getBoundingClientRect: () => ({ top: 120 }),
+      scrollTop: 40,
+    };
+
+    scrollAssistantMessageToStart(container, message);
+    assert.equal(container.scrollTop, 200);
+  });
+
+  it("does not scroll when message is outside container", () => {
+    const container = {
+      contains: () => false,
+      scrollTop: 10,
+    };
+
+    scrollAssistantMessageToStart(container, { getBoundingClientRect: () => ({ top: 0 }) });
+    assert.equal(container.scrollTop, 10);
   });
 });

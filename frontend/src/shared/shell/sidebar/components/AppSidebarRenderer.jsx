@@ -52,6 +52,7 @@ function ShellSidebarView({
     menuScale = 1,
     activePageId,
     activeItemId,
+    activeParentIds = [],
     onChangeMenuScale,
   } = contract;
 
@@ -269,6 +270,7 @@ function ShellSidebarView({
           items={finalTree}
           activePageId={menuActivePageId}
           activeSidebarItemId={activeItemId ?? null}
+          activeSidebarParentIds={activeParentIds}
           onSelectPage={handleSelectPage}
           onItemAction={onItemAction}
           isEditMode={editMode}

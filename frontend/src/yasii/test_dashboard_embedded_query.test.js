@@ -38,8 +38,8 @@ describe("Platform Dashboard embedded integration wiring", () => {
     assert.doesNotMatch(hookSource, /sendYasiiQuery/);
     assert.match(panelSource, /resolveEmbeddedSurface/);
     assert.match(floatingSource, /YasiiLauncher/);
-    assert.match(floatingSource, /resolveSurfaceFromRoute/);
-    assert.match(floatingSource, /useYasiiSurfaceContext/);
+    assert.match(floatingSource, /useYasiiResolvedSurface/);
+    assert.match(floatingSource, /useYasiiResolvedSurface/);
     assert.doesNotMatch(floatingSource, /hideOnPlatformDashboard/);
     assert.match(pageSource, /YasiiSurfaceContextProvider/);
     assert.match(pageSource, /buildPlatformDashboardMetadata/);
@@ -61,13 +61,11 @@ describe("Platform Dashboard embedded integration wiring", () => {
     assert.doesNotMatch(launcherSource, /yasii-launcher--inline/);
   });
 
-  it("uses meaningful backend message instead of generic demo fallback", () => {
+  it("prefers backend message text in resolveAssistantText", () => {
     const hookSource = readSource("./hooks/useYasiiEmbeddedQuery.js");
+    assert.match(hookSource, /function resolveAssistantText/);
     assert.match(hookSource, /payload\?\.message/);
-    assert.doesNotMatch(
-      hookSource,
-      /if \(payload\?\.demo === true\) \{\s*return DEMO_ASSISTANT_TEXT;\s*\}/,
-    );
+    assert.match(hookSource, /resolveAssistantText\(payload\)/);
   });
 
   it("uses instant chat scroll strategy without smooth behavior", () => {
@@ -75,7 +73,9 @@ describe("Platform Dashboard embedded integration wiring", () => {
     const scrollSource = readSource("./yasiiChatScroll.js");
     assert.match(panelSource, /inputRef/);
     assert.match(panelSource, /resolveMessageScrollIntent/);
+    assert.match(panelSource, /useLayoutEffect/);
+    assert.match(panelSource, /scrollAssistantMessageToStart/);
     assert.doesNotMatch(panelSource, /behavior:\s*"smooth"/);
-    assert.match(scrollSource, /behavior:\s*"auto"/);
+    assert.match(scrollSource, /scrollAssistantMessageToStart/);
   });
 });

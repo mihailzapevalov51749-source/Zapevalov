@@ -265,6 +265,32 @@ export function normalizePathChain(input: {
   }));
 }
 
+function stripModeLabelFromPathChain(
+  pathChain: HeaderPathChainItem[],
+  modeLabel: string,
+): HeaderPathChainItem[] {
+  if (!Array.isArray(pathChain) || pathChain.length === 0) {
+    return [];
+  }
+
+  const normalize = (value: unknown) => String(value || "").trim().toLowerCase();
+  const normalizedModeLabel = normalize(modeLabel);
+  if (!normalizedModeLabel) {
+    return pathChain;
+  }
+
+  const [first, ...rest] = pathChain;
+  if (normalize(first?.label) !== normalizedModeLabel) {
+    return pathChain;
+  }
+
+  return rest.map((item, index) => ({
+    ...item,
+    active: index === rest.length - 1,
+    path: index === rest.length - 1 ? undefined : item.path,
+  }));
+}
+
 function resolveRuntimeTenant(
   input: RuntimeHeaderAdapterInput
 ): HeaderTenantContract | undefined {
@@ -727,13 +753,22 @@ function toDesignerRuntimeLikeInput(
 export function createRuntimeHeaderContract(
   input: RuntimeHeaderAdapterInput
 ): AppHeaderContract {
+  const resolvedMode =
+    typeof input.pathname === "string" &&
+    input.pathname.startsWith("/designer")
+      ? HEADER_MODES.DESIGNER
+      : HEADER_MODES.RUNTIME;
+  const modeLabel = resolvedMode === HEADER_MODES.DESIGNER ? "Студия" : "Офис";
   const title = resolveRuntimeTitle(input);
   const breadcrumbs = mapBreadcrumbs(input.breadcrumbs);
-  const pathChain = normalizePathChain({
+  const pathChain = stripModeLabelFromPathChain(
+    normalizePathChain({
     pathChain: input.pathChain,
     title,
     breadcrumbs,
-  });
+    }),
+    modeLabel,
+  );
   const extraActions = mapUnknownActions(input.actions);
   const capabilities = resolveRuntimeCapabilities(input);
   const search = buildRuntimeSearch(input, capabilities);
@@ -742,11 +777,7 @@ export function createRuntimeHeaderContract(
   const pageActions = buildRuntimePageActions(input);
 
   return {
-    mode:
-      typeof input.pathname === "string" &&
-      input.pathname.startsWith("/designer")
-        ? HEADER_MODES.DESIGNER
-        : HEADER_MODES.RUNTIME,
+    mode: resolvedMode,
     title,
     subtitle: undefined,
     breadcrumbs: undefined,
@@ -805,7 +836,7 @@ export function createDesignerHeaderContract(
     routeOwner: input.routeOwner ?? null,
   };
   const explicitPathChain = Array.isArray(input.pathChain) ? input.pathChain : null;
-  const pathChain =
+  const pathChain = stripModeLabelFromPathChain(
     explicitPathChain && explicitPathChain.length > 0
       ? normalizePathChain({
           pathChain: explicitPathChain,
@@ -819,7 +850,9 @@ export function createDesignerHeaderContract(
             breadcrumbs.length > 0
               ? breadcrumbs
               : resolveDesignerPathChain(input.pathname, breadcrumbContext),
-        });
+        }),
+    "Студия",
+  );
   const search = buildRuntimeSearch(runtimeLikeInput, capabilities);
   const notifications = {
     ...buildRuntimeNotifications(runtimeLikeInput, capabilities),

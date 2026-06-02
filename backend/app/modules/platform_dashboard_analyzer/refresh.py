@@ -50,6 +50,8 @@ from app.modules.platform_dashboard_analyzer.types import RefreshResult, ScanCon
 from app.modules.platform_dashboard.yasii_catalog import YASII_IMPLEMENTATION_STAGE_SLUG
 from app.modules.platform_dashboard.yasii_sync import sync_yasii_track
 
+from app.modules.users.models import User  # noqa: F401 — register ORM before QualityIssue mapper
+
 from app.modules.quality_issues.constants import QualityIssueStatus
 
 from app.modules.quality_issues.models import QualityIssue

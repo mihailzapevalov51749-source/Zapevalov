@@ -19,6 +19,26 @@ import {
   writeHistorySortDirection,
 } from "../utils/historySortPreference";
 import TableSortToggleButton from "../../../shared/viewEngine/TableSortToggleButton";
+import OwnerStageDetailPanel from "../components/OwnerStageDetailPanel.jsx";
+import OwnerStageMasterList from "../components/OwnerStageMasterList.jsx";
+import {
+  buildCompanyStages,
+  buildDevelopmentStages,
+  buildPlatformStages,
+  resolveDefaultStageId,
+} from "../dashboard/buildOwnerStageView.js";
+import {
+  isOwnerDashboardViewPayload,
+  resolveOwnerDashboardHistory,
+  resolveOwnerDashboardStages,
+  resolveOwnerSectionTitle,
+} from "../dashboard/ownerDashboardIntegration.js";
+import {
+  DASHBOARD_SECTIONS,
+  isKnownDashboardSection,
+  resolveDashboardSectionKey,
+  resolveYasiiDashboardTabKey,
+} from "../dashboard/dashboardSections.js";
 
 import "./platformDevelopmentPage.css";
 
@@ -67,22 +87,6 @@ const AREA_OPTIONS = [
   { value: "other", label: "Другое" },
 ];
 
-const ARCHITECTURE_STATUS_LABELS = {
-  planned: "Запланировано",
-  in_progress: "В работе",
-  review: "На проверке",
-  done: "Завершено",
-  blocked: "Заблокировано",
-};
-
-const PHASE_STATUS_LABELS = {
-  planned: "Запланировано",
-  in_progress: "В работе",
-  review: "На проверке",
-  done: "Завершено",
-  blocked: "Заблокировано",
-};
-
 const ACTIVITY_TYPE_LABELS = {
   dashboard_refresh: "Обновление Dashboard",
   readiness_component: "Готовность контура",
@@ -95,55 +99,6 @@ const ACTIVITY_TYPE_LABELS = {
 
 function getActivityTypeLabel(type) {
   return ACTIVITY_TYPE_LABELS[type] || type || "—";
-}
-
-function formatReadiness(readiness) {
-  if (readiness == null || Number.isNaN(readiness)) {
-    return "Нет данных для расчёта";
-  }
-
-  return `${readiness}%`;
-}
-
-function formatReadinessMeta(readiness) {
-  if (readiness == null || Number.isNaN(readiness)) {
-    return "—";
-  }
-
-  return `${readiness}%`;
-}
-
-function getContourDisplayTitle(contour) {
-  if (!contour) {
-    return "—";
-  }
-
-  return contour.title || "—";
-}
-
-function getPhaseDisplayTitle(phase) {
-  if (!phase) {
-    return "—";
-  }
-
-  return phase.title || "—";
-}
-
-function resolveDefaultExpandedPhaseId(phases) {
-  return (
-    phases.find((phase) => phase.current_position)?.id
-    ?? phases.find((phase) => phase.status === "in_progress")?.id
-    ?? phases[0]?.id
-    ?? null
-  );
-}
-
-function resolveDefaultContourId(contours) {
-  return (
-    contours.find((contour) => contour.status === "in_progress")?.id
-    ?? contours[0]?.id
-    ?? null
-  );
 }
 
 function resolveDefaultHistoryId(events) {
@@ -197,14 +152,6 @@ function getQualityStatusValue(status) {
 
 function getIssueResolutionLabel(status) {
   return getQualityStatusLabel(status);
-}
-
-function getContourCompletedWork(contour) {
-  return contour.completed_items || [];
-}
-
-function getContourRemainingWork(contour) {
-  return contour.remaining_items || [];
 }
 
 function MasterDetailsWorkspace({
@@ -284,127 +231,37 @@ function DetailField({ label, children }) {
   );
 }
 
-function DetailFieldList({ label, items }) {
-  if (!items?.length) {
-    return null;
-  }
+function OwnerStagesWorkspace({
+  sectionTitle,
+  stages,
+  selectedStageId,
+  onSelectStage,
+  statusSlot = null,
+  emptyMessage,
+  preferOwnerStatus = false,
+}) {
+  const selectedStage =
+    stages.find((stage) => stage.id === selectedStageId) ?? null;
 
   return (
-    <DetailField label={label}>
-      <ul className="platform-dev__detail-list">
-        {items.map((item) => (
-          <li key={item}>{item}</li>
-        ))}
-      </ul>
-    </DetailField>
-  );
-}
-
-function ImplementationPhaseDetailsPanel({ phase }) {
-  return (
-    <div className="platform-dev__detail-view">
-      <h3 className="platform-dev__detail-view-title">{getPhaseDisplayTitle(phase)}</h3>
-
-      <div className="platform-dev__detail-fields">
-        <DetailField label="Цель этапа">
-          <p>{phase.description || "Не указано."}</p>
-        </DetailField>
-        <DetailField label="Готовность этапа">
-          <p>{formatReadiness(phase.readiness)}</p>
-        </DetailField>
-        <DetailFieldList label="Завершённые работы этапа" items={phase.completed_items} />
-        <DetailFieldList label="Текущие работы этапа" items={phase.current_tasks} />
-        <DetailFieldList label="Следующие работы этапа" items={phase.next_tasks} />
-        <DetailFieldList label="Блокеры этапа" items={phase.blockers} />
-        <DetailFieldList label="Критерий завершения этапа" items={phase.completion_criteria} />
-      </div>
-    </div>
-  );
-}
-
-function ArchitectureMasterList({ contours, selectedContourId, onSelectContour }) {
-  if (contours.length === 0) {
-    return <p className="platform-dev__master-status">Компонентов пока нет.</p>;
-  }
-
-  return (
-    <MasterList>
-      {contours.map((contour) => (
-        <MasterListItem
-          key={contour.id}
-          selected={selectedContourId === contour.id}
-          onClick={() => onSelectContour(contour.id)}
-          title={getContourDisplayTitle(contour)}
-          meta={formatReadinessMeta(contour.readiness)}
-        />
-      ))}
-    </MasterList>
-  );
-}
-
-function ImplementationMasterList({ phases, selectedPhaseId, onSelectPhase }) {
-  if (phases.length === 0) {
-    return <p className="platform-dev__master-status">Этапов пока нет.</p>;
-  }
-
-  return (
-    <MasterList>
-      {phases.map((phase) => (
-        <MasterListItem
-          key={phase.id}
-          selected={selectedPhaseId === phase.id}
-          onClick={() => onSelectPhase(phase.id)}
-          title={getPhaseDisplayTitle(phase)}
-          subtitle={phase.current_position ? "Текущий этап" : null}
-          meta={formatReadinessMeta(phase.readiness)}
-        />
-      ))}
-    </MasterList>
-  );
-}
-
-function ArchitectureContourDetailsPanel({ contour }) {
-  if (!contour) {
-    return <DetailEmptyState message="Выберите компонент платформы в списке слева." />;
-  }
-
-  const relatedIssues = contour.related_issues || [];
-
-  return (
-    <div className="platform-dev__detail-view">
-      <h3 className="platform-dev__detail-view-title">{getContourDisplayTitle(contour)}</h3>
-
-      <div className="platform-dev__detail-fields">
-        <DetailField label="Статус">
-          <p>{ARCHITECTURE_STATUS_LABELS[contour.status] || contour.status}</p>
-        </DetailField>
-        <DetailField label="Техническая реализованность">
-          <p>{formatReadiness(contour.readiness)}</p>
-        </DetailField>
-        <DetailField label="Описание">
-          <p>{contour.description || "Не указано."}</p>
-        </DetailField>
-        <DetailFieldList label="Что реализовано" items={getContourCompletedWork(contour)} />
-        <DetailFieldList label="Что осталось реализовать" items={getContourRemainingWork(contour)} />
-        <DetailFieldList label="Зависимости" items={contour.dependencies} />
-        <DetailFieldList label="Архитектурный долг" items={contour.architecture_debt} />
-        {relatedIssues.length > 0 ? (
-          <DetailField label="Связанные проблемы качества">
-            <ul className="platform-dev__detail-list">
-              {relatedIssues.map((issue) => (
-                <li key={issue.id}>
-                  {formatIssueId(issue.id)} — {issue.title} ({getIssueResolutionLabel(issue.status)})
-                </li>
-              ))}
-            </ul>
-          </DetailField>
-        ) : (
-          <DetailField label="Связанные проблемы качества">
-            <p>Открытых связанных проблем нет.</p>
-          </DetailField>
-        )}
-      </div>
-    </div>
+    <MasterDetailsWorkspace
+      title={sectionTitle}
+      masterLabel="Этапы"
+      detailLabel="Состояние этапа"
+      master={
+        <>
+          {statusSlot}
+          <OwnerStageMasterList
+            stages={stages}
+            selectedStageId={selectedStageId}
+            onSelectStage={onSelectStage}
+            emptyMessage={emptyMessage}
+            preferOwnerStatus={preferOwnerStatus}
+          />
+        </>
+      }
+      detail={<OwnerStageDetailPanel stage={selectedStage} />}
+    />
   );
 }
 
@@ -703,7 +560,7 @@ function QualityIssueDetailsPanel({ issue, onIssueUpdated }) {
   );
 }
 
-function HistoryMasterList({ events, selectedEventId, onSelectEvent }) {
+function HistoryMasterList({ events, selectedEventId, onSelectEvent, ownerView = false }) {
   if (events.length === 0) {
     return <p className="platform-dev__master-status">Событий пока нет.</p>;
   }
@@ -715,17 +572,44 @@ function HistoryMasterList({ events, selectedEventId, onSelectEvent }) {
           key={event.id}
           selected={selectedEventId === event.id}
           onClick={() => onSelectEvent(event.id)}
-          title={formatActivityDate(event.created_at)}
-          subtitle={`${getActivityTypeLabel(event.type)} · ${event.title}`}
+          title={ownerView ? event.title : formatActivityDate(event.created_at)}
+          subtitle={
+            ownerView
+              ? formatActivityDate(event.created_at)
+              : `${getActivityTypeLabel(event.type)} · ${event.title}`
+          }
         />
       ))}
     </MasterList>
   );
 }
 
-function HistoryEventDetailsPanel({ event }) {
+function HistoryEventDetailsPanel({ event, ownerView = false }) {
   if (!event) {
     return <DetailEmptyState message="Выберите событие в списке слева." />;
+  }
+
+  if (ownerView) {
+    return (
+      <div className="platform-dev__detail-view">
+        <time className="platform-dev__detail-view-date" dateTime={event.created_at}>
+          {formatAbsoluteDateTime(event.created_at)}
+        </time>
+        <h3 className="platform-dev__detail-view-title">{event.title}</h3>
+        <div className="platform-dev__detail-fields">
+          {event.description ? (
+            <DetailField label="Описание">
+              <p className="platform-dev__detail-multiline">{event.description}</p>
+            </DetailField>
+          ) : null}
+          {event.initiated_by_name ? (
+            <DetailField label="Инициатор">
+              <p>{event.initiated_by_name}</p>
+            </DetailField>
+          ) : null}
+        </div>
+      </div>
+    );
   }
 
   const timeAudit = formatDateTimeAudit(event.created_at);
@@ -791,18 +675,6 @@ function HistoryEventDetailsPanel({ event }) {
       </div>
     </div>
   );
-}
-
-const PLATFORM_TABS = [
-  { key: "architecture", label: "Архитектура" },
-  { key: "implementation", label: "Реализация" },
-  { key: "quality", label: "Качество" },
-  { key: "history", label: "История" },
-];
-
-function resolvePlatformTabKey(pathname) {
-  const match = pathname.match(/\/platform\/([^/?]+)/);
-  return match?.[1] || null;
 }
 
 function formatActivityDate(value) {
@@ -1026,14 +898,19 @@ function AddQualityIssueModal({ open, onClose, onSubmit, isSubmitting, submitErr
 export default function PlatformDevelopmentPage() {
   const { tenantId } = useParams();
   const location = useLocation();
-  const activeTabKey = resolvePlatformTabKey(location.pathname);
-  const isKnownTab = PLATFORM_TABS.some((tab) => tab.key === activeTabKey);
+  const sectionResolution = resolveDashboardSectionKey(location.pathname);
+  const activeSectionKey = sectionResolution?.sectionKey ?? null;
+  const legacySectionSegment = sectionResolution?.legacySegment ?? null;
+  const yasiiDashboardTabKey = resolveYasiiDashboardTabKey(activeSectionKey);
   const platformBasePath = `/designer/tenant/${tenantId}/platform`;
 
   const [platformComponents, setPlatformComponents] = useState([]);
   const [implementationStages, setImplementationStages] = useState([]);
+  const [governanceModel, setGovernanceModel] = useState(null);
   const [platformTasks, setPlatformTasks] = useState([]);
   const [platformActivities, setPlatformActivities] = useState([]);
+  const [ownerDashboardView, setOwnerDashboardView] = useState(null);
+  const [ownerDashboardActive, setOwnerDashboardActive] = useState(false);
   const [dashboardSummary, setDashboardSummary] = useState(null);
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(true);
   const [isRefreshingDashboard, setIsRefreshingDashboard] = useState(false);
@@ -1061,15 +938,27 @@ export default function PlatformDevelopmentPage() {
         platformDashboardApi.listPlatformStages(),
         platformDashboardApi.listPlatformTasks(),
         platformDashboardApi.listPlatformActivities(),
+        platformDashboardApi.getOwnerDashboardView(),
       ]);
 
       const summary = results[0].status === "fulfilled" ? results[0].value : null;
       const components = results[1].status === "fulfilled" ? results[1].value : [];
-      const stages = results[2].status === "fulfilled" ? results[2].value : [];
+      const stagesPayload = results[2].status === "fulfilled" ? results[2].value : { items: [] };
+      const stages = Array.isArray(stagesPayload)
+        ? stagesPayload
+        : stagesPayload.items ?? [];
+      const governanceFromStages = Array.isArray(stagesPayload)
+        ? null
+        : stagesPayload.governance ?? null;
       const tasks = results[3].status === "fulfilled" ? results[3].value : [];
       const activities = results[4].status === "fulfilled" ? results[4].value : [];
+      const ownerViewPayload =
+        results[5].status === "fulfilled" ? results[5].value : null;
+      const ownerViewActive = isOwnerDashboardViewPayload(ownerViewPayload);
 
-      const failedRequests = results.filter((result) => result.status === "rejected");
+      const failedRequests = results.filter(
+        (result, index) => result.status === "rejected" && index !== 5,
+      );
       if (failedRequests.length > 0) {
         const firstError = failedRequests[0];
         setDashboardError(
@@ -1083,8 +972,11 @@ export default function PlatformDevelopmentPage() {
       setDashboardSummary(summary);
       setPlatformComponents(Array.isArray(components) ? components : []);
       setImplementationStages(Array.isArray(stages) ? stages : []);
+      setGovernanceModel(governanceFromStages);
       setPlatformTasks(Array.isArray(tasks) ? tasks : []);
       setPlatformActivities(Array.isArray(activities) ? activities : []);
+      setOwnerDashboardView(ownerViewActive ? ownerViewPayload : null);
+      setOwnerDashboardActive(ownerViewActive);
     } catch (error) {
       setDashboardError(
         getApiErrorMessage(error, "Не удалось загрузить данные Platform Dashboard"),
@@ -1095,6 +987,8 @@ export default function PlatformDevelopmentPage() {
         setImplementationStages([]);
         setPlatformTasks([]);
         setPlatformActivities([]);
+        setOwnerDashboardView(null);
+        setOwnerDashboardActive(false);
       }
     } finally {
       if (!silent) {
@@ -1172,72 +1066,139 @@ export default function PlatformDevelopmentPage() {
     loadQualityIssues();
   }, [loadQualityIssues]);
 
-  const [expandedPhaseId, setExpandedPhaseId] = useState(null);
-  const [selectedContourId, setSelectedContourId] = useState(null);
+  const [selectedPlatformStageId, setSelectedPlatformStageId] = useState(null);
+  const [selectedDevelopmentStageId, setSelectedDevelopmentStageId] = useState(null);
+  const [selectedCompanyStageId, setSelectedCompanyStageId] = useState(null);
   const [selectedIssueId, setSelectedIssueId] = useState(null);
   const [selectedHistoryId, setSelectedHistoryId] = useState(null);
   const [historySortDirection, setHistorySortDirection] = useState(readHistorySortDirection);
 
-  useEffect(() => {
-    if (implementationStages.length === 0) {
-      setExpandedPhaseId(null);
-      return;
-    }
+  const legacyPlatformStages = useMemo(
+    () => buildPlatformStages(platformComponents, governanceModel?.platform),
+    [platformComponents, governanceModel],
+  );
 
-    setExpandedPhaseId((previous) => {
-      if (previous != null && implementationStages.some((phase) => phase.id === previous)) {
+  const legacyDevelopmentStages = useMemo(
+    () => buildDevelopmentStages(implementationStages),
+    [implementationStages],
+  );
+
+  const legacyCompanyStages = useMemo(
+    () => buildCompanyStages(governanceModel?.companyWorkspaces),
+    [governanceModel],
+  );
+
+  const platformStages = useMemo(() => {
+    if (ownerDashboardActive) {
+      return (
+        resolveOwnerDashboardStages(ownerDashboardView, "platform")
+        ?? legacyPlatformStages
+      );
+    }
+    return legacyPlatformStages;
+  }, [ownerDashboardActive, ownerDashboardView, legacyPlatformStages]);
+
+  const developmentStages = useMemo(() => {
+    if (ownerDashboardActive) {
+      return (
+        resolveOwnerDashboardStages(ownerDashboardView, "development")
+        ?? legacyDevelopmentStages
+      );
+    }
+    return legacyDevelopmentStages;
+  }, [ownerDashboardActive, ownerDashboardView, legacyDevelopmentStages]);
+
+  const companyStages = useMemo(() => {
+    if (ownerDashboardActive) {
+      return (
+        resolveOwnerDashboardStages(ownerDashboardView, "companies")
+        ?? legacyCompanyStages
+      );
+    }
+    return legacyCompanyStages;
+  }, [ownerDashboardActive, ownerDashboardView, legacyCompanyStages]);
+
+  const ownerHistoryEvents = useMemo(() => {
+    if (!ownerDashboardActive) {
+      return null;
+    }
+    return resolveOwnerDashboardHistory(ownerDashboardView);
+  }, [ownerDashboardActive, ownerDashboardView]);
+
+  useEffect(() => {
+    setSelectedPlatformStageId((previous) => {
+      if (
+        previous != null
+        && platformStages.some((stage) => String(stage.id) === String(previous))
+      ) {
         return previous;
       }
-
-      return resolveDefaultExpandedPhaseId(implementationStages);
+      return resolveDefaultStageId(platformStages);
     });
-  }, [implementationStages]);
+  }, [platformStages]);
 
   useEffect(() => {
-    if (platformComponents.length === 0) {
-      setSelectedContourId(null);
-      return;
-    }
-
-    setSelectedContourId((previous) => {
-      if (previous != null && platformComponents.some((contour) => contour.id === previous)) {
+    setSelectedDevelopmentStageId((previous) => {
+      if (
+        previous != null
+        && developmentStages.some((stage) => String(stage.id) === String(previous))
+      ) {
         return previous;
       }
-
-      return resolveDefaultContourId(platformComponents);
+      const currentPhase = implementationStages.find((phase) => phase.current_position);
+      if (currentPhase) {
+        return String(currentPhase.id);
+      }
+      return resolveDefaultStageId(developmentStages);
     });
-  }, [platformComponents]);
+  }, [developmentStages, implementationStages]);
 
-  const handleSelectImplementationPhase = (phaseId) => {
-    setExpandedPhaseId(phaseId);
-  };
+  useEffect(() => {
+    setSelectedCompanyStageId((previous) => {
+      if (
+        previous != null
+        && companyStages.some((stage) => String(stage.id) === String(previous))
+      ) {
+        return previous;
+      }
+      return resolveDefaultStageId(companyStages);
+    });
+  }, [companyStages]);
 
-  const selectedImplementationPhase = useMemo(
-    () => implementationStages.find((phase) => phase.id === expandedPhaseId) ?? null,
-    [implementationStages, expandedPhaseId],
+  const selectedDevelopmentPhase = useMemo(
+    () =>
+      implementationStages.find(
+        (phase) => String(phase.id) === String(selectedDevelopmentStageId),
+      ) ?? null,
+    [implementationStages, selectedDevelopmentStageId],
   );
 
   const platformDashboardUserId = useMemo(() => resolvePlatformDashboardUserId(), []);
 
-  const yasiiWidgetId = activeTabKey || "platform-dashboard";
+  const yasiiWidgetId = yasiiDashboardTabKey || "platform-dashboard";
 
   const yasiiSelectedScope = useMemo(() => {
-    if (activeTabKey === "implementation") {
-      if (selectedImplementationPhase?.slug) {
-        return String(selectedImplementationPhase.slug);
+    if (activeSectionKey === "development") {
+      if (selectedDevelopmentPhase?.slug) {
+        return String(selectedDevelopmentPhase.slug);
       }
 
-      if (expandedPhaseId != null) {
-        return String(expandedPhaseId);
+      if (selectedDevelopmentStageId != null) {
+        return String(selectedDevelopmentStageId);
       }
     }
 
-    return activeTabKey || "platform-dashboard";
-  }, [activeTabKey, expandedPhaseId, selectedImplementationPhase]);
+    return yasiiDashboardTabKey || "platform-dashboard";
+  }, [
+    activeSectionKey,
+    selectedDevelopmentPhase,
+    selectedDevelopmentStageId,
+    yasiiDashboardTabKey,
+  ]);
 
   const yasiiContextPhase = useMemo(() => {
-    if (activeTabKey === "implementation") {
-      return selectedImplementationPhase;
+    if (activeSectionKey === "development") {
+      return selectedDevelopmentPhase;
     }
 
     return (
@@ -1245,16 +1206,16 @@ export default function PlatformDevelopmentPage() {
       ?? implementationStages.find((phase) => phase.status === "in_progress")
       ?? null
     );
-  }, [activeTabKey, implementationStages, selectedImplementationPhase]);
+  }, [activeSectionKey, implementationStages, selectedDevelopmentPhase]);
 
   const yasiiDashboardMetadata = useMemo(
     () =>
       buildPlatformDashboardMetadata({
-        activeTabKey,
+        activeTabKey: yasiiDashboardTabKey,
         phase: yasiiContextPhase,
         dashboardSummary,
       }),
-    [activeTabKey, dashboardSummary, yasiiContextPhase],
+    [yasiiDashboardTabKey, dashboardSummary, yasiiContextPhase],
   );
 
   const yasiiSurfaceValue = useMemo(
@@ -1267,7 +1228,7 @@ export default function PlatformDevelopmentPage() {
         selectedScope: yasiiSelectedScope,
         metadata: yasiiDashboardMetadata,
       },
-      inputPlaceholder: "Спросите ЯСИИ о roadmap или текущем этапе...",
+      inputPlaceholder: "Спросите ЯСИИ о ...",
     }),
     [
       tenantId,
@@ -1278,28 +1239,40 @@ export default function PlatformDevelopmentPage() {
     ],
   );
 
-  const selectedContour = useMemo(
-    () => platformComponents.find((contour) => contour.id === selectedContourId) ?? null,
-    [platformComponents, selectedContourId],
-  );
-
   const selectedQualityIssue = useMemo(
     () => qualityIssues.find((issue) => issue.id === selectedIssueId) ?? null,
     [qualityIssues, selectedIssueId],
   );
 
   const sortedPlatformHistory = useMemo(() => {
-    return [...platformActivities].sort((left, right) => {
+    const sourceEvents =
+      ownerDashboardActive && ownerHistoryEvents
+        ? ownerHistoryEvents
+        : platformActivities;
+
+    return [...sourceEvents].sort((left, right) => {
       const leftTime = parseApiDateTime(left.created_at)?.getTime() ?? 0;
       const rightTime = parseApiDateTime(right.created_at)?.getTime() ?? 0;
 
       if (leftTime === rightTime) {
-        return (right.id ?? 0) - (left.id ?? 0);
+        const leftId = Number(left.id);
+        const rightId = Number(right.id);
+        if (!Number.isNaN(leftId) && !Number.isNaN(rightId)) {
+          return rightId - leftId;
+        }
+        return String(right.id).localeCompare(String(left.id));
       }
 
       return historySortDirection === "desc" ? rightTime - leftTime : leftTime - rightTime;
     });
-  }, [platformActivities, historySortDirection]);
+  }, [
+    ownerDashboardActive,
+    ownerHistoryEvents,
+    platformActivities,
+    historySortDirection,
+  ]);
+
+  const historyOwnerView = ownerDashboardActive && Boolean(ownerHistoryEvents);
 
   const handleToggleHistorySort = useCallback(() => {
     setHistorySortDirection((previous) => {
@@ -1377,8 +1350,12 @@ export default function PlatformDevelopmentPage() {
     setIsAddIssueOpen(false);
   };
 
-  if (!activeTabKey || !isKnownTab) {
-    return <Navigate to={`${platformBasePath}/architecture`} replace />;
+  if (!activeSectionKey || !isKnownDashboardSection(activeSectionKey)) {
+    return <Navigate to={`${platformBasePath}/platform`} replace />;
+  }
+
+  if (legacySectionSegment) {
+    return <Navigate to={`${platformBasePath}/${activeSectionKey}`} replace />;
   }
 
   const lastUpdatedLabel = formatManifestUpdatedAt(
@@ -1403,7 +1380,11 @@ export default function PlatformDevelopmentPage() {
       return <p className="platform-dev__master-status">{refreshError}</p>;
     }
 
-    if (platformComponents.length === 0 && implementationStages.length === 0) {
+    if (
+      !ownerDashboardActive
+      && platformComponents.length === 0
+      && implementationStages.length === 0
+    ) {
       return (
         <p className="platform-dev__master-status">
           Данные Dashboard ещё не рассчитаны. Нажмите «Обновить».
@@ -1414,53 +1395,55 @@ export default function PlatformDevelopmentPage() {
     return null;
   };
 
-  const renderArchitectureTab = () => (
-    <MasterDetailsWorkspace
-      title="Готовность контуров платформы"
-      masterLabel="Архитектурные компоненты"
-      detailLabel="Детали компонента"
-      master={
-        <>
-          {renderDashboardStatus()}
-          <ArchitectureMasterList
-            contours={platformComponents}
-            selectedContourId={selectedContourId}
-            onSelectContour={setSelectedContourId}
-          />
-        </>
-      }
-      detail={<ArchitectureContourDetailsPanel contour={selectedContour} />}
+  const platformSectionTitle = ownerDashboardActive
+    ? resolveOwnerSectionTitle(ownerDashboardView, "platform", "Платформа")
+    : "Платформа";
+
+  const developmentSectionTitle = ownerDashboardActive
+    ? resolveOwnerSectionTitle(ownerDashboardView, "development", "Развитие продукта")
+    : "Развитие продукта";
+
+  const companiesSectionTitle = ownerDashboardActive
+    ? resolveOwnerSectionTitle(ownerDashboardView, "companies", "Компании")
+    : "Компании";
+
+  const renderPlatformSection = () => (
+    <OwnerStagesWorkspace
+      sectionTitle={platformSectionTitle}
+      stages={platformStages}
+      selectedStageId={selectedPlatformStageId}
+      onSelectStage={setSelectedPlatformStageId}
+      statusSlot={renderDashboardStatus()}
+      emptyMessage="Этапы платформы пока не загружены."
     />
   );
 
-  const renderImplementationTab = () => (
-    <MasterDetailsWorkspace
-      title="Создание платформы"
-      masterLabel="Этапы roadmap"
-      detailLabel="Детали этапа"
-      master={
-        <>
-          {renderDashboardStatus()}
-          <ImplementationMasterList
-            phases={implementationStages}
-            selectedPhaseId={expandedPhaseId}
-            onSelectPhase={handleSelectImplementationPhase}
-          />
-        </>
-      }
-      detail={
-        selectedImplementationPhase ? (
-          <ImplementationPhaseDetailsPanel phase={selectedImplementationPhase} />
-        ) : (
-          <DetailEmptyState message="Выберите этап в списке слева." />
-        )
-      }
+  const renderDevelopmentSection = () => (
+    <OwnerStagesWorkspace
+      sectionTitle={developmentSectionTitle}
+      stages={developmentStages}
+      selectedStageId={selectedDevelopmentStageId}
+      onSelectStage={setSelectedDevelopmentStageId}
+      statusSlot={renderDashboardStatus()}
+      emptyMessage="Этапы разработки пока не загружены."
+      preferOwnerStatus={ownerDashboardActive}
     />
   );
 
-  const renderHistoryTab = () => (
+  const renderCompaniesSection = () => (
+    <OwnerStagesWorkspace
+      sectionTitle={companiesSectionTitle}
+      stages={companyStages}
+      selectedStageId={selectedCompanyStageId}
+      onSelectStage={setSelectedCompanyStageId}
+      statusSlot={renderDashboardStatus()}
+      emptyMessage="Компании пока не настроены."
+    />
+  );
+
+  const renderHistorySection = () => (
     <MasterDetailsWorkspace
-      title="История развития"
+      title="История"
       titleAddon={
         <TableSortToggleButton
           sortDirection={historySortDirection}
@@ -1477,17 +1460,23 @@ export default function PlatformDevelopmentPage() {
             events={sortedPlatformHistory}
             selectedEventId={selectedHistoryId}
             onSelectEvent={setSelectedHistoryId}
+            ownerView={historyOwnerView}
           />
         </>
       }
-      detail={<HistoryEventDetailsPanel event={selectedHistoryEvent} />}
+      detail={
+        <HistoryEventDetailsPanel
+          event={selectedHistoryEvent}
+          ownerView={historyOwnerView}
+        />
+      }
     />
   );
 
-  const renderQualityTab = () => (
+  const renderQualitySection = () => (
     <MasterDetailsWorkspace
       className="platform-dev__workspace--quality"
-      title="Проблемы качества"
+      title="Качество"
       masterLabel="Список проблем"
       detailLabel="Детали проблемы"
       headerActions={
@@ -1521,16 +1510,18 @@ export default function PlatformDevelopmentPage() {
     />
   );
 
-  const renderActiveTab = () => {
-    switch (activeTabKey) {
-      case "architecture":
-        return renderArchitectureTab();
-      case "implementation":
-        return renderImplementationTab();
+  const renderActiveSection = () => {
+    switch (activeSectionKey) {
+      case "platform":
+        return renderPlatformSection();
+      case "development":
+        return renderDevelopmentSection();
+      case "companies":
+        return renderCompaniesSection();
       case "quality":
-        return renderQualityTab();
+        return renderQualitySection();
       case "history":
-        return renderHistoryTab();
+        return renderHistorySection();
       default:
         return null;
     }
@@ -1540,16 +1531,16 @@ export default function PlatformDevelopmentPage() {
     <YasiiSurfaceContextProvider value={yasiiSurfaceValue}>
       <div className="platform-dev">
       <div className="platform-dev__tab-bar">
-        <nav className="platform-dev__tabs" aria-label="Разделы Platform Dashboard">
-          {PLATFORM_TABS.map((tab) => (
+        <nav className="platform-dev__tabs" aria-label="Разделы Dashboard">
+          {DASHBOARD_SECTIONS.map((section) => (
             <NavLink
-              key={tab.key}
-              to={`${platformBasePath}/${tab.key}`}
+              key={section.key}
+              to={`${platformBasePath}/${section.key}`}
               className={({ isActive }) =>
                 `platform-dev__tab${isActive ? " is-active" : ""}`
               }
             >
-              {tab.label}
+              {section.label}
             </NavLink>
           ))}
         </nav>
@@ -1593,9 +1584,9 @@ export default function PlatformDevelopmentPage() {
         </div>
       ) : null}
 
-      <div className="platform-dev__tab-panel">{renderActiveTab()}</div>
+      <div className="platform-dev__tab-panel">{renderActiveSection()}</div>
 
-      {activeTabKey === "quality" ? (
+      {activeSectionKey === "quality" ? (
         <AddQualityIssueModal
           open={isAddIssueOpen}
           onClose={handleCloseAddIssueModal}

@@ -893,9 +893,45 @@ function buildObjectTypeBreadcrumbs(pathname, base, context = {}) {
 function buildPagesBreadcrumbs(pathname, base, context = {}) {
   const { navigationItems = [] } = context;
   const pageMatch = pathname.match(/\/page\/(\d+)(?:\/([^/?]+))?/);
+  const workspaceContext = context.workspaceContext && typeof context.workspaceContext === "object"
+    ? context.workspaceContext
+    : null;
 
   if (pageMatch) {
     const pageId = Number(pageMatch[1]);
+    const workspaceHomePageId = Number(workspaceContext?.homePageId);
+    const workspaceTitle = String(workspaceContext?.title || "").trim();
+    const workspaceSlug = String(workspaceContext?.slug || "").trim();
+    if (
+      workspaceContext &&
+      workspaceTitle &&
+      Number.isFinite(pageId) &&
+      Number.isFinite(workspaceHomePageId) &&
+      pageId === workspaceHomePageId
+    ) {
+      const chain = [
+        {
+          id: "designer-workspaces",
+          label: "Рабочие пространства",
+          path: `${base}/workspaces`,
+        },
+        {
+          id: "designer-workspace-home",
+          label: workspaceTitle,
+          path: workspaceSlug ? `${base}/workspaces/${workspaceSlug}` : undefined,
+        },
+      ];
+
+      if (pageMatch[2]) {
+        chain.push({
+          id: "designer-page-detail",
+          label: resolveDetailSegmentLabel(pageMatch[2]),
+        });
+      }
+
+      return markLastActive(chain);
+    }
+
     const pageItem = Number.isFinite(pageId)
       ? findDesignerNavigationItemByPageId(navigationItems, pageId)
       : null;
@@ -954,7 +990,7 @@ function buildPlatformBreadcrumbs(pathname, base) {
     {
       id: "designer-platform",
       label: "Платформа",
-      path: `${base}/platform/architecture`,
+      path: `${base}/platform/platform`,
     },
   ];
 
@@ -1027,6 +1063,53 @@ function buildNestedSectionBreadcrumbs(section, pathname) {
   return markLastActive(chain);
 }
 
+function buildWorkspacesBreadcrumbs(pathname, base, context = {}) {
+  const chain = [
+    {
+      id: "designer-workspaces",
+      label: "Рабочие пространства",
+      path: `${base}/workspaces`,
+    },
+  ];
+
+  const workspaceMatch = pathname.match(/\/workspaces\/([^/?]+)/);
+  if (!workspaceMatch) {
+    return markLastActive(chain);
+  }
+
+  const workspaceSlug = decodeURIComponent(String(workspaceMatch[1] || "")).trim();
+  if (!workspaceSlug) {
+    return markLastActive(chain);
+  }
+
+  const fallbackTitle = workspaceSlug
+    .split("-")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+  const contextWorkspaceTitle = String(context?.workspaceContext?.title || "").trim();
+  const workspaceTitle = contextWorkspaceTitle || fallbackTitle || workspaceSlug;
+
+  chain.push({
+    id: "designer-workspace-detail",
+    label: workspaceTitle,
+    path: `${base}/workspaces/${workspaceSlug}`,
+  });
+
+  const rest = pathname.match(/\/workspaces\/[^/]+\/(.+)$/)?.[1];
+  if (rest) {
+    const segment = String(rest.split("/")[0] || "").trim();
+    if (segment) {
+      chain.push({
+        id: "designer-workspace-subsection",
+        label: resolveDetailSegmentLabel(segment),
+      });
+    }
+  }
+
+  return markLastActive(chain);
+}
+
 /**
  * Builds Designer header path chain:
  * Menu section / selected entity / current tab or subsection.
@@ -1061,6 +1144,10 @@ export function buildDesignerBreadcrumbs(pathname, context = {}) {
 
   if (section.key === "pages") {
     return buildPagesBreadcrumbs(pathname, base, context);
+  }
+
+  if (section.key === "workspaces") {
+    return buildWorkspacesBreadcrumbs(pathname, base, context);
   }
 
   if (section.key === "administration") {

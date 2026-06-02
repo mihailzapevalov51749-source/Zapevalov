@@ -1,0 +1,1216 @@
+{
+  "catalog_version": "1.0.1",
+  "refreshed_at": "2026-06-01T19:11:51.557827",
+  "sections": [
+    {
+      "key": "platform",
+      "title": "Платформа",
+      "kind": "stages",
+      "stages": [
+        {
+          "id": "platform-core",
+          "title": "Платформенное ядро",
+          "description": "Граница Designer и Runtime, объектная платформа как основа продукта.",
+          "readiness": 100,
+          "done": [
+            "Объектная платформа"
+          ],
+          "inWork": [],
+          "remaining": [],
+          "meta": {
+            "primary_components": [
+              "object-platform"
+            ],
+            "owner_status": "Завершено"
+          }
+        },
+        {
+          "id": "object-engine",
+          "title": "Объектный движок",
+          "description": "Типы объектов, публикация и записи в рабочей среде.",
+          "readiness": 85,
+          "done": [
+            "Типы объектов",
+            "Публикация"
+          ],
+          "inWork": [
+            "Записи объектов"
+          ],
+          "remaining": [],
+          "meta": {
+            "primary_components": [
+              "object-type",
+              "publish",
+              "runtime-entity"
+            ],
+            "owner_status": "В работе"
+          }
+        },
+        {
+          "id": "relations-engine",
+          "title": "Движок связей",
+          "description": "Связи между объектами в Studio и runtime.",
+          "readiness": 100,
+          "done": [
+            "Связи объектов"
+          ],
+          "inWork": [],
+          "remaining": [],
+          "meta": {
+            "primary_components": [
+              "relations"
+            ],
+            "owner_status": "Завершено"
+          }
+        },
+        {
+          "id": "views-engine",
+          "title": "Движок представлений",
+          "description": "Таблицы, фильтры и карточки объектов.",
+          "readiness": 90,
+          "done": [
+            "Карточки объектов"
+          ],
+          "inWork": [],
+          "remaining": [],
+          "meta": {
+            "primary_components": [
+              "object-card"
+            ],
+            "owner_status": "В работе"
+          }
+        },
+        {
+          "id": "permission-engine",
+          "title": "Движок прав доступа",
+          "description": "Права на объекты, поля и действия.",
+          "readiness": 25,
+          "done": [],
+          "inWork": [],
+          "remaining": [
+            "Права доступа"
+          ],
+          "meta": {
+            "primary_components": [
+              "permissions"
+            ],
+            "owner_status": "В работе"
+          }
+        },
+        {
+          "id": "search-engine",
+          "title": "Движок поиска",
+          "description": "Поиск по объектам и записям платформы.",
+          "readiness": 100,
+          "done": [
+            "Поиск"
+          ],
+          "inWork": [],
+          "remaining": [],
+          "meta": {
+            "primary_components": [
+              "search"
+            ],
+            "owner_status": "Завершено"
+          }
+        },
+        {
+          "id": "file-storage",
+          "title": "Файловый движок",
+          "description": "Файловое хранилище и вложения объектов.",
+          "readiness": null,
+          "done": [],
+          "inWork": [],
+          "remaining": [
+            "Вложения в карточке объекта",
+            "Библиотеки документов",
+            "Совместное редактирование"
+          ],
+          "meta": {}
+        },
+        {
+          "id": "communication-engine",
+          "title": "Коммуникационный движок",
+          "description": "Комментарии, уведомления и взаимодействие пользователей.",
+          "readiness": null,
+          "done": [],
+          "inWork": [],
+          "remaining": [
+            "Комментарии к объектам (runtime)",
+            "Уведомления ведут на объектную карточку",
+            "Отключение устаревших маршрутов уведомлений",
+            "Чаты платформы"
+          ],
+          "meta": {
+            "governance_slug": "notifications",
+            "governance_alias_of": "notifications"
+          }
+        },
+        {
+          "id": "integrations",
+          "title": "Интеграционный движок",
+          "description": "Внешние интеграции и публичные API.",
+          "readiness": null,
+          "done": [],
+          "inWork": [],
+          "remaining": [
+            "Публичные API платформы",
+            "Внешние интеграции"
+          ],
+          "meta": {}
+        },
+        {
+          "id": "process-engine",
+          "title": "Процессный движок (BPMN)",
+          "description": "Моделирование и исполнение бизнес-процессов.",
+          "readiness": null,
+          "done": [],
+          "inWork": [],
+          "remaining": [
+            "Модель процессного движка",
+            "Проектирование процессов",
+            "Исполнение процессов в портале"
+          ],
+          "meta": {}
+        },
+        {
+          "id": "ai-engine",
+          "title": "ИИ-движок (ЯСИИ)",
+          "description": "Что умеет ИИ внутри платформы (capability).",
+          "readiness": 70,
+          "done": [],
+          "inWork": [
+            "ИИ получает контекст объектной платформы"
+          ],
+          "remaining": [
+            "Безопасный контур ИИ (границы доступа)",
+            "ИИ доступен в ключевых экранах продукта"
+          ],
+          "meta": {
+            "primary_components": [
+              "ai-context"
+            ],
+            "scope": "platform_ai",
+            "owner_status": "В работе"
+          }
+        }
+      ],
+      "events": []
+    },
+    {
+      "key": "development",
+      "title": "Развитие продукта",
+      "kind": "stages",
+      "stages": [
+        {
+          "id": "dev-architecture",
+          "title": "Архитектура и стратегия",
+          "description": "ADR, статус архитектуры и управление долгом.",
+          "readiness": null,
+          "done": [],
+          "inWork": [],
+          "remaining": [
+            "Принятые архитектурные решения.",
+            "Статус архитектуры актуален."
+          ],
+          "meta": {}
+        },
+        {
+          "id": "dev-platform-transition",
+          "title": "Переход на объектную платформу",
+          "description": "Независимость object platform и вывод legacy-контура.",
+          "readiness": 0,
+          "done": [
+            "Завершено 9 ключевых работ."
+          ],
+          "inWork": [],
+          "remaining": [
+            "Осталось выполнить 5 работ."
+          ],
+          "meta": {
+            "implementation_stage_slugs": [
+              "object-platform-independence",
+              "legacy-isolation",
+              "legacy-removal"
+            ],
+            "uses_implementation_stage_works": true,
+            "raw_items": {
+              "done": [
+                "Карточка объекта отделена от старого интерфейса.",
+                "Убраны устаревшие маршруты уведомлений.",
+                "Очищен контур чтения данных без fallback на старые таблицы.",
+                "Удалён адаптер записи в устаревшие таблицы.",
+                "Запретить создание новых UT.",
+                "Устаревшие табличные блоки исключены из новых сценариев.",
+                "Старые табличные блоки заменены на безопасный placeholder.",
+                "Убраны скрытые связи навигации со старыми таблицами.",
+                "Страницы портала отделены от старого табличного интерфейса."
+              ],
+              "inWork": [],
+              "remaining": [
+                "Удалить.",
+                "Устаревшие табличные блоки исключены из новых сценариев.",
+                "Выведен устаревший контур представлений legacy-таблиц.",
+                "Удалены устаревшие API-клиенты.",
+                "Подготовлена миграция удаления устаревного хранилища."
+              ]
+            },
+            "summary_mode": true,
+            "owner_status": "В планах"
+          }
+        },
+        {
+          "id": "dev-runtime",
+          "title": "Рабочая среда портала",
+          "description": "Runtime, права и поиск для сотрудников.",
+          "readiness": 40,
+          "done": [
+            "Развит поиск по объектам платформы.",
+            "Заложена основа движка связей между объектами."
+          ],
+          "inWork": [],
+          "remaining": [
+            "Внедряется аутентификация в рабочей среде.",
+            "Внедряются права доступа на уровне объектов.",
+            "Внедряются права на поля и группы полей."
+          ],
+          "meta": {
+            "implementation_stage_slugs": [
+              "runtime-foundation"
+            ],
+            "uses_implementation_stage_works": true,
+            "owner_status": "В работе"
+          }
+        },
+        {
+          "id": "dev-designer",
+          "title": "Studio и публикация",
+          "description": "Конструктор типов объектов и предсказуемая публикация.",
+          "readiness": 33,
+          "done": [
+            "Сценарии публикации и предпросмотра в Studio."
+          ],
+          "inWork": [
+            "Уточняется граница между Studio и рабочей средой."
+          ],
+          "remaining": [
+            "Описан жизненный цикл типа объекта."
+          ],
+          "meta": {
+            "implementation_stage_slugs": [
+              "designer-foundation"
+            ],
+            "uses_implementation_stage_works": true,
+            "owner_status": "В работе"
+          }
+        },
+        {
+          "id": "dev-dashboard",
+          "title": "Панель управления",
+          "description": "Dashboard как продукт управления развитием.",
+          "readiness": null,
+          "done": [
+            "Единая модель governance.",
+            "Актуальность после refresh."
+          ],
+          "inWork": [],
+          "remaining": [
+            "Разделы для владельца продукта."
+          ],
+          "meta": {}
+        },
+        {
+          "id": "dev-yasii",
+          "title": "ЯСИИ",
+          "description": "Программа создания встроенного интеллектуального сотрудника.",
+          "readiness": 59,
+          "done": [
+            "Основа ЯСИИ: идентичность и runtime.",
+            "Знания и граф.",
+            "Ассистенты разработчика и владельца.",
+            "Встраивание в продукт."
+          ],
+          "inWork": [
+            "Память и стратегия."
+          ],
+          "remaining": [
+            "Управление зрелостью через Dashboard."
+          ],
+          "meta": {
+            "scope": "development_ai",
+            "owner_status": "В работе"
+          }
+        },
+        {
+          "id": "dev-processes",
+          "title": "Процессы",
+          "description": "BPMN и process engine в программе развития.",
+          "readiness": null,
+          "done": [],
+          "inWork": [],
+          "remaining": [
+            "Процессный контур в roadmap."
+          ],
+          "meta": {}
+        },
+        {
+          "id": "dev-status-sync",
+          "title": "Синхронизация статусов",
+          "description": "Документация и статусы этапов после завершения работ (lifecycle sync).",
+          "readiness": null,
+          "done": [],
+          "inWork": [],
+          "remaining": [
+            "Документы синхронизированы с Dashboard."
+          ],
+          "meta": {}
+        }
+      ],
+      "events": []
+    },
+    {
+      "key": "companies",
+      "title": "Компании",
+      "kind": "stages",
+      "stages": [
+        {
+          "id": "default:company-onboarding",
+          "title": "Подключение",
+          "description": "Активация рабочего пространства и базовые сущности.",
+          "readiness": null,
+          "done": [
+            "Рабочее пространство активно"
+          ],
+          "inWork": [],
+          "remaining": [
+            "Пользователи подключены",
+            "Лицензии"
+          ],
+          "meta": {
+            "tenantId": "default",
+            "workspaceTitle": "Моя компания",
+            "architectureRule": "Tenant is infrastructure boundary, not business model. Company workspace is configured through Object Model.",
+            "summary": "Компании используют одну платформу и настраивают свои цифровые модели через объектную модель.",
+            "displayTitle": "Моя компания"
+          }
+        },
+        {
+          "id": "default:company-digital-model",
+          "title": "Цифровая модель",
+          "description": "Прикладная модель компании через объектную модель.",
+          "readiness": null,
+          "done": [],
+          "inWork": [],
+          "remaining": [
+            "Настроить: Компания",
+            "Настроить: Лицензия",
+            "Настроить: Проект",
+            "Настроить: Договор",
+            "Настроить: Сотрудник",
+            "Настроить: Задача",
+            "Настроить: Процесс",
+            "Настроить: Документ"
+          ],
+          "meta": {
+            "tenantId": "default",
+            "workspaceTitle": "Моя компания",
+            "architectureRule": "Tenant is infrastructure boundary, not business model. Company workspace is configured through Object Model.",
+            "summary": "Компании используют одну платформу и настраивают свои цифровые модели через объектную модель.",
+            "displayTitle": "Моя компания"
+          }
+        },
+        {
+          "id": "default:company-processes",
+          "title": "Процессы",
+          "description": "Настройка и использование процессов компании.",
+          "readiness": null,
+          "done": [],
+          "inWork": [],
+          "remaining": [
+            "Процессы настроены",
+            "Процессы используются в портале"
+          ],
+          "meta": {
+            "tenantId": "default",
+            "workspaceTitle": "Моя компания",
+            "architectureRule": "Tenant is infrastructure boundary, not business model. Company workspace is configured through Object Model.",
+            "summary": "Компании используют одну платформу и настраивают свои цифровые модели через объектную модель.",
+            "displayTitle": "Моя компания"
+          }
+        },
+        {
+          "id": "default:company-rollout",
+          "title": "Внедрение и эксплуатация",
+          "description": "Порталы, представления и ввод в эксплуатацию.",
+          "readiness": null,
+          "done": [],
+          "inWork": [],
+          "remaining": [
+            "Порталы развёрнуты",
+            "Представления и навигация"
+          ],
+          "meta": {
+            "tenantId": "default",
+            "workspaceTitle": "Моя компания",
+            "architectureRule": "Tenant is infrastructure boundary, not business model. Company workspace is configured through Object Model.",
+            "summary": "Компании используют одну платформу и настраивают свои цифровые модели через объектную модель.",
+            "displayTitle": "Моя компания"
+          }
+        }
+      ],
+      "events": []
+    },
+    {
+      "key": "history",
+      "title": "История",
+      "kind": "timeline",
+      "stages": [],
+      "events": [
+        {
+          "id": "refresh-aggregate-2026-06-01",
+          "group_key": "hist-dashboard",
+          "title": "Dashboard обновлялся 77 раз за 01.06.2026",
+          "description": "Общая готовность платформы: 84% → 84%.",
+          "occurred_at": "2026-06-01T19:11:51.842214",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "dashboard_refresh",
+            "aggregated": true,
+            "aggregate_count": 77,
+            "aggregate_day": "2026-06-01",
+            "source_event_ids": [
+              "221",
+              "220",
+              "219",
+              "218",
+              "217",
+              "216",
+              "215",
+              "214",
+              "213",
+              "212",
+              "211",
+              "210",
+              "209",
+              "208",
+              "207",
+              "206",
+              "205",
+              "204",
+              "203",
+              "202"
+            ]
+          }
+        },
+        {
+          "id": "refresh-aggregate-2026-05-31",
+          "group_key": "hist-dashboard",
+          "title": "Dashboard обновлялся 69 раз (31.05.2026)",
+          "description": "Общая готовность платформы: 84% → 84%.",
+          "occurred_at": "2026-05-31T16:56:46.354089",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "dashboard_refresh",
+            "aggregated": true,
+            "aggregate_count": 69,
+            "aggregate_day": "2026-05-31",
+            "source_event_ids": [
+              "144",
+              "143",
+              "142",
+              "141",
+              "140",
+              "139",
+              "138",
+              "137",
+              "136",
+              "135",
+              "134",
+              "133",
+              "132",
+              "131",
+              "130",
+              "129",
+              "128",
+              "127",
+              "126",
+              "125"
+            ]
+          }
+        },
+        {
+          "id": "85",
+          "group_key": "hist-readiness",
+          "title": "Изменение готовности контура",
+          "description": "Было: 15% Стало: 25%",
+          "occurred_at": "2026-05-31T09:12:07.346176",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "readiness_component",
+            "slug": "readiness-component-permissions-20260531091207261364",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "refresh-aggregate-2026-05-30",
+          "group_key": "hist-dashboard",
+          "title": "Dashboard обновлялся 30 раз (30.05.2026)",
+          "description": "Общая готовность платформы: 40% → 83%.",
+          "occurred_at": "2026-05-30T19:32:22.545820",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "dashboard_refresh",
+            "aggregated": true,
+            "aggregate_count": 30,
+            "aggregate_day": "2026-05-30",
+            "source_event_ids": [
+              "74",
+              "73",
+              "72",
+              "71",
+              "70",
+              "68",
+              "67",
+              "66",
+              "65",
+              "64",
+              "63",
+              "62",
+              "61",
+              "60",
+              "58",
+              "56",
+              "52",
+              "50",
+              "48",
+              "47"
+            ]
+          }
+        },
+        {
+          "id": "69",
+          "group_key": "hist-readiness",
+          "title": "Изменение готовности этапа",
+          "description": "Было: 20% Стало: 40%",
+          "occurred_at": "2026-05-30T14:52:31.288015",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "readiness_stage",
+            "slug": "readiness-stage-runtime-foundation-20260530145230970960",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "8",
+          "group_key": "hist-delivery",
+          "title": "Веха разработки",
+          "description": "Platform Dashboard читает компоненты, этапы, задачи и историю из backend API.",
+          "occurred_at": "2026-05-30T14:35:00",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "milestone",
+            "slug": "platform-dashboard-real-data",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "59",
+          "group_key": "hist-readiness",
+          "title": "Изменение готовности контура",
+          "description": "Было: 80% Стало: 100%",
+          "occurred_at": "2026-05-30T14:17:10.450401",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "readiness_component",
+            "slug": "readiness-component-search-20260530141710356702",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "57",
+          "group_key": "hist-readiness",
+          "title": "Изменение готовности контура",
+          "description": "Было: 50% Стало: 80%",
+          "occurred_at": "2026-05-30T14:13:33.320265",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "readiness_component",
+            "slug": "readiness-component-search-20260530141333198260",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "7",
+          "group_key": "hist-delivery",
+          "title": "Веха разработки",
+          "description": "Фазы реализации платформы показаны как Kanban-панель с фокусом владельца продукта.",
+          "occurred_at": "2026-05-30T14:00:00",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "milestone",
+            "slug": "implementation-kanban-added",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "55",
+          "group_key": "hist-readiness",
+          "title": "Изменение готовности этапа",
+          "description": "Было: 0% Стало: 20%",
+          "occurred_at": "2026-05-30T11:54:48.403758",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "readiness_stage",
+            "slug": "readiness-stage-runtime-foundation-20260530115448130321",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "54",
+          "group_key": "hist-readiness",
+          "title": "Изменение готовности контура",
+          "description": "Было: 90% Стало: 100%",
+          "occurred_at": "2026-05-30T11:54:48.339031",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "readiness_component",
+            "slug": "readiness-component-relations-20260530115448130321",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "53",
+          "group_key": "hist-readiness",
+          "title": "Изменение готовности контура",
+          "description": "Было: 90% Стало: 100%",
+          "occurred_at": "2026-05-30T11:54:48.309906",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "readiness_component",
+            "slug": "readiness-component-runtime-entity-20260530115448130321",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "51",
+          "group_key": "hist-readiness",
+          "title": "Изменение готовности этапа",
+          "description": "Было: 80% Стало: 100%",
+          "occurred_at": "2026-05-30T11:19:13.812719",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "readiness_stage",
+            "slug": "readiness-stage-legacy-isolation-20260530111913544609",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "4",
+          "group_key": "hist-quality",
+          "title": "Качество",
+          "description": "Проблемы качества платформы сохраняются в постоянном реестре и отображаются на Dashboard.",
+          "occurred_at": "2026-05-30T11:15:00",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "quality",
+            "slug": "quality-issue-registry",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "49",
+          "group_key": "hist-readiness",
+          "title": "Изменение готовности этапа",
+          "description": "Было: 60% Стало: 80%",
+          "occurred_at": "2026-05-30T11:05:00.301592",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "readiness_stage",
+            "slug": "readiness-stage-legacy-isolation-20260530110500126525",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "46",
+          "group_key": "hist-readiness",
+          "title": "Изменение готовности этапа",
+          "description": "Было: 40% Стало: 60%",
+          "occurred_at": "2026-05-30T10:36:11.032698",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "readiness_stage",
+            "slug": "readiness-stage-legacy-isolation-20260530103610900743",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "44",
+          "group_key": "hist-readiness",
+          "title": "Изменение готовности этапа",
+          "description": "Было: 20% Стало: 40%",
+          "occurred_at": "2026-05-30T10:10:36.242007",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "readiness_stage",
+            "slug": "readiness-stage-legacy-isolation-20260530101036099358",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "3",
+          "group_key": "hist-delivery",
+          "title": "Веха разработки",
+          "description": "Карточка объекта отделена от старого табличного интерфейса Universal Table.",
+          "occurred_at": "2026-05-30T10:00:00",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "milestone",
+            "slug": "object-entity-card-decoupling",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "38",
+          "group_key": "hist-readiness",
+          "title": "Изменение готовности этапа",
+          "description": "Было: 80% Стало: 100%",
+          "occurred_at": "2026-05-30T09:38:22.267344",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "readiness_stage",
+            "slug": "readiness-stage-object-platform-independence-20260530093822148344",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "36",
+          "group_key": "hist-readiness",
+          "title": "Изменение готовности этапа",
+          "description": "Было: 60% Стало: 80%",
+          "occurred_at": "2026-05-30T09:27:06.144491",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "readiness_stage",
+            "slug": "readiness-stage-object-platform-independence-20260530092706013460",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "34",
+          "group_key": "hist-quality",
+          "title": "Качество",
+          "description": "Проблема качества закрыта и учтена в состоянии платформы.",
+          "occurred_at": "2026-05-30T09:14:43.437976",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "quality",
+            "slug": "quality-closed-3",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "33",
+          "group_key": "hist-quality",
+          "title": "Качество",
+          "description": "Сейчас в маршруте Платформы указывается еще Развитие. такого шага маршрута нет. Его нужно убрать",
+          "occurred_at": "2026-05-30T09:14:43.436965",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "quality",
+            "slug": "quality-closed-4",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "32",
+          "group_key": "hist-quality",
+          "title": "Качество",
+          "description": "проверить и студию и офис",
+          "occurred_at": "2026-05-30T09:14:43.434964",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "quality",
+            "slug": "quality-closed-1",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "31",
+          "group_key": "hist-quality",
+          "title": "Качество",
+          "description": "проверить и студию и офис",
+          "occurred_at": "2026-05-30T09:14:43.432967",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "quality",
+            "slug": "quality-closed-2",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "29",
+          "group_key": "hist-readiness",
+          "title": "Изменение готовности этапа",
+          "description": "Было: 40% Стало: 60%",
+          "occurred_at": "2026-05-30T07:25:54.291712",
+          "initiated_by": "Михаил Запевалов",
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "readiness_stage",
+            "slug": "readiness-stage-object-platform-independence-20260530072554164720",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "27",
+          "group_key": "hist-dashboard",
+          "title": "Анализ",
+          "description": "Выполнена проверка готовности проекта.",
+          "occurred_at": "2026-05-30T05:54:47.130861",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "analysis",
+            "slug": "dashboard-refresh-20260530055447",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "26",
+          "group_key": "hist-dashboard",
+          "title": "Анализ",
+          "description": "Выполнена проверка готовности проекта.",
+          "occurred_at": "2026-05-30T05:49:09.598282",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "analysis",
+            "slug": "dashboard-refresh-20260530054909",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "25",
+          "group_key": "hist-dashboard",
+          "title": "Анализ",
+          "description": "Выполнена проверка готовности проекта.",
+          "occurred_at": "2026-05-30T05:38:40.798811",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "analysis",
+            "slug": "dashboard-refresh-20260530053840",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "24",
+          "group_key": "hist-dashboard",
+          "title": "Анализ",
+          "description": "Проведён анализ состояния платформы.",
+          "occurred_at": "2026-05-30T05:38:40.798811",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "analysis",
+            "slug": "stage-readiness-ai-native-layer-20260530053840",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "23",
+          "group_key": "hist-dashboard",
+          "title": "Анализ",
+          "description": "Проведён анализ состояния платформы.",
+          "occurred_at": "2026-05-30T05:38:40.798811",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "analysis",
+            "slug": "stage-readiness-designer-foundation-20260530053840",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "22",
+          "group_key": "hist-dashboard",
+          "title": "Анализ",
+          "description": "Проведён анализ состояния платформы.",
+          "occurred_at": "2026-05-30T05:38:40.798811",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "analysis",
+            "slug": "stage-readiness-runtime-foundation-20260530053840",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "21",
+          "group_key": "hist-dashboard",
+          "title": "Анализ",
+          "description": "Проведён анализ состояния платформы.",
+          "occurred_at": "2026-05-30T05:38:40.798811",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "analysis",
+            "slug": "stage-readiness-legacy-removal-20260530053840",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "20",
+          "group_key": "hist-dashboard",
+          "title": "Анализ",
+          "description": "Проведён анализ состояния платформы.",
+          "occurred_at": "2026-05-30T05:38:40.798811",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "analysis",
+            "slug": "stage-readiness-legacy-isolation-20260530053840",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "19",
+          "group_key": "hist-dashboard",
+          "title": "Анализ",
+          "description": "Проведён анализ состояния платформы.",
+          "occurred_at": "2026-05-30T05:38:40.798811",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "analysis",
+            "slug": "stage-readiness-object-platform-independence-20260530053840",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "18",
+          "group_key": "hist-dashboard",
+          "title": "Анализ",
+          "description": "Выполнена проверка готовности проекта.",
+          "occurred_at": "2026-05-30T05:27:54.647320",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "analysis",
+            "slug": "dashboard-refresh-20260530052754",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "17",
+          "group_key": "hist-dashboard",
+          "title": "Анализ",
+          "description": "Проведён анализ состояния платформы.",
+          "occurred_at": "2026-05-30T05:27:54.647320",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "analysis",
+            "slug": "stage-readiness-ai-native-layer-20260530052754",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "16",
+          "group_key": "hist-dashboard",
+          "title": "Анализ",
+          "description": "Проведён анализ состояния платформы.",
+          "occurred_at": "2026-05-30T05:27:54.647320",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "analysis",
+            "slug": "stage-readiness-designer-foundation-20260530052754",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "15",
+          "group_key": "hist-dashboard",
+          "title": "Анализ",
+          "description": "Проведён анализ состояния платформы.",
+          "occurred_at": "2026-05-30T05:27:54.647320",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "analysis",
+            "slug": "stage-readiness-runtime-foundation-20260530052754",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "14",
+          "group_key": "hist-dashboard",
+          "title": "Анализ",
+          "description": "Проведён анализ состояния платформы.",
+          "occurred_at": "2026-05-30T05:27:54.647320",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "analysis",
+            "slug": "stage-readiness-legacy-removal-20260530052754",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "13",
+          "group_key": "hist-dashboard",
+          "title": "Анализ",
+          "description": "Проведён анализ состояния платформы.",
+          "occurred_at": "2026-05-30T05:27:54.647320",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "analysis",
+            "slug": "stage-readiness-legacy-isolation-20260530052754",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "12",
+          "group_key": "hist-dashboard",
+          "title": "Анализ",
+          "description": "Проведён анализ состояния платформы.",
+          "occurred_at": "2026-05-30T05:27:54.647320",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "analysis",
+            "slug": "stage-readiness-object-platform-independence-20260530052754",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "11",
+          "group_key": "hist-dashboard",
+          "title": "Анализ",
+          "description": "Выполнена проверка готовности проекта.",
+          "occurred_at": "2026-05-30T05:07:19.482773",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "analysis",
+            "slug": "dashboard-refresh-20260530050719",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "10",
+          "group_key": "hist-dashboard",
+          "title": "Анализ",
+          "description": "Выполнена проверка готовности проекта.",
+          "occurred_at": "2026-05-30T05:04:49.271527",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "analysis",
+            "slug": "dashboard-refresh-20260530050449",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "9",
+          "group_key": "hist-architecture",
+          "title": "Архитектурное решение",
+          "description": "Документ ADR-001-universal-table-retirement.md со статусом accepted.",
+          "occurred_at": "2026-05-30T05:04:49.271527",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "decision",
+            "slug": "adr-adr-001-universal-table-retirement",
+            "aggregated": false
+          }
+        },
+        {
+          "id": "1",
+          "group_key": "hist-architecture",
+          "title": "Архитектурное решение",
+          "description": "Принято стратегическое решение: старые таблицы не переносятся в новую объектную модель.",
+          "occurred_at": "2026-05-29T12:00:00",
+          "initiated_by": null,
+          "related_section": null,
+          "related_stage_key": null,
+          "meta": {
+            "activity_type": "decision",
+            "slug": "adr-001-accepted",
+            "aggregated": false
+          }
+        }
+      ]
+    }
+  ]
+}

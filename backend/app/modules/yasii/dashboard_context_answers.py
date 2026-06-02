@@ -42,6 +42,13 @@ _READINESS_KEYWORDS = (
     "насколько готов",
 )
 
+_WHAT_IS_KEYWORDS = (
+    "что это",
+    "что это?",
+    "что здесь",
+    "что за экран",
+)
+
 
 def _normalize_query(text: str) -> str:
     return re.sub(r"\s+", " ", str(text or "").strip().lower())
@@ -173,6 +180,22 @@ def _build_readiness_answer(metadata: dict[str, str]) -> str:
     return "\n".join(lines)
 
 
+def _build_dashboard_what_is_answer(metadata: dict[str, str]) -> str:
+    active_phase = metadata.get("activePhase") or metadata.get("activePhaseTitle") or "—"
+    readiness = metadata.get("readiness") or metadata.get("yasiiReadiness") or ""
+
+    lines = [
+        "Сейчас открыт Dashboard реализации платформы.",
+        "",
+        f"Текущий этап: {active_phase}.",
+    ]
+
+    if readiness:
+        lines.append(f"Готовность: {readiness}.")
+
+    return "\n".join(lines)
+
+
 def resolve_dashboard_context_message(query_text: str, payload: dict) -> str | None:
     """Return dashboard-specific answer when embedded query matches dashboard context."""
     if payload.get("embedded") is not True:
@@ -187,6 +210,9 @@ def resolve_dashboard_context_message(query_text: str, payload: dict) -> str | N
         return None
 
     metadata = _extract_dashboard_metadata(payload)
+
+    if normalized in _WHAT_IS_KEYWORDS:
+        return _build_dashboard_what_is_answer(metadata)
 
     if _matches_any(normalized, _NEXT_WORK_KEYWORDS):
         return _build_next_work_answer(metadata)

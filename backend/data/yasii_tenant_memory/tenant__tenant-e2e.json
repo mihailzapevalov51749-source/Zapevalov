@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "0.1.0",
+  "tenantId": "tenant-e2e",
+  "facts": [
+    {
+      "entryId": "tm-dedaa8d0c48e",
+      "text": "Мы строим ЯсноПро.",
+      "createdAt": "2026-06-01T15:01:41+00:00",
+      "entryType": "tenant_fact"
+    }
+  ],
+  "updatedAt": "2026-06-01T15:01:41+00:00"
+}

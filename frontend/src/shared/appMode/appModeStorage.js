@@ -26,7 +26,13 @@ function isTechnicalRoute(fullPath) {
 export function saveLastRuntimePath(fullPath) {
   const normalized = normalizeFullPath(fullPath);
   const pathname = resolvePathname(normalized);
-  if (!pathname || pathname.startsWith("/designer") || isTechnicalRoute(normalized)) {
+  if (
+    !pathname
+    || pathname.startsWith("/designer")
+    || pathname === "/yasii"
+    || pathname.startsWith("/yasii/")
+    || isTechnicalRoute(normalized)
+  ) {
     return;
   }
 

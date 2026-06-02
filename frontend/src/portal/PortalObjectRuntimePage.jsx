@@ -4,17 +4,21 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import PortalLayout from "../layouts/PortalLayout";
 import useNavigationTree from "../modules/navigation/hooks/useNavigationTree";
 import WorkspaceTopBar from "./components/WorkspaceTopBar";
+import WorkspaceRuntimeTabsBar from "./components/WorkspaceRuntimeTabsBar";
 import PortalObjectDataPage from "./pages/PortalObjectDataPage";
 import SearchResultsOverlay from "../shared/search/SearchResultsOverlay";
 import { useHeaderSearchContext } from "../shared/search/useHeaderSearchContext";
 import { useHeaderSearchController } from "../shared/search/useHeaderSearchController";
 import {
-  isObjectTypeNavigationItem,
   isObjectTypeUuid,
   resolvePortalObjectNavigationPath,
 } from "./utils/portalObjectRoutes";
 import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../modules/designer/utils/navigationReload";
 import { PORTAL_OBJECT_VIEW_HEADER_EVENT } from "./utils/portalObjectViewHeaderBridge";
+import {
+  buildBreadcrumbsFromNavigationChain,
+  resolveNavigationContext,
+} from "../shared/navigation/navigationContextResolver";
 
 export default function PortalObjectRuntimePage() {
   const navigate = useNavigate();
@@ -89,6 +93,15 @@ export default function PortalObjectRuntimePage() {
         return;
       }
 
+      const targetPath = String(
+        item?.path || item?.route || item?.url || item?.meta?.path || item?.meta?.route || item?.meta?.url || "",
+      ).trim();
+      if (targetPath) {
+        event?.preventDefault?.();
+        navigate(targetPath);
+        return;
+      }
+
       const pageId = item?.pageId ?? item?.page_id ?? item?.meta?.page_id;
       if (pageId != null) {
         event?.preventDefault?.();
@@ -98,31 +111,17 @@ export default function PortalObjectRuntimePage() {
     [navigate, portalId, handleSelectPage],
   );
 
-  const activeNavigationItem = useMemo(() => {
-    const walk = (items) => {
-      if (!Array.isArray(items)) {
-        return null;
-      }
-
-      for (const item of items) {
-        if (isObjectTypeNavigationItem(item)) {
-          const path = resolvePortalObjectNavigationPath(item, portalId);
-          if (path && location.pathname.startsWith(path.split("?")[0])) {
-            return item;
-          }
-        }
-
-        const nested = walk(item.children);
-        if (nested) {
-          return nested;
-        }
-      }
-
-      return null;
-    };
-
-    return walk(navigation);
-  }, [navigation, portalId, location.pathname]);
+  const navigationContext = useMemo(
+    () =>
+      resolveNavigationContext({
+        navigationItems: navigation,
+        currentPath: location.pathname,
+        entityType: "object_type",
+        entityId: objectTypeRef,
+      }),
+    [navigation, location.pathname, objectTypeRef],
+  );
+  const activeNavigationItem = navigationContext.currentNavigationItem;
 
   const topBarTitle =
     activeNavigationItem?.display_title ||
@@ -186,18 +185,47 @@ export default function PortalObjectRuntimePage() {
   }, [location.pathname, isPortalObjectRoute]);
 
   const portalObjectBreadcrumbItems = useMemo(() => {
+    const params = new URLSearchParams(location.search || "");
+    const workspaceSlug = String(params.get("workspaceSlug") || "").trim();
+    const workspaceTitle = String(params.get("workspaceTitle") || "").trim();
+    const workspaceTabSlug = String(params.get("workspaceTabSlug") || "").trim() || "home";
+    const workspaceTabTitle = String(params.get("workspaceTabTitle") || "").trim();
+    if (workspaceSlug && workspaceTitle) {
+      return [
+        {
+          id: "workspace-root",
+          label: "Рабочие пространства",
+          path: `/portal/${portalId}/workspaces/${workspaceSlug}/${workspaceTabSlug}`,
+        },
+        {
+          id: "workspace-title",
+          label: workspaceTitle,
+          path: `/portal/${portalId}/workspaces/${workspaceSlug}/${workspaceTabSlug}`,
+        },
+        {
+          id: "workspace-tab",
+          label: workspaceTabTitle || topBarTitle,
+        },
+      ];
+    }
     if (!isPortalObjectRoute) {
       return undefined;
     }
 
     const objectLabel = String(topBarTitle || "").trim() || "Объект";
-    const items = [
-      {
-        id: "portal-object",
-        label: objectLabel,
-        path: location.pathname.split("?")[0],
-      },
-    ];
+    const baseChainCrumbs = buildBreadcrumbsFromNavigationChain(
+      navigationContext.chain,
+      "Офис",
+    );
+    const items = baseChainCrumbs.length
+      ? [...baseChainCrumbs]
+      : [
+          {
+            id: "portal-object",
+            label: objectLabel,
+            path: location.pathname.split("?")[0],
+          },
+        ];
 
     const adapterLabel = String(activeObjectAdapterLabel || "").trim() || "Таблица";
     if (adapterLabel) {
@@ -208,7 +236,15 @@ export default function PortalObjectRuntimePage() {
     }
 
     return items;
-  }, [isPortalObjectRoute, topBarTitle, activeObjectAdapterLabel, location.pathname]);
+  }, [
+    isPortalObjectRoute,
+    navigationContext.chain,
+    portalId,
+    topBarTitle,
+    activeObjectAdapterLabel,
+    location.pathname,
+    location.search,
+  ]);
 
   const handleUnifiedHeaderModel = useCallback((nextModel) => {
     setRuntimeHeaderModel((previous) => {
@@ -257,6 +293,8 @@ export default function PortalObjectRuntimePage() {
       portalId={portalId}
       navigation={navigation}
       activePageId={location.pathname}
+      activeSidebarItemId={navigationContext.currentNavigationItemId}
+      activeSidebarParentIds={navigationContext.activeParentIds}
       onSelectPage={handleSelectPage}
       onNavigateToPath={handleNavigateToPath}
       onSidebarItemAction={handleSidebarItemAction}
@@ -285,7 +323,7 @@ export default function PortalObjectRuntimePage() {
           display: "flex",
           flexDirection: "column",
           boxSizing: "border-box",
-          overflow: "auto",
+          overflow: "hidden",
           background: "#f1f5f9",
         }}
       >
@@ -305,6 +343,20 @@ export default function PortalObjectRuntimePage() {
           inlineRender={false}
           onUnifiedHeaderModel={handleUnifiedHeaderModel}
         />
+        {(() => {
+          const params = new URLSearchParams(location.search || "");
+          const workspaceSlug = String(params.get("workspaceSlug") || "").trim();
+          const workspaceTabSlug = String(params.get("workspaceTabSlug") || "").trim();
+          if (!workspaceSlug) return null;
+          return (
+            <WorkspaceRuntimeTabsBar
+              portalId={portalId}
+              workspaceSlug={workspaceSlug}
+              activeTabSlug={workspaceTabSlug}
+              mode="runtime"
+            />
+          );
+        })()}
 
         <div
           data-page-canvas
@@ -314,8 +366,12 @@ export default function PortalObjectRuntimePage() {
             width: "100%",
             display: "flex",
             flexDirection: "column",
-            overflow: "visible",
-            padding: "10px 16px 16px",
+            overflow: "auto",
+            padding: (() => {
+              const params = new URLSearchParams(location.search || "");
+              const workspaceSlug = String(params.get("workspaceSlug") || "").trim();
+              return workspaceSlug ? "0 16px 16px" : "10px 16px 16px";
+            })(),
             boxSizing: "border-box",
           }}
         >

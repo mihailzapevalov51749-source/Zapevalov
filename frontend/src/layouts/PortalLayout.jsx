@@ -16,6 +16,8 @@ export default function PortalLayout({
   portalId = 1,
   navigation,
   activePageId,
+  activeSidebarItemId = null,
+  activeSidebarParentIds = [],
   onSelectPage,
   onNavigateToPath,
   onSidebarItemAction,
@@ -52,6 +54,8 @@ export default function PortalLayout({
       reloadNavigation,
       activePath: pathname,
       activePageId,
+      activeItemId: activeSidebarItemId ?? undefined,
+      activeParentIds: Array.isArray(activeSidebarParentIds) ? activeSidebarParentIds : [],
       isEditMode: sidebarControls.isEditMode,
       menuScale,
       canScaleMenu: typeof onChangeMenuScale === "function",
@@ -63,6 +67,8 @@ export default function PortalLayout({
     reloadNavigation,
     pathname,
     activePageId,
+    activeSidebarItemId,
+    activeSidebarParentIds,
     sidebarControls.isEditMode,
     menuScale,
     onChangeMenuScale,
@@ -73,6 +79,34 @@ export default function PortalLayout({
   const shouldShowBackButton =
     pathname.startsWith("/admin/") && !isAdminRootPage;
 
+  const resolveRuntimeWorkspacePath = (item) => {
+    const raw = String(
+      item?.targetPath ||
+        item?.path ||
+        item?.url ||
+        item?.route ||
+        item?.meta?.targetPath ||
+        item?.meta?.url ||
+        item?.meta?.route ||
+        "",
+    ).trim();
+
+    if (!raw) {
+      return null;
+    }
+
+    if (raw.startsWith("/portal/")) {
+      return raw;
+    }
+
+    const designerMatch = raw.match(/\/designer\/tenant\/\d+\/workspaces\/([^/?#]+)/i);
+    if (designerMatch?.[1]) {
+      return `/portal/${portalId}/workspaces/${decodeURIComponent(designerMatch[1])}`;
+    }
+
+    return null;
+  };
+
   const handleRuntimeSidebarItemAction = (item, event) => {
     if (typeof onSidebarItemAction === "function") {
       onSidebarItemAction(item, event);
@@ -80,8 +114,18 @@ export default function PortalLayout({
     }
 
     if (typeof onNavigateToPath === "function") {
+      const itemType = String(item?.type || "").trim();
       const path =
-        item?.path || item?.url || item?.route || item?.meta?.url || item?.meta?.route;
+        itemType === "workspace"
+          ? resolveRuntimeWorkspacePath(item)
+          : item?.targetPath ||
+            item?.path ||
+            item?.url ||
+            item?.route ||
+            item?.meta?.targetPath ||
+            item?.meta?.url ||
+            item?.meta?.route;
+
       if (path && String(path).startsWith("/portal/")) {
         event?.preventDefault?.();
         onNavigateToPath(path);

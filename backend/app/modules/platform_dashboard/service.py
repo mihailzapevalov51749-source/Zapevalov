@@ -12,16 +12,31 @@ from app.modules.platform_dashboard.models import (
     PlatformTask,
 )
 from app.modules.platform_dashboard.schemas import (
+    BusinessAwarenessRead,
+    DevelopmentIntelligenceFocusRead,
+    DevelopmentIntelligenceNextStepRead,
+    DevelopmentIntelligenceQualityRead,
+    DevelopmentIntelligenceDebtRead,
+    DevelopmentIntelligenceRiskItemRead,
+    DevelopmentIntelligenceRisksRead,
+    DevelopmentIntelligenceRead,
+    DualReadinessRead,
     EmbeddedAiTrackRead,
     PlatformActivityRead,
     PlatformComponentRead,
     PlatformComponentRelatedIssueRead,
+    DevelopmentWorkspaceGovernanceRead,
     PlatformComponentsResponse,
     PlatformDashboardFreshnessRead,
     PlatformDashboardSummaryRead,
+    PlatformEngineStateRead,
+    PlatformGovernanceRead,
     PlatformImplementationStageRead,
+    PlatformLayerStateRead,
     PlatformStagesResponse,
     PlatformTaskRead,
+    CompanyWorkspaceRead,
+    CompanyWorkspacesStateRead,
     parse_json_list,
     parse_json_object,
 )
@@ -131,7 +146,9 @@ def _serialize_embedded_ai_tracks(
         EmbeddedAiTrackRead(
             slug=rollups.ace.slug,
             title=rollups.ace.title,
-            readiness=rollups.ace.readiness,
+            readiness=rollups.ace.release_readiness,
+            implementation_readiness=rollups.ace.implementation_readiness,
+            release_readiness=rollups.ace.release_readiness,
             current_tasks=list(rollups.ace.current_tasks),
             next_tasks=list(rollups.ace.next_tasks),
             checks_passed=rollups.ace.checks_passed,
@@ -140,25 +157,178 @@ def _serialize_embedded_ai_tracks(
         EmbeddedAiTrackRead(
             slug=rollups.yasii.slug,
             title=rollups.yasii.title,
-            readiness=rollups.yasii.readiness,
+            readiness=rollups.yasii.release_readiness,
+            implementation_readiness=rollups.yasii.implementation_readiness,
+            release_readiness=rollups.yasii.release_readiness,
             current_tasks=list(rollups.yasii.current_tasks),
             next_tasks=list(rollups.yasii.next_tasks),
             checks_passed=rollups.yasii.checks_passed,
             checks_total=rollups.yasii.checks_total,
         ),
     ]
-    return rollups.ace.readiness, rollups.yasii.readiness, tracks
+    return rollups.ace.release_readiness, rollups.yasii.release_readiness, tracks
+
+
+def serialize_governance_model(db: Session) -> PlatformGovernanceRead:
+    from app.modules.yasii.unified_project_state import build_unified_project_state
+
+    unified = build_unified_project_state(db)
+    yasii = unified.developmentWorkspace.yasii
+    return PlatformGovernanceRead(
+        schemaVersion=unified.schemaVersion,
+        sourceChain=list(unified.sourceChain),
+        platform=PlatformLayerStateRead(
+            overallReadiness=unified.platform.overallReadiness,
+            engines=[
+                PlatformEngineStateRead(
+                    slug=engine.slug,
+                    title=engine.title,
+                    description=engine.description,
+                    readiness=engine.readiness,
+                    status=engine.status,
+                    openIssueCount=engine.openIssueCount,
+                    debtItemCount=engine.debtItemCount,
+                    inDashboard=engine.inDashboard,
+                    dashboardComponentSlugs=list(engine.dashboardComponentSlugs),
+                )
+                for engine in unified.platform.engines
+            ],
+            presentInDashboard=list(unified.platform.presentInDashboard),
+            missingFromDashboard=list(unified.platform.missingFromDashboard),
+        ),
+        developmentWorkspace=DevelopmentWorkspaceGovernanceRead(
+            currentStageSlug=unified.developmentWorkspace.currentStageSlug,
+            currentStageTitle=unified.developmentWorkspace.currentStageTitle,
+            currentFocus=unified.developmentWorkspace.currentFocus,
+            activeWorkItems=list(unified.developmentWorkspace.activeWorkItems),
+            blockedWorkItems=list(unified.developmentWorkspace.blockedWorkItems),
+            qualityOpenCount=unified.developmentWorkspace.qualityOpenCount,
+            qualityCriticalCount=unified.developmentWorkspace.qualityCriticalCount,
+            containerReadiness=yasii.containerReleaseReadiness,
+            containerImplementationReadiness=unified.containerImplementationReadiness,
+            containerReleaseReadiness=unified.containerReleaseReadiness,
+            yasiiTrackReadiness=yasii.yasiiTrackReleaseReadiness,
+            yasiiImplementationReadiness=unified.yasiiImplementationReadiness,
+            yasiiReleaseReadiness=unified.yasiiReleaseReadiness,
+            governanceReleaseBlockerKey=unified.governanceReleaseBlockerKey,
+            governanceReleaseBlockerLabel=unified.governanceReleaseBlockerLabel,
+            governanceBlockedItems=list(unified.blockedByGovernance),
+            sections=list(unified.developmentWorkspace.sections),
+        ),
+        companyWorkspaces=CompanyWorkspacesStateRead(
+            companyWorkspaces=[
+                CompanyWorkspaceRead(
+                    tenantId=workspace.tenantId,
+                    title=workspace.title,
+                    status=workspace.status,
+                    digitalModelReadiness=workspace.digitalModelReadiness,
+                    users=workspace.users,
+                    licenses=workspace.licenses,
+                    permissions=workspace.permissions,
+                    objects=workspace.objects,
+                    processes=workspace.processes,
+                    views=workspace.views,
+                    note=workspace.note,
+                    objectModelFacets=list(workspace.objectModelFacets),
+                )
+                for workspace in unified.companyWorkspaces.companyWorkspaces
+            ],
+            companyWorkspacesSummary=unified.companyWorkspaces.companyWorkspacesSummary,
+            architectureRule=unified.companyWorkspaces.architectureRule,
+        ),
+    )
+
+
+def _serialize_development_intelligence(stage_slug: str, db: Session) -> DevelopmentIntelligenceRead | None:
+    if stage_slug != YASII_IMPLEMENTATION_STAGE_SLUG:
+        return None
+    from app.modules.yasii.development_intelligence import build_development_intelligence_snapshot
+
+    snap = build_development_intelligence_snapshot(db)
+    return DevelopmentIntelligenceRead(
+        focus=DevelopmentIntelligenceFocusRead(
+            title=snap.focus.title,
+            reasoning=snap.focus.reasoning,
+        ),
+        quality=DevelopmentIntelligenceQualityRead(
+            criticalCount=snap.quality.criticalCount,
+            openCount=snap.quality.openCount,
+            summary=snap.quality.summary,
+            connected=snap.quality.connected,
+        ),
+        debt=DevelopmentIntelligenceDebtRead(
+            highCount=snap.debt.highCount,
+            summary=snap.debt.summary,
+        ),
+        risks=DevelopmentIntelligenceRisksRead(
+            count=snap.risks.count,
+            topRisks=[
+                DevelopmentIntelligenceRiskItemRead(
+                    title=r.title,
+                    severity=r.severity,
+                    reasoning=r.reasoning,
+                )
+                for r in snap.risks.topRisks[:5]
+            ],
+        ),
+        nextStep=DevelopmentIntelligenceNextStepRead(
+            title=snap.nextStep.title,
+            businessImpact=snap.nextStep.businessImpact,
+        ),
+    )
+
+
+def _serialize_business_awareness(stage_slug: str, db: Session) -> BusinessAwarenessRead | None:
+    if stage_slug != YASII_IMPLEMENTATION_STAGE_SLUG:
+        return None
+    from app.modules.yasii.business_explanation import build_business_awareness_snapshot
+
+    snapshot = build_business_awareness_snapshot(db)
+    return BusinessAwarenessRead(
+        current_effect=snapshot.currentEffect,
+        next_effect=snapshot.nextEffect,
+        stage_value=snapshot.stageValue,
+    )
 
 
 def serialize_stage(
     stage: PlatformImplementationStage,
     *,
     embedded_ai_rollups=None,
+    db: Session | None = None,
 ) -> PlatformImplementationStageRead:
+    is_yasii_container = stage.slug == YASII_IMPLEMENTATION_STAGE_SLUG
     ace_readiness, yasii_readiness, embedded_ai_tracks = _serialize_embedded_ai_tracks(
-        embedded_ai_rollups
-        if stage.slug == YASII_IMPLEMENTATION_STAGE_SLUG
-        else None
+        embedded_ai_rollups if is_yasii_container else None
+    )
+    container_readiness = None
+    implementation_readiness = None
+    release_readiness = None
+    governance_release_blocker = None
+    governance_release_blocker_key = None
+    implementation_completed_items: list[str] = []
+    governance_blocked_items: list[str] = []
+    if is_yasii_container and embedded_ai_rollups is not None:
+        container_readiness = DualReadinessRead(
+            implementation=embedded_ai_rollups.container_implementation_readiness,
+            release=embedded_ai_rollups.container_release_readiness,
+        )
+        implementation_readiness = embedded_ai_rollups.container_implementation_readiness
+        release_readiness = embedded_ai_rollups.container_release_readiness
+        governance_release_blocker = embedded_ai_rollups.governance_release_blocker_label
+        governance_release_blocker_key = embedded_ai_rollups.governance_release_blocker_key
+        from app.modules.platform_dashboard.yasii_sync import classify_embedded_ai_stage_work_items
+
+        impl_completed, _, _ = classify_embedded_ai_stage_work_items(
+            set(embedded_ai_rollups.implementation_done_keys)
+        )
+        implementation_completed_items = impl_completed
+        governance_blocked_items = list(embedded_ai_rollups.governance_blocked_work_items)
+    business_awareness = (
+        _serialize_business_awareness(stage.slug, db) if db is not None else None
+    )
+    development_intelligence = (
+        _serialize_development_intelligence(stage.slug, db) if db is not None else None
     )
     return PlatformImplementationStageRead(
         id=stage.id,
@@ -166,10 +336,19 @@ def serialize_stage(
         title=stage.title,
         description=stage.description,
         status=stage.status,
-        readiness=stage.cached_readiness,
+        readiness=release_readiness if release_readiness is not None else stage.cached_readiness,
+        implementation_readiness=implementation_readiness,
+        release_readiness=release_readiness,
+        container_readiness=container_readiness,
         ace_readiness=ace_readiness,
         yasii_readiness=yasii_readiness,
+        governance_release_blocker=governance_release_blocker,
+        governance_release_blocker_key=governance_release_blocker_key,
+        implementation_completed_items=implementation_completed_items,
+        governance_blocked_items=governance_blocked_items,
         embedded_ai_tracks=embedded_ai_tracks,
+        business_awareness=business_awareness,
+        development_intelligence=development_intelligence,
         order_index=stage.order_index,
         current_position=stage.current_position,
         completed_items=parse_json_list(stage.completed_items),
@@ -199,18 +378,18 @@ def list_components(db: Session) -> PlatformComponentsResponse:
 
 def list_stages(db: Session) -> PlatformStagesResponse:
     from app.modules.platform_dashboard.yasii_sync import (
-        compute_embedded_ai_rollups,
+        compute_embedded_ai_rollups_from_db,
         ensure_yasii_track_loaded,
-        refresh_yasii_stage_display,
+        yasii_track_is_loaded,
     )
     from app.modules.platform_dashboard_analyzer.refresh import build_scan_context
 
-    ctx = build_scan_context()
-    ensure_yasii_track_loaded(db, ctx)
-    refresh_yasii_stage_display(db, ctx)
-    db.commit()
+    if not yasii_track_is_loaded(db):
+        ctx = build_scan_context()
+        ensure_yasii_track_loaded(db, ctx)
+        db.commit()
 
-    embedded_ai_rollups = compute_embedded_ai_rollups(ctx)
+    embedded_ai_rollups = compute_embedded_ai_rollups_from_db(db)
 
     stages = (
         db.query(PlatformImplementationStage)
@@ -223,10 +402,20 @@ def list_stages(db: Session) -> PlatformStagesResponse:
             embedded_ai_rollups=embedded_ai_rollups
             if stage.slug == YASII_IMPLEMENTATION_STAGE_SLUG
             else None,
+            db=db,
         )
         for stage in stages
     ]
-    return PlatformStagesResponse(items=items, freshness=build_dashboard_freshness(db))
+    governance = serialize_governance_model(db)
+    return PlatformStagesResponse(
+        items=items,
+        freshness=build_dashboard_freshness(db),
+        governance=governance,
+    )
+
+
+def get_governance_model(db: Session) -> PlatformGovernanceRead:
+    return serialize_governance_model(db)
 
 
 def list_tasks(

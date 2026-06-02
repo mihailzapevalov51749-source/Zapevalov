@@ -21,7 +21,15 @@ export async function listPlatformComponents() {
 
 export async function listPlatformStages() {
   const { data } = await platformApiClient.get(`${BASE_PATH}/stages`);
-  return unwrapDashboardList(data);
+  if (data && Array.isArray(data.items)) {
+    return { items: data.items, governance: data.governance ?? null };
+  }
+  return { items: unwrapDashboardList(data), governance: null };
+}
+
+export async function getPlatformGovernance() {
+  const { data } = await platformApiClient.get(`${BASE_PATH}/governance`);
+  return data;
 }
 
 export async function listPlatformTasks(params = {}) {
@@ -41,5 +49,10 @@ export async function getPlatformDashboardSummary() {
 
 export async function refreshPlatformDashboard() {
   const { data } = await platformApiClient.post(`${BASE_PATH}/refresh`);
+  return data;
+}
+
+export async function getOwnerDashboardView() {
+  const { data } = await platformApiClient.get(`${BASE_PATH}/owner`);
   return data;
 }

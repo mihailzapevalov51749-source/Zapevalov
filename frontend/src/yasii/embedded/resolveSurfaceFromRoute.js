@@ -1,9 +1,16 @@
+import { buildDesignerContextData } from "../designer/buildDesignerContextData.js";
+import { buildProcessContextData } from "../process/buildProcessContextData.js";
 import { resolvePlatformDashboardUserId } from "../hostContextBuilders.js";
 import { EMBEDDED_SURFACE_IDS } from "./embeddedSurfaceTypes.js";
 
 function extractTenantIdFromPath(pathname) {
   const match = String(pathname || "").match(/\/designer\/tenant\/([^/]+)/);
   return match?.[1] ?? "0";
+}
+
+function extractObjectTypeRefFromPath(pathname) {
+  const match = String(pathname || "").match(/\/object-types\/([^/?#]+)/);
+  return match?.[1] ?? "";
 }
 
 function buildGlobalContextData(pathname) {
@@ -25,11 +32,58 @@ function buildDashboardFallbackContextData(pathname) {
   };
 }
 
+function buildRegistryRouteFallbackContext(pathname) {
+  const objectTypeRef = extractObjectTypeRefFromPath(pathname);
+  const registryId = objectTypeRef || "registry";
+
+  return {
+    ...buildGlobalContextData(pathname),
+    registryId,
+    registryName: objectTypeRef || "Реестр",
+    viewId: "default_table",
+    viewName: "Таблица",
+    selectedCount: 0,
+    activeFilters: "",
+    activeSorts: "",
+    searchQuery: "",
+    widgetId: `registry-${registryId}`,
+    selectedScope: `registry:${registryId}:default_table`,
+    metadata: {},
+  };
+}
+
+function isObjectRegistryTableRoute(path) {
+  if (/\/object-types\/[^/]+\/data(?:\/|$|\?|#)/.test(path)) {
+    return true;
+  }
+
+  if (/\/portal\/[^/]+\/object-types\/[^/]+(?:\/data)?(?:\/|$|\?|#)/.test(path)) {
+    return true;
+  }
+
+  return false;
+}
+
 /**
  * Resolve embedded surface from current route when no page-level override is set.
  */
 export function resolveSurfaceFromRoute(pathname) {
   const path = String(pathname || "");
+
+  if (path === "/yasii" || path.startsWith("/yasii/")) {
+    return {
+      surfaceId: EMBEDDED_SURFACE_IDS.GLOBAL,
+      contextData: {
+        ...buildGlobalContextData(path),
+        widgetId: "yasii-workspace",
+        selectedScope: "yasii-workspace",
+        metadata: {
+          workspaceMode: "workspace",
+        },
+      },
+      inputPlaceholder: "Спросите ЯСИИ о текущем контексте платформы...",
+    };
+  }
 
   if (/\/designer\/[^/]+\/platform(?:\/|$)/.test(path) || /\/platform(?:\/|$)/.test(path)) {
     return {
@@ -39,26 +93,18 @@ export function resolveSurfaceFromRoute(pathname) {
     };
   }
 
-  if (/\/portal\/[^/]+\/object-types(?:\/|$)/.test(path) || /\/object(?:\/|$)/.test(path)) {
+  if (isObjectRegistryTableRoute(path)) {
     return {
-      surfaceId: EMBEDDED_SURFACE_IDS.OBJECT_CARD,
-      contextData: {
-        ...buildGlobalContextData(path),
-        widgetId: "object-card",
-        selectedScope: "object-card",
-      },
-      inputPlaceholder: "Спросите ЯСИИ о карточке объекта...",
+      surfaceId: EMBEDDED_SURFACE_IDS.REGISTRY,
+      contextData: buildRegistryRouteFallbackContext(path),
+      inputPlaceholder: "Спросите ЯСИИ о текущем реестре...",
     };
   }
 
   if (/\/registry(?:\/|$)/.test(path)) {
     return {
       surfaceId: EMBEDDED_SURFACE_IDS.REGISTRY,
-      contextData: {
-        ...buildGlobalContextData(path),
-        widgetId: "registry",
-        selectedScope: "registry",
-      },
+      contextData: buildRegistryRouteFallbackContext(path),
       inputPlaceholder: "Спросите ЯСИИ о реестре...",
     };
   }
@@ -75,27 +121,49 @@ export function resolveSurfaceFromRoute(pathname) {
     };
   }
 
-  if (/\/processes(?:\/|$)/.test(path)) {
-    return {
-      surfaceId: EMBEDDED_SURFACE_IDS.PROCESS,
-      contextData: {
-        ...buildGlobalContextData(path),
-        widgetId: "process",
-        selectedScope: "process",
-      },
-      inputPlaceholder: "Спросите ЯСИИ о процессе...",
-    };
-  }
-
   if (/\/designer(?:\/|$)/.test(path)) {
-    return {
-      surfaceId: EMBEDDED_SURFACE_IDS.DESIGNER,
-      contextData: {
+    const tenantId = extractTenantIdFromPath(path);
+    const contextData =
+      buildDesignerContextData({
+        pathname: path,
+        tenantId,
+        userId: resolvePlatformDashboardUserId(),
+      }) ?? {
         ...buildGlobalContextData(path),
         widgetId: "designer",
         selectedScope: "designer",
-      },
-      inputPlaceholder: "Спросите ЯСИИ о конструкторе...",
+        designerArea: "Студия",
+        designerEntityType: "designer",
+        designerEntityId: "studio",
+        designerEntityName: "Студия",
+        selectedNodeId: "studio",
+        selectedNodeName: "Студия",
+        metadata: {
+          designerMode: "designer",
+          designerPath: path,
+          designerSection: "Студия",
+        },
+      };
+
+    return {
+      surfaceId: EMBEDDED_SURFACE_IDS.DESIGNER,
+      contextData,
+      inputPlaceholder: "Спросите ЯСИИ о текущем разделе конструктора...",
+    };
+  }
+
+  if (/\/processes(?:\/|$)/.test(path)) {
+    return {
+      surfaceId: EMBEDDED_SURFACE_IDS.PROCESS,
+      contextData: buildProcessContextData({
+        tenantId: extractTenantIdFromPath(path),
+        userId: resolvePlatformDashboardUserId(),
+        metadata: {
+          integrationReady: "true",
+          processPath: path,
+        },
+      }),
+      inputPlaceholder: "Спросите ЯСИИ о процессе...",
     };
   }
 

@@ -39,6 +39,7 @@ export type AppSidebarContract = {
   editMode?: boolean;
   menuScale?: number;
   activeItemId?: string;
+  activeParentIds?: string[];
   activePageId?: string | number;
   actions?: SidebarActionContract[];
   capabilities?: SidebarCapabilitiesContract;

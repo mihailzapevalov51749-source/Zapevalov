@@ -1,15 +1,28 @@
-import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import yasiiLogo from "../../assets/yasii.png";
 import { resolveEmbeddedSurface } from "../embedded/embeddedEntryRegistry.js";
 import { buildEmbeddedScopeKey } from "../embedded/embeddedScopeKey.js";
 import useYasiiEmbeddedQuery from "../hooks/useYasiiEmbeddedQuery";
 import {
+  findMessageElement,
   resolveMessageScrollIntent,
+  scrollAssistantMessageToStart,
   scrollContainerToBottom,
-  scrollMessageIntoView,
 } from "../yasiiChatScroll.js";
+import { resolveYasiiSourceLabel } from "../embedded/yasiiSourceLabels.js";
 import YasiiEmbeddedContextHeader from "./YasiiEmbeddedContextHeader.jsx";
+import YasiiPanelHeaderActions from "./YasiiPanelHeaderActions.jsx";
+
+const YASII_STATUS_LABEL = "Цифровой сотрудник";
 
 function YasiiTraceList({ trace }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -42,7 +55,7 @@ function YasiiTraceList({ trace }) {
   );
 }
 
-function YasiiMessage({ message, messageRef }) {
+function YasiiMessage({ message }) {
   const isUser = message.role === "user";
   const className = isUser
     ? "yasii-message yasii-message-user"
@@ -50,7 +63,6 @@ function YasiiMessage({ message, messageRef }) {
 
   return (
     <div
-      ref={messageRef}
       className={className}
       data-yasii-message-id={message.id}
       data-yasii-message-role={message.role}
@@ -72,6 +84,7 @@ const YasiiEmbeddedPanel = forwardRef(function YasiiEmbeddedPanel(
   {
     open,
     onClose,
+    layoutMode = "floating",
     surfaceId,
     contextData = {},
     inputPlaceholder = "Введите сообщение...",
@@ -88,9 +101,7 @@ const YasiiEmbeddedPanel = forwardRef(function YasiiEmbeddedPanel(
     return buildEmbeddedScopeKey(surfaceId, contextData);
   }, [contextData, surface, surfaceId]);
 
-  const scopeLabel = String(
-    contextData.selectedScope ?? contextData.scope ?? contextData.widgetId ?? surface.surfaceId,
-  );
+  const sourceLabel = resolveYasiiSourceLabel(surfaceId, surface.surfaceName);
 
   const buildHostContext = useCallback(
     () => surface.buildHostContext(contextData),
@@ -118,12 +129,10 @@ const YasiiEmbeddedPanel = forwardRef(function YasiiEmbeddedPanel(
   const [draft, setDraft] = useState("");
   const messagesContainerRef = useRef(null);
   const lastMessageRef = useRef(null);
-  const latestAssistantMessageRef = useRef(null);
   const inputRef = useRef(null);
   const hasRequestedInitialHandoffRef = useRef(false);
   const previousOpenRef = useRef(false);
   const previousMessagesLengthRef = useRef(0);
-  const latestAssistantMessageIdRef = useRef(null);
 
   const focusInput = useCallback(() => {
     requestAnimationFrame(() => {
@@ -139,14 +148,9 @@ const YasiiEmbeddedPanel = forwardRef(function YasiiEmbeddedPanel(
   }, []);
 
   const scrollToAssistantMessageStart = useCallback((messageId) => {
-    requestAnimationFrame(() => {
-      const selector = `[data-yasii-message-id="${messageId}"]`;
-      const messageElement =
-        latestAssistantMessageRef.current
-        ?? messagesContainerRef.current?.querySelector(selector);
-
-      scrollMessageIntoView(messageElement, "start");
-    });
+    const container = messagesContainerRef.current;
+    const messageElement = findMessageElement(container, messageId);
+    scrollAssistantMessageToStart(container, messageElement);
   }, []);
 
   useEffect(() => {
@@ -178,7 +182,7 @@ const YasiiEmbeddedPanel = forwardRef(function YasiiEmbeddedPanel(
     previousOpenRef.current = true;
   }, [focusInput, open, scrollToBottom]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) {
       previousMessagesLengthRef.current = messages.length;
       return;
@@ -198,7 +202,6 @@ const YasiiEmbeddedPanel = forwardRef(function YasiiEmbeddedPanel(
     }
 
     if (intent.type === "assistant-start") {
-      latestAssistantMessageIdRef.current = intent.messageId;
       scrollToAssistantMessageStart(intent.messageId);
       focusInput();
     }
@@ -245,11 +248,19 @@ const YasiiEmbeddedPanel = forwardRef(function YasiiEmbeddedPanel(
     handleSubmit();
   };
 
+  const panelClassName = [
+    "yasii-panel",
+    "yasii-panel--embedded",
+    layoutMode === "workspace" ? "yasii-panel--workspace" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <aside
       ref={ref}
-      className="yasii-panel yasii-panel--embedded"
-      role="dialog"
+      className={panelClassName}
+      role={layoutMode === "workspace" ? "region" : "dialog"}
       aria-label={`ЯСИИ ${surface.surfaceName}`}
     >
       <header className="yasii-panel-header">
@@ -264,27 +275,14 @@ const YasiiEmbeddedPanel = forwardRef(function YasiiEmbeddedPanel(
             <div className="yasii-panel-header__title">ЯСИИ</div>
             <div className="yasii-panel-header__status">
               <span className="yasii-panel-header__online" aria-hidden="true" />
-              {surface.surfaceName} · embedded
+              {YASII_STATUS_LABEL}
             </div>
           </div>
         </div>
-        <button
-          type="button"
-          className="yasii-panel-header__close"
-          aria-label="Закрыть"
-          onClick={onClose}
-        >
-          ×
-        </button>
+        <YasiiPanelHeaderActions layoutMode={layoutMode} onClose={onClose} />
       </header>
 
-      <YasiiEmbeddedContextHeader
-        surfaceName={surface.surfaceName}
-        contextLabel={surface.contextLabel}
-        roleIds={handoff?.roleIds}
-        defaultRole={surface.defaultRole}
-        scope={scopeLabel}
-      />
+      <YasiiEmbeddedContextHeader sourceLabel={sourceLabel} />
 
       {isStale ? (
         <div className="yasii-embedded-stale" role="alert">
@@ -307,15 +305,7 @@ const YasiiEmbeddedPanel = forwardRef(function YasiiEmbeddedPanel(
 
       <div ref={messagesContainerRef} className="yasii-panel-body">
         {messages.map((message) => (
-          <YasiiMessage
-            key={message.id}
-            message={message}
-            messageRef={
-              message.id === latestAssistantMessageIdRef.current
-                ? latestAssistantMessageRef
-                : undefined
-            }
-          />
+          <YasiiMessage key={message.id} message={message} />
         ))}
         {loading ? (
           <div className="yasii-message yasii-message-assistant">

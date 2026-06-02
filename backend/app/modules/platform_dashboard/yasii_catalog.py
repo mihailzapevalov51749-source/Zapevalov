@@ -43,6 +43,10 @@ def _phase_id(stage_slug: str) -> str:
         "yasii-memory-foundation": "yasii-phase-8",
         "yasii-strategy-layer": "yasii-phase-9",
         "yasii-platform-readiness": "yasii-phase-10",
+        "yasii-project-knowledge": "yasii-phase-11",
+        "yasii-business-awareness": "yasii-phase-12",
+        "yasii-development-intelligence": "yasii-phase-12",
+        "yasii-platform-governance": "yasii-phase-13",
     }
     return mapping[stage_slug]
 
@@ -142,6 +146,54 @@ YASII_STAGES: tuple[YasiiStageDefinition, ...] = (
         mvp=True,
         completion_criteria=["All 9 MVP success criteria verified", "Architecture sign-off"],
     ),
+    YasiiStageDefinition(
+        slug="yasii-project-knowledge",
+        title="YASII Project Knowledge",
+        order_index=110,
+        description="Project Knowledge Corpus — docs, catalog, dashboard metadata",
+        component_slug="yasii-knowledge",
+        mvp=False,
+        completion_criteria=[
+            "Markdown docs indexed deterministically",
+            "Knowledge answers wired before Improvement/Architect",
+        ],
+    ),
+    YasiiStageDefinition(
+        slug="yasii-business-awareness",
+        title="YASII Business Awareness",
+        order_index=111,
+        description="Business Explanation Layer — project value, outcomes, owner language",
+        component_slug="yasii-knowledge",
+        mvp=False,
+        completion_criteria=[
+            "Technical WI translated to business value",
+            "Dashboard Business Awareness card populated",
+        ],
+    ),
+    YasiiStageDefinition(
+        slug="yasii-development-intelligence",
+        title="YASII Development Intelligence",
+        order_index=112,
+        description="Development Intelligence — quality, debt, risks, owner control",
+        component_slug="yasii-knowledge",
+        mvp=False,
+        completion_criteria=[
+            "Read-only intelligence from Dashboard and quality_issues",
+            "Development Intelligence card on Platform Dashboard",
+        ],
+    ),
+    YasiiStageDefinition(
+        slug="yasii-platform-governance",
+        title="YASII Platform Governance",
+        order_index=113,
+        description="Unified Project State — Platform / Development Workspace / Tenant layers",
+        component_slug="yasii-knowledge",
+        mvp=False,
+        completion_criteria=[
+            "Single read-model: analyzer → platform_tasks → done_keys → project state",
+            "Dashboard and YASII consume Unified Project State",
+        ],
+    ),
 )
 
 YASII_COMPONENTS: tuple[dict[str, str], ...] = tuple(
@@ -230,7 +282,7 @@ YASII_WORK_ITEMS: tuple[YasiiWorkItemDefinition, ...] = (
     YasiiWorkItemDefinition("P9-W01", "yasii-strategy-layer", "Strategy Capability Engine", 20, ("P6-W07", "P3-W03"), ("P9-W02", "P9-W04"), "yasii_p9_w01_strategy_engine_operational", False, "yasii-phase-9", ("P18", "P21"), ("§12 Strategy",)),
     YasiiWorkItemDefinition("P9-W02", "yasii-strategy-layer", "Unlock Score Ranking", 18, ("P9-W01", "P8-W06"), ("P9-W04",), "yasii_p9_w02_unlock_score_ranking", False, "yasii-phase-9", ("P18",), ("§12 Strategy",)),
     YasiiWorkItemDefinition("P9-W03", "yasii-strategy-layer", "Blocker Detection", 18, ("P9-W01", "P3-W03"), ("P9-W04",), "yasii_p9_w03_blocker_detection", False, "yasii-phase-9", ("P20",), ("§12 Strategy",)),
-    YasiiWorkItemDefinition("P9-W04", "yasii-strategy-layer", "Strategy Recommendation Templates", 16, ("P9-W02", "P9-W03"), ("P9-W06",), "yasii_p9_w04_strategy_templates_ready", False, "yasii-phase-9", ("P14",), ("§12 Strategy",)),
+    YasiiWorkItemDefinition("P9-W04", "yasii-strategy-layer", "Strategy Recommendation Templates", 16, ("P9-W02", "P9-W03"), ("P9-W06",), "yasii_p9_w04_strategy_recommendation_templates", False, "yasii-phase-9", ("P14",), ("§12 Strategy",)),
     YasiiWorkItemDefinition("P9-W05", "yasii-strategy-layer", "YASII Architect Profile", 14, ("P9-W01", "P5-W01"), (), "yasii_p9_w05_architect_profile_active", False, "yasii-phase-9", ("P17",), ("§6 Architect",)),
     YasiiWorkItemDefinition("P9-W06", "yasii-strategy-layer", "Improvement Query Standalone", 14, ("P6-W06", "P9-W01"), (), "yasii_p9_w06_improvement_query_standalone", False, "yasii-phase-9", ("P18",), ("§7 Improvement",)),
     # Phase 10
@@ -239,7 +291,16 @@ YASII_WORK_ITEMS: tuple[YasiiWorkItemDefinition, ...] = (
     YasiiWorkItemDefinition("P10-W03", "yasii-platform-readiness", "E2E MVP Scenario Tests", 22, ("P5-W07", "P6-W07", "P7-W08"), ("P10-W06",), "yasii_p10_w03_e2e_mvp_scenarios_pass", True, "yasii-phase-10", (), ("§9 MVP",)),
     YasiiWorkItemDefinition("P10-W04", "yasii-platform-readiness", "Analyzer Evidence Suite", 18, ("MVP_WORK_ITEMS_COMPLETE",), ("P10-W05",), "yasii_p10_w04_analyzer_suite_complete", True, "yasii-phase-10", (), ("§9 MVP",)),
     YasiiWorkItemDefinition("P10-W05", "yasii-platform-readiness", "Dashboard Readiness Rollup", 12, ("P10-W04",), ("P10-W06",), "yasii_p10_w05_dashboard_readiness_100", True, "yasii-phase-10", (), ("§9 MVP",)),
-    YasiiWorkItemDefinition("P10-W06", "yasii-platform-readiness", "Architecture Sign-Off", 14, ("P10-W01", "P10-W02", "P10-W03", "P10-W04", "P10-W05"), ("P8-W01",), "yasii_p10_w06_architecture_signoff", True, "yasii-phase-10", (), ("§9 MVP",)),
+    YasiiWorkItemDefinition("P10-W06", "yasii-platform-readiness", "Architecture Sign-Off", 14, ("P10-W01", "P10-W02", "P10-W03", "P10-W04", "P10-W05"), ("P8-W01", "P11-W01"), "yasii_p10_w06_architecture_signoff", True, "yasii-phase-10", (), ("§9 MVP",)),
+    # Phase 11
+    YasiiWorkItemDefinition("P11-W01", "yasii-project-knowledge", "Knowledge Corpus Integration", 50, ("P10-W06",), ("P11-W02",), "yasii_p11_w01_knowledge_corpus_integration", False, "yasii-phase-11", ("P8", "P11"), ("§3 Knowledge", "§11 Project Corpus",)),
+    YasiiWorkItemDefinition("P11-W02", "yasii-project-knowledge", "Project Awareness Engine", 50, ("P11-W01",), ("P11-W03",), "yasii_p11_w02_project_awareness_engine", False, "yasii-phase-11", ("P8", "P11"), ("§11 Project Awareness",)),
+    YasiiWorkItemDefinition("P11-W03", "yasii-business-awareness", "Business Explanation Layer", 100, ("P11-W02",), ("P12-W01",), "yasii_p11_w03_business_explanation_layer", False, "yasii-phase-12", ("P8", "P11"), ("§11 Business Awareness", "user consultant",)),
+    # Phase 12
+    YasiiWorkItemDefinition("P12-W01", "yasii-development-intelligence", "Development Intelligence", 100, ("P11-W03",), ("P13-W02",), "yasii_p12_w01_development_intelligence", False, "yasii-phase-12", ("P8", "P11", "P12"), ("§12 Development Intelligence",)),
+    # Phase 13
+    YasiiWorkItemDefinition("P13-W02", "yasii-platform-governance", "Platform Governance Model", 50, ("P12-W01",), ("P13-W03",), "yasii_p13_w02_platform_governance_model", False, "yasii-phase-13", ("P13",), ("§13 Governance", "Unified Project State",)),
+    YasiiWorkItemDefinition("P13-W03", "yasii-platform-governance", "Dual Readiness Model", 50, ("P13-W02",), (), "yasii_p13_w03_dual_readiness_model", False, "yasii-phase-13", ("P13",), ("§13 Governance", "Implementation vs Release",)),
 )
 # fmt: on
 
@@ -252,8 +313,8 @@ MVP_WORK_ITEM_KEYS: frozenset[str] = frozenset(
 )
 
 YASII_STAGE_SLUGS: frozenset[str] = frozenset(stage.slug for stage in YASII_STAGES)
-YASII_EXPECTED_STAGE_COUNT = 10
-YASII_EXPECTED_WORK_ITEM_COUNT = 74
+YASII_EXPECTED_STAGE_COUNT = 14
+YASII_EXPECTED_WORK_ITEM_COUNT = 80
 
 YASII_IMPLEMENTATION_STAGE_SLUG = "ai-native-layer"
 YASII_IMPLEMENTATION_COMPONENT_SLUG = "ai-context"
@@ -347,10 +408,10 @@ def count_dependency_edges() -> int:
 
 def validate_catalog() -> list[str]:
     errors: list[str] = []
-    if len(YASII_STAGES) != 10:
-        errors.append(f"expected 10 stages, got {len(YASII_STAGES)}")
-    if len(YASII_WORK_ITEMS) != 74:
-        errors.append(f"expected 74 work items, got {len(YASII_WORK_ITEMS)}")
+    if len(YASII_STAGES) != 14:
+        errors.append(f"expected 14 stages, got {len(YASII_STAGES)}")
+    if len(YASII_WORK_ITEMS) != 80:
+        errors.append(f"expected 80 work items, got {len(YASII_WORK_ITEMS)}")
     keys = [item.key for item in YASII_WORK_ITEMS]
     if len(keys) != len(set(keys)):
         errors.append("duplicate work item keys")
@@ -366,6 +427,6 @@ def validate_catalog() -> list[str]:
     yasii_items = work_items_by_track("yasii")
     if len(ace_items) != 5:
         errors.append(f"expected 5 ACE track items, got {len(ace_items)}")
-    if len(yasii_items) != 69:
-        errors.append(f"expected 69 YASII track items, got {len(yasii_items)}")
+    if len(yasii_items) != 75:
+        errors.append(f"expected 75 YASII track items, got {len(yasii_items)}")
     return errors

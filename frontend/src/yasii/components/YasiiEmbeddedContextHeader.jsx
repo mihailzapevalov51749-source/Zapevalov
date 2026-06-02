@@ -1,32 +1,10 @@
-import { resolveEmbeddedRoleLabel } from "../yasiiEmbeddedRoles.js";
-
-export default function YasiiEmbeddedContextHeader({
-  surfaceName,
-  contextLabel,
-  roleIds,
-  defaultRole,
-  scope,
-}) {
-  const roleLabel = resolveEmbeddedRoleLabel(roleIds?.length ? roleIds : [defaultRole]);
+export default function YasiiEmbeddedContextHeader({ sourceLabel }) {
+  const label = String(sourceLabel ?? "").trim() || "Платформа";
 
   return (
-    <div className="yasii-embedded-banner" role="status">
-      <div className="yasii-embedded-banner__row">
-        <span className="yasii-embedded-banner__label">Источник:</span>
-        <span>{surfaceName}</span>
-      </div>
-      <div className="yasii-embedded-banner__row">
-        <span className="yasii-embedded-banner__label">Контекст:</span>
-        <span>{contextLabel}</span>
-      </div>
-      <div className="yasii-embedded-banner__row">
-        <span className="yasii-embedded-banner__label">Роль:</span>
-        <span>{roleLabel}</span>
-      </div>
-      <div className="yasii-embedded-banner__row">
-        <span className="yasii-embedded-banner__label">Scope:</span>
-        <span>{scope}</span>
-      </div>
+    <div className="yasii-embedded-source-hint" role="status">
+      <span className="yasii-embedded-source-hint__label">Источник:</span>
+      <span className="yasii-embedded-source-hint__value">{label}</span>
     </div>
   );
 }

@@ -77,10 +77,70 @@ class PlatformComponentRead(BaseModel):
         return parse_json_list(value)
 
 
+class BusinessAwarenessRead(BaseModel):
+    title: str = "Business Awareness"
+    current_effect: str = ""
+    next_effect: str = ""
+    stage_value: str = ""
+
+
+class DevelopmentIntelligenceFocusRead(BaseModel):
+    title: str = ""
+    reasoning: str = ""
+
+
+class DevelopmentIntelligenceQualityRead(BaseModel):
+    criticalCount: int = 0
+    openCount: int = 0
+    summary: str = ""
+    connected: bool = False
+
+
+class DevelopmentIntelligenceDebtRead(BaseModel):
+    highCount: int = 0
+    summary: str = ""
+
+
+class DevelopmentIntelligenceRiskItemRead(BaseModel):
+    title: str = ""
+    severity: str = ""
+    reasoning: str = ""
+
+
+class DevelopmentIntelligenceRisksRead(BaseModel):
+    count: int = 0
+    topRisks: list[DevelopmentIntelligenceRiskItemRead] = Field(default_factory=list)
+
+
+class DevelopmentIntelligenceNextStepRead(BaseModel):
+    title: str = ""
+    businessImpact: str = ""
+
+
+class DevelopmentIntelligenceRead(BaseModel):
+    title: str = "Development Intelligence"
+    focus: DevelopmentIntelligenceFocusRead = Field(default_factory=DevelopmentIntelligenceFocusRead)
+    quality: DevelopmentIntelligenceQualityRead = Field(
+        default_factory=DevelopmentIntelligenceQualityRead,
+    )
+    debt: DevelopmentIntelligenceDebtRead = Field(default_factory=DevelopmentIntelligenceDebtRead)
+    risks: DevelopmentIntelligenceRisksRead = Field(default_factory=DevelopmentIntelligenceRisksRead)
+    nextStep: DevelopmentIntelligenceNextStepRead = Field(
+        default_factory=DevelopmentIntelligenceNextStepRead,
+    )
+
+
+class DualReadinessRead(BaseModel):
+    implementation: int
+    release: int
+
+
 class EmbeddedAiTrackRead(BaseModel):
     slug: str
     title: str
     readiness: int
+    implementation_readiness: int = 0
+    release_readiness: int = 0
     current_tasks: list[str] = Field(default_factory=list)
     next_tasks: list[str] = Field(default_factory=list)
     checks_passed: int = 0
@@ -96,9 +156,18 @@ class PlatformImplementationStageRead(BaseModel):
     description: str | None = None
     status: str
     readiness: int | None = None
+    implementation_readiness: int | None = None
+    release_readiness: int | None = None
+    container_readiness: DualReadinessRead | None = None
     ace_readiness: int | None = None
     yasii_readiness: int | None = None
+    governance_release_blocker: str | None = None
+    governance_release_blocker_key: str | None = None
+    implementation_completed_items: list[str] = Field(default_factory=list)
+    governance_blocked_items: list[str] = Field(default_factory=list)
     embedded_ai_tracks: list[EmbeddedAiTrackRead] | None = None
+    business_awareness: BusinessAwarenessRead | None = None
+    development_intelligence: DevelopmentIntelligenceRead | None = None
     order_index: int
     current_position: bool
     completed_items: list[str] = Field(default_factory=list)
@@ -190,9 +259,78 @@ class PlatformComponentsResponse(BaseModel):
     freshness: PlatformDashboardFreshnessRead
 
 
+class PlatformEngineStateRead(BaseModel):
+    slug: str
+    title: str
+    description: str = ""
+    readiness: int | None = None
+    status: str = ""
+    openIssueCount: int = 0
+    debtItemCount: int = 0
+    inDashboard: bool = True
+    dashboardComponentSlugs: list[str] = Field(default_factory=list)
+
+
+class PlatformLayerStateRead(BaseModel):
+    overallReadiness: int | None = None
+    engines: list[PlatformEngineStateRead] = Field(default_factory=list)
+    presentInDashboard: list[str] = Field(default_factory=list)
+    missingFromDashboard: list[str] = Field(default_factory=list)
+
+
+class CompanyWorkspaceRead(BaseModel):
+    tenantId: str
+    title: str = ""
+    status: str = ""
+    digitalModelReadiness: int | None = None
+    users: str = ""
+    licenses: str = ""
+    permissions: str = ""
+    objects: str = ""
+    processes: str = ""
+    views: str = ""
+    note: str = ""
+    objectModelFacets: list[str] = Field(default_factory=list)
+
+
+class CompanyWorkspacesStateRead(BaseModel):
+    companyWorkspaces: list[CompanyWorkspaceRead] = Field(default_factory=list)
+    companyWorkspacesSummary: str = ""
+    architectureRule: str = ""
+
+
+class DevelopmentWorkspaceGovernanceRead(BaseModel):
+    currentStageSlug: str = ""
+    currentStageTitle: str = ""
+    currentFocus: str = ""
+    activeWorkItems: list[str] = Field(default_factory=list)
+    blockedWorkItems: list[str] = Field(default_factory=list)
+    qualityOpenCount: int = 0
+    qualityCriticalCount: int = 0
+    containerReadiness: int = 0
+    containerImplementationReadiness: int = 0
+    containerReleaseReadiness: int = 0
+    yasiiTrackReadiness: int = 0
+    yasiiImplementationReadiness: int = 0
+    yasiiReleaseReadiness: int = 0
+    governanceReleaseBlockerKey: str = ""
+    governanceReleaseBlockerLabel: str = ""
+    governanceBlockedItems: list[str] = Field(default_factory=list)
+    sections: list[str] = Field(default_factory=list)
+
+
+class PlatformGovernanceRead(BaseModel):
+    schemaVersion: str = "1.0.0"
+    sourceChain: list[str] = Field(default_factory=list)
+    platform: PlatformLayerStateRead
+    developmentWorkspace: DevelopmentWorkspaceGovernanceRead
+    companyWorkspaces: CompanyWorkspacesStateRead
+
+
 class PlatformStagesResponse(BaseModel):
     items: list[PlatformImplementationStageRead] = Field(default_factory=list)
     freshness: PlatformDashboardFreshnessRead
+    governance: PlatformGovernanceRead | None = None
 
 
 class PlatformDashboardSummaryRead(BaseModel):

@@ -4,6 +4,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import PortalPageView from "./portal/PortalPageView";
 import PortalObjectRuntimePage from "./portal/PortalObjectRuntimePage";
 import PortalLibraryRuntimePage from "./portal/PortalLibraryRuntimePage";
+import PortalWorkspaceRuntimePage from "./portal/PortalWorkspaceRuntimePage";
 import LoginPage from "./pages/login/LoginPage";
 import ProfilePage from "./profile/components/ProfilePage";
 
@@ -18,6 +19,11 @@ import {
   saveLastDesignerPath,
   saveLastRuntimePath,
 } from "./shared/appMode/appModeStorage";
+import {
+  recordNavigationActivity,
+  startUserActivityTracking,
+  stopUserActivityTracking,
+} from "./shared/userActivity/userActivityTracker";
 
 import DesignerAccessGate from "./modules/designer/pages/DesignerAccessGate";
 import DesignerTenantLayout from "./modules/designer/pages/DesignerTenantLayout";
@@ -25,7 +31,11 @@ import ObjectTypesPage from "./modules/designer/pages/ObjectTypesPage";
 import ObjectTypeWorkspacePage from "./modules/designer/pages/ObjectTypeWorkspacePage";
 import ObjectTypeDataPage from "./modules/designer/pages/ObjectTypeDataPage";
 import DesignerSectionPlaceholderPage from "./modules/designer/pages/DesignerSectionPlaceholderPage";
+import DesignerWorkspacesPage from "./modules/designer/pages/DesignerWorkspacesPage";
+import DesignerWorkspaceDetailPage from "./modules/designer/pages/DesignerWorkspaceDetailPage";
 import PlatformDevelopmentPage from "./modules/platformDashboard/pages/PlatformDevelopmentPage";
+import { YasiiAssistantProvider } from "./yasii/context/YasiiAssistantContext.jsx";
+import YasiiWorkspacePage from "./yasii/pages/YasiiWorkspacePage.jsx";
 import { YasiiFloatingButton } from "./yasii";
 
 function isSuperadmin(user) {
@@ -54,7 +64,20 @@ function ModePathTracker() {
     const fullPath = `${location.pathname}${location.search}${location.hash}`;
     saveLastRuntimePath(fullPath);
     saveLastDesignerPath(fullPath);
+    recordNavigationActivity();
   }, [location.pathname, location.search, location.hash]);
+
+  return null;
+}
+
+function UserActivityBootstrap() {
+  useEffect(() => {
+    startUserActivityTracking();
+
+    return () => {
+      stopUserActivityTracking();
+    };
+  }, []);
 
   return null;
 }
@@ -97,11 +120,14 @@ export default function App() {
   }
 
   return (
-    <>
+    <YasiiAssistantProvider>
       <ModePathTracker />
+      <UserActivityBootstrap />
       <YasiiFloatingButton />
       <Routes>
       <Route path="/" element={<Navigate to="/portal/1/page/1" replace />} />
+
+      <Route path="/yasii" element={<YasiiWorkspacePage />} />
 
       <Route path="/onlyoffice-test" element={<OnlyOfficeTest />} />
 
@@ -157,6 +183,19 @@ export default function App() {
         element={<PortalLibraryRuntimePage />}
       />
 
+      <Route
+        path="/portal/:portalId/workspaces/:workspaceSlug"
+        element={<PortalWorkspaceRuntimePage />}
+      />
+      <Route
+        path="/portal/:portalId/workspaces/:workspaceSlug/:tabSlug"
+        element={<PortalWorkspaceRuntimePage />}
+      />
+      <Route
+        path="/portal/:portalId/workspaces/:workspaceSlug/tabs/:tabSlug"
+        element={<PortalWorkspaceRuntimePage />}
+      />
+
       <Route path="/profile" element={<ProfilePage />} />
 
       <Route path="/designer" element={<DesignerAccessGate user={user} />}>
@@ -185,7 +224,11 @@ export default function App() {
           />
           <Route
             path="workspaces"
-            element={<DesignerSectionPlaceholderPage title="Рабочие пространства" />}
+            element={<DesignerWorkspacesPage />}
+          />
+          <Route
+            path="workspaces/:workspaceSlug"
+            element={<DesignerWorkspaceDetailPage />}
           />
           <Route
             path="publishing"
@@ -240,6 +283,6 @@ export default function App() {
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
-    </>
+    </YasiiAssistantProvider>
   );
 }

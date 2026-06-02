@@ -212,6 +212,12 @@ def _contains_keyword(normalized_text: str, keywords: tuple[str, ...]) -> bool:
 
 def resolve_improvement_suggestions_message(text: str) -> str | None:
     """Keyword-based improvement suggestions; aggregates owner modules P6-W02…W05."""
+    from app.modules.yasii.improvement_answers import is_improvement_command
+    from app.modules.yasii.recommendation_answers import is_recommendation_command
+
+    if is_improvement_command(text) or is_recommendation_command(text):
+        return None
+
     normalized_text = str(text or "").strip().lower()
     if not normalized_text or not _contains_keyword(normalized_text, _SUGGESTION_KEYWORDS):
         return None

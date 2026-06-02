@@ -42,6 +42,10 @@ from app.modules.notes.router import (
     router as notes_router,
 )
 
+from app.modules.user_activity.router import (
+    router as user_activity_router,
+)
+
 from app.modules.quality_issues.router import (
     router as quality_issues_router,
 )
@@ -127,6 +131,9 @@ app.include_router(checklists_router)
 
 # NOTES
 app.include_router(notes_router)
+
+# USER ACTIVITY
+app.include_router(user_activity_router)
 
 # QUALITY ISSUES
 app.include_router(quality_issues_router)

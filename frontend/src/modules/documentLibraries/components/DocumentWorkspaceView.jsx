@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { getLibraryDocumentById } from "../api/documentLibrariesApi";
 import { buildWorkspacePreviewPayload } from "../services/documentLibrariesService";
 import { resolveFolderPath } from "../utils/libraryFolderPath";
 import FileViewerWorkspace from "../../../shared/files/components/FileViewerWorkspace";
+import { YasiiSurfaceContextProvider } from "../../../yasii/context/YasiiSurfaceContext.jsx";
+import { buildDocumentYasiiSurfaceValue } from "../../../yasii/document/buildDocumentContextData.js";
+import { resolvePlatformDashboardUserId } from "../../../yasii/hostContextBuilders.js";
 
 import "./documentWorkspaceView.css";
 
@@ -20,11 +23,15 @@ function getDocumentTitle(documentRecord, preview) {
 export default function DocumentWorkspaceView({
   documentId,
   libraryId,
+  libraryName = "",
+  tenantId = null,
+  userId = null,
   folderId = null,
   onDocumentLoaded,
   onClose,
 }) {
   const [documentRecord, setDocumentRecord] = useState(null);
+  const [folderPath, setFolderPath] = useState([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const onDocumentLoadedRef = useRef(onDocumentLoaded);
@@ -72,6 +79,7 @@ export default function DocumentWorkspaceView({
         }
 
         setDocumentRecord(record);
+        setFolderPath(resolvedFolderPath);
 
         if (typeof onDocumentLoadedRef.current === "function") {
           onDocumentLoadedRef.current({
@@ -88,6 +96,7 @@ export default function DocumentWorkspaceView({
         if (!cancelled) {
           setError("Не удалось загрузить документ");
           setDocumentRecord(null);
+          setFolderPath([]);
         }
       } finally {
         if (!cancelled) {
@@ -105,7 +114,22 @@ export default function DocumentWorkspaceView({
 
   const preview = buildWorkspacePreviewPayload(documentRecord);
 
+  const yasiiSurfaceValue = useMemo(
+    () =>
+      buildDocumentYasiiSurfaceValue({
+        tenantId: tenantId ?? libraryId,
+        userId: userId ?? resolvePlatformDashboardUserId(),
+        libraryId,
+        libraryName,
+        documentRecord,
+        folderPath,
+        viewerType: "file_viewer",
+      }),
+    [tenantId, userId, libraryId, libraryName, documentRecord, folderPath],
+  );
+
   return (
+    <YasiiSurfaceContextProvider value={yasiiSurfaceValue}>
     <div className="document-workspace-view">
       <div className="document-workspace-view__body">
         {isLoading ? (
@@ -132,5 +156,6 @@ export default function DocumentWorkspaceView({
         )}
       </div>
     </div>
+    </YasiiSurfaceContextProvider>
   );
 }

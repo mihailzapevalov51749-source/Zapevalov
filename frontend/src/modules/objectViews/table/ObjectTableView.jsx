@@ -7,7 +7,17 @@ import useObjectEntityCard from "../../objectEntities/hooks/useObjectEntityCard"
 import ObjectCreateEntityDialog from "../entity/ObjectCreateEntityDialog";
 import useObjectViewCreateEntity from "../hooks/useObjectViewCreateEntity";
 import { getColumnPresentationKey } from "../services/columnPresentationUtils";
-import { findCatalogObjectType } from "./services/adapters/ObjectTypeTableAdapter";
+import {
+  findCatalogObjectType,
+  getObjectTypeFields,
+} from "./services/adapters/ObjectTypeTableAdapter";
+import { YasiiSurfaceContextProvider } from "../../../yasii/context/YasiiSurfaceContext.jsx";
+import { EMBEDDED_SURFACE_IDS } from "../../../yasii/embedded/embeddedSurfaceTypes.js";
+import {
+  formatRegistryFilterConditions,
+  formatRegistrySortRules,
+  resolvePlatformDashboardUserId,
+} from "../../../yasii/hostContextBuilders.js";
 
 import {
   ViewEnginePagination,
@@ -110,11 +120,64 @@ export default function ObjectTableView({
     const objectType = findCatalogObjectType(query.catalog, objectTypeKey);
     return String(objectType?.name || objectTypeKey || "");
   }, [query.catalog, objectTypeKey]);
-
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isColumnsPanelOpen, setIsColumnsPanelOpen] = useState(false);
   const [isQuickFilterDialogOpen, setIsQuickFilterDialogOpen] = useState(false);
   const [cardSettingsSaving, setCardSettingsSaving] = useState(false);
+
+  const objectCardSurfaceContext = useMemo(() => {
+    const cardModel = entityCard.cardModel;
+    const cardObjectTypeKey = String(cardModel?.objectTypeKey ?? objectTypeKey ?? "").trim();
+    const cardObjectType = findCatalogObjectType(query.catalog, cardObjectTypeKey);
+    const cardObjectTypeId = String(
+      cardObjectType?.id
+      ?? cardObjectType?.object_type_id
+      ?? cardObjectTypeKey
+      ?? "",
+    ).trim();
+    const cardObjectTypeName = String(cardObjectType?.name ?? objectTypeLabel ?? cardObjectTypeKey).trim() || "Объект";
+    const entityId = String(cardModel?.entityId ?? "").trim();
+    const activeTab = String(entityCard.initialContext?.tab ?? "main").trim() || "main";
+    const objectTitle = String(cardModel?.title ?? "").trim() || "Без названия";
+    const objectStatus = String(cardModel?.status ?? "").trim();
+    const objectOwner = String(
+      cardModel?.rawEntity?.owner_name
+      ?? cardModel?.rawEntity?.owner
+      ?? cardModel?.rawEntity?.owner_id
+      ?? "",
+    ).trim();
+    const objectCreatedAt = String(cardModel?.createdAt ?? "").trim();
+    const selectedScope = entityId
+      ? `object-card:${cardObjectTypeId || cardObjectTypeKey}:${entityId}:${activeTab}`
+      : "object-card";
+
+    return {
+      surfaceId: EMBEDDED_SURFACE_IDS.OBJECT_CARD,
+      contextData: {
+        tenantId: String(tenantId ?? "0"),
+        userId: resolvePlatformDashboardUserId(),
+        objectTypeId: cardObjectTypeId,
+        objectTypeName: cardObjectTypeName,
+        objectId: entityId,
+        objectTitle,
+        activeTab,
+        selectedScope,
+        metadata: {
+          objectStatus,
+          objectOwner,
+          objectCreatedAt,
+        },
+      },
+      inputPlaceholder: "Спросите ЯСИИ о текущем объекте...",
+    };
+  }, [
+    entityCard.cardModel,
+    entityCard.initialContext?.tab,
+    objectTypeKey,
+    objectTypeLabel,
+    query.catalog,
+    tenantId,
+  ]);
 
   const canConfigureEntityCard =
     entityCardEnabled &&
@@ -169,6 +232,105 @@ export default function ObjectTableView({
     objectTypeKey,
     viewKey: activeViewKey,
   });
+
+  const registryFieldLabels = useMemo(() => {
+    const labels = {};
+
+    for (const column of tableData.columns) {
+      const key = String(column?.key ?? "").trim();
+      if (!key) {
+        continue;
+      }
+
+      labels[key] = String(column?.label ?? key).trim() || key;
+    }
+
+    const objectType = findCatalogObjectType(query.catalog, objectTypeKey);
+
+    for (const field of getObjectTypeFields(objectType)) {
+      const key = String(field?.key ?? "").trim();
+      if (!key) {
+        continue;
+      }
+
+      labels[key] = String(field?.name || field?.label || key).trim() || key;
+    }
+
+    return labels;
+  }, [query.catalog, objectTypeKey, tableData.columns]);
+
+  const registrySurfaceContext = useMemo(() => {
+    const objectType = findCatalogObjectType(query.catalog, objectTypeKey);
+    const registryId = String(
+      objectType?.id
+      ?? objectType?.object_type_id
+      ?? objectTypeKey
+      ?? "",
+    ).trim();
+    const registryName = String(objectType?.name ?? objectTypeLabel ?? objectTypeKey).trim() || "Реестр";
+    const viewId = String(
+      activeViewKey
+      ?? effectiveContract?.meta?.viewId
+      ?? effectiveContract?.key
+      ?? "default",
+    ).trim();
+    const viewName = String(
+      effectiveContract?.name
+      ?? activeViewContract?.name
+      ?? DEFAULT_VIEW_LABEL,
+    ).trim();
+    const filterLines = formatRegistryFilterConditions(
+      effectiveContract?.query?.filters?.conditions || [],
+      registryFieldLabels,
+    );
+    const sortLines = formatRegistrySortRules(
+      effectiveContract?.query?.sort?.rules || [],
+      registryFieldLabels,
+    );
+    const recordCount = Number(tableData.pagination?.total ?? 0);
+    const visibleColumns = tableData.columns
+      .map((column) => String(column?.label ?? "").trim())
+      .filter(Boolean)
+      .join("|");
+    const selectedScope = `registry:${registryId || registryName}:${viewId}`;
+
+    return {
+      surfaceId: EMBEDDED_SURFACE_IDS.REGISTRY,
+      contextData: {
+        tenantId: String(tenantId ?? "0"),
+        userId: resolvePlatformDashboardUserId(),
+        registryId,
+        registryName,
+        viewId,
+        viewName,
+        selectedCount: 0,
+        activeFilters: filterLines.length ? filterLines.join("; ") : "",
+        activeSorts: sortLines.length ? sortLines.join("; ") : "",
+        searchQuery: "",
+        selectedScope,
+        metadata: {
+          recordCount: String(recordCount),
+          visibleColumns,
+        },
+      },
+      inputPlaceholder: "Спросите ЯСИИ о текущем реестре...",
+    };
+  }, [
+    activeViewContract?.name,
+    activeViewKey,
+    effectiveContract,
+    objectTypeKey,
+    objectTypeLabel,
+    query.catalog,
+    registryFieldLabels,
+    tableData.columns,
+    tableData.pagination?.total,
+    tenantId,
+  ]);
+
+  const yasiiSurfaceContext = entityCard.isOpen
+    ? objectCardSurfaceContext
+    : registrySurfaceContext;
 
   const { toggleColumnSort } = useObjectTableSort({
     effectiveContract,
@@ -299,6 +461,7 @@ export default function ObjectTableView({
   );
 
   return (
+    <YasiiSurfaceContextProvider value={yasiiSurfaceContext}>
     <div className="view-engine-hosted-table">
       {definitionsError ? (
         <div className="designer-error" style={{ marginBottom: 8 }}>
@@ -458,30 +621,31 @@ export default function ObjectTableView({
         objectTypeLabel={objectTypeLabel}
       />
 
-      <ObjectEntityCardModal
-        open={entityCard.isOpen}
-        mode={entityCard.mode}
-        cardModel={entityCard.cardModel}
-        formValues={entityCard.formValues}
-        fieldErrors={entityCard.fieldErrors}
-        onFieldChange={entityCard.setFieldValue}
-        onClose={entityCard.closeCard}
-        onSave={entityCard.save}
-        submitting={entityCard.submitting}
-        submitError={entityCard.submitError}
-        initialContext={entityCard.initialContext}
-        catalog={query.catalog}
-        onEntityUpdated={entityCard.refreshEntity}
-        cardLayout={effectiveContract?.presentation?.card}
-        canConfigureCard={canConfigureEntityCard}
-        onSaveCardLayout={canConfigureEntityCard ? handleSaveCardLayout : null}
-        cardSettingsSaving={cardSettingsSaving}
-        onOpenRelatedEntity={({ entityId, objectTypeKey: relatedObjectTypeKey }) => {
-          void entityCard.openCard(entityId, {
-            objectTypeKey: relatedObjectTypeKey || objectTypeKey,
-          });
-        }}
-      />
+        <ObjectEntityCardModal
+          open={entityCard.isOpen}
+          mode={entityCard.mode}
+          cardModel={entityCard.cardModel}
+          formValues={entityCard.formValues}
+          fieldErrors={entityCard.fieldErrors}
+          onFieldChange={entityCard.setFieldValue}
+          onClose={entityCard.closeCard}
+          onSave={entityCard.save}
+          submitting={entityCard.submitting}
+          submitError={entityCard.submitError}
+          initialContext={entityCard.initialContext}
+          catalog={query.catalog}
+          onEntityUpdated={entityCard.refreshEntity}
+          cardLayout={effectiveContract?.presentation?.card}
+          canConfigureCard={canConfigureEntityCard}
+          onSaveCardLayout={canConfigureEntityCard ? handleSaveCardLayout : null}
+          cardSettingsSaving={cardSettingsSaving}
+          onOpenRelatedEntity={({ entityId, objectTypeKey: relatedObjectTypeKey }) => {
+            void entityCard.openCard(entityId, {
+              objectTypeKey: relatedObjectTypeKey || objectTypeKey,
+            });
+          }}
+        />
     </div>
+    </YasiiSurfaceContextProvider>
   );
 }

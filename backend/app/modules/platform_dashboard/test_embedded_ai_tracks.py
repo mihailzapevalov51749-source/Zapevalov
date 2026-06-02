@@ -21,7 +21,7 @@ from app.modules.platform_dashboard_analyzer.yasii_checks import (
 def test_work_item_track_assignments():
     assert work_items_by_track("ace")
     assert len(work_items_by_track("ace")) == 5
-    assert len(work_items_by_track("yasii")) == 69
+    assert len(work_items_by_track("yasii")) == 75
     for key in ACE_TRACK_ITEM_KEYS:
         assert work_item_track(key) == "ace"
     assert work_item_track("P1-W01") == "yasii"
@@ -34,8 +34,8 @@ def test_track_weight_distribution():
     total_weight = sum(item.weight for item in YASII_WORK_ITEMS)
 
     assert ace_weight == 50
-    assert yasii_weight == 950
-    assert total_weight == 1000
+    assert yasii_weight == 1350
+    assert total_weight == 1400
     assert ace_weight + yasii_weight == total_weight
 
 
@@ -67,7 +67,9 @@ def test_embedded_ai_rollups_structure():
     assert rollups.ace.checks_passed == 1
     assert rollups.ace.checks_total == 5
     assert rollups.yasii.checks_passed == 1
-    assert rollups.yasii.checks_total == 69
+    assert rollups.yasii.checks_total == 75
+    assert rollups.container_implementation_readiness >= rollups.container_release_readiness
+    assert rollups.yasii.implementation_readiness >= rollups.yasii.release_readiness
 
 
 def test_analyzer_track_check_rollups():
@@ -79,4 +81,4 @@ def test_analyzer_track_check_rollups():
     assert ace_passed == 1
     assert ace_total == 5
     assert yasii_passed == 0
-    assert yasii_total == 69
+    assert yasii_total == 75

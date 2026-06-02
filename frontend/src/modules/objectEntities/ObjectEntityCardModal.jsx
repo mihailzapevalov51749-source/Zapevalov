@@ -1,5 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import {
+  isTopOverlay,
+  registerOverlay,
+  unregisterOverlay,
+} from "../../shared/overlay/overlayStack.js";
 
 import {
   entityCardModalStyle,
@@ -52,6 +57,29 @@ export default function ObjectEntityCardModal({
   onOpenRelatedEntity = null,
 }) {
   const normalizedContext = normalizeInitialContext(initialContext);
+  const overlayIdRef = useRef(`object-card-modal-${Math.random().toString(36).slice(2, 10)}`);
+
+  useEffect(() => {
+    if (!open || !cardModel) {
+      unregisterOverlay(overlayIdRef.current);
+      return undefined;
+    }
+
+    registerOverlay(overlayIdRef.current);
+    return () => {
+      unregisterOverlay(overlayIdRef.current);
+    };
+  }, [cardModel, open]);
+
+  const handleOverlayMouseDown = (event) => {
+    if (!isTopOverlay(overlayIdRef.current)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    onClose?.();
+  };
 
   useEffect(() => {
     if (!open) {
@@ -76,7 +104,7 @@ export default function ObjectEntityCardModal({
   }
 
   return createPortal(
-    <div style={entityCardOverlayStyle} onMouseDown={onClose} role="presentation">
+    <div style={entityCardOverlayStyle} onMouseDown={handleOverlayMouseDown} role="presentation">
       <div
         style={entityCardModalStyle}
         onMouseDown={(event) => event.stopPropagation()}

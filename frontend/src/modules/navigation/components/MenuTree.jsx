@@ -6,6 +6,7 @@ export default function MenuTree({
   items = [],
   activePageId,
   activeSidebarItemId = null,
+  activeSidebarParentIds = [],
   onSelectPage,
   onItemAction,
   isEditMode,
@@ -57,6 +58,7 @@ export default function MenuTree({
           item={item}
           activePageId={activePageId}
           activeSidebarItemId={activeSidebarItemId}
+          activeSidebarParentIds={activeSidebarParentIds}
           onSelectPage={onSelectPage}
           onItemAction={onItemAction}
           isEditMode={isEditMode}

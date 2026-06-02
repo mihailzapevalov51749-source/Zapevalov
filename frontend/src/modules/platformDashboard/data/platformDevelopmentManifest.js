@@ -1,5 +1,5 @@
 export const platformDevelopmentManifest = {
-  updatedAt: "2026-05-31T12:00:00",
+  updatedAt: "2026-06-02T18:05:00",
 
   title: "Развитие платформы ЯсноПро",
 
@@ -142,6 +142,18 @@ export const platformDevelopmentManifest = {
     {
       date: "2026-05-29",
       text: "Создание новых legacy-таблиц заблокировано.",
+    },
+    {
+      date: "2026-06-02",
+      text: "Workspace Tabs v2: добавлены типы вкладок, автогенерация slug и универсальные target-поля.",
+    },
+    {
+      date: "2026-06-02",
+      text: "Workspace Tabs Routing Fix: унифицирован путь /workspaces/:workspaceSlug/:tabSlug и синхронизированы breadcrumb/active tab.",
+    },
+    {
+      date: "2026-06-02",
+      text: "Workspace Tabs Canonical Route Fix: контент вкладок рендерится внутри workspace route без replace на /page и /object-types.",
     },
   ],
 
@@ -666,6 +678,45 @@ export const platformDevelopmentManifest = {
       impact:
         "Этапы развития читаются как управленческие фазы, а не как список задач разработки.",
       relatedContours: ["Object Platform"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "workspace-tabs-v2",
+      date: "2026-06-02",
+      title: "Workspace Tabs v2",
+      type: "milestone",
+      description:
+        "Вкладки рабочего пространства расширены с object-only до multi-type (object/page/link/dashboard/documents/process/group) с автогенерацией slug и ручным override.",
+      impact:
+        "Рабочие пространства теперь открывают разные источники контента без жёсткой привязки только к объектам.",
+      relatedContours: ["Object Platform", "Publish"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "workspace-tabs-routing-fix",
+      date: "2026-06-02",
+      title: "Workspace Tabs Routing Fix",
+      type: "quality",
+      description:
+        "Единый маршрут вкладок пространства переведён на формат /workspaces/:workspaceSlug/:tabSlug, добавлена канонизация home-вкладки и синхронизация breadcrumb с tab title.",
+      impact:
+        "Состояние вкладки определяется URL и стабильно восстанавливается при прямом открытии и навигации по вкладкам.",
+      relatedContours: ["Object Platform", "Publish"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "workspace-tabs-canonical-route-fix",
+      date: "2026-06-02",
+      title: "Workspace Tabs Canonical Route Fix",
+      type: "quality",
+      description:
+        "Убран принудительный replace на специализированные runtime-маршруты из workspace flow; URL вкладки сохраняется в формате /workspaces/:workspaceSlug/:tabSlug.",
+      impact:
+        "Навигация, active tab и breadcrumb синхронизируются на уровне canonical workspace route.",
+      relatedContours: ["Object Platform", "Publish"],
       relatedDebt: [],
       relatedAdr: null,
     },

@@ -76,7 +76,7 @@ export default function BlocksList({
           overflow: "visible",
         }}
       >
-        Перетащи блок сюда
+        Создай первый блок
       </div>
     );
   }

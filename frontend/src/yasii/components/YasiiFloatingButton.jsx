@@ -1,33 +1,17 @@
-import { useMemo } from "react";
 import { useLocation } from "react-router-dom";
 
-import { useYasiiSurfaceContext } from "../context/YasiiSurfaceContext.jsx";
-import { resolveSurfaceFromRoute } from "../embedded/resolveSurfaceFromRoute.js";
+import { useYasiiResolvedSurface } from "../hooks/useYasiiResolvedSurface.js";
 import YasiiLauncher from "./YasiiLauncher.jsx";
 
 import "../styles.css";
 
 export default function YasiiFloatingButton() {
   const location = useLocation();
-  const surfaceOverride = useYasiiSurfaceContext();
+  const resolvedSurface = useYasiiResolvedSurface(location.pathname);
 
-  const routeSurface = useMemo(
-    () => resolveSurfaceFromRoute(location.pathname),
-    [location.pathname],
-  );
-
-  const resolvedSurface = useMemo(() => {
-    if (surfaceOverride?.surfaceId) {
-      return {
-        surfaceId: surfaceOverride.surfaceId,
-        contextData: surfaceOverride.contextData ?? routeSurface.contextData,
-        inputPlaceholder:
-          surfaceOverride.inputPlaceholder ?? routeSurface.inputPlaceholder,
-      };
-    }
-
-    return routeSurface;
-  }, [routeSurface, surfaceOverride]);
+  if (location.pathname === "/yasii" || location.pathname.startsWith("/yasii/")) {
+    return null;
+  }
 
   return (
     <YasiiLauncher

@@ -48,9 +48,11 @@ function hasCustomMenuIcon(item) {
 
 function resolveNavigationPath(item) {
   return (
+    item?.targetPath ||
     item?.url ||
     item?.path ||
     item?.route ||
+    item?.meta?.targetPath ||
     item?.meta?.url ||
     item?.meta?.route ||
     null
@@ -92,6 +94,7 @@ export default function MenuItem({
   item,
   activePageId,
   activeSidebarItemId = null,
+  activeSidebarParentIds = [],
   onSelectPage,
   onItemAction,
   isEditMode,
@@ -110,7 +113,10 @@ export default function MenuItem({
   const [isHovered, setIsHovered] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const state = getCollapsedState();
-    return Boolean(state[item.id]);
+    if (state[item.id] !== undefined) {
+      return Boolean(state[item.id]);
+    }
+    return !activeSidebarParentIds.includes(String(item.id));
   });
 
   const isProtectedTitle = isProtectedMenuTitle(item?.title);
@@ -178,13 +184,17 @@ export default function MenuItem({
       (activeNumericPageId == null &&
         currentDesignerPageId != null &&
         itemPageId === currentDesignerPageId));
-  const useDesignerSingleActiveItem =
-    sidebarMode === "designer" &&
-    activeSidebarItemId != null &&
-    currentPathname.startsWith("/designer/");
-  const isActive = useDesignerSingleActiveItem
+  const useExplicitActiveItem = activeSidebarItemId != null;
+  const isActive = useExplicitActiveItem
     ? String(item.id) === String(activeSidebarItemId)
     : item.active === true || isPageActiveById || isRouteActive;
+
+  useEffect(() => {
+    if (!activeSidebarParentIds.includes(String(item.id))) {
+      return;
+    }
+    setIsCollapsed(false);
+  }, [activeSidebarParentIds, item.id]);
 
   const visibleChildren = isEditMode
     ? item.children || []
@@ -254,23 +264,29 @@ export default function MenuItem({
   ]);
 
   const handleClick = () => {
+    if (isEditMode) return;
+    if (!item.is_visible && !isSystem) return;
+
+    if (navigationPath) {
+      if (typeof onItemAction === "function") {
+        onItemAction(item, { preventDefault: () => {} });
+        return;
+      }
+      window.history.pushState({}, "", navigationPath);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+      return;
+    }
+
     if (isSection) {
       setIsCollapsed((prev) => {
         const next = !prev;
         const state = getCollapsedState();
-
         state[item.id] = next;
-
         saveCollapsedState(state);
-
         return next;
       });
-
       return;
     }
-
-    if (isEditMode) return;
-    if (!item.is_visible && !isSystem) return;
 
     if (objectTypeItem && navigationPath) {
       if (typeof onItemAction === "function") {
@@ -499,6 +515,7 @@ export default function MenuItem({
               item={child}
               activePageId={activePageId}
               activeSidebarItemId={activeSidebarItemId}
+              activeSidebarParentIds={activeSidebarParentIds}
               onSelectPage={onSelectPage}
               onItemAction={onItemAction}
               isEditMode={isEditMode}

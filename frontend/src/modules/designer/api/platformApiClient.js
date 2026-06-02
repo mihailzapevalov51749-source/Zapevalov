@@ -1,6 +1,7 @@
 import axios from "axios";
 
 import { getToken, logout } from "../../../api/authApi";
+import { recordApiActivity } from "../../../shared/userActivity/userActivityTracker";
 
 const baseURL =
   import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8010";
@@ -18,6 +19,8 @@ platformApiClient.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  recordApiActivity();
 
   return config;
 });

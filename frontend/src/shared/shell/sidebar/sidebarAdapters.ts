@@ -26,6 +26,8 @@ export type RuntimeSidebarAdapterInput = {
   reloadNavigation?: () => void | Promise<void>;
   activePath?: string;
   activePageId?: string | number;
+  activeItemId?: string | null;
+  activeParentIds?: string[];
   isEditMode?: boolean;
   isSaving?: boolean;
   onChangeMenuScale?: (value: number) => void;
@@ -420,9 +422,11 @@ function resolveRuntimeItemId(item: UnknownRecord, label: string): string {
 
 function resolveRuntimeItemPath(item: UnknownRecord): string | undefined {
   return (
+    asString(item.targetPath) ??
     asString(item.path) ??
     asString(item.url) ??
     asString(item.route) ??
+    asString(asRecord(item.meta)?.targetPath) ??
     undefined
   );
 }
@@ -924,16 +928,19 @@ export function createRuntimeSidebarContract(
     isSaving: Boolean(input.isSaving),
     menuScale: input.menuScale ?? 1,
     activePageId,
+    activeItemId: input.activeItemId ?? undefined,
     actions: buildRuntimeActions(input, capabilities),
     capabilities,
     navigationItems,
     reloadNavigation: input.reloadNavigation,
     onChangeMenuScale: input.onChangeMenuScale,
+    activeParentIds: Array.isArray(input.activeParentIds) ? input.activeParentIds : [],
   } as AppSidebarContract & {
     navigationItems: unknown[];
     reloadNavigation?: () => void | Promise<void>;
     isSaving?: boolean;
     onChangeMenuScale?: (value: number) => void;
+    activeParentIds?: string[];
   };
 }
 

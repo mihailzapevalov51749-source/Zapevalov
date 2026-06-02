@@ -4,6 +4,7 @@ from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+from app.modules.users.models import User
 
 from app.modules.quality_issues.constants import (
     QualityIssueAiFixStatus,
@@ -142,7 +143,7 @@ class QualityIssue(Base):
     )
 
     created_by_user = relationship(
-        "User",
+        User,
         foreign_keys=[created_by],
         lazy="joined",
     )
