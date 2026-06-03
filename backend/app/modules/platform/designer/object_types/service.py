@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -5,6 +6,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.modules.platform.designer.object_types import repository
+from app.modules.platform.designer.publish import repository as publish_repository
+from app.modules.platform.shared.enums import PublishStatus
 from app.modules.navigation.models import NavigationItem
 from app.modules.platform.designer.object_types.models import DesignerObjectType
 from app.modules.platform.designer.view_definitions import service as view_service
@@ -26,7 +29,26 @@ def _actor_user_id(current_user: User | None) -> int | None:
     return current_user.id if current_user else None
 
 
-def _to_read(entity: DesignerObjectType) -> ObjectTypeRead:
+def _resolve_last_published_at(
+    db: Session,
+    tenant_id: int,
+    entity: DesignerObjectType,
+) -> datetime | None:
+    if entity.last_published_at is not None:
+        return entity.last_published_at
+
+    record = publish_repository.get_latest_publish_record(db, tenant_id)
+    if record and record.status == PublishStatus.SUCCESS.value:
+        return record.published_at
+
+    return None
+
+
+def _to_read(entity: DesignerObjectType, db: Session | None = None) -> ObjectTypeRead:
+    last_published_at = entity.last_published_at
+    if last_published_at is None and db is not None:
+        last_published_at = _resolve_last_published_at(db, entity.tenant_id, entity)
+
     return ObjectTypeRead(
         id=entity.id,
         tenant_id=entity.tenant_id,
@@ -44,7 +66,7 @@ def _to_read(entity: DesignerObjectType) -> ObjectTypeRead:
         settings_json=entity.settings_json or {},
         governance_json=entity.governance_json or {},
         draft_revision=entity.draft_revision,
-        last_published_at=entity.last_published_at,
+        last_published_at=last_published_at,
         created_at=entity.created_at,
         updated_at=entity.updated_at,
         deleted_at=entity.deleted_at,
@@ -52,13 +74,13 @@ def _to_read(entity: DesignerObjectType) -> ObjectTypeRead:
     )
 
 
-def _to_list_item(entity: DesignerObjectType) -> ObjectTypeListItem:
-    return ObjectTypeListItem(**_to_read(entity).model_dump())
+def _to_list_item(entity: DesignerObjectType, db: Session | None = None) -> ObjectTypeListItem:
+    return ObjectTypeListItem(**_to_read(entity, db).model_dump())
 
 
 def list_object_types(db: Session, tenant_id: int) -> list[ObjectTypeListItem]:
     entities = repository.list_object_types(db, tenant_id)
-    return [_to_list_item(entity) for entity in entities]
+    return [_to_list_item(entity, db) for entity in entities]
 
 
 def get_object_type(
@@ -74,7 +96,7 @@ def get_object_type(
             detail="ObjectType не найден",
         )
 
-    return _to_read(entity)
+    return _to_read(entity, db)
 
 
 def create_object_type(
@@ -127,7 +149,7 @@ def create_object_type(
         current_user=current_user,
     )
 
-    return _to_read(entity)
+    return _to_read(entity, db)
 
 
 def update_object_type(
@@ -218,7 +240,7 @@ def update_object_type(
             detail="ObjectType с таким key уже существует в tenant",
         ) from exc
 
-    return _to_read(entity)
+    return _to_read(entity, db)
 
 
 def delete_object_type(
@@ -248,4 +270,4 @@ def delete_object_type(
     entity.updated_by = _actor_user_id(current_user)
     entity = repository.soft_delete_object_type(db, entity)
     db.commit()
-    return _to_read(entity)
+    return _to_read(entity, db)

@@ -26,7 +26,11 @@ export function catalogFieldToFieldDef(field) {
         : {};
 
   const isMultiChoice = rawType === "multi_choice";
-  const type = isMultiChoice ? "choice" : normalizeFieldType(rawType);
+  const isChoiceLike =
+    rawType === "select" || rawType === "status" || rawType === "choice";
+  const type = isMultiChoice || isChoiceLike
+    ? "choice"
+    : normalizeFieldType(rawType);
 
   const options = Array.isArray(settings.options) ? settings.options : [];
 

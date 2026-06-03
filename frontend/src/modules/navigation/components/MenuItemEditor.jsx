@@ -1,44 +1,14 @@
 import { useRef, useState } from "react";
-import { Eye, EyeOff, Trash2, X, Check, Ban } from "lucide-react";
+import { Eye, EyeOff, Trash2, X, Check } from "lucide-react";
+
+import MenuColorPicker from "../../../shared/navigation/MenuColorPicker";
 
 import { uploadIcon } from "../../../api/filesApi";
 
 const PROTECTED_TITLES = ["главная страница", "мои задачи"];
 
-const MENU_COLORS = [
-  "",
-  "#ffffff",
-
-  "#0f172a",
-  "#334155",
-  "#475569",
-  "#64748b",
-
-  "#2563eb",
-  "#3b82f6",
-  "#0ea5e9",
-  "#06b6d4",
-
-  "#16a34a",
-  "#22c55e",
-  "#84cc16",
-
-  "#f59e0b",
-  "#f97316",
-
-  "#ef4444",
-  "#ec4899",
-  "#a855f7",
-];
-
 const isProtectedMenuTitle = (title) => {
   return PROTECTED_TITLES.includes(String(title || "").trim().toLowerCase());
-};
-
-const getColorTitle = (color) => {
-  if (color === "") return "Без цвета";
-  if (color === "#ffffff") return "Белый";
-  return color;
 };
 
 export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
@@ -74,7 +44,6 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
     item.is_visible === undefined ? true : Boolean(item.is_visible)
   );
   const [showIcon, setShowIcon] = useState(item.show_icon !== false);
-  const [isColorPaletteOpen, setIsColorPaletteOpen] = useState(false);
 
   const handleUploadIcon = async (event) => {
     const file = event.target.files?.[0];
@@ -165,56 +134,12 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
           }
         />
 
-        <div style={colorPickerWrapperStyle}>
-          <button
-            type="button"
-            onClick={() => setIsColorPaletteOpen((prev) => !prev)}
-            style={{
-              ...colorCurrentButtonStyle,
-              background: color || "#ffffff",
-              border: color ? "2px solid #ffffff" : "1px dashed #94a3b8",
-            }}
-            title="Выбрать цвет"
-          >
-            {!color && <Ban size={12} color="#64748b" />}
-          </button>
-
-          {isColorPaletteOpen && (
-            <div style={colorPaletteStyle}>
-              {MENU_COLORS.map((paletteColor) => {
-                const isActive = paletteColor === color;
-                const isNoColor = paletteColor === "";
-                const isWhite = paletteColor === "#ffffff";
-
-                return (
-                  <button
-                    key={paletteColor || "no-color"}
-                    type="button"
-                    onClick={() => {
-                      setColor(paletteColor);
-                      setIsColorPaletteOpen(false);
-                    }}
-                    style={{
-                      ...colorButtonStyle,
-                      background: paletteColor || "#ffffff",
-                      border: isNoColor
-                        ? "1px dashed #94a3b8"
-                        : isWhite
-                          ? "1px solid #cbd5e1"
-                          : "none",
-                      boxShadow: isActive
-                        ? "0 0 0 2px #ffffff, 0 0 0 4px rgba(37,99,235,0.45)"
-                        : "none",
-                    }}
-                    title={getColorTitle(paletteColor)}
-                  >
-                    {isNoColor && <Ban size={11} color="#64748b" />}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <MenuColorPicker
+          color={color}
+          onChange={setColor}
+          allowEmpty
+          title="Выбрать цвет"
+        />
       </div>
 
       <div
@@ -356,52 +281,6 @@ const titleInputStyle = {
   fontSize: 13,
   outline: "none",
   boxSizing: "border-box",
-};
-
-const colorPickerWrapperStyle = {
-  position: "relative",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  width: 28,
-  height: 28,
-};
-
-const colorCurrentButtonStyle = {
-  width: 24,
-  height: 24,
-  borderRadius: "50%",
-  boxShadow: "0 0 0 1px rgba(203,213,225,0.9)",
-  cursor: "pointer",
-  flexShrink: 0,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
-
-const colorPaletteStyle = {
-  position: "absolute",
-  top: 34,
-  right: 0,
-  zIndex: 50,
-  display: "grid",
-  gridTemplateColumns: "repeat(4, 18px)",
-  gap: 7,
-  padding: 8,
-  borderRadius: 10,
-  border: "1px solid rgba(203,213,225,0.9)",
-  background: "#ffffff",
-  boxShadow: "0 12px 28px rgba(15,23,42,0.18)",
-};
-
-const colorButtonStyle = {
-  width: 18,
-  height: 18,
-  borderRadius: "50%",
-  cursor: "pointer",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
 };
 
 const controlsRowStyle = {

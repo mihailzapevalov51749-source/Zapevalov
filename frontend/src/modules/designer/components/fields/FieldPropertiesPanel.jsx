@@ -1,5 +1,9 @@
+import ChoiceOptionsEditor from "./ChoiceOptionsEditor";
 import { FIELD_TYPE_OPTIONS } from "./CreateFieldModal";
-import { isChoiceFieldType } from "./fieldFormUtils";
+import {
+  createEmptyChoiceOption,
+  isChoiceFieldType,
+} from "./fieldFormUtils";
 
 import "./fieldPropertiesPanel.css";
 
@@ -70,9 +74,21 @@ export default function FieldPropertiesPanel({
               id="field-prop-type"
               className="designer-select"
               value={draft.field_type}
-              onChange={(event) =>
-                onDraftChange?.({ ...draft, field_type: event.target.value })
-              }
+              onChange={(event) => {
+                const nextFieldType = event.target.value;
+                const patch = { field_type: nextFieldType };
+
+                if (
+                  isChoiceFieldType(nextFieldType) &&
+                  (!Array.isArray(draft.choice_options) ||
+                    draft.choice_options.length === 0)
+                ) {
+                  patch.choice_options = [createEmptyChoiceOption()];
+                  patch.choice_multiple = nextFieldType === "multi_choice";
+                }
+
+                onDraftChange?.({ ...draft, ...patch });
+              }}
             >
               {FIELD_TYPE_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -100,23 +116,17 @@ export default function FieldPropertiesPanel({
 
           {showChoiceOptions ? (
             <div className="designer-field-form__group">
-              <label className="designer-label" htmlFor="field-prop-options">
-                Варианты значений
-              </label>
-              <textarea
-                id="field-prop-options"
-                className="designer-textarea designer-field-form__textarea"
-                value={draft.choice_options_text}
-                onChange={(event) =>
-                  onDraftChange?.({
-                    ...draft,
-                    choice_options_text: event.target.value,
-                  })
+              <ChoiceOptionsEditor
+                options={draft.choice_options || []}
+                multiple={Boolean(draft.choice_multiple)}
+                onOptionsChange={(choice_options) =>
+                  onDraftChange?.({ ...draft, choice_options })
                 }
-                placeholder={"Новый\nВ работе\nЗавершён"}
-                rows={5}
+                onMultipleChange={(choice_multiple) =>
+                  onDraftChange?.({ ...draft, choice_multiple })
+                }
+                error={draft.choice_options_error || ""}
               />
-              <p className="designer-field-form__hint">Один вариант на строку</p>
             </div>
           ) : null}
 

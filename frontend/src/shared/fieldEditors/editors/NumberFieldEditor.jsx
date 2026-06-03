@@ -1,11 +1,19 @@
-import { fieldEditorInputStyle } from "../fieldEditorStyles";
+import {
+  fieldEditorInlineInputStyle,
+  fieldEditorInputStyle,
+} from "../fieldEditorStyles";
 
 export default function NumberFieldEditor({
   value,
   onChange,
   readOnly = false,
   autoFocus = false,
+  inline = false,
+  onCancel,
+  onCommit,
 }) {
+  const style = inline ? fieldEditorInlineInputStyle : fieldEditorInputStyle;
+
   const handleChange = (event) => {
     const raw = event.target.value;
 
@@ -21,6 +29,19 @@ export default function NumberFieldEditor({
     }
   };
 
+  const handleKeyDown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onCancel?.();
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      onCommit?.();
+    }
+  };
+
   return (
     <input
       type="number"
@@ -30,7 +51,8 @@ export default function NumberFieldEditor({
       disabled={readOnly}
       autoFocus={autoFocus}
       onChange={handleChange}
-      style={fieldEditorInputStyle}
+      onKeyDown={handleKeyDown}
+      style={style}
     />
   );
 }

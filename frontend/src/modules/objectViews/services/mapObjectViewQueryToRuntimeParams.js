@@ -1,3 +1,4 @@
+import { systemColumnKeyToRuntimeSortField } from "../../../shared/viewEngine/systemColumnKeys";
 import { getPrimarySortState } from "./sortRulesUtils";
 import {
   getQuickFilterConditions,
@@ -32,7 +33,7 @@ export function mapObjectViewQueryToRuntimeParams({
   const filters = buildRuntimeFilterParams(mergedConditions);
 
   return {
-    sort: resolvedSort.field,
+    sort: systemColumnKeyToRuntimeSortField(resolvedSort.field),
     order: resolvedSort.order,
     limit,
     offset,

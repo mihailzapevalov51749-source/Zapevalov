@@ -1,4 +1,9 @@
-import { fieldEditorInputStyle } from "../fieldEditorStyles";
+import { useRef } from "react";
+
+import {
+  fieldEditorInlineInputStyle,
+  fieldEditorInputStyle,
+} from "../fieldEditorStyles";
 
 function normalizeOptions(column) {
   const rawOptions = column?.options || column?.settings?.options || [];
@@ -34,9 +39,28 @@ export default function ChoiceFieldEditor({
   onChange,
   readOnly = false,
   autoFocus = false,
+  inline = false,
+  openOnMount = false,
+  onCancel,
+  onDismiss,
 }) {
+  const selectRef = useRef(null);
   const options = normalizeOptions(column);
   const isMultiple = Boolean(column?.multiple);
+  const style = inline ? fieldEditorInlineInputStyle : fieldEditorInputStyle;
+
+  const useListbox =
+    openOnMount && inline && !isMultiple && options.length > 0;
+  const listboxSize = useListbox
+    ? Math.min(options.length + 1, 8)
+    : undefined;
+
+  const handleKeyDown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onCancel?.();
+    }
+  };
 
   if (isMultiple) {
     const selected = Array.isArray(value) ? value.map(String) : [];
@@ -81,7 +105,9 @@ export default function ChoiceFieldEditor({
 
   return (
     <select
+      ref={selectRef}
       className="field-editor-input"
+      size={listboxSize}
       value={value != null && value !== "" ? String(value) : ""}
       disabled={readOnly}
       autoFocus={autoFocus}
@@ -89,7 +115,18 @@ export default function ChoiceFieldEditor({
         const next = event.target.value;
         onChange?.(next === "" ? "" : next);
       }}
-      style={fieldEditorInputStyle}
+      onBlur={() => onDismiss?.()}
+      onKeyDown={handleKeyDown}
+      style={{
+        ...style,
+        ...(useListbox
+          ? {
+              height: "auto",
+              minHeight: 24,
+              padding: "2px 0",
+            }
+          : {}),
+      }}
     >
       <option value="">—</option>
       {options.map((option) => (

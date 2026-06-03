@@ -4,8 +4,6 @@ import { mergeEffectiveContract } from "../services/mergeEffectiveContract";
 
 import { ObjectEntityCardModal } from "../../objectEntities";
 import useObjectEntityCard from "../../objectEntities/hooks/useObjectEntityCard";
-import ObjectCreateEntityDialog from "../entity/ObjectCreateEntityDialog";
-import useObjectViewCreateEntity from "../hooks/useObjectViewCreateEntity";
 import { getColumnPresentationKey } from "../services/columnPresentationUtils";
 import {
   findCatalogObjectType,
@@ -102,19 +100,17 @@ export default function ObjectTableView({
     listItems: query.listResult?.items || [],
     titleFieldKey,
     enabled: entityCardEnabled,
-    onSaved: handleEntitySaved,
-    mode: "edit",
+    onSaved: async (entity, meta) => {
+      if (meta?.created) {
+        await handleEntityCreated();
+        return;
+      }
+
+      await handleEntitySaved();
+    },
   });
 
   const tableSurfaceRef = useRef(null);
-
-  const createEntity = useObjectViewCreateEntity({
-    tenantId,
-    objectTypeKey,
-    catalog: query.catalog,
-    enabled: createEntityEnabled,
-    onCreated: handleEntityCreated,
-  });
 
   const objectTypeLabel = useMemo(() => {
     const objectType = findCatalogObjectType(query.catalog, objectTypeKey);
@@ -502,9 +498,9 @@ export default function ObjectTableView({
             onOpenColumns={() => setIsColumnsPanelOpen(true)}
             isColumnsPanelOpen={isColumnsPanelOpen}
             activeFilterCount={activeFilterCount}
-            canCreateEntity={createEntity.canCreate}
-            onCreateEntity={createEntity.openDialog}
-            creatingEntity={createEntity.submitting}
+            canCreateEntity={entityCard.canCreate && createEntityEnabled}
+            onCreateEntity={entityCard.openCreateCard}
+            creatingEntity={entityCard.isCreateMode && entityCard.submitting}
             onRefresh={query.reload}
             refreshing={query.loading}
             loading={definitionsLoading}
@@ -608,26 +604,13 @@ export default function ObjectTableView({
         </div>
       ) : null}
 
-      <ObjectCreateEntityDialog
-        open={createEntity.isDialogOpen}
-        onClose={createEntity.closeDialog}
-        onSubmit={createEntity.submit}
-        fields={createEntity.creatableFields}
-        formValues={createEntity.formValues}
-        onFieldChange={createEntity.setFieldValue}
-        fieldErrors={createEntity.fieldErrors}
-        submitting={createEntity.submitting}
-        submitError={createEntity.submitError}
-        objectTypeLabel={objectTypeLabel}
-      />
-
         <ObjectEntityCardModal
           open={entityCard.isOpen}
-          mode={entityCard.mode}
+          mode={entityCard.cardMode}
           cardModel={entityCard.cardModel}
           formValues={entityCard.formValues}
           fieldErrors={entityCard.fieldErrors}
-          onFieldChange={entityCard.setFieldValue}
+          onFieldChange={entityCard.updateFieldValue}
           onClose={entityCard.closeCard}
           onSave={entityCard.save}
           submitting={entityCard.submitting}

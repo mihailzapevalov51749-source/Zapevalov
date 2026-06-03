@@ -3,9 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import { getApiErrorMessage } from "../../api/platformApiClient";
 import * as designerApi from "../../api/designerApi";
-import PropertiesPanel from "../common/PropertiesPanel";
-
-const VIEW_TYPES = ["table", "form", "card", "list"];
+import ViewPropertiesPanel from "../views/ViewPropertiesPanel";
 
 export default function ViewsTab({ tenantId, objectTypeId }) {
   const [items, setItems] = useState([]);
@@ -25,6 +23,7 @@ export default function ViewsTab({ tenantId, objectTypeId }) {
     return (fields || []).map((f) => ({
       key: f.key,
       name: f.name || f.key,
+      is_system: Boolean(f.is_system),
     }));
   }, [fields]);
 
@@ -236,26 +235,46 @@ export default function ViewsTab({ tenantId, objectTypeId }) {
     });
   };
 
-  const moveFieldOrder = (fieldKey, direction) => {
+  const reorderFieldOrder = (sourceKey, targetKey, position = "before") => {
     setDraft((prev) => {
       if (!prev) return prev;
 
-      const order = [...(prev.projection.field_order || [])];
-      const idx = order.indexOf(fieldKey);
-      if (idx < 0) return prev;
+      const currentOrder = [...(prev.projection.field_order || [])];
+      const allKeys = fieldOptions.map((field) => field.key);
+      const unified = [...currentOrder];
 
-      const nextIdx = direction === "up" ? idx - 1 : idx + 1;
-      if (nextIdx < 0 || nextIdx >= order.length) return prev;
+      for (const key of allKeys) {
+        if (!unified.includes(key)) {
+          unified.push(key);
+        }
+      }
 
-      const tmp = order[nextIdx];
-      order[nextIdx] = order[idx];
-      order[idx] = tmp;
+      const fromIndex = unified.indexOf(sourceKey);
+      const targetIndex = unified.indexOf(targetKey);
+
+      if (fromIndex < 0 || targetIndex < 0 || fromIndex === targetIndex) {
+        return prev;
+      }
+
+      unified.splice(fromIndex, 1);
+
+      let insertIndex = unified.indexOf(targetKey);
+
+      if (insertIndex < 0) {
+        return prev;
+      }
+
+      if (position === "after") {
+        insertIndex += 1;
+      }
+
+      unified.splice(insertIndex, 0, sourceKey);
 
       return {
         ...prev,
         projection: {
           ...prev.projection,
-          field_order: order,
+          field_order: unified,
         },
       };
     });
@@ -329,244 +348,20 @@ export default function ViewsTab({ tenantId, objectTypeId }) {
       </div>
 
       {selected && draft ? (
-        <PropertiesPanel
-          title="Свойства вкладки"
+        <ViewPropertiesPanel
+          draft={draft}
+          isSelectedSystemDefault={isSelectedSystemDefault}
+          fieldOptions={fieldOptions}
+          saving={saving}
+          onDraftChange={setDraft}
           onClose={() => setSelectedId(null)}
-          footer={
-            <>
-              <button
-                type="button"
-                className="designer-btn designer-btn--danger"
-                onClick={handleDelete}
-                disabled={isSelectedSystemDefault}
-              >
-                Удалить
-              </button>
-              <button
-                type="button"
-                className="designer-btn designer-btn--primary"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                {saving ? "Сохранение..." : "Сохранить"}
-              </button>
-            </>
-          }
-        >
-          <label className="designer-label">Название</label>
-          <input
-            className="designer-input"
-            value={draft.name}
-            onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-          />
-          <div style={{ height: 10 }} />
-          <label className="designer-label">Key</label>
-          <input className="designer-input" value={draft.key} disabled />
-          {isSelectedSystemDefault ? (
-            <div className="designer-field-hint">
-              System/default key заблокирован для изменения.
-            </div>
-          ) : null}
-          <div style={{ height: 10 }} />
-          <label className="designer-label">Тип</label>
-          <select
-            className="designer-select"
-            value={draft.view_type}
-            onChange={(e) => setDraft({ ...draft, view_type: e.target.value })}
-          >
-            {VIEW_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-          <div style={{ height: 10 }} />
-          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input
-              type="checkbox"
-              checked={draft.is_active}
-              onChange={(e) =>
-                setDraft({ ...draft, is_active: e.target.checked })
-              }
-            />
-            Активное представление
-          </label>
-          <div style={{ height: 10 }} />
-          <label className="designer-label">Описание</label>
-          <textarea
-            className="designer-textarea"
-            value={draft.description}
-            onChange={(e) =>
-              setDraft({ ...draft, description: e.target.value })
-            }
-          />
-
-          <div style={{ height: 18 }} />
-
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
-            <h4 style={{ margin: 0, fontSize: 14 }}>Projection settings</h4>
-            <button
-              type="button"
-              className="designer-btn"
-              onClick={openRuntimePreviewForView}
-            >
-              Открыть preview
-            </button>
-          </div>
-
-          <div style={{ height: 12 }} />
-
-          <h4 style={{ margin: "0 0 8px", fontSize: 13, color: "#475569" }}>
-            Visible fields
-          </h4>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {fieldOptions.map((f) => (
-              <label key={f.key} style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <input
-                  type="checkbox"
-                  checked={(draft.projection.visible_fields || []).includes(f.key)}
-                  onChange={() => toggleVisibleField(f.key)}
-                />
-                <span style={{ fontSize: 13 }}>{f.name}</span>
-              </label>
-            ))}
-          </div>
-
-          <div style={{ height: 16 }} />
-
-          <h4 style={{ margin: "0 0 8px", fontSize: 13, color: "#475569" }}>
-            Field order
-          </h4>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {(draft.projection.field_order || []).map((fieldKey, idx) => {
-              const field = fieldOptions.find((f) => f.key === fieldKey);
-              return (
-                <div
-                  key={`${fieldKey}-${idx}`}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 10,
-                    padding: "8px 10px",
-                    borderRadius: 12,
-                    border: "1px solid var(--designer-border)",
-                    background: "#fff",
-                  }}
-                >
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {field?.name || fieldKey}
-                    </div>
-                    <div style={{ fontSize: 11, color: "#64748b" }}>
-                      {fieldKey}
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      type="button"
-                      className="designer-btn"
-                      disabled={idx === 0}
-                      onClick={() => moveFieldOrder(fieldKey, "up")}
-                      title="Вверх"
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      className="designer-btn"
-                      disabled={idx === (draft.projection.field_order || []).length - 1}
-                      onClick={() => moveFieldOrder(fieldKey, "down")}
-                      title="Вниз"
-                    >
-                      ↓
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div style={{ height: 16 }} />
-
-          <label className="designer-label">Title field</label>
-          <select
-            className="designer-select"
-            value={draft.projection.title_field || ""}
-            onChange={(e) => {
-              const v = e.target.value;
-              setDraft({
-                ...draft,
-                projection: {
-                  ...draft.projection,
-                  title_field: v ? v : null,
-                },
-              });
-            }}
-          >
-            <option value="">null</option>
-            {fieldOptions.map((f) => (
-              <option key={f.key} value={f.key}>
-                {f.name}
-              </option>
-            ))}
-          </select>
-
-          <div style={{ height: 16 }} />
-
-          <label className="designer-label">Default sort</label>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: 10 }}>
-            <select
-              className="designer-select"
-              value={draft.projection.default_sort.field || ""}
-              onChange={(e) => {
-                const v = e.target.value;
-                setDraft({
-                  ...draft,
-                  projection: {
-                    ...draft.projection,
-                    default_sort: {
-                      ...draft.projection.default_sort,
-                      field: v ? v : null,
-                    },
-                  },
-                });
-              }}
-            >
-              <option value="">created_at</option>
-              {fieldOptions.map((f) => (
-                <option key={f.key} value={f.key}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
-
-            <select
-              className="designer-select"
-              value={draft.projection.default_sort.order || "desc"}
-              onChange={(e) => {
-                const order = e.target.value;
-                setDraft({
-                  ...draft,
-                  projection: {
-                    ...draft.projection,
-                    default_sort: {
-                      ...draft.projection.default_sort,
-                      order,
-                    },
-                  },
-                });
-              }}
-            >
-              <option value="asc">asc</option>
-              <option value="desc">desc</option>
-            </select>
-          </div>
-
-          <div className="designer-field-hint">
-            Preview обновится после Publish catalog (projection берётся из published catalog).
-          </div>
-        </PropertiesPanel>
+          onSave={handleSave}
+          onDelete={handleDelete}
+          onOpenRuntimePreview={openRuntimePreviewForView}
+          titleFieldKey={draft.projection?.title_field}
+          onToggleVisibleField={toggleVisibleField}
+          onReorderField={reorderFieldOrder}
+        />
       ) : null}
     </div>
   );

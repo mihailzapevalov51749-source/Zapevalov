@@ -70,10 +70,12 @@ export function normalizeChoiceValue(
     getColumnOptions(column);
 
   if (typeof value === "object") {
-    const label =
+    const rawLabel =
       value.label ||
       value.title ||
       value.name ||
+      value.displayValue ||
+      value.display_value ||
       value.value ||
       "—";
 
@@ -81,12 +83,11 @@ export function normalizeChoiceValue(
       value.id ||
       value.key ||
       value.value ||
-      label;
+      rawLabel;
 
     const matchedOption =
       options.find((option) => {
-        const optionLabel =
-          getOptionLabel(option);
+        const optionLabel = getOptionLabel(option);
 
         const optionId =
           option?.id ||
@@ -95,30 +96,25 @@ export function normalizeChoiceValue(
           optionLabel;
 
         return (
-          String(optionId) ===
-            String(valueId) ||
-          String(optionLabel) ===
-            String(label)
+          String(optionId) === String(valueId) ||
+          String(optionLabel) === String(rawLabel)
         );
       }) || null;
 
     return {
-      label,
+      label: matchedOption ? getOptionLabel(matchedOption) : rawLabel,
 
       color:
         getOptionColor(value) ||
-        getOptionColor(
-          matchedOption
-        ),
+        getOptionColor(matchedOption),
     };
   }
 
-  const label = String(value);
+  const storedValue = String(value);
 
   const matchedOption =
     options.find((option) => {
-      const optionLabel =
-        getOptionLabel(option);
+      const optionLabel = getOptionLabel(option);
 
       const optionId =
         option?.id ||
@@ -127,19 +123,14 @@ export function normalizeChoiceValue(
         optionLabel;
 
       return (
-        String(optionId) ===
-          label ||
-        String(optionLabel) ===
-          label
+        String(optionId) === storedValue ||
+        String(optionLabel) === storedValue
       );
     }) || null;
 
   return {
-    label,
+    label: matchedOption ? getOptionLabel(matchedOption) : storedValue,
 
-    color:
-      getOptionColor(
-        matchedOption
-      ),
+    color: getOptionColor(matchedOption),
   };
 }

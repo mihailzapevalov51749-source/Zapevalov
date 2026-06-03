@@ -60,11 +60,17 @@ export function normalizeUser(value) {
   }
 
   if (typeof value === "object") {
+    const userId = value.userId ?? value.user_id ?? value.id ?? null;
+
     return {
+      userId,
       name:
+        value.display_name ||
+        value.displayName ||
         value.full_name ||
         value.fullName ||
         value.name ||
+        value.username ||
         value.label ||
         value.email ||
         value.value ||
@@ -79,6 +85,19 @@ export function normalizeUser(value) {
         value.avatar_settings ||
         value.avatarSettings ||
         DEFAULT_AVATAR_SETTINGS,
+    };
+  }
+
+  const numericId =
+    typeof value === "number" ||
+    (typeof value === "string" && /^\d+$/.test(String(value).trim()));
+
+  if (numericId) {
+    return {
+      userId: value,
+      name: "—",
+      avatarUrl: "",
+      avatarSettings: DEFAULT_AVATAR_SETTINGS,
     };
   }
 

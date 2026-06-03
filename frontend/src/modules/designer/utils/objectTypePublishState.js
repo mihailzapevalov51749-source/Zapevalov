@@ -12,10 +12,25 @@ export function parseObjectTypeTimestamp(value) {
   return Number.isFinite(ms) ? ms : null;
 }
 
+function readObjectTypeTimestamp(objectType, snakeKey, camelKey) {
+  if (!objectType || typeof objectType !== "object") {
+    return null;
+  }
+
+  return (
+    parseObjectTypeTimestamp(objectType[snakeKey]) ??
+    parseObjectTypeTimestamp(objectType[camelKey])
+  );
+}
+
 /** Object changed in Designer after last catalog publish. */
 export function hasUnpublishedObjectTypeChanges(objectType) {
-  const updatedAt = parseObjectTypeTimestamp(objectType?.updated_at);
-  const lastPublishedAt = parseObjectTypeTimestamp(objectType?.last_published_at);
+  const updatedAt = readObjectTypeTimestamp(objectType, "updated_at", "updatedAt");
+  const lastPublishedAt = readObjectTypeTimestamp(
+    objectType,
+    "last_published_at",
+    "lastPublishedAt",
+  );
 
   if (updatedAt == null || lastPublishedAt == null) {
     return false;

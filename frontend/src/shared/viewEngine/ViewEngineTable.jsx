@@ -20,6 +20,8 @@ import {
   viewEngineTableRootStyle,
 } from "./viewEngineStyles";
 
+import { columnMatchesSortField } from "./systemColumnKeys";
+
 import "./viewEngineTable.css";
 
 /**
@@ -104,10 +106,12 @@ export default function ViewEngineTable({
                 {showRowNumberColumn ? <ViewEngineHeaderRowNumberCell /> : null}
 
                 {columns.map((column) => {
-                  const sortDirection =
-                    activeSortField === column.key
-                      ? sort?.order || null
-                      : null;
+                  const sortDirection = columnMatchesSortField(
+                    column.key,
+                    activeSortField,
+                  )
+                    ? sort?.order || null
+                    : null;
 
                   return (
                     <ViewEngineHeaderCell

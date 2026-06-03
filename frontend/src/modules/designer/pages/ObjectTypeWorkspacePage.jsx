@@ -81,6 +81,15 @@ export default function ObjectTypeWorkspacePage() {
     dispatchDesignerNavigationReload();
   }, []);
 
+  const handleSchemaChanged = useCallback(async () => {
+    try {
+      const objectTypeData = await designerApi.getObjectType(tenantId, objectTypeId);
+      setObjectType(objectTypeData);
+    } catch (err) {
+      console.warn("[ObjectTypeWorkspacePage] Failed to reload object type after schema change", err);
+    }
+  }, [tenantId, objectTypeId]);
+
   const lifecycle = useMemo(
     () =>
       resolveObjectTypeLifecycleState({
@@ -280,7 +289,13 @@ export default function ObjectTypeWorkspacePage() {
       />
     );
   } else if (tab === "fields") {
-    tabContent = <FieldsTab tenantId={tenantId} objectTypeId={objectTypeId} />;
+    tabContent = (
+      <FieldsTab
+        tenantId={tenantId}
+        objectTypeId={objectTypeId}
+        onSchemaChanged={handleSchemaChanged}
+      />
+    );
   } else if (tab === "relations") {
     tabContent = (
       <RelationsTab

@@ -1,5 +1,16 @@
+function getLookupOptions(column) {
+  const rawOptions =
+    column?.options ||
+    column?.settings?.options ||
+    column?.settings?.lookupOptions ||
+    [];
+
+  return Array.isArray(rawOptions) ? rawOptions : [];
+}
+
 export function normalizeLookupValue(
   value,
+  column = null,
   emptyValue = "—"
 ) {
   if (!value) {
@@ -15,6 +26,7 @@ export function normalizeLookupValue(
         .map((item) =>
           normalizeLookupValue(
             item,
+            column,
             emptyValue
           ).label
         )
@@ -30,11 +42,11 @@ export function normalizeLookupValue(
         value.title ||
         value.name ||
         value.label ||
-        value.value ||
         value.displayValue ||
         value.display_value ||
         value.rowTitle ||
         value.row_title ||
+        value.value ||
         emptyValue,
 
       rowId:
@@ -45,8 +57,33 @@ export function normalizeLookupValue(
     };
   }
 
+  const storedValue = String(value);
+  const options = getLookupOptions(column);
+  const matchedOption =
+    options.find((option) => {
+      const optionId =
+        option?.id ??
+        option?.key ??
+        option?.row_id ??
+        option?.rowId ??
+        option?.value;
+
+      return optionId != null && String(optionId) === storedValue;
+    }) || null;
+
+  if (matchedOption) {
+    return {
+      label:
+        matchedOption.label ||
+        matchedOption.title ||
+        matchedOption.name ||
+        storedValue,
+      rowId: matchedOption.row_id ?? matchedOption.rowId ?? matchedOption.id ?? null,
+    };
+  }
+
   return {
-    label: String(value),
+    label: storedValue,
     rowId: null,
   };
 }

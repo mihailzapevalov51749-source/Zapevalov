@@ -3,6 +3,7 @@ import ChoiceFieldEditor from "./editors/ChoiceFieldEditor";
 import DateFieldEditor from "./editors/DateFieldEditor";
 import NumberFieldEditor from "./editors/NumberFieldEditor";
 import TextFieldEditor from "./editors/TextFieldEditor";
+import UserFieldEditor from "./editors/UserFieldEditor";
 
 export const FIELD_EDITOR_TYPE_TEXT = "text";
 export const FIELD_EDITOR_TYPE_TEXTAREA = "textarea";
@@ -12,6 +13,7 @@ export const FIELD_EDITOR_TYPE_DATE = "date";
 export const FIELD_EDITOR_TYPE_DATETIME = "datetime";
 export const FIELD_EDITOR_TYPE_CHOICE = "choice";
 export const FIELD_EDITOR_TYPE_MULTI_CHOICE = "multi_choice";
+export const FIELD_EDITOR_TYPE_USER = "user";
 
 export const MVP_CREATABLE_FIELD_TYPES = [
   FIELD_EDITOR_TYPE_TEXT,
@@ -22,6 +24,7 @@ export const MVP_CREATABLE_FIELD_TYPES = [
   FIELD_EDITOR_TYPE_DATETIME,
   FIELD_EDITOR_TYPE_CHOICE,
   FIELD_EDITOR_TYPE_MULTI_CHOICE,
+  FIELD_EDITOR_TYPE_USER,
 ];
 
 const fieldEditorRegistry = {
@@ -33,6 +36,7 @@ const fieldEditorRegistry = {
   [FIELD_EDITOR_TYPE_DATETIME]: DateFieldEditor,
   [FIELD_EDITOR_TYPE_CHOICE]: ChoiceFieldEditor,
   [FIELD_EDITOR_TYPE_MULTI_CHOICE]: ChoiceFieldEditor,
+  [FIELD_EDITOR_TYPE_USER]: UserFieldEditor,
 };
 
 /**

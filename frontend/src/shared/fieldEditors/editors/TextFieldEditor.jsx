@@ -1,13 +1,40 @@
-import { fieldEditorInputStyle, fieldEditorTextareaStyle } from "../fieldEditorStyles";
+import {
+  fieldEditorInlineInputStyle,
+  fieldEditorInlineTextareaStyle,
+  fieldEditorInputStyle,
+  fieldEditorTextareaStyle,
+} from "../fieldEditorStyles";
 
 export default function TextFieldEditor({
   value,
   onChange,
   readOnly = false,
   autoFocus = false,
+  inline = false,
   multiline = false,
+  onCancel,
+  onCommit,
 }) {
-  const style = multiline ? fieldEditorTextareaStyle : fieldEditorInputStyle;
+  const style = multiline
+    ? inline
+      ? fieldEditorInlineTextareaStyle
+      : fieldEditorTextareaStyle
+    : inline
+      ? fieldEditorInlineInputStyle
+      : fieldEditorInputStyle;
+
+  const handleKeyDown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onCancel?.();
+      return;
+    }
+
+    if (!multiline && event.key === "Enter") {
+      event.preventDefault();
+      onCommit?.();
+    }
+  };
 
   if (multiline) {
     return (
@@ -19,6 +46,7 @@ export default function TextFieldEditor({
         autoFocus={autoFocus}
         rows={3}
         onChange={(event) => onChange?.(event.target.value)}
+        onKeyDown={handleKeyDown}
         style={style}
       />
     );
@@ -33,6 +61,7 @@ export default function TextFieldEditor({
       disabled={readOnly}
       autoFocus={autoFocus}
       onChange={(event) => onChange?.(event.target.value)}
+      onKeyDown={handleKeyDown}
       style={style}
     />
   );

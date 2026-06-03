@@ -1,3 +1,4 @@
+import { normalizeSortFieldForTableColumns } from "../../../../../shared/viewEngine/systemColumnKeys";
 import { projectionToColumns } from "./projectionToColumns";
 import { mapEntitiesToRows } from "./mapEntityToRow";
 
@@ -90,6 +91,10 @@ export function buildObjectTypeTableModel({
 
   const rows = mapEntitiesToRows(entities, columns);
   const normalizedSort = normalizeViewEngineSort(sort, projection);
+  normalizedSort.field = normalizeSortFieldForTableColumns(
+    normalizedSort.field,
+    columns,
+  );
 
   const titleFieldKey =
     typeof projection?.title_field === "string"

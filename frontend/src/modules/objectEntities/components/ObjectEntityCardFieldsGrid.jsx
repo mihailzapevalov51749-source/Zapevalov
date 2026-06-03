@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import FieldEditor from "../../../shared/fieldEditors/FieldEditor";
+import { normalizeFieldEditorType } from "../../../shared/fieldEditors/fieldEditorRegistry";
 import FieldValueRenderer from "../../../shared/fieldTypes/FieldValueRenderer";
+import { fieldDefToRendererColumn } from "../../../shared/viewEngine/utils/fieldDefToRendererColumn";
 
 import textIcon from "../../../assets/icons/ClipboardList.svg";
 import calendarIcon from "../../../assets/icons/CalendarClock.svg";
@@ -18,10 +20,27 @@ import {
   entityCardUserFieldCellStyle,
 } from "../../../shared/entityCardShell/styles/entityCardFieldsGridStyles";
 
+import { isSameFieldValue } from "../utils/inlineFieldValueUtils";
+
+const FIELD_MODE = {
+  VIEW: "view",
+  EDITING: "editing",
+  SAVING: "saving",
+};
+
+const IMMEDIATE_COMMIT_EDITOR_TYPES = new Set([
+  "choice",
+  "multi_choice",
+  "user",
+  "boolean",
+  "date",
+  "datetime",
+]);
+
 function normalizeRendererType(field) {
   const type = String(field?.rawFieldType || field?.type || "text").toLowerCase();
 
-  if (type === "multi_choice") {
+  if (type === "multi_choice" || type === "status" || type === "select") {
     return "choice";
   }
 
@@ -33,7 +52,22 @@ function normalizeRendererType(field) {
     return "file";
   }
 
+  if (
+    type === "lookup" ||
+    type === "relation" ||
+    type === "linkedrow" ||
+    type === "linked_row"
+  ) {
+    return "lookup";
+  }
+
   return type;
+}
+
+function shouldCommitImmediately(field) {
+  return IMMEDIATE_COMMIT_EDITOR_TYPES.has(
+    normalizeFieldEditorType(field?.rawFieldType || field?.type),
+  );
 }
 
 function getFieldIcon(field) {
@@ -46,39 +80,188 @@ function getFieldIcon(field) {
   return textIcon;
 }
 
+function isOutsideInlineEditor(target, cellElement) {
+  if (!target || !cellElement) {
+    return true;
+  }
+
+  if (cellElement.contains(target)) {
+    return false;
+  }
+
+  if (target.closest?.("[data-user-picker-popover]")) {
+    return false;
+  }
+
+  return true;
+}
+
 function RuntimeFieldCell({
   field,
   value,
   onFieldChange,
   readOnly = false,
   fieldErrors = {},
+  alwaysEditing = false,
 }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const previousValueRef = useRef(value);
+  const [mode, setMode] = useState(
+    alwaysEditing ? FIELD_MODE.EDITING : FIELD_MODE.VIEW,
+  );
+  const [draftValue, setDraftValue] = useState(value);
+  const cellRef = useRef(null);
+  const editorWrapRef = useRef(null);
+
   const type = normalizeRendererType(field);
+  const editorType = normalizeFieldEditorType(field?.rawFieldType || field?.type);
   const isUser = type === "user";
   const isEditable = !readOnly && Boolean(onFieldChange);
+  const rendererColumn = fieldDefToRendererColumn(field);
+  const commitImmediately = shouldCommitImmediately(field);
+  const fieldError = fieldErrors[field.key];
 
   useEffect(() => {
-    if (!isEditing) {
-      previousValueRef.current = value;
+    if (alwaysEditing) {
+      setMode(FIELD_MODE.EDITING);
     }
-  }, [isEditing, value]);
+  }, [alwaysEditing]);
 
-  const handleSave = async (nextValue) => {
-    if (!isEditable) {
+  useEffect(() => {
+    if (mode === FIELD_MODE.VIEW) {
+      setDraftValue(value);
+    }
+  }, [value, mode]);
+
+  const exitToView = useCallback(() => {
+    if (!alwaysEditing) {
+      setMode(FIELD_MODE.VIEW);
+    }
+  }, [alwaysEditing]);
+
+  const cancelEdit = useCallback(() => {
+    setDraftValue(value);
+    exitToView();
+  }, [exitToView, value]);
+
+  const commitField = useCallback(
+    async (nextValue) => {
+      if (!isEditable) {
+        return;
+      }
+
+      if (isSameFieldValue(value, nextValue, editorType)) {
+        cancelEdit();
+        return;
+      }
+
+      setMode(FIELD_MODE.SAVING);
+
+      try {
+        const result = await onFieldChange?.(field.key, nextValue);
+
+        if (result?.ok === false) {
+          setDraftValue(value);
+          setMode(FIELD_MODE.EDITING);
+          return;
+        }
+
+        exitToView();
+      } catch {
+        setDraftValue(value);
+        setMode(FIELD_MODE.EDITING);
+      }
+    },
+    [
+      cancelEdit,
+      editorType,
+      exitToView,
+      field.key,
+      isEditable,
+      onFieldChange,
+      value,
+    ],
+  );
+
+  const handleActivate = useCallback(() => {
+    if (!isEditable || mode === FIELD_MODE.SAVING) {
       return;
     }
 
-    onFieldChange?.(field.key, nextValue);
-    setIsEditing(false);
-  };
+    setDraftValue(value);
+    setMode(FIELD_MODE.EDITING);
+  }, [isEditable, mode, value]);
+
+  const handleEditorChange = useCallback(
+    (nextValue) => {
+      if (commitImmediately) {
+        void commitField(nextValue);
+        return;
+      }
+
+      setDraftValue(nextValue);
+    },
+    [commitImmediately, commitField],
+  );
+
+  const handleEditorDismiss = useCallback(() => {
+    if (mode === FIELD_MODE.SAVING) {
+      return;
+    }
+
+    cancelEdit();
+  }, [cancelEdit, mode]);
+
+  const handleEditorBlur = useCallback(
+    (event) => {
+      if (isUser) {
+        return;
+      }
+
+      const nextTarget = event.relatedTarget;
+
+      if (nextTarget && editorWrapRef.current?.contains(nextTarget)) {
+        return;
+      }
+
+      if (commitImmediately) {
+        cancelEdit();
+        return;
+      }
+
+      void commitField(draftValue);
+    },
+    [cancelEdit, commitImmediately, commitField, draftValue, isUser],
+  );
+
+  useEffect(() => {
+    if (mode !== FIELD_MODE.EDITING || isUser) {
+      return undefined;
+    }
+
+    const handlePointerDown = (event) => {
+      if (!isOutsideInlineEditor(event.target, cellRef.current)) {
+        return;
+      }
+
+      cancelEdit();
+    };
+
+    document.addEventListener("mousedown", handlePointerDown, true);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown, true);
+    };
+  }, [cancelEdit, isUser, mode]);
+
+  const isInteractive = mode === FIELD_MODE.EDITING || mode === FIELD_MODE.SAVING;
 
   return (
     <div
+      ref={cellRef}
       style={{
         ...entityCardFieldCellStyle,
         ...(isUser ? entityCardUserFieldCellStyle : {}),
+        opacity: mode === FIELD_MODE.SAVING ? 0.65 : 1,
+        pointerEvents: mode === FIELD_MODE.SAVING ? "none" : "auto",
       }}
     >
       {!isUser ? (
@@ -91,20 +274,37 @@ function RuntimeFieldCell({
         <div style={entityCardFieldLabelStyle}>{field.label || field.key}</div>
 
         <div style={entityCardFieldValueStyle}>
-          {isEditable && isEditing ? (
-            <FieldEditor
-              fieldDef={field}
-              value={value}
-              onChange={(nextValue) => {
-                void handleSave(nextValue);
-              }}
-              readOnly={false}
-            />
+          {isEditable && isInteractive ? (
+            <div
+              ref={editorWrapRef}
+              style={{ width: "100%" }}
+              onBlur={handleEditorBlur}
+            >
+              <FieldEditor
+                fieldDef={field}
+                value={commitImmediately ? value : draftValue}
+                onChange={handleEditorChange}
+                readOnly={mode === FIELD_MODE.SAVING}
+                autoFocus={mode === FIELD_MODE.EDITING}
+                inline
+                onCancel={cancelEdit}
+                onDismiss={handleEditorDismiss}
+                onCommit={() => void commitField(draftValue)}
+              />
+            </div>
           ) : (
             <div
-              onClick={() => {
-                if (isEditable) {
-                  setIsEditing(true);
+              role={isEditable ? "button" : undefined}
+              tabIndex={isEditable ? 0 : undefined}
+              onClick={handleActivate}
+              onKeyDown={(event) => {
+                if (!isEditable) {
+                  return;
+                }
+
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  handleActivate();
                 }
               }}
               style={{
@@ -115,11 +315,7 @@ function RuntimeFieldCell({
               <FieldValueRenderer
                 type={type}
                 value={value}
-                column={{
-                  id: field.key,
-                  title: field.label,
-                  type: field.rawFieldType || field.type,
-                }}
+                column={rendererColumn}
                 compact
                 multiline={type === "text"}
                 emptyValue="—"
@@ -128,9 +324,15 @@ function RuntimeFieldCell({
           )}
         </div>
 
-        {fieldErrors[field.key] ? (
+        {fieldError ? (
           <div style={{ fontSize: 11, color: "#dc2626", marginTop: 4 }}>
-            {fieldErrors[field.key]}
+            {fieldError}
+          </div>
+        ) : null}
+
+        {mode === FIELD_MODE.SAVING ? (
+          <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
+            Сохранение…
           </div>
         ) : null}
       </div>
@@ -144,6 +346,7 @@ export default function ObjectEntityCardFieldsGrid({
   fieldErrors = {},
   onFieldChange,
   readOnly = false,
+  alwaysEditing = false,
 }) {
   if (!fields.length) {
     return null;
@@ -160,6 +363,7 @@ export default function ObjectEntityCardFieldsGrid({
             onFieldChange={onFieldChange}
             readOnly={readOnly}
             fieldErrors={fieldErrors}
+            alwaysEditing={alwaysEditing}
           />
         ))}
       </div>

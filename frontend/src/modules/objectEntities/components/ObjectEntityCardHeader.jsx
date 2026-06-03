@@ -48,6 +48,8 @@ const saveToolbarButtonDisabledStyle = {
 
 export default function ObjectEntityCardHeader({
   entityId,
+  createTitle = "Новая запись",
+  isCreate = false,
   onClose,
   onBack,
   onOpenSettings = null,
@@ -70,7 +72,7 @@ export default function ObjectEntityCardHeader({
     typeof onSave === "function" ? (
       <button
         type="button"
-        title="Сохранить изменения"
+        title={isCreate ? "Создать запись" : "Сохранить изменения"}
         style={
           submitting || !canSave
             ? saveToolbarButtonDisabledStyle
@@ -115,10 +117,17 @@ export default function ObjectEntityCardHeader({
         </button>
 
         <div
+          id="object-entity-card-title"
           style={entityCardHeaderIdStyle}
-          title={entityId ? `ID: ${entityId}` : undefined}
+          title={
+            isCreate
+              ? undefined
+              : entityId
+                ? `ID: ${entityId}`
+                : undefined
+          }
         >
-          № {displayNumber}
+          {isCreate ? createTitle : `№ ${displayNumber}`}
         </div>
       </div>
 

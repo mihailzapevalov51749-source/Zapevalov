@@ -209,6 +209,15 @@ def _validate_field_type_payload(
         if not isinstance(default_value_json, str):
             raise ValueError("default_value_json для uuid должен быть string или null")
 
+    if field_type == FieldType.USER and default_value_json is not None:
+        if isinstance(default_value_json, bool) or not isinstance(
+            default_value_json,
+            (int, str),
+        ):
+            raise ValueError(
+                "default_value_json для user должен быть user_id (int) или null",
+            )
+
 
 def validate_field_update_payload(
     *,

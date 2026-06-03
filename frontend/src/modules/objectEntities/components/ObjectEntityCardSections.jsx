@@ -3,13 +3,18 @@ import { useEffect, useMemo, useRef } from "react";
 import { OBJECT_ENTITY_SECTION_TYPES } from "../services/objectEntityCardSectionsLayout";
 import { findDescriptionField } from "../services/runtimeEntityCardAdapter";
 
+import EntityCardPendingSection from "./EntityCardPendingSection";
 import ObjectEntityAttachments from "./ObjectEntityAttachments";
 import ObjectEntityCardFieldsGrid from "./ObjectEntityCardFieldsGrid";
 import ObjectEntityCardMain from "./ObjectEntityCardMain";
 import ObjectEntityCardParentSection from "./ObjectEntityCardParentSection";
 import ObjectEntityCardTabsBlock from "./ObjectEntityCardTabsBlock";
 
+const CREATE_PENDING_MESSAGE =
+  "Сохраните запись, чтобы работать с этим разделом";
+
 export default function ObjectEntityCardSections({
+  isCreate = false,
   cardModel,
   catalog = null,
   formValues = {},
@@ -176,7 +181,8 @@ export default function ObjectEntityCardSections({
               formValues={formValues}
               fieldErrors={fieldErrors}
               onFieldChange={onFieldChange}
-              readOnly={submitting}
+              readOnly={false}
+              alwaysEditing={isCreate}
             />
           );
         } else if (section.type === OBJECT_ENTITY_SECTION_TYPES.attachments) {
@@ -186,15 +192,19 @@ export default function ObjectEntityCardSections({
               data-oec-section="attachments"
               style={{ width: "100%", boxSizing: "border-box" }}
             >
-              <ObjectEntityAttachments
-                runtimeEntityId={cardModel.entityId}
-                objectTypeKey={cardModel.objectTypeKey}
-                tenantId={cardModel.tenantId}
-                catalog={catalog}
-                entity={cardModel.rawEntity}
-                initialContext={initialContext}
-                onEntityUpdated={onEntityUpdated}
-              />
+              {isCreate ? (
+                <EntityCardPendingSection message="Сохраните запись для добавления вложений" />
+              ) : (
+                <ObjectEntityAttachments
+                  runtimeEntityId={cardModel.entityId}
+                  objectTypeKey={cardModel.objectTypeKey}
+                  tenantId={cardModel.tenantId}
+                  catalog={catalog}
+                  entity={cardModel.rawEntity}
+                  initialContext={initialContext}
+                  onEntityUpdated={onEntityUpdated}
+                />
+              )}
             </div>
           );
         } else if (section.type === OBJECT_ENTITY_SECTION_TYPES.tabs) {
@@ -206,6 +216,8 @@ export default function ObjectEntityCardSections({
               initialContext={initialContext}
               relationsState={relationsState}
               onOpenRelatedEntity={onOpenRelatedEntity}
+              isCreate={isCreate}
+              createPendingMessage={CREATE_PENDING_MESSAGE}
             />
           );
         }

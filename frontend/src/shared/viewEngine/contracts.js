@@ -118,8 +118,14 @@
 
 export const VIEW_ENGINE_SORT_ORDERS = ["asc", "desc"];
 
-export const VIEW_ENGINE_SYSTEM_COLUMN_KEYS = [
-  "id",
-  "status",
-  "created_at",
-];
+export {
+  SYSTEM_COLUMN_KEY_PREFIX,
+  SYSTEM_COLUMN_KEYS,
+  VIEW_ENGINE_SYSTEM_COLUMN_KEYS,
+  columnMatchesSortField,
+  isNamespacedSystemColumnKey,
+  isViewEngineSystemColumn,
+  normalizeSortFieldForTableColumns,
+  normalizeSystemColumnKey,
+  systemColumnKeyToRuntimeSortField,
+} from "./systemColumnKeys";

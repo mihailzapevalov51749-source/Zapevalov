@@ -1,6 +1,8 @@
+import { buildInitialCreateFormValues } from "../../objectViews/entity/buildCreateEntityPayload";
 import { getCreatableFields } from "../../objectViews/entity/getCreatableFields";
-import { resolveEntityTitle } from "./resolveEntityTitle";
+import { findCatalogObjectType } from "../../objectViews/table/services/adapters/ObjectTypeTableAdapter";
 import { buildInitialFormValuesFromEntity } from "./buildEntityUpdatePayload";
+import { resolveEntityTitle } from "./resolveEntityTitle";
 
 function formatTimestamp(value) {
   if (value == null || value === "") {
@@ -14,6 +16,37 @@ function formatTimestamp(value) {
   }
 
   return date.toLocaleString("ru-RU");
+}
+
+/**
+ * Card model for create session (no persisted entity yet).
+ */
+export function buildCreateCardModel({
+  catalog,
+  objectTypeKey,
+  tenantId,
+  titleFieldKey = null,
+}) {
+  const objectType = findCatalogObjectType(catalog, objectTypeKey);
+  const objectTypeName = String(objectType?.name || objectTypeKey || "запись").trim();
+  const editableFields = getCreatableFields(catalog, objectTypeKey);
+
+  return {
+    entityId: null,
+    isCreate: true,
+    createTitle: `Новая ${objectTypeName}`,
+    tenantId,
+    objectTypeKey,
+    title: `Новая ${objectTypeName}`,
+    status: "—",
+    createdAt: null,
+    updatedAt: null,
+    titleFieldKey: titleFieldKey || null,
+    systemFields: [],
+    editableFields,
+    formValues: buildInitialCreateFormValues(editableFields),
+    rawEntity: null,
+  };
 }
 
 /**
@@ -46,6 +79,8 @@ export function mapRuntimeEntityToCardModel({
 
   return {
     entityId,
+    isCreate: false,
+    createTitle: null,
     tenantId,
     objectTypeKey,
     title,

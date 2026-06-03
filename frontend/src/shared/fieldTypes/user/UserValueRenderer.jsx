@@ -19,11 +19,12 @@ function normalizeUserOption(user) {
     userId: user.id ?? user.userId ?? user.user_id ?? null,
 
     name:
+      user.display_name ||
+      user.displayName ||
       user.full_name ||
       user.fullName ||
-      user.displayName ||
-      user.display_name ||
       user.name ||
+      user.username ||
       user.label ||
       user.email ||
       "—",

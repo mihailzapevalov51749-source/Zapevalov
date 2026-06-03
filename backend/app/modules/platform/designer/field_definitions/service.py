@@ -68,6 +68,20 @@ def _ensure_object_type(
         )
 
 
+def _touch_parent_object_type(
+    db: Session,
+    tenant_id: int,
+    object_type_id: UUID,
+    current_user: User | None,
+) -> None:
+    object_type_repository.touch_object_type_updated_at(
+        db,
+        tenant_id,
+        object_type_id,
+        updated_by=_actor_user_id(current_user),
+    )
+
+
 def list_fields(
     db: Session,
     tenant_id: int,
@@ -138,6 +152,8 @@ def create_field(
             status_code=status.HTTP_409_CONFLICT,
             detail="FieldDefinition с таким key уже существует для ObjectType",
         ) from exc
+
+    _touch_parent_object_type(db, tenant_id, object_type_id, current_user)
 
     return _to_read(entity)
 
@@ -255,6 +271,8 @@ def update_field(
             detail="FieldDefinition с таким key уже существует для ObjectType",
         ) from exc
 
+    _touch_parent_object_type(db, tenant_id, entity.object_type_id, current_user)
+
     return _to_read(entity)
 
 
@@ -280,6 +298,7 @@ def delete_field(
 
     entity.updated_by = _actor_user_id(current_user)
     entity = repository.soft_delete_field(db, entity)
+    _touch_parent_object_type(db, tenant_id, entity.object_type_id, current_user)
     return _to_read(entity)
 
 
@@ -316,5 +335,7 @@ def reorder_fields(
 
     entities = repository.save_fields(db, entities)
     entities.sort(key=lambda row: (row.sort_order, row.name))
+
+    _touch_parent_object_type(db, tenant_id, object_type_id, current_user)
 
     return [_to_list_item(entity) for entity in entities]

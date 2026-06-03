@@ -114,7 +114,6 @@ function NotificationObjectEntityOverlay({
     catalog,
     listItems: [],
     enabled: true,
-    mode: "edit",
   });
 
   useEffect(() => {
@@ -171,11 +170,11 @@ function NotificationObjectEntityOverlay({
   return (
     <ObjectEntityCardModal
       open={entityCard.isOpen}
-      mode="edit"
+      mode={entityCard.cardMode}
       cardModel={entityCard.cardModel}
       formValues={entityCard.formValues}
       fieldErrors={entityCard.fieldErrors}
-      onFieldChange={entityCard.setFieldValue}
+      onFieldChange={entityCard.updateFieldValue}
       onClose={() => {
         entityCard.closeCard();
         onClose(null);

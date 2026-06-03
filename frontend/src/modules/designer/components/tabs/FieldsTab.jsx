@@ -5,13 +5,15 @@ import * as designerApi from "../../api/designerApi";
 import CreateFieldModal, { FIELD_TYPE_OPTIONS } from "../fields/CreateFieldModal";
 import FieldPropertiesPanel from "../fields/FieldPropertiesPanel";
 import {
-  buildChoiceOptionsFromText,
-  formatChoiceOptionsToText,
+  buildChoiceSettingsPayload,
   getFieldTypeLabel,
   isChoiceFieldType,
+  isChoiceMultipleFromField,
+  normalizeChoiceOptionsFromSettings,
+  resolveChoiceFieldTypeForSave,
 } from "../fields/fieldFormUtils";
 
-export default function FieldsTab({ tenantId, objectTypeId }) {
+export default function FieldsTab({ tenantId, objectTypeId, onSchemaChanged }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -53,6 +55,9 @@ export default function FieldsTab({ tenantId, objectTypeId }) {
       return;
     }
 
+    const { options: choice_options, multiple: settingsMultiple } =
+      normalizeChoiceOptionsFromSettings(selected.settings_json);
+
     setDraft({
       name: selected.name,
       key: selected.key,
@@ -60,7 +65,12 @@ export default function FieldsTab({ tenantId, objectTypeId }) {
       is_required: selected.is_required,
       is_unique: selected.is_unique,
       description: selected.description || "",
-      choice_options_text: formatChoiceOptionsToText(selected.settings_json),
+      choice_options,
+      choice_multiple: isChoiceMultipleFromField(
+        selected.field_type,
+        selected.settings_json,
+      ) || settingsMultiple,
+      choice_options_error: "",
     });
     setSaveError("");
   }, [selected]);
@@ -75,6 +85,7 @@ export default function FieldsTab({ tenantId, objectTypeId }) {
       setSelectedId(null);
       setDraft(null);
       await loadItems();
+      await onSchemaChanged?.();
     } catch (err) {
       setCreateError(getApiErrorMessage(err, "Не удалось создать поле"));
       throw err;
@@ -101,17 +112,28 @@ export default function FieldsTab({ tenantId, objectTypeId }) {
     };
 
     if (isChoiceFieldType(draft.field_type)) {
-      const options = buildChoiceOptionsFromText(
-        draft.choice_options_text,
-        existingFieldKeys.filter((key) => key !== String(draft.key || "").toLowerCase()),
-      );
+      const choiceOptions = Array.isArray(draft.choice_options)
+        ? draft.choice_options
+        : [];
 
-      if (options.length === 0) {
+      if (choiceOptions.length === 0) {
+        setDraft((current) =>
+          current
+            ? { ...current, choice_options_error: "Добавьте хотя бы один вариант" }
+            : current,
+        );
         setSaveError("Добавьте хотя бы один вариант значения");
         return;
       }
 
-      payload.settings_json = { options };
+      payload.field_type = resolveChoiceFieldTypeForSave(
+        draft.field_type,
+        draft.choice_multiple,
+      );
+      payload.settings_json = buildChoiceSettingsPayload(
+        choiceOptions,
+        draft.choice_multiple,
+      );
     }
 
     setSaving(true);
@@ -120,6 +142,7 @@ export default function FieldsTab({ tenantId, objectTypeId }) {
     try {
       await designerApi.updateField(tenantId, objectTypeId, selected.id, payload);
       await loadItems();
+      await onSchemaChanged?.();
     } catch (err) {
       setSaveError(getApiErrorMessage(err, "Не удалось сохранить поле"));
     } finally {
@@ -136,6 +159,7 @@ export default function FieldsTab({ tenantId, objectTypeId }) {
       setSelectedId(null);
       setDraft(null);
       await loadItems();
+      await onSchemaChanged?.();
     } catch (err) {
       window.alert(getApiErrorMessage(err, "Не удалось удалить поле"));
     }

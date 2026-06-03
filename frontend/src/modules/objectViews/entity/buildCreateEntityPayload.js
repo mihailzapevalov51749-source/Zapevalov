@@ -1,4 +1,5 @@
 import { normalizeFieldEditorType } from "../../../shared/fieldEditors/fieldEditorRegistry";
+import { serializeUserFieldValue } from "../../../shared/fieldEditors/userFieldValueUtils";
 
 /**
  * @param {Array<{ key: string, rawFieldType?: string, isRequired?: boolean }>} fields
@@ -114,6 +115,16 @@ export function buildCreateEntityPayload(formValues, fields = []) {
 
     if (editorType === "choice") {
       values[key] = String(rawValue);
+      continue;
+    }
+
+    if (editorType === "user") {
+      const userId = serializeUserFieldValue(rawValue);
+
+      if (userId !== null) {
+        values[key] = userId;
+      }
+
       continue;
     }
 

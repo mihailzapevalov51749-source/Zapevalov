@@ -5,6 +5,7 @@ from uuid import uuid4
 
 from app.modules.platform.designer.publish.object_view_contract import (
     OBJECT_VIEW_SCHEMA_VERSION,
+    merge_legacy_projection_field_keys,
     merge_object_view_projection_field_keys,
     normalize_settings_json_for_publish,
     projection_from_object_view,
@@ -50,9 +51,9 @@ def test_normalize_settings_json_strips_system_columns_from_presentation() -> No
             },
             "presentation": {
                 "table": {
-                    "hiddenFieldKeys": ["id", "title"],
-                    "columnOrder": ["id", "title"],
-                    "columnWidths": {"id": 120, "title": 200},
+                    "hiddenFieldKeys": ["__system_id", "title"],
+                    "columnOrder": ["__system_id", "title"],
+                    "columnWidths": {"__system_id": 120, "title": 200},
                 },
             },
         },
@@ -66,9 +67,9 @@ def test_normalize_settings_json_strips_system_columns_from_presentation() -> No
     )
 
     table = normalized["objectView"]["presentation"]["table"]
-    assert "id" not in table["hiddenFieldKeys"]
-    assert "id" not in table["columnOrder"]
-    assert "id" not in table["columnWidths"]
+    assert "__system_id" not in table["hiddenFieldKeys"]
+    assert "__system_id" not in table["columnOrder"]
+    assert "__system_id" not in table["columnWidths"]
     assert "title" in table["hiddenFieldKeys"]
     assert isinstance(normalized.get("projection"), dict)
     assert normalized["projection"]["visible_fields"] == ["title"]
@@ -317,4 +318,58 @@ def test_normalize_settings_json_appends_new_field_keys_on_publish() -> None:
         "title",
         "priority",
     ]
+    assert normalized["projection"]["visible_fields"] == ["title", "priority"]
+
+
+def test_merge_object_view_projection_includes_user_status_field() -> None:
+    """User field key 'status' must not be treated as entity system status."""
+    merged = merge_object_view_projection_field_keys(
+        {
+            "projection": {
+                "fieldKeys": ["title"],
+                "fieldOrder": ["title"],
+                "titleFieldKey": "title",
+            },
+        },
+        ordered_non_system_field_keys=["title", "status", "priority"],
+    )
+
+    assert merged["projection"]["fieldKeys"] == ["title", "status", "priority"]
+    assert merged["projection"]["fieldOrder"] == ["title", "status", "priority"]
+
+
+def test_merge_legacy_projection_appends_new_fields_as_visible() -> None:
+    projection = {
+        "visible_fields": ["title"],
+        "field_order": ["title"],
+        "title_field": "title",
+    }
+
+    merged = merge_legacy_projection_field_keys(
+        projection,
+        ordered_non_system_field_keys=["title", "assignee", "due_date"],
+    )
+
+    assert merged["field_order"] == ["title", "assignee", "due_date"]
+    assert merged["visible_fields"] == ["title", "assignee", "due_date"]
+
+
+def test_normalize_legacy_projection_only_appends_new_fields() -> None:
+    settings = {
+        "projection": {
+            "visible_fields": ["title"],
+            "field_order": ["title"],
+            "title_field": "title",
+        },
+    }
+
+    normalized = normalize_settings_json_for_publish(
+        settings,
+        view_key="default_table",
+        view_type="table",
+        field_keys={"title", "priority"},
+        ordered_field_keys=["title", "priority"],
+    )
+
+    assert normalized["projection"]["field_order"] == ["title", "priority"]
     assert normalized["projection"]["visible_fields"] == ["title", "priority"]

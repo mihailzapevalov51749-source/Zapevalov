@@ -2,12 +2,14 @@ import { normalizeLookupValue } from "./lookupUtils";
 
 export default function LookupValueRenderer({
   value,
+  column,
   compact = false,
   emptyValue = "—",
 }) {
   const lookup =
     normalizeLookupValue(
       value,
+      column,
       emptyValue
     );
 

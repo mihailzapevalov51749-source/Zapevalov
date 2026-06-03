@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -84,3 +84,36 @@ def soft_delete_object_type(
     db.commit()
     db.refresh(entity)
     return entity
+
+
+def touch_object_type_updated_at(
+    db: Session,
+    tenant_id: int,
+    object_type_id: UUID,
+    *,
+    updated_by: int | None = None,
+) -> None:
+    """Bump parent ObjectType.updated_at when child schema (fields/views/…) changes."""
+    entity = get_object_type(db, tenant_id, object_type_id)
+    if not entity:
+        return
+
+    now = datetime.now(timezone.utc)
+    if entity.last_published_at is not None and now <= entity.last_published_at:
+        now = entity.last_published_at + timedelta(microseconds=1)
+
+    values: dict = {DesignerObjectType.updated_at: now}
+
+    if updated_by is not None:
+        values[DesignerObjectType.updated_by] = updated_by
+
+    (
+        db.query(DesignerObjectType)
+        .filter(
+            DesignerObjectType.tenant_id == tenant_id,
+            DesignerObjectType.id == object_type_id,
+            DesignerObjectType.deleted_at.is_(None),
+        )
+        .update(values, synchronize_session=False)
+    )
+    db.commit()

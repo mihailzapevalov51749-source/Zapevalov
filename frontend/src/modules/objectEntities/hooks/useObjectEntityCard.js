@@ -1,12 +1,22 @@
 import { useCallback, useMemo, useState } from "react";
 
 import { getApiErrorMessage } from "../../designer/api/platformApiClient";
+import { getCreatableFields } from "../../objectViews/entity/getCreatableFields";
+import {
+  buildCreateEntityPayload,
+  buildInitialCreateFormValues,
+} from "../../objectViews/entity/buildCreateEntityPayload";
 import { getRuntimeEntity } from "../../runtimeWriteGateway/api/runtimeEntitiesApi";
-import { mapRuntimeEntityToCardModel } from "../services/mapRuntimeEntityToCardModel";
+import { runtimeWriteGateway } from "../../runtimeWriteGateway";
+import {
+  buildCreateCardModel,
+  mapRuntimeEntityToCardModel,
+} from "../services/mapRuntimeEntityToCardModel";
 import useObjectEntityUpdate from "./useObjectEntityUpdate";
 
 /**
  * Object instance card state (Runtime Entity — not table row).
+ * Supports create and edit in a single card surface.
  */
 export default function useObjectEntityCard({
   tenantId = null,
@@ -16,14 +26,15 @@ export default function useObjectEntityCard({
   titleFieldKey = null,
   enabled = true,
   onSaved,
-  mode = "edit",
 }) {
+  const [cardMode, setCardMode] = useState("edit");
   const [openEntityId, setOpenEntityId] = useState(null);
   const [formValues, setFormValues] = useState({});
   const [fieldErrors, setFieldErrors] = useState({});
   const [localEntity, setLocalEntity] = useState(null);
   const [initialContext, setInitialContext] = useState(null);
   const [openError, setOpenError] = useState("");
+  const [createSubmitting, setCreateSubmitting] = useState(false);
 
   function resolveEntityOpenError(error) {
     const status = error?.response?.status;
@@ -39,6 +50,18 @@ export default function useObjectEntityCard({
     return getApiErrorMessage(error, "Не удалось открыть объект");
   }
 
+  const creatableFields = useMemo(() => {
+    if (!enabled) {
+      return [];
+    }
+
+    return getCreatableFields(catalog, objectTypeKey);
+  }, [catalog, objectTypeKey, enabled]);
+
+  const canCreate = Boolean(
+    enabled && tenantId && objectTypeKey && creatableFields.length > 0,
+  );
+
   const listEntity = useMemo(() => {
     if (!openEntityId || !Array.isArray(listItems)) {
       return null;
@@ -53,7 +76,20 @@ export default function useObjectEntityCard({
   const activeEntity = localEntity || listEntity;
 
   const cardModel = useMemo(() => {
-    if (!activeEntity || !enabled || mode !== "edit") {
+    if (!enabled) {
+      return null;
+    }
+
+    if (cardMode === "create") {
+      return buildCreateCardModel({
+        catalog,
+        objectTypeKey,
+        tenantId,
+        titleFieldKey,
+      });
+    }
+
+    if (!activeEntity) {
       return null;
     }
 
@@ -66,18 +102,18 @@ export default function useObjectEntityCard({
     });
   }, [
     activeEntity,
+    cardMode,
     catalog,
     objectTypeKey,
     tenantId,
     titleFieldKey,
     enabled,
-    mode,
   ]);
 
   const handleEntityUpdated = useCallback(
     async (entity) => {
       setLocalEntity(entity);
-      await onSaved?.(entity);
+      await onSaved?.(entity, { created: false });
     },
     [onSaved],
   );
@@ -93,11 +129,26 @@ export default function useObjectEntityCard({
     onUpdated: handleEntityUpdated,
   });
 
-  const isOpen = Boolean(openEntityId && cardModel);
+  const isOpen = Boolean(cardModel && (cardMode === "create" || openEntityId));
+
+  const openCreateCard = useCallback(() => {
+    if (!canCreate) {
+      return;
+    }
+
+    setCardMode("create");
+    setOpenEntityId(null);
+    setLocalEntity(null);
+    setFormValues(buildInitialCreateFormValues(creatableFields));
+    setFieldErrors({});
+    setSubmitError("");
+    setInitialContext(null);
+    setOpenError("");
+  }, [canCreate, creatableFields, setSubmitError]);
 
   const openCard = useCallback(
     async (entityId, options = {}) => {
-      if (!enabled || mode !== "edit") {
+      if (!enabled) {
         return;
       }
 
@@ -156,6 +207,7 @@ export default function useObjectEntityCard({
         titleFieldKey,
       });
 
+      setCardMode("edit");
       setOpenEntityId(normalizedId);
       setLocalEntity(entity);
       setFormValues(model.formValues);
@@ -165,7 +217,6 @@ export default function useObjectEntityCard({
     },
     [
       enabled,
-      mode,
       listItems,
       catalog,
       objectTypeKey,
@@ -176,10 +227,11 @@ export default function useObjectEntityCard({
   );
 
   const closeCard = useCallback(() => {
-    if (submitting) {
+    if (submitting || createSubmitting) {
       return;
     }
 
+    setCardMode("edit");
     setOpenEntityId(null);
     setLocalEntity(null);
     setFormValues({});
@@ -187,7 +239,7 @@ export default function useObjectEntityCard({
     setSubmitError("");
     setInitialContext(null);
     setOpenError("");
-  }, [submitting, setSubmitError]);
+  }, [submitting, createSubmitting, setSubmitError]);
 
   const setFieldValue = useCallback((fieldKey, nextValue) => {
     const normalizedKey = String(fieldKey || "").trim();
@@ -212,7 +264,150 @@ export default function useObjectEntityCard({
     });
   }, []);
 
+  const updateFieldValue = useCallback(
+    async (fieldKey, nextValue) => {
+      const normalizedKey = String(fieldKey || "").trim();
+
+      if (!normalizedKey) {
+        return { ok: false };
+      }
+
+      if (cardMode === "create") {
+        setFieldValue(normalizedKey, nextValue);
+        return { ok: true };
+      }
+
+      if (!cardModel?.entityId) {
+        return { ok: false };
+      }
+
+      const previousValue = formValues[normalizedKey];
+
+      setFieldValue(normalizedKey, nextValue);
+
+      const nextFormValues = {
+        ...formValues,
+        [normalizedKey]: nextValue,
+      };
+
+      const result = await submitUpdate({
+        entityId: cardModel.entityId,
+        formValues: nextFormValues,
+        editableFields: cardModel.editableFields,
+      });
+
+      if (result.fieldErrors) {
+        setFieldErrors(result.fieldErrors);
+        setFieldValue(normalizedKey, previousValue);
+        return result;
+      }
+
+      if (!result.ok) {
+        setFieldValue(normalizedKey, previousValue);
+        return result;
+      }
+
+      if (result.entity) {
+        const model = mapRuntimeEntityToCardModel({
+          entity: result.entity,
+          catalog,
+          objectTypeKey,
+          tenantId,
+          titleFieldKey,
+        });
+        setFormValues(model.formValues);
+        setLocalEntity(result.entity);
+        await onSaved?.(result.entity, { created: false });
+      }
+
+      return result;
+    },
+    [
+      cardMode,
+      cardModel,
+      catalog,
+      formValues,
+      objectTypeKey,
+      onSaved,
+      setFieldValue,
+      submitUpdate,
+      tenantId,
+      titleFieldKey,
+    ],
+  );
+
+  const saveCreate = useCallback(async () => {
+    if (!tenantId || !objectTypeKey || !cardModel?.editableFields) {
+      setSubmitError("Не задан object type");
+      return { ok: false };
+    }
+
+    const { values, fieldErrors: nextFieldErrors } = buildCreateEntityPayload(
+      formValues,
+      cardModel.editableFields,
+    );
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      return { ok: false };
+    }
+
+    setSubmitError("");
+    setFieldErrors({});
+    setCreateSubmitting(true);
+
+    try {
+      const entity = await runtimeWriteGateway.createEntity({
+        tenantId,
+        objectTypeKey,
+        values,
+      });
+
+      const normalizedId = String(entity?.id || "").trim();
+
+      if (!normalizedId) {
+        setSubmitError("Запись создана, но не получен ID");
+        return { ok: false };
+      }
+
+      setLocalEntity(entity);
+      setOpenEntityId(normalizedId);
+      setCardMode("edit");
+
+      const model = mapRuntimeEntityToCardModel({
+        entity,
+        catalog,
+        objectTypeKey,
+        tenantId,
+        titleFieldKey,
+      });
+
+      setFormValues(model.formValues);
+      await onSaved?.(entity, { created: true });
+
+      return { ok: true, entity };
+    } catch (error) {
+      setSubmitError(getApiErrorMessage(error, "Не удалось создать объект"));
+      return { ok: false };
+    } finally {
+      setCreateSubmitting(false);
+    }
+  }, [
+    tenantId,
+    objectTypeKey,
+    cardModel,
+    formValues,
+    catalog,
+    titleFieldKey,
+    onSaved,
+    setSubmitError,
+  ]);
+
   const save = useCallback(async () => {
+    if (cardMode === "create") {
+      return saveCreate();
+    }
+
     if (!cardModel?.entityId) {
       return { ok: false };
     }
@@ -240,9 +435,11 @@ export default function useObjectEntityCard({
 
     return result;
   }, [
+    cardMode,
     cardModel,
     formValues,
     submitUpdate,
+    saveCreate,
     catalog,
     objectTypeKey,
     tenantId,
@@ -250,16 +447,20 @@ export default function useObjectEntityCard({
   ]);
 
   return {
-    mode,
+    cardMode,
+    isCreateMode: cardMode === "create",
+    canCreate,
     isOpen,
     openCard,
+    openCreateCard,
     closeCard,
     cardModel,
     formValues,
     setFieldValue,
+    updateFieldValue,
     fieldErrors,
     save,
-    submitting,
+    submitting: submitting || createSubmitting,
     submitError,
     initialContext,
     openError,

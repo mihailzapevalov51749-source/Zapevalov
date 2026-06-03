@@ -1,4 +1,9 @@
-import { fieldEditorInputStyle } from "../fieldEditorStyles";
+import { useEffect, useRef } from "react";
+
+import {
+  fieldEditorInlineInputStyle,
+  fieldEditorInputStyle,
+} from "../fieldEditorStyles";
 
 function toDateInputValue(value) {
   if (!value) {
@@ -63,12 +68,37 @@ export default function DateFieldEditor({
   onChange,
   readOnly = false,
   autoFocus = false,
+  inline = false,
   includeTime = false,
+  onCancel,
+  onDismiss,
 }) {
+  const inputRef = useRef(null);
   const inputType = includeTime ? "datetime-local" : "date";
   const displayValue = includeTime
     ? toDateTimeInputValue(value)
     : toDateInputValue(value);
+  const style = inline ? fieldEditorInlineInputStyle : fieldEditorInputStyle;
+
+  useEffect(() => {
+    if (!autoFocus || readOnly) {
+      return;
+    }
+
+    const input = inputRef.current;
+
+    if (!input) {
+      return;
+    }
+
+    input.focus({ preventScroll: true });
+
+    try {
+      input.showPicker?.();
+    } catch {
+      // showPicker may throw if not triggered by user gesture in some browsers
+    }
+  }, [autoFocus, readOnly]);
 
   const handleChange = (event) => {
     const next = event.target.value;
@@ -86,8 +116,16 @@ export default function DateFieldEditor({
     onChange?.(next);
   };
 
+  const handleKeyDown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onCancel?.();
+    }
+  };
+
   return (
     <input
+      ref={inputRef}
       type={inputType}
       className="field-editor-input"
       value={displayValue}
@@ -95,7 +133,9 @@ export default function DateFieldEditor({
       disabled={readOnly}
       autoFocus={autoFocus}
       onChange={handleChange}
-      style={fieldEditorInputStyle}
+      onBlur={() => onDismiss?.()}
+      onKeyDown={handleKeyDown}
+      style={style}
     />
   );
 }

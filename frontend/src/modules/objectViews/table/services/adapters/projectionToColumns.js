@@ -1,11 +1,14 @@
-import { VIEW_ENGINE_SYSTEM_COLUMN_KEYS } from "../../../../../shared/viewEngine/contracts";
+import {
+  SYSTEM_COLUMN_KEYS,
+  VIEW_ENGINE_SYSTEM_COLUMN_KEYS,
+} from "../../../../../shared/viewEngine/systemColumnKeys";
 
 import { catalogFieldToFieldDef } from "./catalogFieldToFieldDef";
 
 /** @type {import("../../../../../shared/viewEngine/contracts").ViewEngineColumn[]} */
 const DEFAULT_SYSTEM_COLUMNS = [
   {
-    key: "id",
+    key: SYSTEM_COLUMN_KEYS.id,
     label: "ID",
     type: "text",
     fieldDef: null,
@@ -17,19 +20,19 @@ const DEFAULT_SYSTEM_COLUMNS = [
     width: 280,
   },
   {
-    key: "status",
-    label: "Статус",
+    key: SYSTEM_COLUMN_KEYS.status,
+    label: "Статус записи",
     type: "text",
     fieldDef: null,
     source: "system",
-    visible: true,
-    sortable: true,
+    visible: false,
+    sortable: false,
     isSystem: true,
     isTitle: false,
     width: 140,
   },
   {
-    key: "created_at",
+    key: SYSTEM_COLUMN_KEYS.created_at,
     label: "Создано",
     type: "date",
     fieldDef: null,

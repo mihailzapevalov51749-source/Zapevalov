@@ -18,6 +18,7 @@ import {
 
 import { getInnerTabLabel } from "../services/objectEntityCardSectionsLayout";
 import { resolveActiveCardTab } from "../services/objectEntityCardLayout";
+import EntityCardPendingSection from "./EntityCardPendingSection";
 import ObjectEntityNotes from "./ObjectEntityNotes";
 import ObjectEntityRelatedEntities from "./ObjectEntityRelatedEntities";
 
@@ -34,6 +35,8 @@ export default function ObjectEntityCardTabsBlock({
   relationsState = null,
   onOpenRelatedEntity = null,
   onNotesCountChange = null,
+  isCreate = false,
+  createPendingMessage = "Сохраните запись, чтобы работать с этим разделом",
 }) {
   const tabs = useMemo(
     () =>
@@ -89,6 +92,10 @@ export default function ObjectEntityCardTabsBlock({
   }
 
   function renderTabContent(tabId) {
+    if (isCreate || !cardModel?.entityId) {
+      return <EntityCardPendingSection message={createPendingMessage} />;
+    }
+
     if (tabId === "notes") {
       return (
         <ObjectEntityNotes

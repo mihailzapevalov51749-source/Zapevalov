@@ -16,6 +16,7 @@ import {
 } from "./services/objectEntityCardSectionsLayout";
 
 export default function ObjectEntityCardView({
+  mode = "edit",
   cardModel,
   formValues = {},
   fieldErrors = {},
@@ -104,8 +105,10 @@ export default function ObjectEntityCardView({
     return null;
   }
 
+  const isCreate = mode === "create" || Boolean(cardModel.isCreate);
   const canSaveEntity = cardModel.editableFields.length > 0;
-  const showCardSettings = canConfigureCard && typeof onSaveCardLayout === "function";
+  const showCardSettings =
+    !isCreate && canConfigureCard && typeof onSaveCardLayout === "function";
 
   const layoutForSections = {
     ...utLayout,
@@ -115,10 +118,12 @@ export default function ObjectEntityCardView({
   return (
     <>
       <EntityCardLayout
-        resetScrollKey={cardModel.entityId}
+        resetScrollKey={cardModel.entityId || "create"}
         header={
             <ObjectEntityCardHeader
               entityId={cardModel.entityId}
+              createTitle={cardModel.createTitle}
+              isCreate={isCreate}
               onClose={onClose}
               onBack={onClose}
               onOpenSettings={
@@ -131,6 +136,7 @@ export default function ObjectEntityCardView({
           }
           content={
             <ObjectEntityCardSections
+              isCreate={isCreate}
               cardModel={cardModel}
               catalog={catalog}
               formValues={formValues}
@@ -149,6 +155,7 @@ export default function ObjectEntityCardView({
           sidebar={
             <ObjectEntityComments
               runtimeEntityId={cardModel.entityId}
+              isCreate={isCreate}
               initialContext={initialContext}
             />
           }

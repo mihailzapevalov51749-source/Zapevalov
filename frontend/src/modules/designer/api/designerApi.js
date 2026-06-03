@@ -64,7 +64,7 @@ export async function createField(tenantId, objectTypeId, payload) {
 
 export async function updateField(tenantId, objectTypeId, fieldId, payload) {
   const { data } = await platformApiClient.patch(
-    `${tenantBase(tenantId)}/object-types/${objectTypeId}/fields/${fieldId}`,
+    `${tenantBase(tenantId)}/fields/${fieldId}`,
     payload,
   );
   return data;
@@ -72,7 +72,7 @@ export async function updateField(tenantId, objectTypeId, fieldId, payload) {
 
 export async function deleteField(tenantId, objectTypeId, fieldId) {
   const { data } = await platformApiClient.delete(
-    `${tenantBase(tenantId)}/object-types/${objectTypeId}/fields/${fieldId}`,
+    `${tenantBase(tenantId)}/fields/${fieldId}`,
   );
   return data;
 }

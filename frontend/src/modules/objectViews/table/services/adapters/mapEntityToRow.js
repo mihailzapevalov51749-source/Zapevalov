@@ -1,3 +1,29 @@
+import {
+  SYSTEM_COLUMN_KEYS,
+  isViewEngineSystemColumn,
+  normalizeSystemColumnKey,
+} from "../../../../../shared/viewEngine/systemColumnKeys";
+
+/**
+ * @param {Record<string, unknown>} entity
+ * @param {string} systemKey
+ * @returns {unknown}
+ */
+function resolveSystemEntityValue(entity, systemKey) {
+  switch (systemKey) {
+    case SYSTEM_COLUMN_KEYS.id:
+      return entity.id ?? entity.entity_id ?? null;
+    case SYSTEM_COLUMN_KEYS.status:
+      return entity.status ?? null;
+    case SYSTEM_COLUMN_KEYS.created_at:
+      return entity.created_at ?? entity.createdAt ?? null;
+    case SYSTEM_COLUMN_KEYS.updated_at:
+      return entity.updated_at ?? entity.updatedAt ?? null;
+    default:
+      return null;
+  }
+}
+
 /**
  * @param {Record<string, unknown>} entity
  * @param {import("../../../../../shared/viewEngine/contracts").ViewEngineColumn} column
@@ -8,19 +34,11 @@ export function resolveEntityCellValue(entity, column) {
     return null;
   }
 
-  if (column.isSystem || column.source === "system") {
-    switch (column.key) {
-      case "id":
-        return entity.id ?? entity.entity_id ?? null;
-      case "status":
-        return entity.status ?? null;
-      case "created_at":
-        return entity.created_at ?? entity.createdAt ?? null;
-      case "updated_at":
-        return entity.updated_at ?? entity.updatedAt ?? null;
-      default:
-        return null;
-    }
+  if (isViewEngineSystemColumn(column)) {
+    return resolveSystemEntityValue(
+      entity,
+      normalizeSystemColumnKey(column.key),
+    );
   }
 
   const values =

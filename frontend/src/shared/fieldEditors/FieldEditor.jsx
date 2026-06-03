@@ -1,6 +1,10 @@
 import { fieldDefToRendererColumn } from "../viewEngine/utils/fieldDefToRendererColumn";
 
-import { getFieldEditorComponent, normalizeFieldEditorType } from "./fieldEditorRegistry";
+import {
+  FIELD_EDITOR_TYPE_CHOICE,
+  getFieldEditorComponent,
+  normalizeFieldEditorType,
+} from "./fieldEditorRegistry";
 
 /**
  * Form field editor — maps catalog field def to typed editor (no UniversalTable dependency).
@@ -11,6 +15,10 @@ export default function FieldEditor({
   onChange,
   readOnly = false,
   autoFocus = false,
+  inline = false,
+  onCancel,
+  onCommit,
+  onDismiss,
 }) {
   if (!fieldDef) {
     return null;
@@ -24,6 +32,12 @@ export default function FieldEditor({
     multiple: editorType === "multi_choice" || fieldDef.multiple,
   });
 
+  const openOnMount =
+    autoFocus &&
+    inline &&
+    editorType === FIELD_EDITOR_TYPE_CHOICE &&
+    !column.multiple;
+
   return (
     <Editor
       column={column}
@@ -32,6 +46,11 @@ export default function FieldEditor({
       onChange={onChange}
       readOnly={readOnly}
       autoFocus={autoFocus}
+      inline={inline}
+      openOnMount={openOnMount}
+      onCancel={onCancel}
+      onCommit={onCommit}
+      onDismiss={onDismiss}
       multiline={editorType === "textarea"}
       includeTime={editorType === "datetime"}
     />

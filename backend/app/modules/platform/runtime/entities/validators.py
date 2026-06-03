@@ -62,6 +62,24 @@ def validate_field_value(field_metadata: dict[str, Any], value: Any) -> None:
             raise ValueError(f"Поле '{field_key}' ожидает valid UUID string или null") from exc
         return
 
+    if field_type == FieldType.USER:
+        if isinstance(value, bool):
+            raise ValueError(f"Поле '{field_key}' ожидает user_id (int) или null")
+        if isinstance(value, int) and not isinstance(value, bool):
+            if value <= 0:
+                raise ValueError(f"Поле '{field_key}' ожидает положительный user_id или null")
+            return
+        if isinstance(value, str):
+            stripped = value.strip()
+            if not stripped:
+                raise ValueError(f"Поле '{field_key}' ожидает user_id (int) или null")
+            if not stripped.isdigit():
+                raise ValueError(f"Поле '{field_key}' ожидает user_id (int) или null")
+            if int(stripped) <= 0:
+                raise ValueError(f"Поле '{field_key}' ожидает положительный user_id или null")
+            return
+        raise ValueError(f"Поле '{field_key}' ожидает user_id (int) или null")
+
     raise ValueError(f"Поле '{field_key}': неподдерживаемый field_type '{field_type}'")
 
 

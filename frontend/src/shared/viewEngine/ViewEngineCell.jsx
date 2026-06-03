@@ -1,5 +1,10 @@
 import FieldValueRenderer from "../fieldTypes/FieldValueRenderer";
 
+import {
+  SYSTEM_COLUMN_KEYS,
+  isViewEngineSystemColumn,
+  normalizeSystemColumnKey,
+} from "./systemColumnKeys";
 import { fieldDefToRendererColumn } from "./utils/fieldDefToRendererColumn";
 import { viewEngineCellWrapperStyle } from "./viewEngineStyles";
 
@@ -22,9 +27,9 @@ export default function ViewEngineCell({
   const rendererColumn = fieldDefToRendererColumn(resolvedFieldDef);
   const type = column?.type || resolvedFieldDef?.type || "text";
   const isPrimary = Boolean(isTitle || column?.isTitle);
-  const isStatusColumn =
-    String(column?.key || "").toLowerCase() === "status" ||
-    String(type || "").toLowerCase() === "status";
+  const isEntitySystemStatusColumn =
+    isViewEngineSystemColumn(column) &&
+    normalizeSystemColumnKey(column?.key) === SYSTEM_COLUMN_KEYS.status;
 
   const rendererRow = row
     ? {
@@ -52,7 +57,7 @@ export default function ViewEngineCell({
             : "view-engine-table-cell-inner"
         }
       >
-        {isStatusColumn ? (
+        {isEntitySystemStatusColumn ? (
           <span
             className="view-engine-table-status-badge"
             title={value != null && value !== "" ? String(value) : undefined}

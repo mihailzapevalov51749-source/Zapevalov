@@ -6,7 +6,16 @@ from typing import Any
 
 OBJECT_VIEW_SCHEMA_VERSION = 1
 
-OBJECT_VIEW_SYSTEM_FIELD_KEYS = frozenset({"id", "status", "created_at"})
+SYSTEM_COLUMN_KEY_PREFIX = "__system_"
+
+OBJECT_VIEW_SYSTEM_FIELD_KEYS = frozenset(
+    {
+        f"{SYSTEM_COLUMN_KEY_PREFIX}id",
+        f"{SYSTEM_COLUMN_KEY_PREFIX}status",
+        f"{SYSTEM_COLUMN_KEY_PREFIX}created_at",
+        f"{SYSTEM_COLUMN_KEY_PREFIX}updated_at",
+    },
+)
 
 
 def _is_str_list(value: Any) -> bool:
@@ -184,6 +193,61 @@ def merge_object_view_projection_field_keys(
     return object_view
 
 
+def merge_legacy_projection_field_keys(
+    projection: dict[str, Any],
+    *,
+    ordered_non_system_field_keys: list[str],
+) -> dict[str, Any]:
+    """Append new object-type fields to legacy settings.projection (designer ViewsTab)."""
+    projection = dict(projection)
+
+    visible_raw = projection.get("visible_fields")
+    order_raw = projection.get("field_order")
+
+    visible_list = (
+        [str(key) for key in visible_raw if str(key or "").strip()]
+        if _is_str_list(visible_raw)
+        else []
+    )
+    order_list = (
+        [str(key) for key in order_raw if str(key or "").strip()]
+        if _is_str_list(order_raw)
+        else []
+    )
+
+    visible_set = {
+        key
+        for key in visible_list
+        if key not in OBJECT_VIEW_SYSTEM_FIELD_KEYS
+    }
+
+    merged_order: list[str] = []
+    order_seen: set[str] = set()
+
+    for key in order_list:
+        if key in OBJECT_VIEW_SYSTEM_FIELD_KEYS or key in order_seen:
+            continue
+        order_seen.add(key)
+        merged_order.append(key)
+
+    for key in ordered_non_system_field_keys:
+        normalized = str(key or "").strip()
+        if (
+            not normalized
+            or normalized in OBJECT_VIEW_SYSTEM_FIELD_KEYS
+            or normalized in order_seen
+        ):
+            continue
+        order_seen.add(normalized)
+        merged_order.append(normalized)
+        visible_set.add(normalized)
+
+    projection["field_order"] = merged_order
+    projection["visible_fields"] = [key for key in merged_order if key in visible_set]
+
+    return projection
+
+
 def normalize_settings_json_for_publish(
     settings_json: dict[str, Any] | None,
     *,
@@ -231,16 +295,29 @@ def normalize_settings_json_for_publish(
 
     projection = settings.get("projection")
     if isinstance(projection, dict):
-        visible = projection.get("visible_fields")
-        order = projection.get("field_order")
-        if _is_str_list(visible):
-            projection["visible_fields"] = [
-                key for key in visible if key not in OBJECT_VIEW_SYSTEM_FIELD_KEYS
-            ]
-        if _is_str_list(order):
-            projection["field_order"] = [
-                key for key in order if key not in OBJECT_VIEW_SYSTEM_FIELD_KEYS
-            ]
+        ordered_non_system = [
+            str(key)
+            for key in (ordered_field_keys or sorted(field_keys))
+            if str(key or "").strip() and str(key) not in OBJECT_VIEW_SYSTEM_FIELD_KEYS
+        ]
+
+        if not isinstance(settings.get("objectView"), dict):
+            projection = merge_legacy_projection_field_keys(
+                projection,
+                ordered_non_system_field_keys=ordered_non_system,
+            )
+        else:
+            visible = projection.get("visible_fields")
+            order = projection.get("field_order")
+            if _is_str_list(visible):
+                projection["visible_fields"] = [
+                    key for key in visible if key not in OBJECT_VIEW_SYSTEM_FIELD_KEYS
+                ]
+            if _is_str_list(order):
+                projection["field_order"] = [
+                    key for key in order if key not in OBJECT_VIEW_SYSTEM_FIELD_KEYS
+                ]
+
         settings["projection"] = projection
 
     # Keep canonical objectView key/viewType aligned with view row identity.

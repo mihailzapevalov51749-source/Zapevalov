@@ -1,4 +1,5 @@
 import { normalizeFieldEditorType } from "../../../shared/fieldEditors/fieldEditorRegistry";
+import { serializeUserFieldValue } from "../../../shared/fieldEditors/userFieldValueUtils";
 
 function isEmptyValue(editorType, value) {
   if (editorType === "boolean") {
@@ -7,6 +8,10 @@ function isEmptyValue(editorType, value) {
 
   if (editorType === "multi_choice") {
     return !Array.isArray(value) || value.length === 0;
+  }
+
+  if (editorType === "user") {
+    return serializeUserFieldValue(value) === null;
   }
 
   if (value === null || value === undefined) {
@@ -93,6 +98,11 @@ export function buildEntityUpdatePayload(formValues, fields = []) {
       continue;
     }
 
+    if (editorType === "user") {
+      values[key] = serializeUserFieldValue(rawValue);
+      continue;
+    }
+
     values[key] = rawValue;
   }
 
@@ -147,6 +157,11 @@ export function buildInitialFormValuesFromEntity(entity, editableFields = []) {
 
     if (editorType === "number") {
       formValues[key] = rawValue;
+      continue;
+    }
+
+    if (editorType === "user") {
+      formValues[key] = serializeUserFieldValue(rawValue) ?? "";
       continue;
     }
 
