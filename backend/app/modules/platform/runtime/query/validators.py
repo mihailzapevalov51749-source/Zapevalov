@@ -4,7 +4,16 @@ from uuid import UUID
 
 from app.modules.platform.shared.enums import FieldType
 
-ENTITY_SORT_FIELDS = frozenset({"created_at", "updated_at"})
+ENTITY_SORT_FIELDS = frozenset(
+    {
+        "id",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "updated_by",
+        "record_version",
+    },
+)
 ALLOWED_ORDERS = frozenset({"asc", "desc"})
 
 

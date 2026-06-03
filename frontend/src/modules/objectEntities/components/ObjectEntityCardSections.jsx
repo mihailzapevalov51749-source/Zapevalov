@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 
 import { OBJECT_ENTITY_SECTION_TYPES } from "../services/objectEntityCardSectionsLayout";
+import { getFileFieldsFromCatalog } from "../services/getFileFieldsFromCatalog";
 import { findDescriptionField } from "../services/runtimeEntityCardAdapter";
 
 import EntityCardPendingSection from "./EntityCardPendingSection";
@@ -51,6 +52,11 @@ export default function ObjectEntityCardSections({
   );
 
   const sections = utLayout?.sections || [];
+  const hasFileFields = useMemo(
+    () =>
+      getFileFieldsFromCatalog(catalog, cardModel?.objectTypeKey).length > 0,
+    [catalog, cardModel?.objectTypeKey],
+  );
   const attachmentsSectionRef = useRef(null);
   const notificationScrollDoneRef = useRef(false);
 
@@ -145,6 +151,21 @@ export default function ObjectEntityCardSections({
         </div>
       ) : null}
 
+      {!isCreate && (cardModel?.readOnlyFields || []).length > 0 ? (
+        <ObjectEntityCardFieldsGrid
+          fields={cardModel.readOnlyFields}
+          formValues={{
+            ...formValues,
+            ...(cardModel?.rawEntity?.values && typeof cardModel.rawEntity.values === "object"
+              ? cardModel.rawEntity.values
+              : {}),
+          }}
+          fieldErrors={{}}
+          onFieldChange={null}
+          readOnly
+        />
+      ) : null}
+
       {sections.map((section) => {
         if (section.visible === false) {
           return null;
@@ -186,6 +207,9 @@ export default function ObjectEntityCardSections({
             />
           );
         } else if (section.type === OBJECT_ENTITY_SECTION_TYPES.attachments) {
+          if (!hasFileFields) {
+            renderedSection = null;
+          } else {
           renderedSection = (
             <div
               ref={attachmentsSectionRef}
@@ -207,6 +231,7 @@ export default function ObjectEntityCardSections({
               )}
             </div>
           );
+          }
         } else if (section.type === OBJECT_ENTITY_SECTION_TYPES.tabs) {
           renderedSection = (
             <ObjectEntityCardTabsBlock

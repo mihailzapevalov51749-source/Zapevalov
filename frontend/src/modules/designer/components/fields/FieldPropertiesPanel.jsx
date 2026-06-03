@@ -3,6 +3,7 @@ import { FIELD_TYPE_OPTIONS } from "./CreateFieldModal";
 import {
   createEmptyChoiceOption,
   isChoiceFieldType,
+  isFileFieldType,
 } from "./fieldFormUtils";
 
 import "./fieldPropertiesPanel.css";
@@ -21,6 +22,7 @@ export default function FieldPropertiesPanel({
   }
 
   const showChoiceOptions = isChoiceFieldType(draft.field_type);
+  const showFileOptions = isFileFieldType(draft.field_type);
 
   return (
     <aside className="designer-properties-panel designer-field-properties-panel">
@@ -87,6 +89,10 @@ export default function FieldPropertiesPanel({
                   patch.choice_multiple = nextFieldType === "multi_choice";
                 }
 
+                if (isFileFieldType(nextFieldType)) {
+                  patch.file_multiple = true;
+                }
+
                 onDraftChange?.({ ...draft, ...patch });
               }}
             >
@@ -127,6 +133,24 @@ export default function FieldPropertiesPanel({
                 }
                 error={draft.choice_options_error || ""}
               />
+            </div>
+          ) : null}
+
+          {showFileOptions ? (
+            <div className="designer-field-form__group">
+              <label className="designer-field-form__checkbox">
+                <input
+                  type="checkbox"
+                  checked={draft.file_multiple !== false}
+                  onChange={(event) =>
+                    onDraftChange?.({
+                      ...draft,
+                      file_multiple: event.target.checked,
+                    })
+                  }
+                />
+                Несколько файлов
+              </label>
             </div>
           ) : null}
 

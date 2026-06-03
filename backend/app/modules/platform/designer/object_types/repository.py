@@ -1,9 +1,99 @@
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.modules.platform.designer.field_definitions.models import DesignerFieldDefinition
 from app.modules.platform.designer.object_types.models import DesignerObjectType
+from app.modules.platform.designer.relation_definitions.models import (
+    DesignerRelationDefinition,
+)
+from app.modules.platform.designer.view_definitions.models import DesignerViewDefinition
+
+
+def count_dependency_totals_by_object_type(
+    db: Session,
+    tenant_id: int,
+    object_type_ids: list[UUID],
+) -> dict[UUID, dict[str, int]]:
+    if not object_type_ids:
+        return {}
+
+    field_rows = (
+        db.query(
+            DesignerFieldDefinition.object_type_id,
+            func.count(DesignerFieldDefinition.id),
+        )
+        .filter(
+            DesignerFieldDefinition.tenant_id == tenant_id,
+            DesignerFieldDefinition.object_type_id.in_(object_type_ids),
+            DesignerFieldDefinition.deleted_at.is_(None),
+        )
+        .group_by(DesignerFieldDefinition.object_type_id)
+        .all()
+    )
+
+    view_rows = (
+        db.query(
+            DesignerViewDefinition.object_type_id,
+            func.count(DesignerViewDefinition.id),
+        )
+        .filter(
+            DesignerViewDefinition.tenant_id == tenant_id,
+            DesignerViewDefinition.object_type_id.in_(object_type_ids),
+            DesignerViewDefinition.deleted_at.is_(None),
+        )
+        .group_by(DesignerViewDefinition.object_type_id)
+        .all()
+    )
+
+    relation_source_rows = (
+        db.query(
+            DesignerRelationDefinition.source_object_type_id,
+            func.count(DesignerRelationDefinition.id),
+        )
+        .filter(
+            DesignerRelationDefinition.tenant_id == tenant_id,
+            DesignerRelationDefinition.source_object_type_id.in_(object_type_ids),
+            DesignerRelationDefinition.deleted_at.is_(None),
+        )
+        .group_by(DesignerRelationDefinition.source_object_type_id)
+        .all()
+    )
+
+    relation_target_rows = (
+        db.query(
+            DesignerRelationDefinition.target_object_type_id,
+            func.count(DesignerRelationDefinition.id),
+        )
+        .filter(
+            DesignerRelationDefinition.tenant_id == tenant_id,
+            DesignerRelationDefinition.target_object_type_id.in_(object_type_ids),
+            DesignerRelationDefinition.deleted_at.is_(None),
+        )
+        .group_by(DesignerRelationDefinition.target_object_type_id)
+        .all()
+    )
+
+    totals: dict[UUID, dict[str, int]] = {
+        object_type_id: {"fields": 0, "views": 0, "relations": 0}
+        for object_type_id in object_type_ids
+    }
+
+    for object_type_id, count in field_rows:
+        totals[object_type_id]["fields"] = int(count)
+
+    for object_type_id, count in view_rows:
+        totals[object_type_id]["views"] = int(count)
+
+    for object_type_id, count in relation_source_rows:
+        totals[object_type_id]["relations"] += int(count)
+
+    for object_type_id, count in relation_target_rows:
+        totals[object_type_id]["relations"] += int(count)
+
+    return totals
 
 
 def list_object_types(db: Session, tenant_id: int) -> list[DesignerObjectType]:

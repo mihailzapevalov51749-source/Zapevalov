@@ -5,7 +5,20 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Session, aliased, joinedload
 
 from app.modules.platform.runtime.entities.models import RuntimeEntity, RuntimeEntityValue
+from app.modules.platform.runtime.entities.system_fields import (
+    SYSTEM_FIELD_KEYS,
+    is_runtime_system_field_key,
+)
 from app.modules.platform.runtime.query.validators import ENTITY_SORT_FIELDS
+
+SYSTEM_FIELD_FILTER_COLUMNS = {
+    SYSTEM_FIELD_KEYS["id"]: RuntimeEntity.id,
+    SYSTEM_FIELD_KEYS["created_by"]: RuntimeEntity.created_by,
+    SYSTEM_FIELD_KEYS["created_at"]: RuntimeEntity.created_at,
+    SYSTEM_FIELD_KEYS["updated_by"]: RuntimeEntity.updated_by,
+    SYSTEM_FIELD_KEYS["updated_at"]: RuntimeEntity.updated_at,
+    SYSTEM_FIELD_KEYS["record_version"]: RuntimeEntity.record_version,
+}
 
 
 def _base_query(
@@ -27,6 +40,12 @@ def _apply_field_filters(
     filters: dict[str, Any],
 ):
     for field_key, value in filters.items():
+        entity_column = SYSTEM_FIELD_FILTER_COLUMNS.get(field_key)
+
+        if entity_column is not None:
+            query = query.filter(entity_column == value)
+            continue
+
         query = query.filter(
             RuntimeEntity.id.in_(
                 db.query(RuntimeEntityValue.entity_id).filter(
@@ -67,8 +86,16 @@ def query_entities(
 
     order_fn, nulls_fn = _order_clause(sort_field, sort_order)
 
-    if sort_field in ENTITY_SORT_FIELDS:
-        order_col = getattr(RuntimeEntity, sort_field)
+    entity_sort_field = sort_field
+    if is_runtime_system_field_key(sort_field):
+        from app.modules.platform.runtime.entities.system_fields import (
+            runtime_sort_field_for_column_key,
+        )
+
+        entity_sort_field = runtime_sort_field_for_column_key(sort_field)
+
+    if entity_sort_field in ENTITY_SORT_FIELDS:
+        order_col = getattr(RuntimeEntity, entity_sort_field)
         ordered = filtered.order_by(
             nulls_fn(order_fn(order_col)),
             order_fn(RuntimeEntity.id),

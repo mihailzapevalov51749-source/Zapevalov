@@ -10,7 +10,7 @@ const DESIGNER_OBJECT_DATA_RE =
   /^\/designer\/tenant\/(\d+)\/object-types\/([^/]+)\/data\/?$/i;
 
 const PORTAL_OBJECT_RE =
-  /^\/portal\/(\d+)\/object-types\/([^/?#]+)(?:\/data)?\/?$/i;
+  /^\/portal\/(\d+)\/object-types\/([^/?#]+)(?:\/([^/?#]+))?\/?$/i;
 
 export function isObjectTypeUuid(value) {
   return UUID_RE.test(String(value ?? "").trim());
@@ -26,19 +26,33 @@ export function isObjectTypeNavigationItem(item) {
 
 /**
  * @param {number | string} portalId
- * @param {{ objectTypeId?: string, objectTypeKey?: string }} identifiers
+ * @param {{ objectTypeId?: string, objectTypeKey?: string, viewKey?: string | null }} identifiers
  */
 export function buildPortalObjectRoute(portalId, identifiers = {}) {
   const pid = Number(portalId) || 1;
   const key = String(identifiers.objectTypeKey ?? "").trim();
+  const viewKey = String(identifiers.viewKey ?? "").trim();
 
   if (key && !isObjectTypeUuid(key)) {
-    return `/portal/${pid}/object-types/${encodeURIComponent(key)}`;
+    const base = `/portal/${pid}/object-types/${encodeURIComponent(key)}`;
+
+    if (viewKey) {
+      return `${base}/${encodeURIComponent(viewKey)}`;
+    }
+
+    return base;
   }
 
   const id = String(identifiers.objectTypeId ?? "").trim();
+
   if (id) {
-    return `/portal/${pid}/object-types/${encodeURIComponent(id)}/data`;
+    const base = `/portal/${pid}/object-types/${encodeURIComponent(id)}/data`;
+
+    if (viewKey) {
+      return `${base}?viewKey=${encodeURIComponent(viewKey)}`;
+    }
+
+    return base;
   }
 
   return null;
@@ -59,12 +73,14 @@ export function resolvePortalObjectNavigationPath(item, portalId) {
 
   if (raw) {
     const designerMatch = raw.match(DESIGNER_OBJECT_DATA_RE);
+
     if (designerMatch) {
       const objectTypeId = designerMatch[2];
       return buildPortalObjectRoute(portalId, { objectTypeId });
     }
 
     const portalMatch = raw.match(PORTAL_OBJECT_RE);
+
     if (portalMatch) {
       const normalized = raw.split("?")[0].split("#")[0].replace(/\/+$/, "");
       return normalized || raw;
@@ -104,6 +120,7 @@ export function transformRuntimeNavigationForPortal(items, portalId) {
     }
 
     const portalPath = resolvePortalObjectNavigationPath(item, portalId);
+
     if (!portalPath) {
       return { ...item, children };
     }
@@ -118,14 +135,70 @@ export function transformRuntimeNavigationForPortal(items, portalId) {
   });
 }
 
-export function parsePortalObjectRoute(pathname) {
+/**
+ * @param {string} pathname
+ * @param {string} [search]
+ */
+export function parsePortalObjectRoute(pathname, search = "") {
   const match = String(pathname || "").match(PORTAL_OBJECT_RE);
+
   if (!match) {
     return null;
   }
 
+  const objectTypeRef = decodeURIComponent(match[2]);
+  const thirdSegment = match[3] ? decodeURIComponent(match[3]) : null;
+
+  let viewKey = null;
+  let isDataRoute = false;
+
+  if (thirdSegment === "data" && isObjectTypeUuid(objectTypeRef)) {
+    isDataRoute = true;
+  } else if (thirdSegment) {
+    viewKey = thirdSegment;
+  }
+
+  const params = new URLSearchParams(String(search || ""));
+
+  if (!viewKey) {
+    const fromQuery = String(params.get("viewKey") || "").trim();
+
+    if (fromQuery) {
+      viewKey = fromQuery;
+    }
+  }
+
   return {
     portalId: Number(match[1]),
-    objectTypeRef: decodeURIComponent(match[2]),
+    objectTypeRef,
+    viewKey,
+    isDataRoute,
   };
+}
+
+/**
+ * @param {string} pathname
+ */
+export function parsePortalObjectViewKeyFromPath(pathname, search = "") {
+  return parsePortalObjectRoute(pathname, search)?.viewKey ?? null;
+}
+
+export function buildPortalObjectTabHref({
+  portalId,
+  objectTypeRef,
+  objectTypeKey,
+  viewKey,
+}) {
+  const ref = String(objectTypeRef ?? "").trim();
+  const key = String(objectTypeKey ?? "").trim();
+
+  if (key && !isObjectTypeUuid(key)) {
+    return buildPortalObjectRoute(portalId, { objectTypeKey: key, viewKey });
+  }
+
+  if (isObjectTypeUuid(ref)) {
+    return buildPortalObjectRoute(portalId, { objectTypeId: ref, viewKey });
+  }
+
+  return buildPortalObjectRoute(portalId, { objectTypeKey: key || ref, viewKey });
 }

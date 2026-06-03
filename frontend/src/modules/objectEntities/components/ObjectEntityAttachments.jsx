@@ -81,6 +81,17 @@ export default function ObjectEntityAttachments({
       }}
       uploadDisabled={!canUpload || submitting}
       uploadDisabledHint={uploadDisabledHint}
+      fileViewerSourceType="object_entity_attachment"
+      fileViewerSourceId={identity.entityId}
+      fileViewerContextExtras={{
+        tenant_id: tenantId,
+        tenantId,
+        object_type_key: objectTypeKey,
+        objectTypeKey,
+        entity_id: identity.entityId,
+        entityId: identity.entityId,
+        runtime_entity_id: identity.entityId,
+      }}
       fileViewerFallbackContext={{
         entity_type: identity.entityType,
         entity_id: identity.entityId,

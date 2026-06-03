@@ -6,6 +6,11 @@ import {
   findCatalogObjectType,
   getObjectTypeFields,
 } from "../table/services/adapters/ObjectTypeTableAdapter";
+import { isTableBaseStateKey } from "../table/preferences/tableBaseState";
+import {
+  orderAllModeTableFieldKeys,
+  resolveObjectTypeTitleFieldKey,
+} from "./tableColumnOrder";
 
 /**
  * @param {string[]} keys
@@ -184,6 +189,31 @@ export function syncObjectViewContractWithCatalog(
     return contract;
   }
 
+  if (isTableBaseStateKey(contract.key)) {
+    const objectType = findCatalogObjectType(catalog, objectTypeKey);
+    const fields = getObjectTypeFields(objectType);
+    const fieldKeys = orderAllModeTableFieldKeys(fields, { objectType });
+    const titleFieldKey = resolveObjectTypeTitleFieldKey(objectType, fieldKeys);
+
+    return {
+      ...contract,
+      projection: {
+        fieldKeys: [...fieldKeys],
+        fieldOrder: [...fieldKeys],
+        titleFieldKey,
+      },
+      presentation: {
+        ...contract.presentation,
+        table: {
+          ...(contract.presentation?.table || {}),
+          hiddenFieldKeys: contract.presentation?.table?.hiddenFieldKeys || [],
+          columnOrder: [...fieldKeys],
+        },
+        card: contract.presentation?.card ?? null,
+      },
+    };
+  }
+
   const catalogFields = getCatalogFieldsForProjection(catalog, objectTypeKey);
 
   if (!catalogFields.length) {
@@ -217,6 +247,7 @@ export function syncObjectViewContractWithCatalog(
       ),
     },
     syncedProjection.fieldKeys,
+    syncedProjection.titleFieldKey,
   );
 
   return {

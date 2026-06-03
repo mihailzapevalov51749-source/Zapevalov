@@ -1,12 +1,36 @@
 from typing import Any
 from uuid import UUID
 
+from app.modules.platform.runtime.entities.system_fields import (
+    is_runtime_system_field_key,
+    strip_client_system_values,
+)
 from app.modules.platform.shared.enums import FieldType
 
 
 def _choice_option_keys(settings_json: dict[str, Any] | None) -> set[str]:
     options = (settings_json or {}).get("options") or []
     return {str(option["key"]) for option in options if option.get("key") is not None}
+
+
+def _file_entry_id(item: dict[str, Any]) -> str | None:
+    for key in ("file_id", "fileId", "id", "stored_file_name", "storedFileName"):
+        raw = item.get(key)
+        if raw is not None and str(raw).strip():
+            return str(raw).strip()
+    return None
+
+
+def _validate_file_entry(field_key: str, item: Any, index: int) -> None:
+    if not isinstance(item, dict):
+        raise ValueError(
+            f"Поле '{field_key}': элемент [{index}] должен быть объектом с метаданными файла",
+        )
+
+    if not _file_entry_id(item):
+        raise ValueError(
+            f"Поле '{field_key}': элемент [{index}] должен содержать file_id",
+        )
 
 
 def validate_field_value(field_metadata: dict[str, Any], value: Any) -> None:
@@ -80,6 +104,22 @@ def validate_field_value(field_metadata: dict[str, Any], value: Any) -> None:
             return
         raise ValueError(f"Поле '{field_key}' ожидает user_id (int) или null")
 
+    if field_type == FieldType.FILE:
+        if not isinstance(value, list):
+            raise ValueError(f"Поле '{field_key}' ожидает array of file metadata или null")
+
+        settings = field_metadata.get("settings_json") or {}
+        multiple = settings.get("multiple", True)
+
+        if not multiple and len(value) > 1:
+            raise ValueError(
+                f"Поле '{field_key}' допускает только один файл (multiple=false)",
+            )
+
+        for index, item in enumerate(value):
+            _validate_file_entry(field_key, item, index)
+        return
+
     raise ValueError(f"Поле '{field_key}': неподдерживаемый field_type '{field_type}'")
 
 
@@ -101,6 +141,8 @@ def validate_entity_create(
 
     for field in fields:
         field_key = field["key"]
+        if field.get("is_system") or is_runtime_system_field_key(field_key):
+            continue
         if field.get("is_required") and field_key not in values:
             errors.append(f"Обязательное поле отсутствует: {field_key}")
 
@@ -131,12 +173,19 @@ def validate_entity_update(
     for key in values:
         if key not in field_map:
             errors.append(f"Неизвестное поле: {key}")
+            continue
+
+        field_meta = field_map[key]
+        if field_meta.get("is_system") or is_runtime_system_field_key(key):
+            errors.append(f"Системное поле нельзя изменять: {key}")
 
     if errors:
         raise ValueError("; ".join(errors))
 
     for key, value in values.items():
         field_meta = field_map[key]
+        if field_meta.get("is_system") or is_runtime_system_field_key(key):
+            continue
         try:
             validate_field_value(field_meta, value)
         except ValueError as exc:

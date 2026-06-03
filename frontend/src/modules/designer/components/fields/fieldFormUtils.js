@@ -10,6 +10,32 @@ export function isChoiceFieldType(fieldType) {
   return fieldType === "choice" || fieldType === "multi_choice";
 }
 
+export function isFileFieldType(fieldType) {
+  return String(fieldType || "").trim().toLowerCase() === "file";
+}
+
+export function buildFileSettingsPayload(multiple = true) {
+  return {
+    multiple: multiple !== false,
+  };
+}
+
+export function isFileMultipleFromField(fieldType, settingsJson) {
+  if (!isFileFieldType(fieldType)) {
+    return true;
+  }
+
+  if (
+    settingsJson &&
+    typeof settingsJson === "object" &&
+    "multiple" in settingsJson
+  ) {
+    return Boolean(settingsJson.multiple);
+  }
+
+  return true;
+}
+
 function collectUsedOptionKeys(options = []) {
   return options
     .map((option) => String(option?.key || "").trim())

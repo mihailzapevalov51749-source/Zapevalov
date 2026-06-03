@@ -1,17 +1,19 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getApiErrorMessage } from "../../modules/designer/api/platformApiClient";
 import * as runtimeCatalogApi from "../../modules/designer/api/runtimeCatalogApi";
 import { ObjectViewHost } from "../../modules/objectViews";
-import ObjectTypeIcon from "../../shared/icons/ObjectTypeIcon";
-import { getObjectTypeAppearanceFields } from "../../shared/icons/iconFileUtils";
+import { mergeObjectTypeAppearance } from "../../shared/icons/iconFileUtils";
+import PortalObjectRuntimeHeader from "../components/PortalObjectRuntimeHeader";
+import {
+  findPublishedObjectTab,
+  resolveDefaultPublishedObjectTabKey,
+  resolvePublishedObjectTabs,
+} from "../services/resolvePublishedObjectTabs";
 import {
   clearPortalObjectViewHeader,
   publishPortalObjectViewHeader,
 } from "../utils/portalObjectViewHeaderBridge";
-
-const DEFAULT_VIEW_KEY = "default_table";
-const DEFAULT_VIEW_LABEL = "Таблица";
 
 async function resolveObjectTypeFromPublishedCatalog(tenantId, objectTypeRef) {
   const ref = String(objectTypeRef ?? "").trim();
@@ -33,6 +35,10 @@ export default function PortalObjectDataPage({
   tenantId,
   objectTypeRef,
   source = "portal",
+  navigationAppearance = null,
+  activeObjectTabKey = null,
+  syncObjectTabRoute = false,
+  onNavigateObjectTab = null,
 }) {
   const [objectType, setObjectType] = useState(null);
   const [catalogVersion, setCatalogVersion] = useState(null);
@@ -77,6 +83,59 @@ export default function PortalObjectDataPage({
     };
   }, []);
 
+  const objectTabs = useMemo(
+    () => resolvePublishedObjectTabs(objectType),
+    [objectType],
+  );
+
+  const resolvedObjectTabKey = useMemo(
+    () => resolveDefaultPublishedObjectTabKey(objectTabs, activeObjectTabKey),
+    [objectTabs, activeObjectTabKey],
+  );
+
+  const activeObjectTab = useMemo(
+    () => findPublishedObjectTab(objectTabs, resolvedObjectTabKey),
+    [objectTabs, resolvedObjectTabKey],
+  );
+
+  useEffect(() => {
+    if (!syncObjectTabRoute || !onNavigateObjectTab || loading || !objectType) {
+      return;
+    }
+
+    const routeTabKey = String(activeObjectTabKey || "").trim();
+
+    if (routeTabKey && routeTabKey === resolvedObjectTabKey) {
+      return;
+    }
+
+    if (!resolvedObjectTabKey) {
+      return;
+    }
+
+    onNavigateObjectTab(resolvedObjectTabKey, { replace: true });
+  }, [
+    syncObjectTabRoute,
+    onNavigateObjectTab,
+    loading,
+    objectType,
+    activeObjectTabKey,
+    resolvedObjectTabKey,
+  ]);
+
+  const handleSelectObjectTab = useCallback(
+    (nextTabKey) => {
+      const normalized = String(nextTabKey || "").trim();
+
+      if (!normalized || normalized === resolvedObjectTabKey) {
+        return;
+      }
+
+      onNavigateObjectTab?.(normalized);
+    },
+    [resolvedObjectTabKey, onNavigateObjectTab],
+  );
+
   const handleActiveViewContextChange = useCallback(
     (context) => {
       publishPortalObjectViewHeader({
@@ -84,11 +143,12 @@ export default function PortalObjectDataPage({
         objectTypeKey: objectType?.key,
         activeAdapterType: context?.activeAdapterType,
         activeAdapterLabel: context?.activeAdapterLabel,
+        activeObjectTabKey: resolvedObjectTabKey,
         activeRepresentationKey: context?.activeRepresentationKey,
         activeRepresentationName: context?.activeRepresentationName,
       });
     },
-    [objectType?.id, objectType?.key],
+    [objectType?.id, objectType?.key, resolvedObjectTabKey],
   );
 
   if (loading) {
@@ -116,10 +176,12 @@ export default function PortalObjectDataPage({
     );
   }
 
-  const appearance = getObjectTypeAppearanceFields(objectType);
+  const appearance = mergeObjectTypeAppearance(objectType, navigationAppearance);
   const objectTypeKey = objectType?.key;
   const objectTypeId = objectType?.id;
   const catalogPublished = catalogVersion != null;
+  const activeViewType = activeObjectTab?.viewType || "table";
+  const activeViewLabel = activeObjectTab?.name || "Таблица";
 
   return (
     <div
@@ -135,34 +197,15 @@ export default function PortalObjectDataPage({
         boxSizing: "border-box",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          gap: 12,
-          alignItems: "flex-start",
-          marginBottom: 16,
-          flexWrap: "wrap",
-        }}
-      >
-        <ObjectTypeIcon
-          iconType={appearance.icon_type}
-          iconFileUrl={appearance.icon_file_url}
-          color={appearance.color}
-          size={40}
-          className="object-type-icon--header"
-        />
-        <div>
-          <h1 style={{ margin: "0 0 6px", fontSize: 22, fontWeight: 800 }}>
-            {objectType?.name || "Объект"}
-          </h1>
-          <p style={{ margin: 0, color: "#64748b", fontSize: 13 }}>
-            <code>{objectTypeKey || "—"}</code>
-            {catalogPublished ? (
-              <span style={{ marginLeft: 10 }}>catalog v{catalogVersion}</span>
-            ) : null}
-          </p>
-        </div>
-      </div>
+      <PortalObjectRuntimeHeader
+        objectName={objectType?.name || "Объект"}
+        iconType={appearance.icon_type}
+        iconFileUrl={appearance.icon_file_url}
+        color={appearance.color}
+        tabs={objectTabs}
+        activeTabKey={resolvedObjectTabKey}
+        onSelectTab={handleSelectObjectTab}
+      />
 
       {!catalogPublished ? (
         <div
@@ -193,7 +236,7 @@ export default function PortalObjectDataPage({
         >
           У объекта не задан key.
         </div>
-      ) : catalogPublished ? (
+      ) : catalogPublished && resolvedObjectTabKey ? (
         <div
           style={{
             display: "flex",
@@ -204,19 +247,33 @@ export default function PortalObjectDataPage({
           }}
         >
           <ObjectViewHost
-            key={`portal-object-${objectTypeKey}-${catalogVersion}`}
+            key={`portal-object-${objectTypeKey}-${catalogVersion}-${resolvedObjectTabKey}`}
             tenantId={tenantId}
             objectTypeId={objectTypeId}
             objectTypeKey={objectTypeKey}
-            viewKey={DEFAULT_VIEW_KEY}
-            viewType="table"
+            viewKey={resolvedObjectTabKey}
+            viewType={activeViewType}
             mode="data"
-            viewLabel={DEFAULT_VIEW_LABEL}
+            viewLabel={activeViewLabel}
             pageSize={20}
             minHeight={320}
             source={source}
             onActiveViewContextChange={handleActiveViewContextChange}
           />
+        </div>
+      ) : catalogPublished ? (
+        <div
+          style={{
+            padding: 16,
+            borderRadius: 12,
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+            color: "#64748b",
+            fontSize: 14,
+          }}
+        >
+          У объекта нет опубликованных вкладок. Добавьте вкладки в Studio и опубликуйте
+          объект.
         </div>
       ) : null}
     </div>

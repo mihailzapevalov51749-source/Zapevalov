@@ -6,9 +6,12 @@ import CreateFieldModal, { FIELD_TYPE_OPTIONS } from "../fields/CreateFieldModal
 import FieldPropertiesPanel from "../fields/FieldPropertiesPanel";
 import {
   buildChoiceSettingsPayload,
+  buildFileSettingsPayload,
   getFieldTypeLabel,
   isChoiceFieldType,
   isChoiceMultipleFromField,
+  isFileFieldType,
+  isFileMultipleFromField,
   normalizeChoiceOptionsFromSettings,
   resolveChoiceFieldTypeForSave,
 } from "../fields/fieldFormUtils";
@@ -70,6 +73,10 @@ export default function FieldsTab({ tenantId, objectTypeId, onSchemaChanged }) {
         selected.field_type,
         selected.settings_json,
       ) || settingsMultiple,
+      file_multiple: isFileMultipleFromField(
+        selected.field_type,
+        selected.settings_json,
+      ),
       choice_options_error: "",
     });
     setSaveError("");
@@ -134,6 +141,10 @@ export default function FieldsTab({ tenantId, objectTypeId, onSchemaChanged }) {
         choiceOptions,
         draft.choice_multiple,
       );
+    }
+
+    if (isFileFieldType(draft.field_type)) {
+      payload.settings_json = buildFileSettingsPayload(draft.file_multiple);
     }
 
     setSaving(true);

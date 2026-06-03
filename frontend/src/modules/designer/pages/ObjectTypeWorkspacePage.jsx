@@ -305,13 +305,20 @@ export default function ObjectTypeWorkspacePage() {
       />
     );
   } else if (tab === "views") {
-    tabContent = <ViewsTab tenantId={tenantId} objectTypeId={objectTypeId} />;
+    tabContent = (
+      <ViewsTab
+        tenantId={tenantId}
+        objectTypeId={objectTypeId}
+        onSchemaChanged={handleSchemaChanged}
+      />
+    );
   } else if (tab === "runtime-preview") {
     tabContent = (
       <RuntimePreviewTab
         key={`runtime-preview-${objectType.key}-${catalogVersion ?? "none"}`}
         tenantId={tenantId}
         objectTypeKey={objectType.key}
+        onSchemaChanged={handleSchemaChanged}
       />
     );
   }

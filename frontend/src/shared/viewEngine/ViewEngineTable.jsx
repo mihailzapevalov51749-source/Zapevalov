@@ -43,6 +43,8 @@ export default function ViewEngineTable({
   className = "",
   columnWidths = null,
   onColumnResize = null,
+  isInlineEditMode = false,
+  onCellChange = null,
 }) {
   const { getColumnWidth, handleResizeMouseDown } = useViewEngineColumnResize(
     columns,
@@ -71,17 +73,33 @@ export default function ViewEngineTable({
     minWidth: fullTableMinWidth,
   };
 
-  const rootClassName = ["view-engine-table-root", className]
+  const rootClassName = [
+    "view-engine-table-root",
+    isInlineEditMode ? "view-engine-table-root--inline-edit" : "",
+    className,
+  ]
     .filter(Boolean)
     .join(" ");
+
+  const isHostedShell = rootClassName.includes("view-engine-table-root--hosted");
+
+  const rootStyle = {
+    ...viewEngineTableRootStyle,
+    minHeight,
+    ...(isHostedShell
+      ? {
+          paddingTop: 0,
+          border: "none",
+          borderRadius: 0,
+          boxShadow: "none",
+        }
+      : {}),
+  };
 
   return (
     <div
       className={rootClassName}
-      style={{
-        ...viewEngineTableRootStyle,
-        minHeight,
-      }}
+      style={rootStyle}
     >
       <div className="view-engine-table-inner" style={viewEngineTableInnerStyle}>
         <div
@@ -176,7 +194,17 @@ export default function ViewEngineTable({
                           column={column}
                           row={rowsById.get(row.id) || row}
                           rendererContext={rendererContext}
+                          compact
                           isTitle={column?.isTitle}
+                          readOnly={!isInlineEditMode}
+                          onChange={(nextValue) =>
+                            onCellChange?.(
+                              row.id,
+                              cell.fieldKey,
+                              column,
+                              nextValue,
+                            )
+                          }
                         />
                       );
                     })}

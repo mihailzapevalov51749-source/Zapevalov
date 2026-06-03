@@ -21,8 +21,29 @@ from app.modules.platform.designer.object_types.schemas import (
 from app.modules.users.models import User
 
 
-def _dependency_counts_stub() -> DependencyCounts:
-    return DependencyCounts()
+def _dependency_counts_for_entity(
+    db: Session | None,
+    tenant_id: int,
+    entity: DesignerObjectType,
+    *,
+    totals_cache: dict[UUID, dict[str, int]] | None = None,
+) -> DependencyCounts:
+    if db is None:
+        return DependencyCounts()
+
+    if totals_cache is None:
+        totals_cache = repository.count_dependency_totals_by_object_type(
+            db,
+            tenant_id,
+            [entity.id],
+        )
+
+    row = totals_cache.get(entity.id, {})
+    return DependencyCounts(
+        fields=int(row.get("fields", 0)),
+        relations=int(row.get("relations", 0)),
+        views=int(row.get("views", 0)),
+    )
 
 
 def _actor_user_id(current_user: User | None) -> int | None:
@@ -44,7 +65,12 @@ def _resolve_last_published_at(
     return None
 
 
-def _to_read(entity: DesignerObjectType, db: Session | None = None) -> ObjectTypeRead:
+def _to_read(
+    entity: DesignerObjectType,
+    db: Session | None = None,
+    *,
+    dependency_totals_cache: dict[UUID, dict[str, int]] | None = None,
+) -> ObjectTypeRead:
     last_published_at = entity.last_published_at
     if last_published_at is None and db is not None:
         last_published_at = _resolve_last_published_at(db, entity.tenant_id, entity)
@@ -70,17 +96,41 @@ def _to_read(entity: DesignerObjectType, db: Session | None = None) -> ObjectTyp
         created_at=entity.created_at,
         updated_at=entity.updated_at,
         deleted_at=entity.deleted_at,
-        dependency_counts=_dependency_counts_stub(),
+        dependency_counts=_dependency_counts_for_entity(
+            db,
+            entity.tenant_id,
+            entity,
+            totals_cache=dependency_totals_cache,
+        ),
     )
 
 
-def _to_list_item(entity: DesignerObjectType, db: Session | None = None) -> ObjectTypeListItem:
-    return ObjectTypeListItem(**_to_read(entity, db).model_dump())
+def _to_list_item(
+    entity: DesignerObjectType,
+    db: Session | None = None,
+    *,
+    dependency_totals_cache: dict[UUID, dict[str, int]] | None = None,
+) -> ObjectTypeListItem:
+    return ObjectTypeListItem(
+        **_to_read(
+            entity,
+            db,
+            dependency_totals_cache=dependency_totals_cache,
+        ).model_dump(),
+    )
 
 
 def list_object_types(db: Session, tenant_id: int) -> list[ObjectTypeListItem]:
     entities = repository.list_object_types(db, tenant_id)
-    return [_to_list_item(entity, db) for entity in entities]
+    totals_cache = repository.count_dependency_totals_by_object_type(
+        db,
+        tenant_id,
+        [entity.id for entity in entities],
+    )
+    return [
+        _to_list_item(entity, db, dependency_totals_cache=totals_cache)
+        for entity in entities
+    ]
 
 
 def get_object_type(

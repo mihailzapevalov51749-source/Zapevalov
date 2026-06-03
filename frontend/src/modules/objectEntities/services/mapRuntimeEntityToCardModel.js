@@ -1,5 +1,6 @@
 import { buildInitialCreateFormValues } from "../../objectViews/entity/buildCreateEntityPayload";
 import { getCreatableFields } from "../../objectViews/entity/getCreatableFields";
+import { getReadableSystemFields } from "../../objectViews/entity/getReadableSystemFields";
 import { findCatalogObjectType } from "../../objectViews/table/services/adapters/ObjectTypeTableAdapter";
 import { buildInitialFormValuesFromEntity } from "./buildEntityUpdatePayload";
 import { resolveEntityTitle } from "./resolveEntityTitle";
@@ -43,6 +44,7 @@ export function buildCreateCardModel({
     updatedAt: null,
     titleFieldKey: titleFieldKey || null,
     systemFields: [],
+    readOnlyFields: [],
     editableFields,
     formValues: buildInitialCreateFormValues(editableFields),
     rawEntity: null,
@@ -69,6 +71,7 @@ export function mapRuntimeEntityToCardModel({
     entity?.values && typeof entity.values === "object" ? entity.values : {};
 
   const editableFields = getCreatableFields(catalog, objectTypeKey);
+  const readOnlyFields = getReadableSystemFields(catalog, objectTypeKey);
 
   const title =
     resolveEntityTitle(entityValues, titleFieldKey) ||
@@ -88,28 +91,8 @@ export function mapRuntimeEntityToCardModel({
     createdAt: entity?.created_at ?? entity?.createdAt ?? null,
     updatedAt: entity?.updated_at ?? entity?.updatedAt ?? null,
     titleFieldKey: titleFieldKey || null,
-    systemFields: [
-      {
-        key: "id",
-        label: "ID",
-        value: entityId || "—",
-      },
-      {
-        key: "status",
-        label: "Статус",
-        value: status,
-      },
-      {
-        key: "created_at",
-        label: "Создан",
-        value: formatTimestamp(entity?.created_at ?? entity?.createdAt),
-      },
-      {
-        key: "updated_at",
-        label: "Изменён",
-        value: formatTimestamp(entity?.updated_at ?? entity?.updatedAt),
-      },
-    ],
+    systemFields: [],
+    readOnlyFields,
     editableFields,
     formValues: buildInitialFormValuesFromEntity(entity, editableFields),
     rawEntity: entity,

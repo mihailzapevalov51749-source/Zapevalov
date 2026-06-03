@@ -10,15 +10,49 @@ import {
  * @returns {unknown}
  */
 function resolveSystemEntityValue(entity, systemKey) {
+  const values =
+    entity.values && typeof entity.values === "object" ? entity.values : {};
+
   switch (systemKey) {
     case SYSTEM_COLUMN_KEYS.id:
-      return entity.id ?? entity.entity_id ?? null;
+      return values[SYSTEM_COLUMN_KEYS.id] ?? entity.id ?? entity.entity_id ?? null;
     case SYSTEM_COLUMN_KEYS.status:
-      return entity.status ?? null;
-    case SYSTEM_COLUMN_KEYS.created_at:
-      return entity.created_at ?? entity.createdAt ?? null;
-    case SYSTEM_COLUMN_KEYS.updated_at:
-      return entity.updated_at ?? entity.updatedAt ?? null;
+      return entity.status ?? values[SYSTEM_COLUMN_KEYS.status] ?? null;
+    case SYSTEM_COLUMN_KEYS.createdAt:
+      return (
+        values[SYSTEM_COLUMN_KEYS.createdAt] ??
+        entity.created_at ??
+        entity.createdAt ??
+        null
+      );
+    case SYSTEM_COLUMN_KEYS.updatedAt:
+      return (
+        values[SYSTEM_COLUMN_KEYS.updatedAt] ??
+        entity.updated_at ??
+        entity.updatedAt ??
+        null
+      );
+    case SYSTEM_COLUMN_KEYS.createdBy:
+      return (
+        values[SYSTEM_COLUMN_KEYS.createdBy] ??
+        entity.created_by ??
+        entity.createdBy ??
+        null
+      );
+    case SYSTEM_COLUMN_KEYS.updatedBy:
+      return (
+        values[SYSTEM_COLUMN_KEYS.updatedBy] ??
+        entity.updated_by ??
+        entity.updatedBy ??
+        null
+      );
+    case SYSTEM_COLUMN_KEYS.recordVersion:
+      return (
+        values[SYSTEM_COLUMN_KEYS.recordVersion] ??
+        entity.record_version ??
+        entity.recordVersion ??
+        null
+      );
     default:
       return null;
   }

@@ -7,6 +7,7 @@ import {
   filterActiveDays,
   formatDayDurationLabel,
   formatDuration,
+  formatSidebarActiveDuration,
   formatTimeOnly,
   getMonthDaysUntilToday,
 } from "./activityStatsHelpers.js";
@@ -15,6 +16,14 @@ describe("activityStatsHelpers", () => {
   it("formats duration compactly", () => {
     assert.equal(formatDuration(4020), "1 ч 7 мин");
     assert.equal(formatDuration(180), "3 мин");
+  });
+
+  it("formats sidebar active duration without labels", () => {
+    assert.equal(formatSidebarActiveDuration(26_100), "7ч 15м");
+    assert.equal(formatSidebarActiveDuration(2580), "43м");
+    assert.equal(formatSidebarActiveDuration(4080), "1ч 8м");
+    assert.equal(formatSidebarActiveDuration(26_100, { collapsed: true }), "7ч");
+    assert.equal(formatSidebarActiveDuration(7200), "2ч");
   });
 
   it("filters only active days", () => {

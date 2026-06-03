@@ -6,6 +6,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.modules.platform.runtime.catalog import repository
+from app.modules.platform.runtime.entities.system_fields import merge_catalog_fields_with_system
 from app.modules.platform.runtime.catalog.schemas import (
     RuntimeCatalogPayload,
     RuntimeCatalogVersionInfo,
@@ -24,12 +25,21 @@ def get_latest_catalog(db: Session, tenant_id: int) -> RuntimeCatalogPayload:
 
     payload = snapshot.payload or {}
 
+    object_types = [
+        {
+            **object_type,
+            "fields": merge_catalog_fields_with_system(object_type.get("fields") or []),
+        }
+        for object_type in (payload.get("object_types") or [])
+        if isinstance(object_type, dict)
+    ]
+
     return RuntimeCatalogPayload(
         schema_version=payload.get("schema_version", snapshot.schema_version),
         catalog_version=payload.get("catalog_version", snapshot.catalog_version),
         tenant_id=payload.get("tenant_id", tenant_id),
         published_at=payload.get("published_at", snapshot.published_at.isoformat()),
-        object_types=payload.get("object_types", []),
+        object_types=object_types,
         relations=payload.get("relations", []),
     )
 
@@ -93,7 +103,7 @@ def get_published_object_type_metadata(
             schema_version=payload.get("schema_version", snapshot.schema_version),
             object_type_id=UUID(str(raw_id)),
             object_type_key=object_type_key,
-            fields=list(object_type.get("fields") or []),
+            fields=merge_catalog_fields_with_system(object_type.get("fields") or []),
         )
 
     raise CatalogNotFound(

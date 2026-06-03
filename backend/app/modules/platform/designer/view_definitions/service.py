@@ -156,6 +156,20 @@ def _get_object_type_or_404(
     return object_type
 
 
+def _touch_parent_object_type(
+    db: Session,
+    tenant_id: int,
+    object_type_id: UUID,
+    current_user: User | None,
+) -> None:
+    object_type_repository.touch_object_type_updated_at(
+        db,
+        tenant_id,
+        object_type_id,
+        updated_by=_actor_user_id(current_user),
+    )
+
+
 def _to_read(
     entity: DesignerViewDefinition,
     object_type: DesignerObjectType,
@@ -384,6 +398,7 @@ def create_view(
             detail="ViewDefinition с таким key или default уже существует",
         ) from exc
 
+    _touch_parent_object_type(db, tenant_id, object_type_id, current_user)
     return _to_read(entity, object_type)
 
 
@@ -485,6 +500,7 @@ def update_view(
             detail="ViewDefinition с таким key или default уже существует",
         ) from exc
 
+    _touch_parent_object_type(db, tenant_id, entity.object_type_id, current_user)
     return _to_read(entity, object_type)
 
 
@@ -528,6 +544,7 @@ def delete_view(
 
     entity.updated_by = _actor_user_id(current_user)
     entity = repository.soft_delete_view(db, entity)
+    _touch_parent_object_type(db, tenant_id, entity.object_type_id, current_user)
     return _to_read(entity, object_type)
 
 
@@ -565,4 +582,5 @@ def reorder_views(
     entities = repository.save_views(db, entities)
     entities.sort(key=lambda row: (row.sort_order, row.name))
 
+    _touch_parent_object_type(db, tenant_id, object_type_id, current_user)
     return [_to_list_item(entity, object_type) for entity in entities]

@@ -15,6 +15,8 @@ export default function FieldValueRenderer({
 
   multiline = false,
 
+  expanded = false,
+
   emptyValue = "—",
 
   ...props
@@ -30,6 +32,7 @@ export default function FieldValueRenderer({
       table={table}
       compact={compact}
       multiline={multiline}
+      expanded={expanded}
       emptyValue={emptyValue}
       {...props}
     />

@@ -318,6 +318,8 @@ export default function PortalWorkspaceRuntimePage() {
           tenantId={portalId}
           objectTypeRef={activeObjectRef}
           source="portal"
+          navigationAppearance={activeTab}
+          syncObjectTabRoute={false}
         />
       );
     }

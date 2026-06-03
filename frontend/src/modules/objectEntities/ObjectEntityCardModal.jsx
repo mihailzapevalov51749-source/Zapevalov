@@ -38,6 +38,7 @@ function normalizeInitialContext(initialContext) {
  */
 export default function ObjectEntityCardModal({
   open = false,
+  suspendOverlayVisibility = false,
   mode = "edit",
   cardModel = null,
   formValues = {},
@@ -58,9 +59,10 @@ export default function ObjectEntityCardModal({
 }) {
   const normalizedContext = normalizeInitialContext(initialContext);
   const overlayIdRef = useRef(`object-card-modal-${Math.random().toString(36).slice(2, 10)}`);
+  const showOverlay = Boolean(open && cardModel && !suspendOverlayVisibility);
 
   useEffect(() => {
-    if (!open || !cardModel) {
+    if (!showOverlay) {
       unregisterOverlay(overlayIdRef.current);
       return undefined;
     }
@@ -69,7 +71,7 @@ export default function ObjectEntityCardModal({
     return () => {
       unregisterOverlay(overlayIdRef.current);
     };
-  }, [cardModel, open]);
+  }, [showOverlay]);
 
   const handleOverlayMouseDown = (event) => {
     if (!isTopOverlay(overlayIdRef.current)) {
@@ -82,7 +84,7 @@ export default function ObjectEntityCardModal({
   };
 
   useEffect(() => {
-    if (!open) {
+    if (!showOverlay) {
       return undefined;
     }
 
@@ -97,9 +99,9 @@ export default function ObjectEntityCardModal({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open, onClose]);
+  }, [showOverlay, onClose]);
 
-  if (!open || !cardModel) {
+  if (!open || !cardModel || !showOverlay) {
     return null;
   }
 

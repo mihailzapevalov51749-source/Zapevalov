@@ -1,6 +1,7 @@
 import TextValueRenderer from "./text/TextValueRenderer";
 import NumberValueRenderer from "./number/NumberValueRenderer";
 import DateValueRenderer from "./date/DateValueRenderer";
+import DateTimeValueRenderer from "./date/DateTimeValueRenderer";
 import ChoiceValueRenderer from "./choice/ChoiceValueRenderer";
 import UserValueRenderer from "./user/UserValueRenderer";
 import FileValueRenderer from "./file/FileValueRenderer";
@@ -12,6 +13,7 @@ import TableValueRenderer from "./table/TableValueRenderer";
 export const FIELD_TYPE_TEXT = "text";
 export const FIELD_TYPE_NUMBER = "number";
 export const FIELD_TYPE_DATE = "date";
+export const FIELD_TYPE_DATETIME = "datetime";
 export const FIELD_TYPE_CHOICE = "choice";
 export const FIELD_TYPE_USER = "user";
 export const FIELD_TYPE_FILE = "file";
@@ -34,6 +36,11 @@ export const fieldTypeRegistry = {
   [FIELD_TYPE_DATE]: {
     type: FIELD_TYPE_DATE,
     renderer: DateValueRenderer,
+  },
+
+  [FIELD_TYPE_DATETIME]: {
+    type: FIELD_TYPE_DATETIME,
+    renderer: DateTimeValueRenderer,
   },
 
   [FIELD_TYPE_CHOICE]: {

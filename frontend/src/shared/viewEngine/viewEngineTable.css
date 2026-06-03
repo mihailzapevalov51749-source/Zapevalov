@@ -82,7 +82,7 @@
   justify-content: center;
   gap: 3px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   line-height: 1;
   user-select: none;
   flex: 0 0 auto;
@@ -111,7 +111,11 @@
 }
 
 .view-engine-table-cell-inner.is-title {
-  font-weight: 700;
+  font-weight: 600;
+}
+
+.view-engine-table-cell-inner .app-file-table-badge {
+  max-width: 100%;
 }
 
 .view-engine-table-cell-inner > * {
@@ -140,6 +144,8 @@
   border-radius: 0;
   box-shadow: none;
   flex: 1;
+  min-height: 0;
+  padding-top: 0;
 }
 
 .view-engine-hosted-table__chrome {
@@ -189,6 +195,15 @@
   border-color: #2563eb;
   background: #eff6ff;
   color: #2563eb;
+}
+
+.view-engine-table-root--inline-edit .view-engine-table-row {
+  cursor: default;
+}
+
+.view-engine-table-cell-editor {
+  width: 100%;
+  min-width: 0;
 }
 
 .view-engine-toolbar__filters-trigger {

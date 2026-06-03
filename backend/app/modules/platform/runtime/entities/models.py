@@ -62,6 +62,12 @@ class RuntimeEntity(Base):
         onupdate=func.now(),
         nullable=False,
     )
+    record_version = Column(
+        Integer,
+        nullable=False,
+        default=1,
+        server_default="1",
+    )
     deleted_at = Column(DateTime(timezone=True), nullable=True)
 
     values = relationship(

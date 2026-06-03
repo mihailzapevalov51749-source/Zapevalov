@@ -218,6 +218,23 @@ def _validate_field_type_payload(
                 "default_value_json для user должен быть user_id (int) или null",
             )
 
+    if field_type == FieldType.FILE:
+        settings = settings_json or {}
+        if "multiple" in settings and not isinstance(settings["multiple"], bool):
+            raise ValueError("settings_json.multiple для file должен быть boolean")
+
+        if default_value_json is not None:
+            if not isinstance(default_value_json, list):
+                raise ValueError(
+                    "default_value_json для file должен быть array или null",
+                )
+
+            for index, item in enumerate(default_value_json):
+                if not isinstance(item, dict):
+                    raise ValueError(
+                        f"default_value_json[{index}] для file должен быть объектом",
+                    )
+
 
 def validate_field_update_payload(
     *,

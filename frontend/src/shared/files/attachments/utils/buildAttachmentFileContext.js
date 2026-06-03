@@ -27,6 +27,7 @@ export function buildAttachmentFileContext({
 
   return {
     source,
+    source_type: source,
 
     entity_type: "file",
     entity_id: fileId,

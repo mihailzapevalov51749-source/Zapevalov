@@ -34,7 +34,7 @@ export default function ViewEngineHeaderCell({
         style={{
           ...viewEngineHeaderTitleStyle,
           flex: 1,
-          fontWeight: isTitle ? 800 : isSorted ? 750 : 700,
+          fontWeight: isTitle ? 600 : 400,
           color: isSorted ? "#0f172a" : "#475569",
         }}
         title={label}

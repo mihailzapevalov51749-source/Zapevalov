@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getApiErrorMessage } from "../../designer/api/platformApiClient";
 import { getCreatableFields } from "../../objectViews/entity/getCreatableFields";
@@ -35,6 +35,7 @@ export default function useObjectEntityCard({
   const [initialContext, setInitialContext] = useState(null);
   const [openError, setOpenError] = useState("");
   const [createSubmitting, setCreateSubmitting] = useState(false);
+  const catalogFormSyncKeyRef = useRef("");
 
   function resolveEntityOpenError(error) {
     const status = error?.response?.status;
@@ -74,6 +75,51 @@ export default function useObjectEntityCard({
   }, [listItems, openEntityId]);
 
   const activeEntity = localEntity || listEntity;
+
+  useEffect(() => {
+    if (!enabled || cardMode === "create" || !localEntity || !catalog || !openEntityId) {
+      return;
+    }
+
+    const resolvedObjectTypeKey = String(objectTypeKey || "").trim();
+
+    if (!resolvedObjectTypeKey) {
+      return;
+    }
+
+    const catalogVersion = String(
+      catalog.catalog_version ?? catalog.catalogVersion ?? "0",
+    );
+    const syncKey = `${openEntityId}:${resolvedObjectTypeKey}:${catalogVersion}:${titleFieldKey || ""}`;
+
+    if (catalogFormSyncKeyRef.current === syncKey) {
+      return;
+    }
+
+    const model = mapRuntimeEntityToCardModel({
+      entity: localEntity,
+      catalog,
+      objectTypeKey: resolvedObjectTypeKey,
+      tenantId,
+      titleFieldKey,
+    });
+
+    if (!model.editableFields.length) {
+      return;
+    }
+
+    catalogFormSyncKeyRef.current = syncKey;
+    setFormValues(model.formValues);
+  }, [
+    enabled,
+    cardMode,
+    catalog,
+    localEntity,
+    openEntityId,
+    objectTypeKey,
+    tenantId,
+    titleFieldKey,
+  ]);
 
   const cardModel = useMemo(() => {
     if (!enabled) {
@@ -144,6 +190,7 @@ export default function useObjectEntityCard({
     setSubmitError("");
     setInitialContext(null);
     setOpenError("");
+    catalogFormSyncKeyRef.current = "";
   }, [canCreate, creatableFields, setSubmitError]);
 
   const openCard = useCallback(
@@ -160,15 +207,18 @@ export default function useObjectEntityCard({
 
       setOpenError("");
 
-      let entity = Array.isArray(listItems)
-        ? listItems.find((item) => String(item?.id) === normalizedId)
-        : null;
-
       const resolvedObjectTypeKey = String(
         options.objectTypeKey || objectTypeKey || "",
       ).trim();
 
-      if (!entity && tenantId && resolvedObjectTypeKey) {
+      const preferRuntimeReload = options.forceLoadEntity === true;
+
+      let entity =
+        !preferRuntimeReload && Array.isArray(listItems)
+          ? listItems.find((item) => String(item?.id) === normalizedId)
+          : null;
+
+      if ((!entity || preferRuntimeReload) && tenantId && resolvedObjectTypeKey) {
         try {
           entity = await getRuntimeEntity(
             tenantId,
@@ -210,6 +260,7 @@ export default function useObjectEntityCard({
       setCardMode("edit");
       setOpenEntityId(normalizedId);
       setLocalEntity(entity);
+      catalogFormSyncKeyRef.current = "";
       setFormValues(model.formValues);
       setFieldErrors({});
       setSubmitError("");
@@ -234,6 +285,7 @@ export default function useObjectEntityCard({
     setCardMode("edit");
     setOpenEntityId(null);
     setLocalEntity(null);
+    catalogFormSyncKeyRef.current = "";
     setFormValues({});
     setFieldErrors({});
     setSubmitError("");

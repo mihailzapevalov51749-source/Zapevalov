@@ -281,6 +281,7 @@ export function normalizeObjectViewDefinition(rawView, fallback = {}) {
         table: normalizePresentationTable(
           objectView?.presentation?.table,
           legacyProjection.fieldKeys,
+          legacyProjection.titleFieldKey,
         ),
         card: objectView?.presentation?.card || null,
       },
@@ -359,6 +360,7 @@ function mergeObjectViewContract(base, objectView, rawView, fallback = {}) {
           ...(objectView.presentation?.table || {}),
         },
         Array.isArray(projection.fieldKeys) ? projection.fieldKeys : [],
+        projection.titleFieldKey,
       ),
       card: objectView.presentation?.card || base.presentation?.card || null,
     },

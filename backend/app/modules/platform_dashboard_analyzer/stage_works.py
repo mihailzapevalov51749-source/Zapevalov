@@ -64,6 +64,7 @@ STAGE_CANONICAL: dict[str, dict[str, list[str]]] = {
             "Сценарии публикации и preview в Studio",
             "Понятная граница Studio и runtime",
             "Управление жизненным циклом типа объекта",
+            "UI Framework: единый стандарт модальных окон (PlatformModal)",
         ],
         "completion_criteria": [
             "Studio — единая точка настройки object platform",
@@ -609,6 +610,10 @@ def evaluate_stage_work_status(slug: str, work: str, ctx: ScanContext) -> str:
         return "planned"
 
     if slug == "designer-foundation":
+        if "platformmodal" in lower.replace(" ", "") or (
+            "ui framework" in lower and "модальн" in lower
+        ):
+            return "done" if _frontend_has(ctx, "PlatformModal") else "in_progress"
         if "публика" in lower or "preview" in lower:
             return "done" if _frontend_has(ctx, "ObjectTypePublishToMenuDialog") else "in_progress"
         if "studio" in lower and "runtime" in lower:

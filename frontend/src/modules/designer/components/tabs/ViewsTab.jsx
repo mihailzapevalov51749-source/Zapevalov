@@ -5,7 +5,11 @@ import { getApiErrorMessage } from "../../api/platformApiClient";
 import * as designerApi from "../../api/designerApi";
 import ViewPropertiesPanel from "../views/ViewPropertiesPanel";
 
-export default function ViewsTab({ tenantId, objectTypeId }) {
+export default function ViewsTab({
+  tenantId,
+  objectTypeId,
+  onSchemaChanged = null,
+}) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -136,6 +140,7 @@ export default function ViewsTab({ tenantId, objectTypeId }) {
         is_active: true,
       });
       await loadItems();
+      await onSchemaChanged?.();
     } catch (err) {
       window.alert(getApiErrorMessage(err, "Не удалось создать вкладку"));
     }
@@ -171,6 +176,7 @@ export default function ViewsTab({ tenantId, objectTypeId }) {
         settings_json: nextSettings,
       });
       await loadItems();
+      await onSchemaChanged?.();
     } catch (err) {
       window.alert(getApiErrorMessage(err, "Не удалось сохранить вкладку"));
     } finally {
@@ -190,6 +196,7 @@ export default function ViewsTab({ tenantId, objectTypeId }) {
       await designerApi.deleteView(tenantId, selected.id);
       setSelectedId(null);
       await loadItems();
+      await onSchemaChanged?.();
     } catch (err) {
       window.alert(getApiErrorMessage(err, "Не удалось удалить вкладку"));
     }

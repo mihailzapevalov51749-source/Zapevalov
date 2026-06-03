@@ -2,7 +2,11 @@ import { useParams, useSearchParams } from "react-router-dom";
 
 import { ObjectViewHost } from "../../../objectViews";
 
-export default function RuntimePreviewTab({ tenantId, objectTypeKey }) {
+export default function RuntimePreviewTab({
+  tenantId,
+  objectTypeKey,
+  onSchemaChanged = null,
+}) {
   const { objectTypeId } = useParams();
   const [searchParams] = useSearchParams();
   const explicitViewKey = searchParams.get("viewKey");
@@ -46,6 +50,7 @@ export default function RuntimePreviewTab({ tenantId, objectTypeKey }) {
         mode="studio-preview"
         minHeight={280}
         showToolbar
+        onSchemaChanged={onSchemaChanged}
       />
     </div>
   );

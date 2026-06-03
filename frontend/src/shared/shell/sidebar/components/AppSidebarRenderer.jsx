@@ -8,6 +8,7 @@ import MenuTree from "../../../../modules/navigation/components/MenuTree";
 import useMenuDragAndDrop from "../../../../modules/navigation/hooks/useMenuDragAndDrop";
 import { LAYOUT_TOKENS } from "../../../layout/layoutTokens";
 import { TRANSITION_TOKENS } from "../../../layout/transitionTokens";
+import SidebarTodayActiveTime from "./SidebarTodayActiveTime";
 import "./appSidebarRenderer.css";
 
 const SYSTEM_MENU_SETTINGS_KEY = "systemMenuSettings";
@@ -306,57 +307,69 @@ function ShellSidebarView({
       </div>
 
       <div
+        className={`app-sidebar-renderer__footer${
+          collapsed ? " app-sidebar-renderer__footer--collapsed" : ""
+        }`}
         style={{
-          ...sidebarFooterStyle,
-          justifyContent: collapsed ? "center" : sidebarFooterStyle.justifyContent,
-          padding: collapsed ? "10px 8px" : sidebarFooterStyle.padding,
-          gap: collapsed ? 0 : sidebarFooterStyle.gap,
+          padding: collapsed ? "10px 8px 12px" : sidebarFooterStyle.padding,
         }}
       >
-        <button
-          type="button"
-          onClick={onToggleCollapse}
-          title={collapsed ? "Развернуть меню" : "Свернуть меню"}
-          aria-label={collapsed ? "Развернуть меню" : "Свернуть меню"}
+        <div
+          className="app-sidebar-renderer__footer-row"
           style={{
-            ...collapseButtonStyle,
-            flex: collapsed ? "0 0 auto" : collapseButtonStyle.flex,
-            justifyContent: "center",
-            width: collapsed ? sidebarVisual.menuItemHeight : undefined,
-            minWidth: collapsed
-              ? sidebarVisual.menuItemHeight
-              : collapseButtonStyle.minWidth,
+            justifyContent: collapsed ? "center" : sidebarFooterStyle.justifyContent,
+            gap: collapsed ? 0 : sidebarFooterStyle.gap,
           }}
         >
-          <img
-            src={chevronLeftIcon}
-            alt=""
-            style={{
-              ...chevronLeftImageStyle,
-              transform: collapsed ? "rotate(180deg)" : "none",
-            }}
-          />
-          {!collapsed ? <span>Свернуть меню</span> : null}
-        </button>
+          <div className="app-sidebar-renderer__collapse-block">
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              title={collapsed ? "Развернуть меню" : "Свернуть меню"}
+              aria-label={collapsed ? "Развернуть меню" : "Свернуть меню"}
+              style={{
+                ...collapseButtonStyle,
+                flex: collapsed ? "0 0 auto" : collapseButtonStyle.flex,
+                justifyContent: "center",
+                width: collapsed ? sidebarVisual.menuItemHeight : undefined,
+                minWidth: collapsed
+                  ? sidebarVisual.menuItemHeight
+                  : collapseButtonStyle.minWidth,
+              }}
+            >
+              <img
+                src={chevronLeftIcon}
+                alt=""
+                style={{
+                  ...chevronLeftImageStyle,
+                  transform: collapsed ? "rotate(180deg)" : "none",
+                }}
+              />
+              {!collapsed ? <span>Свернуть меню</span> : null}
+            </button>
 
-        {!collapsed ? (
-          <button
-            type="button"
-            onClick={handleEditButtonClick}
-            disabled={isSaving}
-            title={editMode ? "Сохранить меню" : "Редактировать меню"}
-            style={{
-              ...settingsButtonStyle,
-              opacity: isSaving ? 0.5 : 1,
-            }}
-          >
-            <img
-              src={editMode ? saveIcon : settingsIcon}
-              alt=""
-              style={settingsImageStyle}
-            />
-          </button>
-        ) : null}
+            <SidebarTodayActiveTime collapsed={collapsed} />
+          </div>
+
+          {!collapsed ? (
+            <button
+              type="button"
+              onClick={handleEditButtonClick}
+              disabled={isSaving}
+              title={editMode ? "Сохранить меню" : "Редактировать меню"}
+              style={{
+                ...settingsButtonStyle,
+                opacity: isSaving ? 0.5 : 1,
+              }}
+            >
+              <img
+                src={editMode ? saveIcon : settingsIcon}
+                alt=""
+                style={settingsImageStyle}
+              />
+            </button>
+          ) : null}
+        </div>
       </div>
     </aside>
   );

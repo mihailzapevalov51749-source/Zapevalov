@@ -99,6 +99,8 @@ def build_snapshot_payload(
                 "name": object_type.name,
                 "description": object_type.description,
                 "icon": object_type.icon,
+                "icon_type": object_type.icon_type,
+                "icon_file_url": object_type.icon_file_url,
                 "color": object_type.color,
                 "sort_order": object_type.sort_order,
                 "status": object_type.status,

@@ -31,6 +31,12 @@ export function getFileFieldsFromCatalog(catalog, objectTypeKey) {
       key: String(field.key || field.field_key || "").trim(),
       label: String(field.name || field.title || field.key || "Файл"),
       rawFieldType: String(field.field_type || field.type || "file"),
+      settings_json:
+        field.settings_json && typeof field.settings_json === "object"
+          ? field.settings_json
+          : field.settingsJson && typeof field.settingsJson === "object"
+            ? field.settingsJson
+            : {},
     }))
     .filter((field) => field.key);
 }

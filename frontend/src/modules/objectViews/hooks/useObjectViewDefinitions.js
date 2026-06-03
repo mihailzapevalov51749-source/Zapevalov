@@ -10,6 +10,70 @@ import {
   isTableViewDefinition,
   resolveActiveTableView,
 } from "../services/resolveActiveView";
+import { mergePublishedAndUserTableViews } from "../table/preferences/mergePublishedAndUserTableViews";
+import {
+  createUserTableView,
+  getStoredCurrentUserId,
+  loadUserTableViewsState,
+} from "../table/preferences/objectTableUserViewsStorage";
+import {
+  isTableBaseStateKey,
+  TABLE_BASE_STATE_KEY,
+} from "../table/preferences/tableBaseState";
+
+function resolvePublishedTableViewKey(rawViews) {
+  const list = Array.isArray(rawViews) ? rawViews : [];
+  const tableViews = list.filter((item) => item && isTableViewDefinition(item));
+
+  const defaultTable = tableViews.find(
+    (item) => String(item?.key) === "default_table",
+  );
+  if (defaultTable?.key) {
+    return String(defaultTable.key);
+  }
+
+  const flaggedDefault = tableViews.find(
+    (item) => item?.is_default === true || item?.isDefault === true,
+  );
+  if (flaggedDefault?.key) {
+    return String(flaggedDefault.key);
+  }
+
+  if (tableViews[0]?.key) {
+    return String(tableViews[0].key);
+  }
+
+  return "default_table";
+}
+
+function resolveInitialOfficeViewKey({ tenantId, objectTypeKey, requestedViewKey }) {
+  const normalizedRequested = String(requestedViewKey || "").trim();
+
+  if (
+    normalizedRequested &&
+    normalizedRequested !== "default_table" &&
+    !isTableBaseStateKey(normalizedRequested)
+  ) {
+    return normalizedRequested;
+  }
+
+  const userState = loadUserTableViewsState({
+    tenantId,
+    userId: getStoredCurrentUserId(),
+    objectTypeKey,
+  });
+
+  const defaultKey = userState.defaultViewKey;
+
+  if (
+    defaultKey &&
+    userState.views.some((view) => view.key === defaultKey)
+  ) {
+    return defaultKey;
+  }
+
+  return TABLE_BASE_STATE_KEY;
+}
 
 function cloneContract(contract) {
   return JSON.parse(JSON.stringify(contract));
@@ -66,16 +130,34 @@ export default function useObjectViewDefinitions({
     allowDesignerApi,
   });
 
+  const isOfficeUserViews = source === "portal" && definitionSource === "published";
+
   const [views, setViews] = useState([]);
+  const [tabLookupViews, setTabLookupViews] = useState([]);
   const [loading, setLoading] = useState(
     Boolean(tenantId && (objectTypeId || objectTypeKey)),
   );
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
-  const [selectedViewKey, setSelectedViewKey] = useState(
-    requestedViewKey || null,
-  );
+  const [publishedTableViewKey, setPublishedTableViewKey] = useState("default_table");
+  const [selectedViewKey, setSelectedViewKey] = useState(() => {
+    if (source === "portal" && objectTypeKey && tenantId) {
+      return resolveInitialOfficeViewKey({
+        tenantId,
+        objectTypeKey,
+        requestedViewKey,
+      });
+    }
+
+    const normalized = String(requestedViewKey || "").trim();
+
+    if (normalized === "default_table") {
+      return TABLE_BASE_STATE_KEY;
+    }
+
+    return normalized || TABLE_BASE_STATE_KEY;
+  });
 
   const refreshViews = useCallback(async () => {
     if (!tenantId) {
@@ -113,8 +195,8 @@ export default function useObjectViewDefinitions({
         list = Array.isArray(objectType?.views) ? objectType.views : [];
       }
 
-      const tableViews = list
-        .filter((item) => item && isTableViewDefinition(item))
+      const publishedObjectTabViews = list
+        .filter((item) => item && item.key && item.is_active !== false)
         .map((raw) => ({
           raw,
           contract: normalizeObjectViewDefinition(raw, {
@@ -124,25 +206,59 @@ export default function useObjectViewDefinitions({
           }),
         }));
 
+      setTabLookupViews(publishedObjectTabViews);
+      setPublishedTableViewKey(resolvePublishedTableViewKey(list));
+
+      let tableViews = publishedObjectTabViews.filter((item) =>
+        isTableViewDefinition(item.raw),
+      );
+
+      if (isOfficeUserViews && objectTypeKey) {
+        const userState = loadUserTableViewsState({
+          tenantId,
+          userId: getStoredCurrentUserId(),
+          objectTypeKey,
+        });
+
+        tableViews = mergePublishedAndUserTableViews(list, userState, { pageSize });
+      }
+
       setViews(tableViews);
       return tableViews;
     } catch (err) {
       setViews([]);
+      setTabLookupViews([]);
       setError(getApiErrorMessage(err, "Не удалось загрузить представления"));
       return [];
     } finally {
       setLoading(false);
     }
-  }, [tenantId, objectTypeId, objectTypeKey, pageSize, definitionSource]);
+  }, [
+    tenantId,
+    objectTypeId,
+    objectTypeKey,
+    pageSize,
+    definitionSource,
+    isOfficeUserViews,
+  ]);
 
   useEffect(() => {
     refreshViews();
   }, [refreshViews]);
 
   useEffect(() => {
-    if (requestedViewKey) {
-      setSelectedViewKey(requestedViewKey);
+    const normalized = String(requestedViewKey || "").trim();
+
+    if (!normalized) {
+      return;
     }
+
+    if (normalized === "default_table") {
+      setSelectedViewKey(TABLE_BASE_STATE_KEY);
+      return;
+    }
+
+    setSelectedViewKey(normalized);
   }, [requestedViewKey]);
 
   const fallbackViews = useMemo(() => {
@@ -179,13 +295,27 @@ export default function useObjectViewDefinitions({
   ]);
 
   const activeView = useMemo(() => {
-    return resolveActiveTableView(fallbackViews, selectedViewKey);
-  }, [fallbackViews, selectedViewKey]);
+    if (isTableBaseStateKey(selectedViewKey)) {
+      return null;
+    }
+
+    const lookupViews = tabLookupViews.length ? tabLookupViews : fallbackViews;
+
+    return resolveActiveTableView(lookupViews, selectedViewKey);
+  }, [tabLookupViews, fallbackViews, selectedViewKey]);
 
   const resolvedContract = useMemo(() => {
+    if (isTableBaseStateKey(selectedViewKey)) {
+      return normalizeObjectViewDefinition(null, {
+        viewKey: TABLE_BASE_STATE_KEY,
+        pageSize,
+        projection: runtimeProjection,
+      });
+    }
+
     if (!activeView?.contract) {
       return normalizeObjectViewDefinition(null, {
-        viewKey: "default_table",
+        viewKey: TABLE_BASE_STATE_KEY,
         pageSize,
         projection: runtimeProjection,
       });
@@ -209,7 +339,7 @@ export default function useObjectViewDefinitions({
     }
 
     return activeView.contract;
-  }, [activeView, pageSize, runtimeProjection, definitionSource]);
+  }, [activeView, pageSize, runtimeProjection, definitionSource, selectedViewKey]);
 
   const selectView = useCallback((viewKey) => {
     const normalized = String(viewKey || "").trim();
@@ -221,13 +351,21 @@ export default function useObjectViewDefinitions({
 
   const createView = useCallback(
     async ({ name, copyCurrent = false, effectiveContract, resolvedContract }) => {
-      if (!tenantId || !objectTypeId) {
-        return { ok: false, reason: "missing_context" };
-      }
-
       const trimmedName = String(name || "").trim();
       if (!trimmedName) {
         return { ok: false, reason: "empty_name" };
+      }
+
+      if (!tenantId) {
+        return { ok: false, reason: "missing_context" };
+      }
+
+      if (!isOfficeUserViews && !objectTypeId) {
+        return { ok: false, reason: "missing_context" };
+      }
+
+      if (isOfficeUserViews && !objectTypeKey) {
+        return { ok: false, reason: "missing_context" };
       }
 
       setCreating(true);
@@ -248,8 +386,10 @@ export default function useObjectViewDefinitions({
             ...contract.meta,
             isSystem: false,
             isDefault: false,
-            isPublished: false,
+            isPublished: true,
+            isUserView: true,
             viewId: null,
+            userViewId: null,
             draftRevision: null,
           };
         } else {
@@ -288,6 +428,45 @@ export default function useObjectViewDefinitions({
           };
         }
 
+        if (isOfficeUserViews) {
+          contract.meta = {
+            ...contract.meta,
+            isUserView: true,
+            isSystem: false,
+            isPublished: true,
+            viewId: null,
+            userViewId: null,
+          };
+
+          const created = createUserTableView(
+            {
+              tenantId,
+              userId: getStoredCurrentUserId(),
+              objectTypeKey,
+            },
+            {
+              name: trimmedName,
+              contract,
+              sourcePublishedKey: copyCurrent
+                ? String(resolvedContract?.key || effectiveContract?.key || "")
+                : null,
+            },
+          );
+
+          if (!created.ok) {
+            return created;
+          }
+
+          await refreshViews();
+          selectView(created.contract.key);
+
+          return {
+            ok: true,
+            contract: created.contract,
+            raw: created.record,
+          };
+        }
+
         const payload = buildObjectViewPayload(contract, { mode: "create" });
         const created = await designerApi.createView(
           tenantId,
@@ -318,10 +497,13 @@ export default function useObjectViewDefinitions({
     [
       tenantId,
       objectTypeId,
+      objectTypeKey,
+      isOfficeUserViews,
       views,
       pageSize,
       refreshViews,
       selectView,
+      resolvedContract,
     ],
   );
 
@@ -347,7 +529,11 @@ export default function useObjectViewDefinitions({
   return {
     views: fallbackViews,
     activeView,
-    activeViewKey: resolvedContract.key,
+    activeViewKey: isTableBaseStateKey(selectedViewKey)
+      ? TABLE_BASE_STATE_KEY
+      : resolvedContract.key,
+    publishedTableViewKey,
+    tabLookupViews,
     resolvedContract,
     viewType: resolvedContract.viewType || "table",
     loading,

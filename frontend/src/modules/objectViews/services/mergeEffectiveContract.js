@@ -65,6 +65,7 @@ export function mergeEffectiveContract(baseline, sessionDelta = {}) {
           : baselineTable.density,
     },
     projectionFieldKeys,
+    baseline.projection?.titleFieldKey,
   );
 
   const mergedCard =

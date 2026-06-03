@@ -1,9 +1,15 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { mergeEffectiveContract } from "../services/mergeEffectiveContract";
 
 import { ObjectEntityCardModal } from "../../objectEntities";
 import useObjectEntityCard from "../../objectEntities/hooks/useObjectEntityCard";
+import {
+  openFileViewer,
+  REOPEN_OBJECT_ENTITY_CARD_EVENT,
+} from "../../../shared/files/openFileViewer";
+import { getFileName, getFileUrl } from "../../../shared/fieldTypes/file/fileUtils";
+import useWorkspaceFileViewerState from "../../../shared/files/hooks/useWorkspaceFileViewerState";
 import { getColumnPresentationKey } from "../services/columnPresentationUtils";
 import {
   findCatalogObjectType,
@@ -23,16 +29,36 @@ import {
 } from "../../../shared/viewEngine/table";
 
 import useObjectViewDirtyGuard from "../hooks/useObjectViewDirtyGuard";
-import ObjectTableColumnVisibilityPanel from "./components/ObjectTableColumnVisibilityPanel";
-import ObjectTableFiltersModal from "./components/ObjectTableFiltersModal";
 import ObjectTableCreateQuickFilterDialog from "./components/ObjectTableCreateQuickFilterDialog";
 import ObjectTableViewsBar from "./components/ObjectTableViewsBar";
+import ObjectTableViewSettingsPanel from "./viewSettings/ObjectTableViewSettingsPanel";
+import useObjectTableInlineEdit from "./hooks/useObjectTableInlineEdit";
+import { resolveTableRepresentationContract } from "./viewSettings/resolveTableRepresentationContract";
+import ObjectTableViewSettingsFiltersModal from "./viewSettings/ObjectTableViewSettingsFiltersModal";
+import {
+  readHiddenViewKeys,
+  writeHiddenViewKeys,
+} from "./representations/objectTableRepresentationsPrefs";
 import useObjectTableColumns from "./hooks/useObjectTableColumns";
 import useObjectTableSort from "./hooks/useObjectTableSort";
 
 import "../../../shared/viewEngine/viewEngineTable.css";
 
 const DEFAULT_VIEW_LABEL = "Таблица";
+
+function getTableFileId(file) {
+  return file?.id || file?.file_id || file?.fileId || null;
+}
+
+function getTableFileMime(file) {
+  return (
+    file?.mime_type ||
+    file?.mimeType ||
+    file?.file_type ||
+    file?.fileType ||
+    ""
+  );
+}
 
 /**
  * Table view adapter — wires query + contracts → ViewEngineTable.
@@ -70,6 +96,10 @@ export default function ObjectTableView({
   definitionsError = "",
   onRefreshViews = null,
   allowDesignerPersistence = false,
+  allowOfficeUserPersistence = false,
+  representationsPrefsScopeKey = null,
+  isTableBaseStateActive = false,
+  onSelectTableBaseState = null,
 }) {
   void viewLabel;
 
@@ -85,8 +115,14 @@ export default function ObjectTableView({
     await query.reload?.();
   }, [query]);
 
-  const entityCardEnabled =
-    mode !== "studio-preview" && Boolean(tenantId && objectTypeKey);
+  const entityCardEnabled = Boolean(tenantId && objectTypeKey);
+
+  const inlineEdit = useObjectTableInlineEdit({
+    tenantId,
+    objectTypeKey,
+    enabled: entityCardEnabled,
+    onEntityUpdated: () => query.reload?.(),
+  });
 
   const titleFieldKey =
     effectiveContract?.projection?.titleFieldKey ||
@@ -110,14 +146,51 @@ export default function ObjectTableView({
     },
   });
 
+  const { isWorkspaceFileOpen } = useWorkspaceFileViewerState();
+
+  useEffect(() => {
+    function handleReopenCard(event) {
+      const detail = event.detail || {};
+      const entityId = String(
+        detail.entityId || detail.entity_id || detail.runtime_entity_id || "",
+      ).trim();
+      const relatedObjectTypeKey = String(
+        detail.objectTypeKey || detail.object_type_key || objectTypeKey || "",
+      ).trim();
+
+      if (!entityId) {
+        return;
+      }
+
+      if (entityCard.isOpen) {
+        return;
+      }
+
+      void entityCard.openCard(entityId, {
+        objectTypeKey: relatedObjectTypeKey || objectTypeKey,
+      });
+    }
+
+    window.addEventListener(REOPEN_OBJECT_ENTITY_CARD_EVENT, handleReopenCard);
+
+    return () => {
+      window.removeEventListener(REOPEN_OBJECT_ENTITY_CARD_EVENT, handleReopenCard);
+    };
+  }, [entityCard.isOpen, entityCard.openCard, objectTypeKey]);
+
   const tableSurfaceRef = useRef(null);
 
   const objectTypeLabel = useMemo(() => {
     const objectType = findCatalogObjectType(query.catalog, objectTypeKey);
     return String(objectType?.name || objectTypeKey || "");
   }, [query.catalog, objectTypeKey]);
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const [isColumnsPanelOpen, setIsColumnsPanelOpen] = useState(false);
+  const [isViewSettingsPanelOpen, setIsViewSettingsPanelOpen] = useState(false);
+  const [settingsViewKey, setSettingsViewKey] = useState(null);
+  const [settingsExpandedKey, setSettingsExpandedKey] = useState(null);
+  const [isFiltersEditorOpen, setIsFiltersEditorOpen] = useState(false);
+  const [visibilityRevision, setVisibilityRevision] = useState(0);
+  const settingsPanelAnchorRef = useRef(null);
+  const [settingsPanelAnchor, setSettingsPanelAnchor] = useState(null);
   const [isQuickFilterDialogOpen, setIsQuickFilterDialogOpen] = useState(false);
   const [cardSettingsSaving, setCardSettingsSaving] = useState(false);
 
@@ -178,8 +251,7 @@ export default function ObjectTableView({
   const canConfigureEntityCard =
     entityCardEnabled &&
     allowDesignerPersistence &&
-    Boolean(effectiveContract?.meta?.viewId) &&
-    mode !== "studio-preview";
+    Boolean(effectiveContract?.meta?.viewId);
 
   const handleSaveCardLayout = useCallback(
     async (layout) => {
@@ -340,6 +412,46 @@ export default function ObjectTableView({
 
   const rowNumberOffset = tableData.pagination?.offset ?? 0;
 
+  const tableRendererContext = useMemo(
+    () => ({
+      onOpenFile: (file, meta = {}) => {
+        const fileUrl = getFileUrl(file);
+        const fileId = getTableFileId(file);
+
+        if (!fileUrl && !fileId) {
+          return;
+        }
+
+        const entityId = meta?.row?.id ?? meta?.row?.entityId ?? null;
+        const fieldKey = meta?.fieldKey || meta?.column?.key || null;
+
+        openFileViewer({
+          fileId: fileId ? String(fileId) : undefined,
+          fileUrl: fileUrl || undefined,
+          fileName: getFileName(file),
+          mimeType: getTableFileMime(file),
+          sourceType: "object_entity_attachment",
+          sourceId: entityId ? String(entityId) : "",
+          returnContext: {
+            type: "object_entity_card",
+            tenantId,
+            objectTypeKey,
+            entityId,
+          },
+          context: {
+            tenantId,
+            objectTypeKey,
+            entityId,
+            entity_type: "file",
+            field_key: fieldKey,
+            fieldKey,
+          },
+        });
+      },
+    }),
+    [objectTypeKey, tenantId],
+  );
+
   const activeFilterCount = useMemo(() => {
     return effectiveContract?.query?.filters?.conditions?.length || 0;
   }, [effectiveContract]);
@@ -372,13 +484,119 @@ export default function ObjectTableView({
     query.resetOffset?.();
   };
 
-  const handleSaveColumnsPanel = useCallback(async () => {
-    const saved = await onSave?.();
+  const isActiveViewHidden = useMemo(() => {
+    const hidden = readHiddenViewKeys(objectTypeKey, representationsPrefsScopeKey);
+    return hidden.includes(String(activeViewKey));
+  }, [objectTypeKey, representationsPrefsScopeKey, activeViewKey, visibilityRevision]);
 
-    if (saved !== false) {
-      setIsColumnsPanelOpen(false);
+  const openViewSettings = useCallback(
+    (section = null, anchorEl = null, viewKey = null) => {
+      const resolvedAnchor =
+        anchorEl || settingsPanelAnchorRef.current || null;
+      const resolvedViewKey =
+        String(viewKey || activeViewKey || "").trim() || null;
+
+      setSettingsPanelAnchor(resolvedAnchor);
+      setSettingsViewKey(resolvedViewKey);
+      setSettingsExpandedKey(section || null);
+      setIsViewSettingsPanelOpen(true);
+    },
+    [activeViewKey],
+  );
+
+  const closeViewSettings = useCallback(() => {
+    setIsViewSettingsPanelOpen(false);
+    setSettingsViewKey(null);
+    setSettingsExpandedKey(null);
+    setSettingsPanelAnchor(null);
+  }, []);
+
+  const handleToggleActiveViewVisibility = useCallback(() => {
+    const key = String(activeViewKey || "").trim();
+
+    if (!key) {
+      return;
     }
-  }, [onSave]);
+
+    const hidden = new Set(
+      readHiddenViewKeys(objectTypeKey, representationsPrefsScopeKey).map(String),
+    );
+
+    if (hidden.has(key)) {
+      hidden.delete(key);
+    } else {
+      hidden.add(key);
+    }
+
+    writeHiddenViewKeys(objectTypeKey, Array.from(hidden), representationsPrefsScopeKey);
+    setVisibilityRevision((value) => value + 1);
+  }, [activeViewKey, objectTypeKey, representationsPrefsScopeKey]);
+
+  const settingsRepresentationContract = useMemo(() => {
+    const representationKey = String(
+      settingsViewKey || activeViewKey || "",
+    ).trim();
+
+    const fromViews = resolveTableRepresentationContract(
+      views,
+      representationKey,
+      null,
+    );
+
+    if (fromViews) {
+      return fromViews;
+    }
+
+    if (String(resolvedContract?.key || "").trim() === representationKey) {
+      return resolvedContract;
+    }
+
+    if (String(activeViewContract?.key || "").trim() === representationKey) {
+      return activeViewContract;
+    }
+
+    return fromViews;
+  }, [
+    views,
+    settingsViewKey,
+    activeViewKey,
+    resolvedContract,
+    activeViewContract,
+  ]);
+
+  const handleOpenViewSettingsForKey = useCallback(
+    (viewKey, anchorEl = null) => {
+      const normalized =
+        String(viewKey || activeViewKey || "").trim() || String(activeViewKey);
+
+      if (
+        isViewSettingsPanelOpen &&
+        String(settingsViewKey) === normalized
+      ) {
+        closeViewSettings();
+        return;
+      }
+
+      if (normalized && normalized !== String(activeViewKey)) {
+        dirtyGuard.runGuarded(() => {
+          onSelectView?.(normalized);
+          openViewSettings(null, anchorEl, normalized);
+        });
+        return;
+      }
+
+      openViewSettings(null, anchorEl, normalized);
+    },
+    [
+      activeViewKey,
+      closeViewSettings,
+      dirtyGuard,
+      isViewSettingsPanelOpen,
+      onSelectView,
+      openViewSettings,
+      settingsViewKey,
+    ],
+  );
 
   const columnWidths = useMemo(() => {
     return effectiveContract?.presentation?.table?.columnWidths || {};
@@ -386,7 +604,7 @@ export default function ObjectTableView({
 
   const handleTableSurfaceClick = useCallback(
     (event) => {
-      if (!entityCardEnabled) {
+      if (!entityCardEnabled || inlineEdit.isInlineEditMode) {
         return;
       }
 
@@ -433,7 +651,7 @@ export default function ObjectTableView({
 
       entityCard.openCard(rowId);
     },
-    [entityCard, entityCardEnabled, tableData.rows],
+    [entityCard, entityCardEnabled, inlineEdit.isInlineEditMode, tableData.rows],
   );
 
   const handleColumnResize = useCallback(
@@ -493,10 +711,19 @@ export default function ObjectTableView({
             views={views}
             activeViewKey={activeViewKey}
             activeViewContract={activeViewContract}
+            objectTypeKey={objectTypeKey}
+            representationsPrefsScopeKey={representationsPrefsScopeKey}
+            catalog={query.catalog}
             onSelectView={onSelectView}
-            onOpenFilters={() => setIsFiltersOpen(true)}
-            onOpenColumns={() => setIsColumnsPanelOpen(true)}
-            isColumnsPanelOpen={isColumnsPanelOpen}
+            onOpenFilters={() => openViewSettings("filters")}
+            onToggleInlineEdit={inlineEdit.toggleInlineEditMode}
+            isInlineEditMode={inlineEdit.isInlineEditMode}
+            onOpenViewSettingsForKey={handleOpenViewSettingsForKey}
+            isViewSettingsOpen={isViewSettingsPanelOpen}
+            settingsPanelAnchorRef={settingsPanelAnchorRef}
+            visibilityRevision={visibilityRevision}
+            isTableBaseStateActive={isTableBaseStateActive}
+            onSelectTableBaseState={onSelectTableBaseState}
             activeFilterCount={activeFilterCount}
             canCreateEntity={entityCard.canCreate && createEntityEnabled}
             onCreateEntity={entityCard.openCreateCard}
@@ -508,22 +735,10 @@ export default function ObjectTableView({
             canSave={canSave}
             saving={persistenceApi?.saving}
             saveError={persistenceApi?.saveError}
-            onSave={onSave}
-            onReset={sessionApi?.resetSession}
             onCreateView={handleCreateView}
             creating={creating}
             createError={createError}
             dirtyGuard={dirtyGuard}
-            canRename={viewActions.canRename}
-            canDuplicate={viewActions.canDuplicate}
-            canDelete={viewActions.canDelete}
-            canSetDefault={viewActions.canSetDefault}
-            onRename={onRename}
-            onDuplicate={onDuplicate}
-            onDelete={onDelete}
-            onSetDefault={onSetDefault}
-            actionLoading={persistenceApi?.actionLoading}
-            actionError={persistenceApi?.actionError}
             quickFilters={sessionApi?.quickFilters}
             activeQuickFilterId={sessionApi?.activeQuickFilterId}
             defaultQuickFilterId={
@@ -542,28 +757,55 @@ export default function ObjectTableView({
         </div>
       ) : null}
 
-      <ObjectTableFiltersModal
-        open={isFiltersOpen}
-        onClose={() => setIsFiltersOpen(false)}
+      <ObjectTableViewSettingsPanel
+        open={isViewSettingsPanelOpen}
+        onClose={closeViewSettings}
+        anchorEl={settingsPanelAnchor}
+        initialExpandedKey={settingsExpandedKey}
+        activeViewContract={activeViewContract}
+        representationContract={settingsRepresentationContract}
+        activeViewKey={settingsViewKey || activeViewKey}
+        effectiveContract={effectiveContract}
+        catalog={query.catalog}
+        objectTypeKey={objectTypeKey}
+        sessionApi={sessionApi}
+        onSave={onSave}
+        onCreateView={handleCreateView}
+        creating={creating}
+        createError={createError}
+        canSave={canSave}
+        canCustomizeLayout={Boolean(
+          canSave || allowDesignerPersistence || allowOfficeUserPersistence,
+        )}
+        isDirty={sessionApi?.isDirty}
+        saving={persistenceApi?.saving}
+        saveError={persistenceApi?.saveError}
+        canRename={viewActions.canRename}
+        canDuplicate={viewActions.canDuplicate}
+        canDelete={viewActions.canDelete}
+        canSetDefault={viewActions.canSetDefault}
+        onRename={(newName) =>
+          onRename?.(newName, settingsRepresentationContract)
+        }
+        onDuplicate={onDuplicate}
+        onDelete={onDelete}
+        onSetDefault={onSetDefault}
+        isViewHidden={isActiveViewHidden}
+        onToggleViewVisibility={handleToggleActiveViewVisibility}
+        actionLoading={persistenceApi?.actionLoading}
+        actionError={persistenceApi?.actionError}
+        onOpenFiltersEditor={() => setIsFiltersEditorOpen(true)}
+      />
+
+      <ObjectTableViewSettingsFiltersModal
+        open={isFiltersEditorOpen}
+        onClose={() => setIsFiltersEditorOpen(false)}
+        canCustomizeLayout={canSave}
         effectiveContract={effectiveContract}
         catalog={query.catalog}
         objectTypeKey={objectTypeKey}
         sessionApi={sessionApi}
         onApplied={handleApplyFilters}
-      />
-
-      <ObjectTableColumnVisibilityPanel
-        open={isColumnsPanelOpen}
-        onClose={() => setIsColumnsPanelOpen(false)}
-        onSave={handleSaveColumnsPanel}
-        canSave={canSave}
-        isDirty={sessionApi?.isDirty}
-        saving={persistenceApi?.saving}
-        saveError={persistenceApi?.saveError}
-        effectiveContract={effectiveContract}
-        catalog={query.catalog}
-        objectTypeKey={objectTypeKey}
-        sessionApi={sessionApi}
       />
 
       <div
@@ -583,13 +825,16 @@ export default function ObjectTableView({
           error={query.error}
           sort={tableData.sort}
           onToggleColumnSort={handleToggleSort}
+          rendererContext={tableRendererContext}
           minHeight={minHeight}
-          enableColumnResize
+          enableColumnResize={!inlineEdit.isInlineEditMode}
           columnWidths={columnWidths}
           onColumnResize={handleColumnResize}
           showSelectionColumn={showSelectionColumn}
           showRowNumberColumn={showRowNumberColumn}
           rowNumberOffset={rowNumberOffset}
+          isInlineEditMode={inlineEdit.isInlineEditMode}
+          onCellChange={inlineEdit.handleCellChange}
           className="view-engine-table-root--hosted"
         />
       </div>
@@ -606,6 +851,7 @@ export default function ObjectTableView({
 
         <ObjectEntityCardModal
           open={entityCard.isOpen}
+          suspendOverlayVisibility={isWorkspaceFileOpen}
           mode={entityCard.cardMode}
           cardModel={entityCard.cardModel}
           formValues={entityCard.formValues}

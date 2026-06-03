@@ -22,6 +22,14 @@ function readContextField(target, ...keys) {
   return null;
 }
 
+/** Tabs inside ObjectEntityCardTabsBlock (not the comments sidebar). */
+export const OBJECT_ENTITY_INNER_TAB_IDS = new Set(["notes", "relations"]);
+
+export function shouldExpandObjectEntityInnerTabs(initialContext = null) {
+  const tab = String(initialContext?.tab || "").trim();
+  return OBJECT_ENTITY_INNER_TAB_IDS.has(tab);
+}
+
 export function resolveRuntimeEntityNotificationTab(target = {}) {
   const explicitTab = normalizeId(target?.tab || readContextField(target, "tab"));
 

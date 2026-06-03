@@ -1,6 +1,7 @@
 import { cloneElement, useMemo } from "react";
 
 import NotificationOverlayHost from "../modules/notifications/components/NotificationOverlayHost";
+import FileViewerOverlayHost from "../shared/files/components/FileViewerOverlayHost";
 import CreateMenuItemModal from "../modules/navigation/components/CreateMenuItemModal";
 import useNotificationNavigationOrchestrator from "../modules/notifications/hooks/useNotificationNavigationOrchestrator";
 import { TRANSITION_TOKENS } from "../shared/layout/transitionTokens";
@@ -174,6 +175,7 @@ export default function PortalLayout({
         ? cloneElement(searchOverlay, { workspaceLeftOffset })
         : null}
       <NotificationOverlayHost />
+      <FileViewerOverlayHost workspaceLeftOffset={workspaceLeftOffset} />
       {sidebarControls.isEditMode && sidebarControls.isCreateMenuOpen ? (
         <div
           style={{

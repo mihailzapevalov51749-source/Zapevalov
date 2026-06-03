@@ -8,6 +8,22 @@ import {
 
 import "./objectTypeIcon.css";
 
+function ObjectTypeFallbackGlyph() {
+  return (
+    <svg
+      className="object-type-icon__fallback"
+      viewBox="0 0 24 24"
+      aria-hidden
+      focusable="false"
+    >
+      <path
+        fill="currentColor"
+        d="M4 5a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5zm3 4h10v2H7V9zm0 4h7v2H7v-2z"
+      />
+    </svg>
+  );
+}
+
 export default function ObjectTypeIcon({
   iconType,
   iconFileUrl,
@@ -15,6 +31,7 @@ export default function ObjectTypeIcon({
   size = 32,
   className = "",
   emptyClassName = "is-empty",
+  showFallback = true,
 }) {
   const dimension = `${size}px`;
   const uploaded = hasUploadedIcon(iconType, iconFileUrl);
@@ -47,6 +64,7 @@ export default function ObjectTypeIcon({
       {src && !maskStyle ? (
         <img src={src} alt="" className="object-type-icon__image" />
       ) : null}
+      {!uploaded && showFallback ? <ObjectTypeFallbackGlyph /> : null}
     </span>
   );
 }

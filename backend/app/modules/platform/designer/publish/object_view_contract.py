@@ -14,6 +14,9 @@ OBJECT_VIEW_SYSTEM_FIELD_KEYS = frozenset(
         f"{SYSTEM_COLUMN_KEY_PREFIX}status",
         f"{SYSTEM_COLUMN_KEY_PREFIX}created_at",
         f"{SYSTEM_COLUMN_KEY_PREFIX}updated_at",
+        f"{SYSTEM_COLUMN_KEY_PREFIX}created_by",
+        f"{SYSTEM_COLUMN_KEY_PREFIX}updated_by",
+        f"{SYSTEM_COLUMN_KEY_PREFIX}record_version",
     },
 )
 

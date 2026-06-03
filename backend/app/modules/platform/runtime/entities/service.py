@@ -52,9 +52,11 @@ def create_entity(
     except CatalogNotFound as exc:
         raise _catalog_http_error(exc) from exc
 
+    user_values = validators.strip_client_system_values(payload.values)
+
     try:
         validators.validate_entity_create(
-            payload.values,
+            user_values,
             _metadata_as_dict(metadata),
         )
     except ValueError as exc:
@@ -71,6 +73,7 @@ def create_entity(
         status="active",
         created_by=user_id,
         updated_by=user_id,
+        record_version=1,
     )
 
     try:
@@ -83,7 +86,7 @@ def create_entity(
                 field_type=field_map[field_key]["field_type"],
                 value_json=field_value,
             )
-            for field_key, field_value in payload.values.items()
+            for field_key, field_value in user_values.items()
         ]
         repository.create_entity_values(db, value_rows)
         repository.commit(db)
@@ -169,9 +172,11 @@ def update_entity(
             detail="Entity не найдена",
         )
 
+    user_values = validators.strip_client_system_values(payload.values)
+
     try:
         validators.validate_entity_update(
-            payload.values,
+            user_values,
             _metadata_as_dict(metadata),
         )
     except ValueError as exc:
@@ -181,7 +186,7 @@ def update_entity(
     user_id = _actor_user_id(current_user)
 
     try:
-        for field_key, field_value in payload.values.items():
+        for field_key, field_value in user_values.items():
             field_meta = field_map[field_key]
             existing = repository.get_entity_value_row(db, tenant_id, entity_id, field_key)
             if existing:

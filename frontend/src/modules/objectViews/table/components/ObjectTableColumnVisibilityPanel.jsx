@@ -4,6 +4,7 @@ import {
   findCatalogObjectType,
   getObjectTypeFields,
 } from "../services/tableModelAdapter";
+import { canMoveTableColumn } from "../../services/tableColumnOrder";
 
 /**
  * Column visibility and order panel (no drag-and-drop).
@@ -184,7 +185,14 @@ export default function ObjectTableColumnVisibilityPanel({
                     type="button"
                     className="designer-btn designer-btn--ghost"
                     title="Выше"
-                    disabled={index === 0}
+                    disabled={
+                      !canMoveTableColumn(
+                        fieldKey,
+                        "up",
+                        columnOrder,
+                        titleFieldKey,
+                      )
+                    }
                     onClick={() => sessionApi?.moveColumn?.(fieldKey, "up")}
                   >
                     ↑
@@ -193,7 +201,14 @@ export default function ObjectTableColumnVisibilityPanel({
                     type="button"
                     className="designer-btn designer-btn--ghost"
                     title="Ниже"
-                    disabled={index === columnOrder.length - 1}
+                    disabled={
+                      !canMoveTableColumn(
+                        fieldKey,
+                        "down",
+                        columnOrder,
+                        titleFieldKey,
+                      )
+                    }
                     onClick={() => sessionApi?.moveColumn?.(fieldKey, "down")}
                   >
                     ↓

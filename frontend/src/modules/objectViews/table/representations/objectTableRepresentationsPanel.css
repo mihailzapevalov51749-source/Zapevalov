@@ -1,0 +1,168 @@
+.object-table-representations-panel {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  z-index: 4000;
+  min-width: 380px;
+  max-width: 430px;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.object-table-representations-panel__limit-row {
+  min-height: 42px;
+  padding: 4px 8px 8px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.object-table-representations-panel__limit-label {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.object-table-representations-panel__limit-input {
+  width: 44px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  outline: none;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+  box-sizing: border-box;
+}
+
+.object-table-representations-panel__empty {
+  padding: 8px 10px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.object-table-representations-panel__item {
+  min-height: 58px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 6px 0 10px;
+}
+
+.object-table-representations-panel__item.is-active {
+  background: #f8fbff;
+}
+
+.object-table-representations-panel__item.is-hidden {
+  opacity: 0.65;
+}
+
+.object-table-representations-panel__name-btn {
+  min-width: 0;
+  flex: 1 1 auto;
+  border: none;
+  background: transparent;
+  padding: 7px 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.object-table-representations-panel__item.is-hidden .object-table-representations-panel__name-btn {
+  cursor: not-allowed;
+}
+
+.object-table-representations-panel__name-btn.is-active {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.object-table-representations-panel__name-btn:not(.is-active) {
+  color: #334155;
+  font-weight: 600;
+}
+
+.object-table-representations-panel__title {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.object-table-representations-panel__summary {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 14px;
+  color: #64748b;
+  margin-top: 3px;
+}
+
+.object-table-representations-panel__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.object-table-representations-panel__slot-select {
+  width: 58px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid #dbe3ef;
+  background: #ffffff;
+  color: #2563eb;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 0 8px;
+  outline: none;
+}
+
+.object-table-representations-panel__slot-select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.object-table-representations-panel__icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid #dbe3ef;
+  background: #ffffff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.object-table-representations-panel__icon-btn.is-active {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.object-table-representations-panel__icon-btn img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  pointer-events: none;
+}

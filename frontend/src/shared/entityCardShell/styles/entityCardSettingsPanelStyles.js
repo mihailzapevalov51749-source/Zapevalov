@@ -1,62 +1,6 @@
-export const overlayStyle = {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(15, 23, 42, 0.22)",
-  zIndex: 100000,
-  display: "flex",
-  justifyContent: "flex-end",
-};
-
-export const panelStyle = {
-  width: 350,
-  height: "100%",
-  background: "#FFFFFF",
-  display: "flex",
-  flexDirection: "column",
-  boxShadow: "-8px 0 32px rgba(15, 23, 42, 0.12)",
-  overflow: "hidden",
-};
-
-export const headerStyle = {
-  minHeight: 68,
-  padding: "0 22px",
-  borderBottom: "1px solid #E2E8F0",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  gap: 14,
-  boxSizing: "border-box",
-};
-
-export const titleStyle = {
-  fontSize: 18,
-  fontWeight: 700,
-  color: "#0F172A",
-  lineHeight: 1.2,
-};
-
-export const closeButtonStyle = {
-  width: 34,
-  height: 34,
-  border: "none",
-  background: "transparent",
-  borderRadius: 10,
-  cursor: "pointer",
-  color: "#475569",
-  fontSize: 22,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  flexShrink: 0,
-};
-
+/** Scrollable body inside PlatformModal (card settings). */
 export const contentStyle = {
-  flex: 1,
-  minHeight: 0,
-  overflowY: "auto",
-  overflowX: "hidden",
-  padding: "14px 16px",
-  boxSizing: "border-box",
+  padding: "14px 16px 16px",
   display: "flex",
   flexDirection: "column",
   gap: 12,
@@ -233,21 +177,17 @@ export const collapseButtonStyle = {
   flexShrink: 0,
 };
 
-export const footerStyle = {
-  flexShrink: 0,
-  padding: "12px 16px",
-  background: "#FFFFFF",
-  borderTop: "1px solid #E2E8F0",
-  boxSizing: "border-box",
-};
-
 export const footerActionsStyle = {
   display: "flex",
-  gap: 10,
+  flexDirection: "row",
+  alignItems: "stretch",
+  gap: 12,
+  width: "100%",
 };
 
 export const resetButtonStyle = {
-  width: "42%",
+  flex: "1 1 0",
+  minWidth: 0,
   height: 42,
   border: "1px solid #CBD5E1",
   borderRadius: 14,
@@ -256,6 +196,11 @@ export const resetButtonStyle = {
   fontSize: 14,
   fontWeight: 700,
   cursor: "pointer",
+  padding: "0 12px",
+  whiteSpace: "nowrap",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  boxSizing: "border-box",
 };
 
 export const saveButtonStyle = {
@@ -277,7 +222,11 @@ export const saveButtonStyle = {
 
 export const saveButtonCompactStyle = {
   ...saveButtonStyle,
-  width: "58%",
+  flex: "1 1 0",
+  minWidth: 0,
+  width: "auto",
+  whiteSpace: "nowrap",
+  boxSizing: "border-box",
 };
 
 export const saveIconStyle = {

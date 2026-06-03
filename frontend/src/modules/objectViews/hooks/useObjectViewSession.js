@@ -10,6 +10,11 @@ import {
   resolvePanelColumnOrder,
 } from "../services/columnPresentationUtils";
 import {
+  canMoveTableColumn,
+  normalizeTableDisplayFieldKeys,
+  resolveTableDisplayContext,
+} from "../services/tableColumnOrder";
+import {
   buildQuickSavedFilter,
   cloneFilterConditions,
   getQuickFilters,
@@ -254,6 +259,14 @@ export default function useObjectViewSession({
         return { ok: false, reason: "invalid_field" };
       }
 
+      const titleFieldKey = String(
+        effectiveContract?.projection?.titleFieldKey || "",
+      ).trim();
+
+      if (titleFieldKey && normalized === titleFieldKey) {
+        return { ok: false, reason: "title_field_locked" };
+      }
+
       const projectionKeys = getProjectionFieldKeys(effectiveContract);
       const hidden = new Set(
         effectiveContract?.presentation?.table?.hiddenFieldKeys || [],
@@ -285,29 +298,31 @@ export default function useObjectViewSession({
   const setColumnOrder = useCallback(
     (next) => {
       patchSession({
-        columnOrder: Array.isArray(next) ? [...next] : [],
+        columnOrder: normalizePresentationTable(
+          { columnOrder: Array.isArray(next) ? [...next] : [] },
+          effectiveContract?.projection?.fieldKeys || [],
+          effectiveContract?.projection?.titleFieldKey,
+        ).columnOrder,
       });
     },
-    [patchSession],
+    [effectiveContract, patchSession],
   );
 
   const moveColumn = useCallback(
     (fieldKey, direction) => {
       const normalized = String(fieldKey || "").trim();
       const order = resolvePanelColumnOrder(effectiveContract);
-      const index = order.indexOf(normalized);
+      const titleFieldKey = effectiveContract?.projection?.titleFieldKey || null;
 
-      if (index < 0) {
+      if (
+        !canMoveTableColumn(normalized, direction, order, titleFieldKey)
+      ) {
         return;
       }
 
+      const index = order.indexOf(normalized);
       const offset = direction === "up" ? -1 : 1;
       const targetIndex = index + offset;
-
-      if (targetIndex < 0 || targetIndex >= order.length) {
-        return;
-      }
-
       const nextOrder = [...order];
       const temp = nextOrder[index];
       nextOrder[index] = nextOrder[targetIndex];
@@ -317,6 +332,7 @@ export default function useObjectViewSession({
         columnOrder: normalizePresentationTable(
           { columnOrder: nextOrder },
           effectiveContract?.projection?.fieldKeys || [],
+          titleFieldKey,
         ).columnOrder,
       });
     },
@@ -357,11 +373,15 @@ export default function useObjectViewSession({
   );
 
   const resetPresentationToProjectionOrder = useCallback(() => {
-    const fieldOrder = [
-      ...(resolvedContract?.projection?.fieldOrder ||
-        resolvedContract?.projection?.fieldKeys ||
-        []),
-    ];
+    const { titleFieldKey, isAllMode } = resolveTableDisplayContext(resolvedContract);
+    const fieldOrder = normalizeTableDisplayFieldKeys(
+      [
+        ...(resolvedContract?.projection?.fieldOrder ||
+          resolvedContract?.projection?.fieldKeys ||
+          []),
+      ],
+      { titleFieldKey, isAllMode },
+    );
 
     patchSession({ columnOrder: fieldOrder });
   }, [resolvedContract, patchSession]);

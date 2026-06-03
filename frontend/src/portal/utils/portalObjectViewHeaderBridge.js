@@ -8,6 +8,7 @@ export const PORTAL_OBJECT_VIEW_HEADER_EVENT =
  *   objectTypeKey?: string,
  *   activeAdapterType?: string,
  *   activeAdapterLabel?: string,
+ *   activeObjectTabKey?: string,
  *   activeRepresentationKey?: string,
  *   activeRepresentationName?: string,
  * } | null} detail

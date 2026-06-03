@@ -1,5 +1,6 @@
 import { DEFAULT_TABLE_PRESENTATION } from "./objectViewContract";
 import { VIEW_ENGINE_SYSTEM_COLUMN_KEYS } from "../../../shared/viewEngine/contracts";
+import { normalizeTableDisplayFieldKeys } from "./tableColumnOrder";
 
 export const OBJECT_VIEW_SYSTEM_FIELD_KEYS = new Set(
   VIEW_ENGINE_SYSTEM_COLUMN_KEYS,
@@ -32,10 +33,12 @@ function isPresentationFieldKey(fieldKey, projectionKeys) {
  *
  * @param {Record<string, unknown> | null | undefined} table
  * @param {string[]} [projectionFieldKeys]
+ * @param {string | null | undefined} [titleFieldKey]
  */
 export function normalizePresentationTable(
   table = null,
   projectionFieldKeys = [],
+  titleFieldKey = null,
 ) {
   const projectionKeys = new Set(
     (projectionFieldKeys || []).map((key) => String(key || "").trim()).filter(Boolean),
@@ -50,9 +53,15 @@ export function normalizePresentationTable(
     .map((key) => String(key || "").trim())
     .filter((key) => isPresentationFieldKey(key, projectionKeys));
 
-  const columnOrder = (Array.isArray(source.columnOrder) ? source.columnOrder : [])
-    .map((key) => String(key || "").trim())
-    .filter((key) => isPresentationFieldKey(key, projectionKeys));
+  const columnOrder = normalizeTableDisplayFieldKeys(
+    (Array.isArray(source.columnOrder) ? source.columnOrder : [])
+      .map((key) => String(key || "").trim())
+      .filter((key) => isPresentationFieldKey(key, projectionKeys)),
+    {
+      titleFieldKey,
+      isAllMode: false,
+    },
+  );
 
   const columnWidths = {};
   const rawWidths =
@@ -164,6 +173,7 @@ export function applyContractGuards(contract) {
       table: normalizePresentationTable(
         contract.presentation?.table,
         projectionFieldKeys,
+        contract.projection?.titleFieldKey,
       ),
       card: normalizePresentationCard(contract.presentation?.card),
     },

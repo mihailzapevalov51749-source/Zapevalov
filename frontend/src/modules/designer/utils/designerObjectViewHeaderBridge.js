@@ -7,6 +7,7 @@ export const DESIGNER_OBJECT_VIEW_HEADER_EVENT =
  *   objectTypeId?: string,
  *   activeAdapterType?: string,
  *   activeAdapterLabel?: string,
+ *   activeObjectTabKey?: string,
  *   activeRepresentationKey?: string,
  *   activeRepresentationName?: string,
  * } | null} detail

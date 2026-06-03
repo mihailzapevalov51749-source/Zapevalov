@@ -17,6 +17,7 @@ class FieldType(StrEnum):
     MULTI_CHOICE = "multi_choice"
     UUID = "uuid"
     USER = "user"
+    FILE = "file"
 
 
 class RelationType(StrEnum):

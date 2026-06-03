@@ -30,7 +30,9 @@ export function catalogFieldToFieldDef(field) {
     rawType === "select" || rawType === "status" || rawType === "choice";
   const type = isMultiChoice || isChoiceLike
     ? "choice"
-    : normalizeFieldType(rawType);
+    : rawType === "datetime"
+      ? "datetime"
+      : normalizeFieldType(rawType);
 
   const options = Array.isArray(settings.options) ? settings.options : [];
 

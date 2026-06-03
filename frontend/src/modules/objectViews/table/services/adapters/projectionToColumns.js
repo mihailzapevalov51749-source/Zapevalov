@@ -3,6 +3,8 @@ import {
   VIEW_ENGINE_SYSTEM_COLUMN_KEYS,
 } from "../../../../../shared/viewEngine/systemColumnKeys";
 
+import { normalizeTableDisplayFieldKeys } from "../../../services/tableColumnOrder";
+
 import { catalogFieldToFieldDef } from "./catalogFieldToFieldDef";
 
 /** @type {import("../../../../../shared/viewEngine/contracts").ViewEngineColumn[]} */
@@ -32,9 +34,9 @@ const DEFAULT_SYSTEM_COLUMNS = [
     width: 140,
   },
   {
-    key: SYSTEM_COLUMN_KEYS.created_at,
-    label: "Создано",
-    type: "date",
+    key: SYSTEM_COLUMN_KEYS.createdAt,
+    label: "Дата создания",
+    type: "datetime",
     fieldDef: null,
     source: "system",
     visible: true,
@@ -95,6 +97,7 @@ function dedupeFieldKeys(keys) {
  *     includeSystemColumns?: boolean,
  *     systemColumnKeys?: string[],
  *     titleFieldKey?: string | null,
+ *     isAllMode?: boolean,
  *   },
  * }} params
  */
@@ -104,9 +107,10 @@ export function projectionToColumns({
   options = {},
 }) {
   const {
-    includeSystemColumns = true,
+    includeSystemColumns = false,
     systemColumnKeys = VIEW_ENGINE_SYSTEM_COLUMN_KEYS,
     titleFieldKey: titleFieldOverride = undefined,
+    isAllMode = false,
   } = options;
 
   const fieldList = Array.isArray(fields) ? fields : [];
@@ -124,14 +128,27 @@ export function projectionToColumns({
     .map((field) => String(field?.key || "").trim())
     .filter(Boolean);
 
-  const orderedKeys = resolveProjectionFieldKeys(projection, fallbackKeys);
-
   const titleFieldKey =
     titleFieldOverride !== undefined
       ? titleFieldOverride
       : typeof projection?.title_field === "string"
         ? projection.title_field
-        : orderedKeys[0] || null;
+        : null;
+
+  const orderedKeys = normalizeTableDisplayFieldKeys(
+    resolveProjectionFieldKeys(projection, fallbackKeys),
+    {
+      titleFieldKey,
+      isAllMode,
+    },
+  );
+
+  const resolvedTitleFieldKey =
+    titleFieldKey ||
+    (typeof projection?.title_field === "string" ? projection.title_field : null) ||
+    orderedKeys.find((key) => !key.startsWith("__system_")) ||
+    orderedKeys[0] ||
+    null;
 
   /** @type {import("../../../../../shared/viewEngine/contracts").ViewEngineColumn[]} */
   const columns = [];
@@ -161,12 +178,13 @@ export function projectionToColumns({
       label: fieldDef.label,
       type: fieldDef.type,
       fieldDef,
-      source: "field",
+      source: fieldDef.isSystem ? "system" : "field",
       visible: true,
-      sortable: true,
-      isSystem: false,
-      isTitle: titleFieldKey === fieldDef.key,
-      width: undefined,
+      sortable:
+        fieldDef.key === SYSTEM_COLUMN_KEYS.id ? false : true,
+      isSystem: Boolean(fieldDef.isSystem),
+      isTitle: resolvedTitleFieldKey === fieldDef.key,
+      width: fieldDef.isSystem && fieldDef.key === SYSTEM_COLUMN_KEYS.id ? 280 : undefined,
     });
   }
 

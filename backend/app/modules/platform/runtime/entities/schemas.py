@@ -27,6 +27,9 @@ class EntityRead(BaseModel):
     catalog_version: int
     status: str
     values: dict[str, Any]
+    created_by: int | None = None
+    updated_by: int | None = None
+    record_version: int = 1
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None = None

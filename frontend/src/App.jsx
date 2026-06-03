@@ -20,6 +20,10 @@ import {
   saveLastRuntimePath,
 } from "./shared/appMode/appModeStorage";
 import {
+  startTodayActiveTimePolling,
+  stopTodayActiveTimePolling,
+} from "./shared/userActivity/todayActiveTimeStore";
+import {
   recordNavigationActivity,
   startUserActivityTracking,
   stopUserActivityTracking,
@@ -73,9 +77,11 @@ function ModePathTracker() {
 function UserActivityBootstrap() {
   useEffect(() => {
     startUserActivityTracking();
+    startTodayActiveTimePolling();
 
     return () => {
       stopUserActivityTracking();
+      stopTodayActiveTimePolling();
     };
   }, []);
 
@@ -170,6 +176,11 @@ export default function App() {
 
       <Route
         path="/portal/:portalId/object-types/:objectTypeRef/data"
+        element={<PortalObjectRuntimePage />}
+      />
+
+      <Route
+        path="/portal/:portalId/object-types/:objectTypeRef/:viewKey"
         element={<PortalObjectRuntimePage />}
       />
 

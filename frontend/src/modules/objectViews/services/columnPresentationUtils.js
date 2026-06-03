@@ -1,3 +1,9 @@
+import {
+  normalizeTableDisplayFieldKeys,
+  resolveTableDisplayContext,
+} from "./tableColumnOrder";
+import { isTableBaseStateKey } from "../table/preferences/tableBaseState";
+
 /**
  * @param {import('./objectViewContract').ObjectViewContract | null | undefined} contract
  * @returns {string[]}
@@ -5,14 +11,25 @@
 export function getProjectionFieldKeys(contract) {
   return [...(contract?.projection?.fieldKeys || [])].filter(Boolean);
 }
-
 /**
  * Full column order for panel (all projection fields).
  *
  * @param {import('./objectViewContract').ObjectViewContract | null | undefined} contract
  */
-export function resolvePanelColumnOrder(contract) {
+export function resolvePanelColumnOrder(contract, runtimeProjection = null) {
   const projectionKeys = getProjectionFieldKeys(contract);
+  const { titleFieldKey, isAllMode } = resolveTableDisplayContext(
+    contract,
+    runtimeProjection,
+  );
+
+  if (isTableBaseStateKey(contract?.key)) {
+    return normalizeTableDisplayFieldKeys(projectionKeys, {
+      titleFieldKey,
+      isAllMode: true,
+    });
+  }
+
   const presentationOrder = contract?.presentation?.table?.columnOrder || [];
   const fieldOrder = contract?.projection?.fieldOrder || projectionKeys;
 
@@ -41,7 +58,10 @@ export function resolvePanelColumnOrder(contract) {
     }
   }
 
-  return result;
+  return normalizeTableDisplayFieldKeys(result, {
+    titleFieldKey,
+    isAllMode: false,
+  });
 }
 
 /**
@@ -49,12 +69,21 @@ export function resolvePanelColumnOrder(contract) {
  *
  * @param {import('./objectViewContract').ObjectViewContract | null | undefined} contract
  */
-export function resolveVisibleFieldKeys(contract) {
+export function resolveVisibleFieldKeys(contract, runtimeProjection = null) {
   const projectionKeys = getProjectionFieldKeys(contract);
   const hidden = new Set(contract?.presentation?.table?.hiddenFieldKeys || []);
-  const panelOrder = resolvePanelColumnOrder(contract);
+  const { titleFieldKey, isAllMode } = resolveTableDisplayContext(
+    contract,
+    runtimeProjection,
+  );
 
-  return panelOrder.filter((key) => !hidden.has(key));
+  const panelOrder = resolvePanelColumnOrder(contract, runtimeProjection);
+  const visible = panelOrder.filter((key) => !hidden.has(key));
+
+  return normalizeTableDisplayFieldKeys(visible, {
+    titleFieldKey,
+    isAllMode,
+  });
 }
 
 /**
@@ -77,12 +106,12 @@ export function contractToDisplayProjection(contract, runtimeProjection = null) 
     return runtimeProjection;
   }
 
-  const visibleKeys = resolveVisibleFieldKeys(contract);
-  const titleField =
-    contract.projection.titleFieldKey ||
-    runtimeProjection?.title_field ||
-    visibleKeys[0] ||
-    null;
+  const { titleFieldKey: titleField, isAllMode } = resolveTableDisplayContext(
+    contract,
+    runtimeProjection,
+  );
+
+  const visibleKeys = resolveVisibleFieldKeys(contract, runtimeProjection);
 
   const defaultSort = contract.query?.sort?.rules?.[0]
     ? {

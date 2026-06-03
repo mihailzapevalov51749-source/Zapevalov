@@ -90,6 +90,10 @@ export default function ObjectEntityCardView({
     [onOpenRelatedEntity, cardModel?.objectTypeKey],
   );
 
+  const handleCloseCardSettings = useCallback(() => {
+    setIsSettingsOpen(false);
+  }, []);
+
   const handleSaveCardSettings = useCallback(
     async (nextLayout) => {
       const saved = await onSaveCardLayout?.(nextLayout);
@@ -167,9 +171,10 @@ export default function ObjectEntityCardView({
           editableFields={cardModel.editableFields}
           titleFieldKey={cardModel.titleFieldKey}
           initialLayout={utLayout}
-          onClose={() => setIsSettingsOpen(false)}
+          onClose={handleCloseCardSettings}
           onSave={handleSaveCardSettings}
           saving={cardSettingsSaving}
+          canCustomizeLayout={canConfigureCard}
         />
       ) : null}
     </>

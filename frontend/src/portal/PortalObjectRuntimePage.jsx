@@ -6,11 +6,15 @@ import useNavigationTree from "../modules/navigation/hooks/useNavigationTree";
 import WorkspaceTopBar from "./components/WorkspaceTopBar";
 import WorkspaceRuntimeTabsBar from "./components/WorkspaceRuntimeTabsBar";
 import PortalObjectDataPage from "./pages/PortalObjectDataPage";
+import PlatformFileWorkspaceView from "../shared/files/components/PlatformFileWorkspaceView";
+import usePlatformFileWorkspaceSession from "../shared/files/hooks/usePlatformFileWorkspaceSession";
 import SearchResultsOverlay from "../shared/search/SearchResultsOverlay";
 import { useHeaderSearchContext } from "../shared/search/useHeaderSearchContext";
 import { useHeaderSearchController } from "../shared/search/useHeaderSearchController";
 import {
+  buildPortalObjectTabHref,
   isObjectTypeUuid,
+  parsePortalObjectRoute,
   resolvePortalObjectNavigationPath,
 } from "./utils/portalObjectRoutes";
 import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../modules/designer/utils/navigationReload";
@@ -23,10 +27,45 @@ import {
 export default function PortalObjectRuntimePage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { portalId: portalIdParam, objectTypeRef } = useParams();
+  const { portalId: portalIdParam, objectTypeRef, viewKey: viewKeyParam } = useParams();
 
   const portalId = Number(portalIdParam || 1);
   const tenantId = portalId;
+
+  const parsedObjectRoute = useMemo(
+    () => parsePortalObjectRoute(location.pathname, location.search),
+    [location.pathname, location.search],
+  );
+
+  const activeObjectTabKey =
+    String(viewKeyParam || "").trim() ||
+    String(parsedObjectRoute?.viewKey || "").trim() ||
+    null;
+
+  const handleNavigateObjectTab = useCallback(
+    (nextViewKey, options = {}) => {
+      const normalized = String(nextViewKey || "").trim();
+
+      if (!normalized || !objectTypeRef) {
+        return;
+      }
+
+      const targetPath = buildPortalObjectTabHref({
+        portalId,
+        objectTypeRef,
+        viewKey: normalized,
+      });
+
+      const currentPath = `${location.pathname}${location.search || ""}`;
+
+      if (!targetPath || targetPath === currentPath) {
+        return;
+      }
+
+      navigate(targetPath, options);
+    },
+    [navigate, portalId, objectTypeRef, location.pathname, location.search],
+  );
 
   const { navigation, reloadNavigation } = useNavigationTree(portalId, {
     scope: "runtime",
@@ -56,6 +95,11 @@ export default function PortalObjectRuntimePage() {
   });
   const [runtimeHeaderModel, setRuntimeHeaderModel] = useState(null);
   const [activeObjectAdapterLabel, setActiveObjectAdapterLabel] = useState("");
+  const {
+    session: workspaceFileSession,
+    closeWorkspaceFile,
+    isWorkspaceFileOpen,
+  } = usePlatformFileWorkspaceSession({ enabled: true });
 
   const changeMenuScale = useCallback((nextScale) => {
     const normalized = Math.min(1.4, Math.max(0.8, nextScale));
@@ -228,10 +272,17 @@ export default function PortalObjectRuntimePage() {
         ];
 
     const adapterLabel = String(activeObjectAdapterLabel || "").trim() || "Таблица";
-    if (adapterLabel) {
+    if (adapterLabel && !isWorkspaceFileOpen) {
       items.push({
         id: "portal-active-adapter",
         label: adapterLabel,
+      });
+    }
+
+    if (isWorkspaceFileOpen && workspaceFileSession?.fileName) {
+      items.push({
+        id: "portal-open-file",
+        label: workspaceFileSession.fileName,
       });
     }
 
@@ -244,7 +295,13 @@ export default function PortalObjectRuntimePage() {
     activeObjectAdapterLabel,
     location.pathname,
     location.search,
+    isWorkspaceFileOpen,
+    workspaceFileSession?.fileName,
   ]);
+
+  const handleCloseWorkspaceFile = useCallback(() => {
+    closeWorkspaceFile();
+  }, [closeWorkspaceFile]);
 
   const handleUnifiedHeaderModel = useCallback((nextModel) => {
     setRuntimeHeaderModel((previous) => {
@@ -360,26 +417,76 @@ export default function PortalObjectRuntimePage() {
 
         <div
           data-page-canvas
+          data-file-workspace-open={isWorkspaceFileOpen ? "true" : undefined}
           style={{
+            position: "relative",
             flex: 1,
             minHeight: 0,
             width: "100%",
             display: "flex",
             flexDirection: "column",
-            overflow: "auto",
+            overflow: isWorkspaceFileOpen ? "hidden" : "auto",
             padding: (() => {
+              if (isWorkspaceFileOpen) {
+                return 0;
+              }
+
               const params = new URLSearchParams(location.search || "");
               const workspaceSlug = String(params.get("workspaceSlug") || "").trim();
               return workspaceSlug ? "0 16px 16px" : "10px 16px 16px";
             })(),
+            background: isWorkspaceFileOpen ? "#ffffff" : undefined,
             boxSizing: "border-box",
           }}
         >
-          <PortalObjectDataPage
-            tenantId={tenantId}
-            objectTypeRef={objectTypeRef}
-            source="portal"
-          />
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              width: "100%",
+              display: "flex",
+              flexDirection: "column",
+              visibility: isWorkspaceFileOpen ? "hidden" : "visible",
+              pointerEvents: isWorkspaceFileOpen ? "none" : "auto",
+            }}
+            aria-hidden={isWorkspaceFileOpen ? "true" : undefined}
+          >
+            <PortalObjectDataPage
+              tenantId={tenantId}
+              objectTypeRef={objectTypeRef}
+              source="portal"
+              navigationAppearance={activeNavigationItem}
+              activeObjectTabKey={activeObjectTabKey}
+              syncObjectTabRoute
+              onNavigateObjectTab={handleNavigateObjectTab}
+            />
+          </div>
+
+          {isWorkspaceFileOpen && workspaceFileSession ? (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                flexDirection: "column",
+                minHeight: 0,
+                zIndex: 2,
+                background: "#ffffff",
+              }}
+            >
+              <PlatformFileWorkspaceView
+                fileUrl={workspaceFileSession.fileUrl}
+                fileName={workspaceFileSession.fileName}
+                fileType={workspaceFileSession.fileType}
+                fileId={workspaceFileSession.fileId}
+                initialContext={workspaceFileSession.initialContext}
+                userId={workspaceFileSession.userId}
+                userName={workspaceFileSession.userName}
+                mode={workspaceFileSession.mode}
+                onClose={handleCloseWorkspaceFile}
+              />
+            </div>
+          ) : null}
         </div>
       </div>
     </PortalLayout>

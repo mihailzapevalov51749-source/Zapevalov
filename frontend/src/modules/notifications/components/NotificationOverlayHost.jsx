@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import FileViewerModal from "../../../shared/files/components/FileViewerModal";
@@ -8,6 +8,7 @@ import useObjectEntityCard from "../../objectEntities/hooks/useObjectEntityCard"
 import {
   buildObjectEntityNotificationContext,
 } from "../../objectEntities/services/buildObjectEntityNotificationContext";
+import { resolveCatalogCardContext } from "../../objectEntities/services/resolveCatalogCardContext";
 import { subscribePendingTarget } from "../navigation/notificationNavigationBus";
 import { normalizeNotificationContext } from "../navigation/notificationNavigationMapper";
 import {
@@ -106,13 +107,20 @@ function NotificationObjectEntityOverlay({
   onClose,
 }) {
   const [catalog, setCatalog] = useState(null);
+  const [catalogLoading, setCatalogLoading] = useState(true);
   const openedRef = useRef(false);
+
+  const { titleFieldKey } = useMemo(
+    () => resolveCatalogCardContext(catalog, overlayContext.objectTypeKey),
+    [catalog, overlayContext.objectTypeKey],
+  );
 
   const entityCard = useObjectEntityCard({
     tenantId,
     objectTypeKey: overlayContext.objectTypeKey,
     catalog,
     listItems: [],
+    titleFieldKey,
     enabled: true,
   });
 
@@ -120,6 +128,8 @@ function NotificationObjectEntityOverlay({
     let cancelled = false;
 
     (async () => {
+      setCatalogLoading(true);
+
       try {
         const catalogResponse = await getPublishedCatalog(tenantId);
         if (!cancelled) {
@@ -128,6 +138,10 @@ function NotificationObjectEntityOverlay({
       } catch {
         if (!cancelled) {
           setCatalog(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setCatalogLoading(false);
         }
       }
     })();
@@ -138,7 +152,7 @@ function NotificationObjectEntityOverlay({
   }, [tenantId]);
 
   useEffect(() => {
-    if (openedRef.current || !entityCard.openCard) {
+    if (openedRef.current || catalogLoading || !entityCard.openCard) {
       return;
     }
 
@@ -147,8 +161,15 @@ function NotificationObjectEntityOverlay({
     void entityCard.openCard(overlayContext.runtimeEntityId, {
       objectTypeKey: overlayContext.objectTypeKey,
       initialContext: buildObjectEntityNotificationContext(target),
+      forceLoadEntity: true,
     });
-  }, [entityCard.openCard, overlayContext, target]);
+  }, [
+    catalog,
+    catalogLoading,
+    entityCard.openCard,
+    overlayContext,
+    target,
+  ]);
 
   useEffect(() => {
     if (!entityCard.openError || entityCard.isOpen) {

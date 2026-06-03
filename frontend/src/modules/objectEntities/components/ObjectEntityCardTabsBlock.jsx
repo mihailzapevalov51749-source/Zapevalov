@@ -16,6 +16,7 @@ import {
   entityCardTabsWrapperStyle,
 } from "../../../shared/entityCardShell/styles/entityCardTabsStyles";
 
+import { shouldExpandObjectEntityInnerTabs } from "../services/buildObjectEntityNotificationContext";
 import { getInnerTabLabel } from "../services/objectEntityCardSectionsLayout";
 import { resolveActiveCardTab } from "../services/objectEntityCardLayout";
 import EntityCardPendingSection from "./EntityCardPendingSection";
@@ -50,7 +51,7 @@ export default function ObjectEntityCardTabsBlock({
 
   const [activeTab, setActiveTab] = useState(() => tabs[0]?.id || "");
   const [isExpanded, setIsExpanded] = useState(() =>
-    Boolean(initialContext?.tab),
+    shouldExpandObjectEntityInnerTabs(initialContext),
   );
   const [notesCount, setNotesCount] = useState(null);
 
@@ -59,7 +60,11 @@ export default function ObjectEntityCardTabsBlock({
 
     if (targetTab && tabs.some((tab) => tab.id === targetTab)) {
       setActiveTab(targetTab);
-      setIsExpanded(true);
+      setIsExpanded(shouldExpandObjectEntityInnerTabs(initialContext));
+      return;
+    }
+
+    if (targetTab === "comments") {
       return;
     }
 

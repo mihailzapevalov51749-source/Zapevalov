@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import FileValueRenderer from "../../fieldTypes/file/FileValueRenderer";
-import FileViewerModal from "../components/FileViewerModal";
+import { openFileViewer } from "../openFileViewer";
 import {
   getAttachmentFileId,
   getAttachmentFileType,
@@ -145,14 +145,95 @@ export default function EntityAttachmentsPanel({
   uploadDisabled = false,
   uploadDisabledHint = "",
   fileViewerFallbackContext = null,
+  fileViewerSourceType = "card_attachment_file",
+  fileViewerSourceId = null,
+  fileViewerContextExtras = null,
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [previewFile, setPreviewFile] = useState(null);
   const autoOpenedTargetRef = useRef("");
 
   const normalizedAttachments = useMemo(
     () => (Array.isArray(attachments) ? attachments : []),
     [attachments],
+  );
+
+  const openAttachmentInPlatformViewer = useCallback(
+    (file, options = {}) => {
+      const fileUrl = getFileUrl(file);
+      const fileId = getFileId(file);
+
+      if (!fileUrl || !fileId) {
+        return false;
+      }
+
+      const notificationContext = buildAttachmentFileContext({
+        file,
+        ownerIdentity,
+        publishedRuntimeRef,
+        source: fileViewerSourceType,
+        commentId: options.commentId || null,
+        highlightId: options.highlightId || null,
+      });
+
+      const fieldKey = String(file?.__fieldKey || "").trim();
+      const contextExtras =
+        fileViewerContextExtras && typeof fileViewerContextExtras === "object"
+          ? fileViewerContextExtras
+          : {};
+
+      const entityIdForReturn =
+        fileViewerSourceId ||
+        ownerIdentity?.entityId ||
+        notificationContext.owner_entity_id ||
+        contextExtras.entityId ||
+        contextExtras.entity_id ||
+        null;
+
+      const returnContext =
+        fileViewerSourceType === "object_entity_attachment"
+          ? {
+              type: "object_entity_card",
+              tenantId: contextExtras.tenantId ?? contextExtras.tenant_id ?? null,
+              objectTypeKey:
+                contextExtras.objectTypeKey ??
+                contextExtras.object_type_key ??
+                null,
+              entityId: entityIdForReturn,
+            }
+          : null;
+
+      return openFileViewer({
+        fileId,
+        fileName: getFileName(file),
+        fileUrl,
+        mimeType: getFileType(file),
+        size: file?.size ?? file?.file_size ?? file?.fileSize ?? null,
+        sourceType: fileViewerSourceType,
+        sourceId: entityIdForReturn,
+        returnContext,
+        context: {
+          ...(fileViewerContextExtras &&
+          typeof fileViewerContextExtras === "object"
+            ? fileViewerContextExtras
+            : {}),
+          ...(fileViewerFallbackContext &&
+          typeof fileViewerFallbackContext === "object"
+            ? fileViewerFallbackContext
+            : {}),
+          ...notificationContext,
+          ...(fieldKey ? { field_key: fieldKey, fieldKey } : {}),
+          tab: options.tab || notificationContext.tab || "comments",
+        },
+      });
+    },
+    [
+      fileViewerContextExtras,
+      fileViewerFallbackContext,
+      fileViewerSourceId,
+      fileViewerSourceType,
+      ownerIdentity,
+      publishedRuntimeRef,
+    ],
   );
 
   useEffect(() => {
@@ -162,7 +243,12 @@ export default function EntityAttachmentsPanel({
       setIsExpanded(true);
     }
 
-    if (context.source !== "card_attachment_file") {
+    const attachmentSources = new Set([
+      "card_attachment_file",
+      "object_entity_attachment",
+    ]);
+
+    if (!attachmentSources.has(String(context.source || ""))) {
       return;
     }
 
@@ -185,36 +271,15 @@ export default function EntityAttachmentsPanel({
       return;
     }
 
-    const currentPreviewId = String(getFileId(previewFile?.raw) || "");
-
-    if (currentPreviewId && currentPreviewId === targetPreviewId) {
-      return;
-    }
-
     autoOpenedTargetRef.current = targetPreviewId;
     setIsExpanded(true);
 
-    setPreviewFile({
-      fileUrl: getFileUrl(targetFile),
-      fileName: getFileName(targetFile),
-      fileType: getFileType(targetFile),
-      raw: targetFile,
-      notificationContext: buildAttachmentFileContext({
-        file: targetFile,
-        ownerIdentity,
-        publishedRuntimeRef,
-        source: "card_attachment_file",
-        commentId: context.comment_id,
-        highlightId: context.highlight_id,
-      }),
+    openAttachmentInPlatformViewer(targetFile, {
+      commentId: context.comment_id,
+      highlightId: context.highlight_id,
+      tab: context.tab || "attachments",
     });
-  }, [
-    initialContext,
-    normalizedAttachments,
-    ownerIdentity,
-    previewFile,
-    publishedRuntimeRef,
-  ]);
+  }, [initialContext, normalizedAttachments, openAttachmentInPlatformViewer]);
 
   const visibleAttachments = isExpanded
     ? normalizedAttachments
@@ -222,28 +287,7 @@ export default function EntityAttachmentsPanel({
   const hasHiddenAttachments = normalizedAttachments.length > 1;
 
   const handleOpenAttachment = (file) => {
-    const fileUrl = getFileUrl(file);
-    const fileId = getFileId(file);
-
-    if (!fileUrl || !fileId) return;
-
-    setPreviewFile({
-      fileUrl,
-      fileName: getFileName(file),
-      fileType: getFileType(file),
-      raw: file,
-      notificationContext: buildAttachmentFileContext({
-        file,
-        ownerIdentity,
-        publishedRuntimeRef,
-        source: "card_attachment_file",
-      }),
-    });
-  };
-
-  const handleClosePreviewFile = () => {
-    setPreviewFile(null);
-    window.__YASNOPRO_PENDING_NOTIFICATION_TARGET__ = null;
+    openAttachmentInPlatformViewer(file, { tab: "comments" });
   };
 
   return (
@@ -333,23 +377,6 @@ export default function EntityAttachmentsPanel({
           </button>
         ) : null}
       </div>
-
-      <FileViewerModal
-        isOpen={Boolean(previewFile)}
-        fileUrl={previewFile?.fileUrl}
-        fileName={previewFile?.fileName}
-        fileType={previewFile?.fileType}
-        fileId={getFileId(previewFile?.raw)}
-        initialContext={
-          previewFile?.notificationContext ||
-          fileViewerFallbackContext ||
-          null
-        }
-        userId="1"
-        userName="Михаил"
-        mode="view"
-        onClose={handleClosePreviewFile}
-      />
     </div>
   );
 }

@@ -8,6 +8,31 @@ export function formatDuration(totalSeconds) {
   return `${minutes} мин`;
 }
 
+/**
+ * Sidebar-only formatting: value only, no labels (e.g. 7ч 25м).
+ * @param {number} totalSeconds
+ * @param {{ collapsed?: boolean }} [options]
+ */
+export function formatSidebarActiveDuration(totalSeconds, options = {}) {
+  const { collapsed = false } = options;
+  const seconds = Math.max(0, Number(totalSeconds) || 0);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (hours > 0 && minutes > 0) {
+    if (collapsed) {
+      return `${hours}ч`;
+    }
+    return `${hours}ч ${minutes}м`;
+  }
+
+  if (hours > 0) {
+    return `${hours}ч`;
+  }
+
+  return `${minutes}м`;
+}
+
 export function formatTimeOnly(value, timeZone) {
   if (!value) {
     return "—";

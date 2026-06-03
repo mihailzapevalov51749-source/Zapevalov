@@ -15,6 +15,7 @@ from app.modules.platform.designer.field_definitions.schemas import (
     validate_field_update_payload,
 )
 from app.modules.platform.designer.object_types import repository as object_type_repository
+from app.modules.platform.runtime.entities.system_fields import is_runtime_system_field_key
 from app.modules.platform.shared.enums import FieldType
 from app.modules.users.models import User
 
@@ -121,6 +122,12 @@ def create_field(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="FieldDefinition с таким key уже существует для ObjectType",
+        )
+
+    if is_runtime_system_field_key(payload.key):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Зарезервированный системный key поля",
         )
 
     user_id = _actor_user_id(current_user)

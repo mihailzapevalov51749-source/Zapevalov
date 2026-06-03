@@ -1,9 +1,26 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 
 import { useDesignerShell } from "../../context/DesignerShellContext";
+import {
+  computeObjectTypeListFilterCounts,
+  formatDependencyCount,
+  getObjectTypePublicationBadgeClass,
+  getObjectTypePublicationLabel,
+  matchesObjectTypeListFilter,
+  OBJECT_TYPE_LIST_FILTERS,
+  resolveObjectTypeListPublicationStatus,
+} from "../../utils/objectTypeListPublication";
 import { publishObjectsSectionRouteOwner } from "../../../../shared/shell/designer/designerRouteOwnership";
+
+const FILTER_OPTIONS = [
+  { id: OBJECT_TYPE_LIST_FILTERS.ALL, label: "Все" },
+  { id: OBJECT_TYPE_LIST_FILTERS.PUBLISHED, label: "Опубликованные" },
+  { id: OBJECT_TYPE_LIST_FILTERS.UNPUBLISHED, label: "Не опубликованные" },
+  { id: OBJECT_TYPE_LIST_FILTERS.CHANGED, label: "Есть изменения" },
+  { id: OBJECT_TYPE_LIST_FILTERS.ARCHIVED, label: "Архив" },
+];
 
 function formatDate(value) {
   if (!value) {
@@ -19,6 +36,10 @@ function formatDate(value) {
   });
 }
 
+function readDependencyCounts(item) {
+  return item?.dependency_counts || item?.dependencyCounts || {};
+}
+
 export default function ObjectTypesList({
   items,
   loading,
@@ -28,21 +49,34 @@ export default function ObjectTypesList({
 }) {
   const navigate = useNavigate();
   const { tenantId } = useDesignerShell();
-  const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState(OBJECT_TYPE_LIST_FILTERS.ALL);
 
-  const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase();
+  const enrichedItems = useMemo(
+    () =>
+      items.map((item) => ({
+        ...item,
+        publicationStatus: resolveObjectTypeListPublicationStatus(item),
+      })),
+    [items],
+  );
 
-    if (!query) {
-      return items;
-    }
+  const filterCounts = useMemo(
+    () => computeObjectTypeListFilterCounts(enrichedItems),
+    [enrichedItems],
+  );
 
-    return items.filter(
-      (item) =>
-        item.name?.toLowerCase().includes(query) ||
-        item.key?.toLowerCase().includes(query),
-    );
-  }, [items, search]);
+  const filtered = useMemo(
+    () =>
+      enrichedItems.filter((item) =>
+        matchesObjectTypeListFilter(item, activeFilter),
+      ),
+    [activeFilter, enrichedItems],
+  );
+
+  const navigateToObject = (item) => {
+    publishObjectsSectionRouteOwner(tenantId);
+    navigate(`/designer/tenant/${tenantId}/object-types/${item.id}/general`);
+  };
 
   if (loading) {
     return <div className="designer-loading">Загрузка Object Types...</div>;
@@ -54,18 +88,10 @@ export default function ObjectTypesList({
 
   return (
     <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 16,
-          gap: 12,
-        }}
-      >
+      <div className="designer-page-header">
         <div>
-          <h1 style={{ margin: 0, fontSize: 28 }}>Объекты</h1>
-          <p style={{ margin: "6px 0 0", color: "var(--designer-text-muted)" }}>
+          <h1 className="designer-page-title">Объекты</h1>
+          <p className="designer-page-subtitle">
             Управление Object Types платформы
           </p>
         </div>
@@ -80,66 +106,82 @@ export default function ObjectTypesList({
         </button>
       </div>
 
-      <div className="designer-card" style={{ marginBottom: 16 }}>
-        <div style={{ position: "relative" }}>
-          <Search
-            size={16}
-            style={{
-              position: "absolute",
-              left: 12,
-              top: "50%",
-              transform: "translateY(-50%)",
-              color: "#94a3b8",
-            }}
-          />
-          <input
-            className="designer-input"
-            style={{ paddingLeft: 36 }}
-            placeholder="Поиск по названию или key..."
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </div>
+      <div className="designer-filter-chips">
+        {FILTER_OPTIONS.map((option) => {
+          const isActive = activeFilter === option.id;
+          const count = filterCounts[option.id] ?? 0;
+
+          return (
+            <button
+              key={option.id}
+              type="button"
+              className={`designer-btn${isActive ? " designer-btn--primary" : ""}`}
+              style={
+                isActive
+                  ? undefined
+                  : {
+                      background: "#fff",
+                      color: "#334155",
+                      border: "1px solid var(--designer-border)",
+                    }
+              }
+              onClick={() => setActiveFilter(option.id)}
+            >
+              {option.label} {count}
+            </button>
+          );
+        })}
       </div>
 
       <div className="designer-table-wrap">
-        <table className="designer-table">
+        <table className="designer-table designer-table--object-types">
           <thead>
             <tr>
+              <th className="designer-table-col-index">№</th>
               <th>Название</th>
               <th>Key</th>
-              <th>Статус</th>
-              <th>Обновлён</th>
+              <th style={{ width: 72 }}>Поля</th>
+              <th style={{ width: 80 }}>Связи</th>
+              <th style={{ width: 110 }}>Представления</th>
+              <th style={{ width: 140 }}>Публикация</th>
+              <th style={{ width: 150 }}>Обновлён</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((item) => (
-              <tr
-                key={item.id}
-                onClick={() => {
-                  publishObjectsSectionRouteOwner(tenantId);
-                  navigate(
-                    `/designer/tenant/${tenantId}/object-types/${item.id}/general`,
-                  );
-                }}
-              >
-                <td>
-                  <div style={{ fontWeight: 700 }}>{item.name}</div>
-                  {item.description ? (
-                    <div style={{ color: "#64748b", fontSize: 12, marginTop: 2 }}>
-                      {item.description}
-                    </div>
-                  ) : null}
-                </td>
-                <td>
-                  <code>{item.key}</code>
-                </td>
-                <td>
-                  <span className="designer-badge">{item.status}</span>
-                </td>
-                <td>{formatDate(item.updated_at)}</td>
-              </tr>
-            ))}
+            {filtered.map((item, rowIndex) => {
+              const counts = readDependencyCounts(item);
+
+              return (
+                <tr
+                  key={item.id}
+                  onClick={() => navigateToObject(item)}
+                >
+                  <td className="designer-table-col-index">{rowIndex + 1}</td>
+                  <td>
+                    <div style={{ fontWeight: 700 }}>{item.name}</div>
+                    {item.description ? (
+                      <div
+                        style={{ color: "#64748b", fontSize: 12, marginTop: 2 }}
+                      >
+                        {item.description}
+                      </div>
+                    ) : null}
+                  </td>
+                  <td>
+                    <code>{item.key}</code>
+                  </td>
+                  <td>{formatDependencyCount(counts.fields)}</td>
+                  <td>{formatDependencyCount(counts.relations)}</td>
+                  <td>{formatDependencyCount(counts.views)}</td>
+                  <td>
+                    <span className={getObjectTypePublicationBadgeClass(item)}>
+                      {getObjectTypePublicationLabel(item)}
+                    </span>
+                  </td>
+                  <td>{formatDate(item.updated_at)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         {filtered.length === 0 ? (

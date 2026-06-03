@@ -84,7 +84,7 @@ export const viewEngineHeaderGridStyle = {
   width: "fit-content",
   minHeight: VE_HEADER_MIN_HEIGHT,
   borderBottom: `1px solid ${VE_COLOR_BORDER}`,
-  fontWeight: 700,
+  fontWeight: 400,
   background: VE_COLOR_BG_MUTED,
   color: VE_COLOR_TEXT_HEADER,
   fontSize: VE_FONT_SIZE_HEADER,

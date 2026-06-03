@@ -3,26 +3,39 @@
  * User-defined fields (e.g. task "status") keep their catalog keys unchanged.
  */
 
+import { SYSTEM_ENTITY_FIELD_KEYS } from "../runtime/systemEntityFields";
+
 export const SYSTEM_COLUMN_KEY_PREFIX = "__system_";
 
 export const SYSTEM_COLUMN_KEYS = {
-  id: `${SYSTEM_COLUMN_KEY_PREFIX}id`,
+  id: SYSTEM_ENTITY_FIELD_KEYS.id,
   status: `${SYSTEM_COLUMN_KEY_PREFIX}status`,
-  created_at: `${SYSTEM_COLUMN_KEY_PREFIX}created_at`,
-  updated_at: `${SYSTEM_COLUMN_KEY_PREFIX}updated_at`,
+  createdBy: SYSTEM_ENTITY_FIELD_KEYS.createdBy,
+  createdAt: SYSTEM_ENTITY_FIELD_KEYS.createdAt,
+  updatedBy: SYSTEM_ENTITY_FIELD_KEYS.updatedBy,
+  updatedAt: SYSTEM_ENTITY_FIELD_KEYS.updatedAt,
+  recordVersion: SYSTEM_ENTITY_FIELD_KEYS.recordVersion,
+  /** @deprecated use createdAt */
+  created_at: SYSTEM_ENTITY_FIELD_KEYS.createdAt,
+  /** @deprecated use updatedAt */
+  updated_at: SYSTEM_ENTITY_FIELD_KEYS.updatedAt,
 };
 
-/** System columns prepended to the table when includeSystemColumns is true. */
+/** Legacy prepend list — prefer catalog/system fields in projection order. */
 export const VIEW_ENGINE_SYSTEM_COLUMN_KEYS = [
   SYSTEM_COLUMN_KEYS.id,
-  SYSTEM_COLUMN_KEYS.created_at,
+  SYSTEM_COLUMN_KEYS.createdAt,
 ];
 
 const LEGACY_SYSTEM_KEY_TO_NAMESPACED = {
   id: SYSTEM_COLUMN_KEYS.id,
   status: SYSTEM_COLUMN_KEYS.status,
-  created_at: SYSTEM_COLUMN_KEYS.created_at,
-  updated_at: SYSTEM_COLUMN_KEYS.updated_at,
+  created_by: SYSTEM_COLUMN_KEYS.createdBy,
+  created_at: SYSTEM_COLUMN_KEYS.createdAt,
+  updated_by: SYSTEM_COLUMN_KEYS.updatedBy,
+  updated_at: SYSTEM_COLUMN_KEYS.updatedAt,
+  version: SYSTEM_COLUMN_KEYS.recordVersion,
+  record_version: SYSTEM_COLUMN_KEYS.recordVersion,
 };
 
 /**
@@ -79,10 +92,18 @@ export function systemColumnKeyToRuntimeSortField(columnOrSortField) {
   const normalized = normalizeSystemColumnKey(columnOrSortField);
 
   switch (normalized) {
-    case SYSTEM_COLUMN_KEYS.created_at:
+    case SYSTEM_COLUMN_KEYS.createdAt:
       return "created_at";
-    case SYSTEM_COLUMN_KEYS.updated_at:
+    case SYSTEM_COLUMN_KEYS.updatedAt:
       return "updated_at";
+    case SYSTEM_COLUMN_KEYS.createdBy:
+      return "created_by";
+    case SYSTEM_COLUMN_KEYS.updatedBy:
+      return "updated_by";
+    case SYSTEM_COLUMN_KEYS.recordVersion:
+      return "record_version";
+    case SYSTEM_COLUMN_KEYS.id:
+      return "id";
     default:
       return String(columnOrSortField || "").trim();
   }
@@ -114,12 +135,24 @@ export function normalizeSortFieldForTableColumns(sortField, columns = []) {
     return raw;
   }
 
-  if (raw === "created_at" && hasColumn(SYSTEM_COLUMN_KEYS.created_at)) {
-    return SYSTEM_COLUMN_KEYS.created_at;
+  if (raw === "created_at" && hasColumn(SYSTEM_COLUMN_KEYS.createdAt)) {
+    return SYSTEM_COLUMN_KEYS.createdAt;
   }
 
-  if (raw === "updated_at" && hasColumn(SYSTEM_COLUMN_KEYS.updated_at)) {
-    return SYSTEM_COLUMN_KEYS.updated_at;
+  if (raw === "updated_at" && hasColumn(SYSTEM_COLUMN_KEYS.updatedAt)) {
+    return SYSTEM_COLUMN_KEYS.updatedAt;
+  }
+
+  if (raw === "created_by" && hasColumn(SYSTEM_COLUMN_KEYS.createdBy)) {
+    return SYSTEM_COLUMN_KEYS.createdBy;
+  }
+
+  if (raw === "updated_by" && hasColumn(SYSTEM_COLUMN_KEYS.updatedBy)) {
+    return SYSTEM_COLUMN_KEYS.updatedBy;
+  }
+
+  if (raw === "record_version" && hasColumn(SYSTEM_COLUMN_KEYS.recordVersion)) {
+    return SYSTEM_COLUMN_KEYS.recordVersion;
   }
 
   return raw;

@@ -7,14 +7,14 @@ import {
   getFileIcon,
 } from "./fileUtils";
 
+import "./fileValueRenderer.css";
+
 function EmptyFileValue({ compact, emptyValue }) {
   return (
     <div
+      className="file-value-renderer__empty"
       style={{
-        minWidth: 0,
         fontSize: compact ? 12 : 13,
-        fontWeight: 500,
-        color: "#94A3B8",
       }}
     >
       {emptyValue}
@@ -22,24 +22,89 @@ function EmptyFileValue({ compact, emptyValue }) {
   );
 }
 
+function TableFileBadge({ file, label, onOpenFile, files }) {
+  const fileName = label || getFileName(file);
+  const canOpen = Boolean(getFileUrl(file));
+
+  const handleClick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!canOpen) {
+      return;
+    }
+    onOpenFile?.(file, { files });
+  };
+
+  if (!canOpen) {
+    return (
+      <span
+        className="app-file-table-badge app-file-table-badge--static"
+        title={fileName}
+        data-file-table-badge="true"
+      >
+        <span className="app-file-table-badge__label">{fileName}</span>
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="app-file-table-badge"
+      title={fileName}
+      data-file-table-badge="true"
+      data-table-action="true"
+      data-row-card-ignore="true"
+      onClick={handleClick}
+    >
+      <span className="app-file-table-badge__label">{fileName}</span>
+    </button>
+  );
+}
+
+function TableFileValue({ files, emptyValue = "—", onOpenFile, expanded = false }) {
+  if (!files.length) {
+    return <span className="file-value-renderer__empty">{emptyValue}</span>;
+  }
+
+  if (files.length === 1) {
+    return (
+      <TableFileBadge file={files[0]} onOpenFile={onOpenFile} files={files} />
+    );
+  }
+
+  if (!expanded) {
+    const primaryFile = files[0];
+    const fileName = getFileName(primaryFile);
+    const label = `${fileName} +${files.length - 1}`;
+
+    return (
+      <TableFileBadge
+        file={primaryFile}
+        label={label}
+        onOpenFile={onOpenFile}
+        files={files}
+      />
+    );
+  }
+
+  return (
+    <div className="file-value-renderer__table-list">
+      {files.map((file, index) => (
+        <TableFileBadge
+          key={file?.id || file?.file_id || file?.url || index}
+          file={file}
+          onOpenFile={onOpenFile}
+          files={files}
+        />
+      ))}
+    </div>
+  );
+}
+
 function CompactFileValue({ files }) {
   return (
-    <div
-      style={{
-        minWidth: 0,
-        maxWidth: "100%",
-        width: "fit-content",
-        padding: "4px 9px",
-        borderRadius: 999,
-        background: "#F1F5F9",
-        fontSize: 12,
-        fontWeight: 500,
-        color: "#2563EB",
-        whiteSpace: "nowrap",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-      }}
-    >
+    <div className="file-value-renderer__compact-chip">
       {files.length === 1
         ? getFileName(files[0])
         : `${files.length} файлов`}
@@ -60,97 +125,26 @@ function FileCard({ file, variant = "card" }) {
 
   const content = (
     <div
-      style={{
-        minWidth: 0,
-        width: "100%",
-
-        display: "flex",
-        alignItems: "center",
-        gap: isPlain ? 10 : 8,
-
-        padding: isPlain ? "2px 0" : "7px 10px",
-
-        borderRadius: isPlain ? 0 : 8,
-        background: isPlain ? "transparent" : "#F8FAFC",
-        border: isPlain ? "none" : "1px solid #E2E8F0",
-
-        boxSizing: "border-box",
-      }}
+      className={
+        isPlain
+          ? "file-value-renderer__card file-value-renderer__card--plain"
+          : "file-value-renderer__card"
+      }
     >
-      <div
-        style={{
-          width: isChat ? 22 : 24,
-          height: isChat ? 22 : 24,
-          minWidth: isChat ? 22 : 24,
-          borderRadius: 6,
-          overflow: "hidden",
-          background: "#E2E8F0",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 8,
-          fontWeight: 800,
-          color: "#0F172A",
-          textTransform: "uppercase",
-        }}
-      >
+      <div className="file-value-renderer__card-icon">
         {icon ? (
-          <img
-            src={icon}
-            alt=""
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "contain",
-              display: "block",
-            }}
-          />
+          <img src={icon} alt="" className="file-value-renderer__card-icon-img" />
         ) : (
           extension || "FILE"
         )}
       </div>
 
-      <div
-        style={{
-          minWidth: 0,
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          gap: 1,
-        }}
-      >
-        <div
-          title={fileName}
-          style={{
-            minWidth: 0,
-            fontSize: isChat ? 11 : 12,
-            fontWeight: 700,
-            color: "#334155",
-            whiteSpace: isPlain ? "normal" : "nowrap",
-            overflow: isPlain ? "visible" : "hidden",
-            textOverflow: isPlain ? "clip" : "ellipsis",
-            overflowWrap: isPlain ? "anywhere" : "normal",
-            wordBreak: isPlain ? "break-word" : "normal",
-            lineHeight: 1.2,
-          }}
-        >
+      <div className="file-value-renderer__card-body">
+        <div className="file-value-renderer__card-name" title={fileName}>
           {fileName}
         </div>
 
-        <div
-          style={{
-            minWidth: 0,
-            fontSize: isChat ? 10 : 11,
-            fontWeight: 500,
-            color: "#64748B",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            lineHeight: 1.1,
-          }}
-        >
-          {fileSize}
-        </div>
+        <div className="file-value-renderer__card-size">{fileSize}</div>
       </div>
     </div>
   );
@@ -163,12 +157,7 @@ function FileCard({ file, variant = "card" }) {
       target="_blank"
       rel="noreferrer"
       title={fileName}
-      style={{
-        minWidth: 0,
-        width: "100%",
-        textDecoration: "none",
-        display: "block",
-      }}
+      className="file-value-renderer__card-link"
     >
       {content}
     </a>
@@ -180,6 +169,8 @@ export default function FileValueRenderer({
   compact = false,
   variant = "card",
   emptyValue = "—",
+  onOpenFile,
+  expanded = false,
 }) {
   const files = normalizeFiles(value);
 
@@ -187,20 +178,23 @@ export default function FileValueRenderer({
     return <EmptyFileValue compact={compact} emptyValue={emptyValue} />;
   }
 
+  if (variant === "table") {
+    return (
+      <TableFileValue
+        files={files}
+        emptyValue={emptyValue}
+        onOpenFile={onOpenFile}
+        expanded={expanded}
+      />
+    );
+  }
+
   if (compact || variant === "compact") {
     return <CompactFileValue files={files} />;
   }
 
   return (
-    <div
-      style={{
-        minWidth: 0,
-        width: "100%",
-        display: "flex",
-        flexDirection: "column",
-        gap: variant === "attachmentList" || variant === "chat" ? 8 : 6,
-      }}
-    >
+    <div className="file-value-renderer__card-list">
       {files.map((file, index) => (
         <FileCard
           key={file?.id || file?.file_id || file?.url || index}

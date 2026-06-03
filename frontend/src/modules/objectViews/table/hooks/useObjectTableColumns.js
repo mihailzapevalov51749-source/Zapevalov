@@ -4,6 +4,7 @@ import {
   applyColumnWidths,
   contractToDisplayProjection,
 } from "../../services/columnPresentationUtils";
+import { resolveTableDisplayContext } from "../../services/tableColumnOrder";
 import {
   buildObjectTypeTableModelFromCatalog,
 } from "../services/tableModelAdapter";
@@ -33,6 +34,8 @@ export default function useObjectTableColumns({
       return null;
     }
 
+    const displayContext = resolveTableDisplayContext(contract, displayProjection);
+
     return buildObjectTypeTableModelFromCatalog({
       catalog: query.catalog,
       objectTypeKey,
@@ -40,6 +43,10 @@ export default function useObjectTableColumns({
       listResult: query.listResult,
       viewKey,
       sort: query.tableSort,
+      columnOptions: {
+        titleFieldKey: displayContext.titleFieldKey,
+        isAllMode: displayContext.isAllMode,
+      },
     });
   }, [
     query.catalog,
@@ -48,6 +55,7 @@ export default function useObjectTableColumns({
     query.tableSort,
     objectTypeKey,
     viewKey,
+    contract,
   ]);
 
   const columns = useMemo(() => {

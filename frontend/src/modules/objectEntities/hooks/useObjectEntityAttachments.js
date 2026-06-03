@@ -4,6 +4,10 @@ import { getApiErrorMessage } from "../../designer/api/platformApiClient";
 import { runtimeWriteGateway } from "../../runtimeWriteGateway";
 import { uploadFile } from "../../../shared/files/api/filesApi";
 import { collectAttachmentFiles } from "../../../shared/files/attachments/utils/collectAttachmentFiles";
+import {
+  isFileFieldMultiple,
+  normalizeUploadedFileRecord,
+} from "../../../shared/files/runtimeFileFieldUtils";
 import { getFileFieldsFromCatalog } from "../services/getFileFieldsFromCatalog";
 
 function getFileKey(file) {
@@ -83,9 +87,11 @@ export default function useObjectEntityAttachments({
       return;
     }
 
+    const allowMultiple = isFileFieldMultiple(primaryFileField);
+
     const input = document.createElement("input");
     input.type = "file";
-    input.multiple = true;
+    input.multiple = allowMultiple;
 
     input.onchange = async (event) => {
       const selectedFiles = Array.from(event.target.files || []);
@@ -99,13 +105,10 @@ export default function useObjectEntityAttachments({
 
         for (const file of selectedFiles) {
           const uploaded = await uploadFile({ file });
+          const normalized = normalizeUploadedFileRecord(uploaded);
 
-          if (uploaded) {
-            uploadedFiles.push({
-              ...uploaded,
-              owner_entity_type: "runtime_entity",
-              owner_entity_id: entityId,
-            });
+          if (normalized) {
+            uploadedFiles.push(normalized);
           }
         }
 
@@ -119,7 +122,9 @@ export default function useObjectEntityAttachments({
           [{ key: fieldKey }],
         );
 
-        const nextFiles = [...currentFiles, ...uploadedFiles];
+        const nextFiles = allowMultiple
+          ? [...currentFiles, ...uploadedFiles]
+          : uploadedFiles;
 
         await patchEntityValues({
           ...entityValues,

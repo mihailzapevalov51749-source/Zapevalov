@@ -117,6 +117,7 @@ def touch_entity(
     updated_by: int | None = None,
 ) -> RuntimeEntity:
     entity.updated_at = datetime.now(timezone.utc)
+    entity.record_version = int(entity.record_version or 0) + 1
     if updated_by is not None:
         entity.updated_by = updated_by
     db.flush()

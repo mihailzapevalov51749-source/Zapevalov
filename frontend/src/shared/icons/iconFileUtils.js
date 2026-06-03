@@ -69,7 +69,62 @@ export function getObjectTypeIconColorStyle(color, iconFileUrl) {
 }
 
 export function hasUploadedIcon(iconType, iconFileUrl) {
-  return iconType === "upload" && Boolean(iconFileUrl);
+  const url = String(iconFileUrl || "").trim();
+
+  if (!url) {
+    return false;
+  }
+
+  const type = String(iconType || "").trim().toLowerCase();
+
+  if (!type || type === "upload" || type === "library" || type === "file") {
+    return true;
+  }
+
+  return iconType === "upload";
+}
+
+function readIconFieldsFromUnknownIcon(iconValue) {
+  if (!iconValue) {
+    return { icon_type: null, icon_file_url: null };
+  }
+
+  if (typeof iconValue === "string") {
+    const trimmed = iconValue.trim();
+
+    if (!trimmed) {
+      return { icon_type: null, icon_file_url: null };
+    }
+
+    if (trimmed.startsWith("/") || trimmed.startsWith("http")) {
+      return { icon_type: "upload", icon_file_url: trimmed };
+    }
+
+    return { icon_type: "library", icon_file_url: null };
+  }
+
+  if (typeof iconValue !== "object") {
+    return { icon_type: null, icon_file_url: null };
+  }
+
+  const icon_type =
+    iconValue.icon_type ??
+    iconValue.iconType ??
+    iconValue.type ??
+    null;
+  const icon_file_url =
+    iconValue.icon_file_url ??
+    iconValue.iconFileUrl ??
+    iconValue.url ??
+    iconValue.file_url ??
+    iconValue.fileUrl ??
+    iconValue.path ??
+    null;
+
+  return {
+    icon_type: icon_type != null ? String(icon_type) : null,
+    icon_file_url: icon_file_url != null ? String(icon_file_url) : null,
+  };
 }
 
 export function resolveIconFileSrc(iconFileUrl) {
@@ -90,9 +145,34 @@ export function getObjectTypeIconFields(source) {
     return { icon_type: null, icon_file_url: null };
   }
 
+  let icon_type = source.icon_type ?? source.iconType ?? null;
+  let icon_file_url = source.icon_file_url ?? source.iconFileUrl ?? null;
+
+  if (!icon_file_url && source.icon != null) {
+    const fromIcon = readIconFieldsFromUnknownIcon(source.icon);
+    icon_type = icon_type ?? fromIcon.icon_type;
+    icon_file_url = icon_file_url ?? fromIcon.icon_file_url;
+  }
+
+  const settings =
+    source.settings_json && typeof source.settings_json === "object"
+      ? source.settings_json
+      : source.settingsJson && typeof source.settingsJson === "object"
+        ? source.settingsJson
+        : null;
+
+  if (settings) {
+    icon_type = icon_type ?? settings.icon_type ?? settings.iconType ?? null;
+    icon_file_url =
+      icon_file_url ??
+      settings.icon_file_url ??
+      settings.iconFileUrl ??
+      null;
+  }
+
   return {
-    icon_type: source.icon_type ?? null,
-    icon_file_url: source.icon_file_url ?? null,
+    icon_type: icon_type != null ? String(icon_type) : null,
+    icon_file_url: icon_file_url != null ? String(icon_file_url).trim() : null,
   };
 }
 
@@ -105,8 +185,36 @@ export function getObjectTypeAppearanceFields(source) {
     };
   }
 
+  const color =
+    source.color ??
+    source.display_color ??
+    source.displayColor ??
+    null;
+
   return {
     ...getObjectTypeIconFields(source),
-    color: normalizeObjectTypeColor(source.color),
+    ...getObjectTypeIconFields({
+      icon_type: source.display_icon_type ?? source.displayIconType,
+      icon_file_url: source.display_icon_file_url ?? source.displayIconFileUrl,
+    }),
+    color: normalizeObjectTypeColor(color),
+  };
+}
+
+/**
+ * Prefer published/runtime object type; fall back to navigation enrichment (Office menu).
+ */
+export function mergeObjectTypeAppearance(primary, fallback) {
+  const primaryAppearance = getObjectTypeAppearanceFields(primary);
+  const fallbackAppearance = getObjectTypeAppearanceFields(fallback);
+
+  if (hasUploadedIcon(primaryAppearance.icon_type, primaryAppearance.icon_file_url)) {
+    return primaryAppearance;
+  }
+
+  return {
+    icon_type: primaryAppearance.icon_type ?? fallbackAppearance.icon_type,
+    icon_file_url: primaryAppearance.icon_file_url ?? fallbackAppearance.icon_file_url,
+    color: primaryAppearance.color ?? fallbackAppearance.color,
   };
 }

@@ -1,0 +1,501 @@
+/* Паттерн композиции — reference ViewSettingsCard (UT). Геометрия только через PlatformModalShell. */
+/* Запрещено: position:fixed, z-index, top/left/width/height на корне — см. platform-modal-standard.mdc */
+
+.ot-view-settings-panel {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: transparent;
+  color: #111827;
+  box-sizing: border-box;
+}
+
+.ot-view-settings-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid #eef2f7;
+  flex-shrink: 0;
+}
+
+.ot-view-settings-panel__title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  flex: 1;
+}
+
+.ot-view-settings-panel__title {
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 700;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.ot-view-settings-panel__star {
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+  color: #9aa7ba;
+}
+
+.ot-view-settings-panel__star.is-default {
+  color: #2563eb;
+  cursor: default;
+}
+
+.ot-view-settings-panel__star:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ot-view-settings-panel__rename-form {
+  flex: 1;
+  min-width: 0;
+}
+
+.ot-view-settings-panel__rename-input {
+  width: 100%;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid #bfdbfe;
+  background: #ffffff;
+  padding: 0 12px;
+  outline: none;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  box-sizing: border-box;
+}
+
+.ot-view-settings-panel__rename-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ot-view-settings-panel__rename-confirm,
+.ot-view-settings-panel__rename-cancel {
+  height: 29px;
+  padding: 0 10px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ot-view-settings-panel__rename-confirm {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.ot-view-settings-panel__rename-cancel {
+  border: 1px solid #dbe3ef;
+  background: #ffffff;
+  color: #64748b;
+}
+
+.ot-view-settings-panel__header-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ot-view-settings-panel__icon-btn {
+  width: 29px;
+  height: 29px;
+  border-radius: 9px;
+  border: 1px solid #dbe3ef;
+  background: #ffffff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.ot-view-settings-panel__icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ot-view-settings-panel__icon-btn img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
+
+.ot-view-settings-panel__body {
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  flex: 1;
+  padding-bottom: 12px;
+}
+
+.ot-view-settings-panel__body-block {
+  padding: 9px 14px 10px;
+}
+
+.ot-view-settings-panel__summary {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: #64748b;
+  padding: 0 2px 9px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.ot-view-settings-panel__section-title {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  color: #8b98aa;
+  margin: 0 0 8px;
+}
+
+.ot-view-settings-panel__list {
+  border: 1px solid #e2e8f0;
+  border-radius: 13px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.ot-view-settings-panel__row-outer {
+  border-bottom: 1px solid #eef2f7;
+}
+
+.ot-view-settings-panel__row-outer:last-child {
+  border-bottom: none;
+}
+
+.ot-view-settings-panel__row-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  background: #ffffff;
+  font: inherit;
+  color: inherit;
+}
+
+.ot-view-settings-panel__row-btn.is-expanded {
+  background: #f8fbff;
+}
+
+.ot-view-settings-panel__row-btn:hover {
+  background: #f8fbff;
+}
+
+.ot-view-settings-panel__row-icon-wrap {
+  width: 29px;
+  height: 29px;
+  border-radius: 9px;
+  background: #f3f6fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ot-view-settings-panel__row-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  opacity: 0.9;
+}
+
+.ot-view-settings-panel__row-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.ot-view-settings-panel__row-title {
+  font-size: 13px;
+  line-height: 17px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1px;
+  text-align: left;
+}
+
+.ot-view-settings-panel__row-desc {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 400;
+  color: #66758a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.ot-view-settings-panel__row-arrow {
+  color: #9aa7ba;
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: transform 0.16s ease;
+}
+
+.ot-view-settings-panel__row-arrow.is-expanded {
+  transform: rotate(90deg);
+}
+
+.ot-view-settings-panel__row-details {
+  padding: 0 10px 10px 49px;
+  background: #f8fbff;
+}
+
+.ot-view-settings-panel__detail-row {
+  min-height: 22px;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: #334155;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ot-view-settings-panel__fields-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ot-view-settings-panel__field-row {
+  min-height: 32px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: none;
+  background: transparent;
+  padding: 0 2px;
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ot-view-settings-panel__field-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+}
+
+.ot-view-settings-panel__field-row.is-hidden .ot-view-settings-panel__field-left {
+  opacity: 0.55;
+}
+
+.ot-view-settings-panel__filter-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ot-view-settings-panel__filter-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ot-view-settings-panel__open-filter-btn {
+  height: 30px;
+  border-radius: 9px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ot-view-settings-panel__sort-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 32px;
+}
+
+.ot-view-settings-panel__sort-toggle {
+  min-width: 40px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid #dbe3ef;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ot-view-settings-panel__sort-toggle.is-active {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.ot-view-settings-panel__column-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+}
+
+.ot-view-settings-panel__column-label {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ot-view-settings-panel__column-move {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid #dbe3ef;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.ot-view-settings-panel__column-move:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ot-view-settings-panel__actions-block {
+  padding: 6px 14px 18px;
+}
+
+.ot-view-settings-panel__action-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 32px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  padding: 0 9px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 17px;
+  font-weight: 500;
+  color: #111827;
+  text-align: left;
+  width: 100%;
+}
+
+.ot-view-settings-panel__action-btn:hover {
+  background: #f8fafc;
+}
+
+.ot-view-settings-panel__action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ot-view-settings-panel__action-icon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+  opacity: 0.85;
+}
+
+.ot-view-settings-panel__footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 9px 14px 11px;
+  border-top: 1px solid #eef2f7;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.ot-view-settings-panel__footer-save {
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid #dbe3ef;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ot-view-settings-panel__footer-save:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ot-view-settings-panel__footer-delete {
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid #fecaca;
+  background: #ffffff;
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ot-view-settings-panel__footer-delete:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ot-view-settings-panel__footer-icon {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}

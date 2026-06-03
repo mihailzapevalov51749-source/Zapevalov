@@ -2,6 +2,7 @@ from typing import Any
 
 from app.modules.platform.runtime.entities.models import RuntimeEntity, RuntimeEntityValue
 from app.modules.platform.runtime.entities.schemas import EntityRead
+from app.modules.platform.runtime.entities.system_fields import system_values_from_entity
 
 
 def values_dict(value_rows: list[RuntimeEntityValue]) -> dict[str, Any]:
@@ -15,6 +16,9 @@ def serialize_entity(
     entity: RuntimeEntity,
     value_rows: list[RuntimeEntityValue],
 ) -> EntityRead:
+    merged_values = values_dict(value_rows)
+    merged_values.update(system_values_from_entity(entity))
+
     return EntityRead(
         id=entity.id,
         tenant_id=entity.tenant_id,
@@ -22,7 +26,10 @@ def serialize_entity(
         object_type_id=entity.object_type_id,
         catalog_version=entity.catalog_version,
         status=entity.status,
-        values=values_dict(value_rows),
+        values=merged_values,
+        created_by=entity.created_by,
+        updated_by=entity.updated_by,
+        record_version=int(entity.record_version or 1),
         created_at=entity.created_at,
         updated_at=entity.updated_at,
         deleted_at=entity.deleted_at,
