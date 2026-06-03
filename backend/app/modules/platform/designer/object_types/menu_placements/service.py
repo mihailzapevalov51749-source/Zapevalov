@@ -132,6 +132,7 @@ def upsert_menu_placement(
             icon_type=None,
             icon_file_url=None,
             color=None,
+            show_icon=True,
             menu_scope=menu_scope,
             is_system=False,
             is_protected=False,

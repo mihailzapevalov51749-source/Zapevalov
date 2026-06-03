@@ -3,7 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import MenuItemEditor from "./MenuItemEditor";
 import { hasUploadedIcon } from "../../../shared/icons/iconFileUtils";
 import SidebarNavigationItemIcon from "../../../shared/shell/sidebar/components/SidebarNavigationItemIcon";
-import { resolveSidebarNavigationIconSource } from "../../../shared/shell/sidebar/utils/resolveSidebarNavigationIconSource";
+import {
+  resolveSidebarNavigationIconSource,
+  shouldShowNavigationMenuIcon,
+} from "../../../shared/shell/sidebar/utils/resolveSidebarNavigationIconSource";
 import { theme } from "../../../styles/theme";
 import { LAYOUT_TOKENS } from "../../../shared/layout/layoutTokens";
 
@@ -61,6 +64,16 @@ function resolveNavigationPath(item) {
 
 function isObjectTypeNavigationItem(item) {
   return item?.type === "object_type" || item?.object_type_id != null;
+}
+
+function resolveMenuItemTextColor(item, isActive, activeAccent) {
+  const customColor = String(item?.color ?? "").trim();
+
+  if (isActive) {
+    return activeAccent;
+  }
+
+  return customColor || "#0F172A";
 }
 
 function normalizeMenuPath(value) {
@@ -230,7 +243,8 @@ export default function MenuItem({
   const activeAccent = isDesignerMode ? "#6D28D9" : "#2563EB";
   const activeBackground = isDesignerMode ? "#F5F3FF" : "#EEF4FF";
   const hoverBackground = isDesignerMode ? "#F8F5FF" : "#F8FAFC";
-  const itemTextColor = isActive ? activeAccent : item.color || "#0F172A";
+  const showMenuIcon = shouldShowNavigationMenuIcon(item);
+  const itemTextColor = resolveMenuItemTextColor(item, isActive, activeAccent);
   const sidebarVisual = LAYOUT_TOKENS.sidebar;
   const rowHeight = sidebarCollapsed
     ? sidebarVisual.menuItemHeight
@@ -394,13 +408,13 @@ export default function MenuItem({
           )}
 
           {sidebarCollapsed ? (
-            hasCustomMenuIcon(item) ? (
+            showMenuIcon && hasCustomMenuIcon(item) ? (
               <SidebarNavigationItemIcon
                 iconType={iconSource.iconType}
                 iconFileUrl={iconSource.iconFileUrl}
                 size={iconSize}
               />
-            ) : (
+            ) : showMenuIcon ? (
               <DefaultIcon
                 type={item.type}
                 scale={1}
@@ -408,14 +422,16 @@ export default function MenuItem({
                 iconSize={iconSize}
                 accentColor={activeAccent}
               />
-            )
+            ) : null
           ) : (
             <>
-              <SidebarNavigationItemIcon
-                iconType={iconSource.iconType}
-                iconFileUrl={iconSource.iconFileUrl}
-                size={iconSize}
-              />
+              {showMenuIcon ? (
+                <SidebarNavigationItemIcon
+                  iconType={iconSource.iconType}
+                  iconFileUrl={iconSource.iconFileUrl}
+                  size={iconSize}
+                />
+              ) : null}
 
               {isEditMode && item.type === "system_page" && !item.icon_type && (
                 <DefaultIcon
@@ -491,7 +507,7 @@ export default function MenuItem({
               setOpenedEditorItemId?.(null);
             }}
             onDelete={async () => {
-              if (isSystem) return;
+              if (isSystem || objectTypeItem) return;
 
               await onDeleteItem(item.id);
 

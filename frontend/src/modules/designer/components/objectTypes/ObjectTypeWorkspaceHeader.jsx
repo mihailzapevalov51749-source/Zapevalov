@@ -1,4 +1,5 @@
 import ObjectTypeIcon from "../../../../shared/icons/ObjectTypeIcon";
+import { OBJECT_TYPE_LIFECYCLE_STATES } from "../../utils/objectTypeLifecycleState";
 import ObjectTypeWorkspaceActionsMenu from "./ObjectTypeWorkspaceActionsMenu";
 
 const SAVE_VARIANT_CLASS = {
@@ -24,6 +25,8 @@ export default function ObjectTypeWorkspaceHeader({
   deleting,
   onSave,
   onPublish,
+  onManagePublication,
+  showManagePublication = false,
   onDeleteObject,
 }) {
   const saveVariant = lifecycle?.saveVariant ?? "neutral";
@@ -77,6 +80,21 @@ export default function ObjectTypeWorkspaceHeader({
         </div>
 
         <div className="designer-workspace-actions">
+          {lifecycle?.state === OBJECT_TYPE_LIFECYCLE_STATES.PENDING_CONTENT_UPDATE ? (
+            <span
+              title="Изменения объекта ещё не попали в опубликованный каталог"
+              style={{
+                fontSize: 12,
+                lineHeight: "16px",
+                color: "#b45309",
+                alignSelf: "center",
+                marginRight: 4,
+                whiteSpace: "nowrap",
+              }}
+            >
+              Есть неопубликованные изменения
+            </span>
+          ) : null}
           <button
             type="button"
             className={`designer-workspace-btn designer-workspace-btn--save ${SAVE_VARIANT_CLASS[saveVariant] || ""}`}
@@ -98,6 +116,8 @@ export default function ObjectTypeWorkspaceHeader({
           <ObjectTypeWorkspaceActionsMenu
             isSystemObject={Boolean(objectType?.is_system)}
             deleting={deleting}
+            showManagePublication={showManagePublication}
+            onManagePublication={onManagePublication}
             onDelete={onDeleteObject}
           />
         </div>

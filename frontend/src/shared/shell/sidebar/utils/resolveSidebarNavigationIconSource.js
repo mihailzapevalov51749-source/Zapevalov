@@ -2,6 +2,15 @@ export function isObjectTypeNavigationItem(item) {
   return item?.type === "object_type" || item?.object_type_id != null;
 }
 
+/** Menu-only flag: hide Object Type icon in sidebar without changing Object Type. */
+export function shouldShowNavigationMenuIcon(item) {
+  if (!isObjectTypeNavigationItem(item)) {
+    return true;
+  }
+
+  return item?.show_icon !== false;
+}
+
 /**
  * Resolves sidebar icon/title fields.
  * Object Type items use display_* projection; other items use navigation fields.

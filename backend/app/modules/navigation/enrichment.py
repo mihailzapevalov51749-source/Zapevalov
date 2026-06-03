@@ -8,7 +8,7 @@ from app.modules.navigation.schemas import NavigationItemResponse, NavigationTre
 
 OBJECT_TYPE_NAV_TYPE = "object_type"
 METADATA_FIELDS_BLOCKED_ON_OBJECT_TYPE = frozenset(
-    {"title", "icon", "icon_type", "icon_file_url", "color"},
+    {"title", "icon", "icon_type", "icon_file_url"},
 )
 
 

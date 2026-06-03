@@ -2,19 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 
 import { getApiErrorMessage } from "../../api/platformApiClient";
 import * as designerApi from "../../api/designerApi";
-import PropertiesPanel from "../common/PropertiesPanel";
-
-const FIELD_TYPES = [
-  "text",
-  "textarea",
-  "number",
-  "boolean",
-  "date",
-  "datetime",
-  "choice",
-  "multi_choice",
-  "uuid",
-];
+import CreateFieldModal, { FIELD_TYPE_OPTIONS } from "../fields/CreateFieldModal";
+import FieldPropertiesPanel from "../fields/FieldPropertiesPanel";
+import {
+  buildChoiceOptionsFromText,
+  formatChoiceOptionsToText,
+  getFieldTypeLabel,
+  isChoiceFieldType,
+} from "../fields/fieldFormUtils";
 
 export default function FieldsTab({ tenantId, objectTypeId }) {
   const [items, setItems] = useState([]);
@@ -23,8 +18,15 @@ export default function FieldsTab({ tenantId, objectTypeId }) {
   const [selectedId, setSelectedId] = useState(null);
   const [draft, setDraft] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
 
   const selected = items.find((item) => item.id === selectedId) || null;
+  const existingFieldKeys = items
+    .map((item) => String(item.key || "").trim().toLowerCase())
+    .filter(Boolean);
 
   const loadItems = useCallback(async () => {
     setLoading(true);
@@ -47,6 +49,7 @@ export default function FieldsTab({ tenantId, objectTypeId }) {
   useEffect(() => {
     if (!selected) {
       setDraft(null);
+      setSaveError("");
       return;
     }
 
@@ -57,46 +60,68 @@ export default function FieldsTab({ tenantId, objectTypeId }) {
       is_required: selected.is_required,
       is_unique: selected.is_unique,
       description: selected.description || "",
+      choice_options_text: formatChoiceOptionsToText(selected.settings_json),
     });
+    setSaveError("");
   }, [selected]);
 
-  const handleCreate = async () => {
-    const name = window.prompt("Название поля", "Новое поле");
-    if (!name) return;
-
-    const key = window.prompt("Key поля", "new_field");
-    if (!key) return;
+  const handleCreateField = async (payload) => {
+    setIsCreating(true);
+    setCreateError("");
 
     try {
-      await designerApi.createField(tenantId, objectTypeId, {
-        name,
-        key,
-        field_type: "text",
-        is_required: false,
-        is_unique: false,
-      });
+      await designerApi.createField(tenantId, objectTypeId, payload);
+      setIsCreateModalOpen(false);
+      setSelectedId(null);
+      setDraft(null);
       await loadItems();
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Не удалось создать поле"));
+      setCreateError(getApiErrorMessage(err, "Не удалось создать поле"));
+      throw err;
+    } finally {
+      setIsCreating(false);
     }
   };
 
   const handleSave = async () => {
     if (!selected || !draft) return;
 
+    const name = String(draft.name || "").trim();
+    if (!name) {
+      setSaveError("Укажите название поля");
+      return;
+    }
+
+    const payload = {
+      name,
+      field_type: draft.field_type,
+      is_required: Boolean(draft.is_required),
+      is_unique: Boolean(draft.is_unique),
+      description: String(draft.description || "").trim(),
+    };
+
+    if (isChoiceFieldType(draft.field_type)) {
+      const options = buildChoiceOptionsFromText(
+        draft.choice_options_text,
+        existingFieldKeys.filter((key) => key !== String(draft.key || "").toLowerCase()),
+      );
+
+      if (options.length === 0) {
+        setSaveError("Добавьте хотя бы один вариант значения");
+        return;
+      }
+
+      payload.settings_json = { options };
+    }
+
     setSaving(true);
+    setSaveError("");
 
     try {
-      await designerApi.updateField(tenantId, objectTypeId, selected.id, {
-        name: draft.name,
-        field_type: draft.field_type,
-        is_required: draft.is_required,
-        is_unique: draft.is_unique,
-        description: draft.description,
-      });
+      await designerApi.updateField(tenantId, objectTypeId, selected.id, payload);
       await loadItems();
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Не удалось сохранить поле"));
+      setSaveError(getApiErrorMessage(err, "Не удалось сохранить поле"));
     } finally {
       setSaving(false);
     }
@@ -109,10 +134,17 @@ export default function FieldsTab({ tenantId, objectTypeId }) {
     try {
       await designerApi.deleteField(tenantId, objectTypeId, selected.id);
       setSelectedId(null);
+      setDraft(null);
       await loadItems();
     } catch (err) {
       window.alert(getApiErrorMessage(err, "Не удалось удалить поле"));
     }
+  };
+
+  const handleClosePanel = () => {
+    setSelectedId(null);
+    setDraft(null);
+    setSaveError("");
   };
 
   if (loading) return <div className="designer-loading">Загрузка полей...</div>;
@@ -138,7 +170,10 @@ export default function FieldsTab({ tenantId, objectTypeId }) {
           <button
             type="button"
             className="designer-btn designer-btn--primary"
-            onClick={handleCreate}
+            onClick={() => {
+              setCreateError("");
+              setIsCreateModalOpen(true);
+            }}
           >
             + Добавить поле
           </button>
@@ -166,7 +201,7 @@ export default function FieldsTab({ tenantId, objectTypeId }) {
                   <td>
                     <code>{item.key}</code>
                   </td>
-                  <td>{item.field_type}</td>
+                  <td>{getFieldTypeLabel(item.field_type, FIELD_TYPE_OPTIONS)}</td>
                   <td>{item.is_required ? "Да" : "Нет"}</td>
                   <td>{item.is_unique ? "Да" : "Нет"}</td>
                 </tr>
@@ -177,81 +212,25 @@ export default function FieldsTab({ tenantId, objectTypeId }) {
       </div>
 
       {selected && draft ? (
-        <PropertiesPanel
-          title="Свойства поля"
-          onClose={() => setSelectedId(null)}
-          footer={
-            <>
-              <button
-                type="button"
-                className="designer-btn designer-btn--danger"
-                onClick={handleDelete}
-              >
-                Удалить поле
-              </button>
-              <button
-                type="button"
-                className="designer-btn designer-btn--primary"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                {saving ? "Сохранение..." : "Сохранить"}
-              </button>
-            </>
-          }
-        >
-          <label className="designer-label">Название</label>
-          <input
-            className="designer-input"
-            value={draft.name}
-            onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-          />
-          <div style={{ height: 10 }} />
-          <label className="designer-label">Key</label>
-          <input className="designer-input" value={draft.key} disabled />
-          <div style={{ height: 10 }} />
-          <label className="designer-label">Тип поля</label>
-          <select
-            className="designer-select"
-            value={draft.field_type}
-            onChange={(e) => setDraft({ ...draft, field_type: e.target.value })}
-          >
-            {FIELD_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-          <div style={{ height: 10 }} />
-          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input
-              type="checkbox"
-              checked={draft.is_required}
-              onChange={(e) =>
-                setDraft({ ...draft, is_required: e.target.checked })
-              }
-            />
-            Обязательное поле
-          </label>
-          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input
-              type="checkbox"
-              checked={draft.is_unique}
-              onChange={(e) =>
-                setDraft({ ...draft, is_unique: e.target.checked })
-              }
-            />
-            Уникальное поле
-          </label>
-          <div style={{ height: 10 }} />
-          <label className="designer-label">Описание</label>
-          <textarea
-            className="designer-textarea"
-            value={draft.description}
-            onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-          />
-        </PropertiesPanel>
+        <FieldPropertiesPanel
+          draft={draft}
+          saveError={saveError}
+          saving={saving}
+          onDraftChange={setDraft}
+          onClose={handleClosePanel}
+          onSave={handleSave}
+          onDelete={handleDelete}
+        />
       ) : null}
+
+      <CreateFieldModal
+        isOpen={isCreateModalOpen}
+        existingFieldKeys={existingFieldKeys}
+        isSubmitting={isCreating}
+        submitError={createError}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreate={handleCreateField}
+      />
     </div>
   );
 }

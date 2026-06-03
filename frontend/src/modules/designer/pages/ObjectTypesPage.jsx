@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getApiErrorMessage } from "../api/platformApiClient";
 import * as designerApi from "../api/designerApi";
+import CreateObjectTypeModal from "../components/objectTypes/CreateObjectTypeModal";
 import ObjectTypesList from "../components/objectTypes/ObjectTypesList";
 import { useDesignerShell } from "../context/DesignerShellContext";
 
@@ -11,6 +12,13 @@ export default function ObjectTypesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createSubmitError, setCreateSubmitError] = useState("");
+
+  const existingObjectTypeKeys = useMemo(
+    () => items.map((item) => item.key).filter(Boolean),
+    [items],
+  );
 
   const loadItems = useCallback(async () => {
     setLoading(true);
@@ -30,45 +38,52 @@ export default function ObjectTypesPage() {
     loadItems();
   }, [loadItems]);
 
-  const handleCreate = async () => {
-    const name = window.prompt("Название Object Type", "Новый объект");
-    if (!name) {
-      return;
-    }
+  const handleOpenCreateModal = () => {
+    setCreateSubmitError("");
+    setCreateModalOpen(true);
+  };
 
-    const key = window
-      .prompt("Key (например project_test)", "new_object")
-      ?.trim()
-      .toLowerCase();
+  const handleCloseCreateModal = () => {
+    setCreateModalOpen(false);
+    setCreateSubmitError("");
+  };
 
-    if (!key) {
-      return;
-    }
-
+  const handleCreateObjectType = async (payload) => {
     setCreating(true);
+    setCreateSubmitError("");
 
     try {
       await designerApi.createObjectType(tenantId, {
-        name,
-        key,
-        description: "",
+        ...payload,
         status: "active",
       });
       await loadItems();
+      setCreateModalOpen(false);
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Не удалось создать Object Type"));
+      setCreateSubmitError(getApiErrorMessage(err, "Не удалось создать Object Type"));
+      throw err;
     } finally {
       setCreating(false);
     }
   };
 
   return (
-    <ObjectTypesList
-      items={items}
-      loading={loading}
-      error={error}
-      onCreate={handleCreate}
-      creating={creating}
-    />
+    <>
+      <ObjectTypesList
+        items={items}
+        loading={loading}
+        error={error}
+        onCreate={handleOpenCreateModal}
+        creating={creating}
+      />
+      <CreateObjectTypeModal
+        isOpen={createModalOpen}
+        existingKeys={existingObjectTypeKeys}
+        isSubmitting={creating}
+        submitError={createSubmitError}
+        onClose={handleCloseCreateModal}
+        onCreate={handleCreateObjectType}
+      />
+    </>
   );
 }

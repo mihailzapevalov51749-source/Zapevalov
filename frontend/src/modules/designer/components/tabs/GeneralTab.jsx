@@ -8,12 +8,15 @@ import { isObjectTypeFormDirty } from "../../utils/objectTypeLifecycleState";
 
 const EMPTY_VALUE = "Не задано";
 
+/** Скрытые блоки UI — данные и API без изменений; включить при готовности функционала. */
+const SHOW_IDENTIFICATION_BLOCK = false;
+const SHOW_ADDITIONAL_SETTINGS_BLOCK = false;
+const SHOW_SYSTEM_ENTITY_TOGGLES = false;
+
 const USAGE_ITEMS = [
   { key: "views", label: "Представления (Views)", countKey: "views" },
   { key: "relations", label: "Связи (Relations)", countKey: "relations" },
-  { key: "workflows", label: "Бизнес-процессы", countKey: null },
   { key: "layouts", label: "Страницы (Layout)", countKey: "layouts" },
-  { key: "templates", label: "Шаблоны", countKey: null },
   { key: "permissions", label: "Права доступа", countKey: null },
 ];
 
@@ -162,7 +165,7 @@ export default function GeneralTab({
                 </Field>
               </div>
 
-              <div className="designer-object-general-row designer-object-general-row--3 designer-object-general-row--appearance">
+              <div className="designer-object-general-row designer-object-general-row--2 designer-object-general-row--appearance">
                 <Field label="Иконка">
                   <IconFilePicker
                     iconType={form.icon_type}
@@ -187,6 +190,19 @@ export default function GeneralTab({
                     }}
                   />
                 </Field>
+              </div>
+
+              <div className="designer-object-general-row designer-object-general-row--2">
+                <Field label="Статус">
+                  <select
+                    className="designer-select"
+                    value={form.status}
+                    onChange={(e) => updateField("status", e.target.value)}
+                  >
+                    <option value="active">active</option>
+                    <option value="archived">archived</option>
+                  </select>
+                </Field>
                 <Field
                   label="Порядок сортировки"
                   className="designer-object-general-field--sort"
@@ -204,82 +220,78 @@ export default function GeneralTab({
                 </Field>
               </div>
 
-              <div className="designer-object-general-row designer-object-general-row--3">
-                <Field label="Статус">
-                  <select
-                    className="designer-select"
-                    value={form.status}
-                    onChange={(e) => updateField("status", e.target.value)}
-                  >
-                    <option value="active">active</option>
-                    <option value="archived">archived</option>
-                  </select>
-                </Field>
-                <Field label="Системный объект">
-                  <ReadonlyToggle
-                    checked={Boolean(objectType?.is_system)}
-                    description="Недоступно для удаления"
-                  />
-                </Field>
-                <Field label="Сущность по умолчанию">
-                  <ReadonlyToggle
-                    checked={Boolean(objectType?.is_default_entity)}
-                    description="Создавать сущности этого типа по умолчанию"
-                  />
-                </Field>
-              </div>
+              {SHOW_SYSTEM_ENTITY_TOGGLES ? (
+                <div className="designer-object-general-row designer-object-general-row--2">
+                  <Field label="Системный объект">
+                    <ReadonlyToggle
+                      checked={Boolean(objectType?.is_system)}
+                      description="Недоступно для удаления"
+                    />
+                  </Field>
+                  <Field label="Сущность по умолчанию">
+                    <ReadonlyToggle
+                      checked={Boolean(objectType?.is_default_entity)}
+                      description="Создавать сущности этого типа по умолчанию"
+                    />
+                  </Field>
+                </div>
+              ) : null}
             </div>
           </section>
 
-          <section className="designer-card designer-object-general-card">
-            <h3 className="designer-object-general-card-title">Дополнительные настройки</h3>
+          {SHOW_ADDITIONAL_SETTINGS_BLOCK ? (
+            <section className="designer-card designer-object-general-card">
+              <h3 className="designer-object-general-card-title">Дополнительные настройки</h3>
 
-            <div className="designer-object-general-rows">
-              <div className="designer-object-general-row designer-object-general-row--3">
-                <Field label="Единица времени">
-                  <ReadonlyValue />
-                </Field>
-                <Field label="Часовой пояс">
-                  <ReadonlyValue />
-                </Field>
-                <Field label="Формат дат">
-                  <ReadonlyValue />
-                </Field>
-              </div>
+              <div className="designer-object-general-rows">
+                <div className="designer-object-general-row designer-object-general-row--3">
+                  <Field label="Единица времени">
+                    <ReadonlyValue />
+                  </Field>
+                  <Field label="Часовой пояс">
+                    <ReadonlyValue />
+                  </Field>
+                  <Field label="Формат дат">
+                    <ReadonlyValue />
+                  </Field>
+                </div>
 
-              <div className="designer-object-general-row designer-object-general-row--2">
-                <Field label="Поддержка версионирования">
-                  <ReadonlyToggle
-                    checked={false}
-                    description="Сохранить историю изменений сущностей этого типа"
-                  />
-                </Field>
-                <Field label="Мягкое удаление">
-                  <ReadonlyToggle
-                    checked={false}
-                    description="Удалённые записи перемещаются в корзину"
-                  />
-                </Field>
+                <div className="designer-object-general-row designer-object-general-row--2">
+                  <Field label="Поддержка версионирования">
+                    <ReadonlyToggle
+                      checked={false}
+                      description="Сохранить историю изменений сущностей этого типа"
+                    />
+                  </Field>
+                  <Field label="Мягкое удаление">
+                    <ReadonlyToggle
+                      checked={false}
+                      description="Удалённые записи перемещаются в корзину"
+                    />
+                  </Field>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          ) : null}
         </div>
 
         <aside className="designer-object-general-col designer-object-general-col--right">
-          <section className="designer-card designer-object-general-card">
-            <h3 className="designer-object-general-card-title">Идентификация и доступ</h3>
-            <div className="designer-object-general-meta">
-              <MetaRow
-                label="Владелец объекта"
-                value={objectType?.owner_name || EMPTY_VALUE}
-                muted={!objectType?.owner_name}
-              />
-              <MetaRow label="Группа объектов" value={EMPTY_VALUE} muted />
-              <MetaRow label="Теги" value={EMPTY_VALUE} muted />
-              <MetaRow label="Кто может создавать сущности" value={EMPTY_VALUE} muted />
-              <MetaRow label="Кто может удалять сущности" value={EMPTY_VALUE} muted />
-            </div>
-          </section>
+          {SHOW_IDENTIFICATION_BLOCK ? (
+            <section className="designer-card designer-object-general-card">
+              <h3 className="designer-object-general-card-title">Идентификация и доступ</h3>
+              <div className="designer-object-general-meta">
+                <MetaRow
+                  label="Владелец объекта"
+                  value={objectType?.owner_name || EMPTY_VALUE}
+                  muted={!objectType?.owner_name}
+                />
+                <MetaRow label="Группа объектов" value={EMPTY_VALUE} muted />
+                <MetaRow label="Теги" value={EMPTY_VALUE} muted />
+                <MetaRow label="Кто может создавать сущности" value={EMPTY_VALUE} muted />
+                <MetaRow label="Кто может удалять сущности" value={EMPTY_VALUE} muted />
+              </div>
+            </section>
+          ) : null}
 
           <section className="designer-card designer-object-general-card">
             <h3 className="designer-object-general-card-title">Используется в</h3>

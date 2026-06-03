@@ -23,6 +23,7 @@ class NavigationItemCreate(BaseModel):
     icon_file_url: Optional[str] = None
 
     color: Optional[str] = None
+    show_icon: bool = True
     is_bold: bool = False
     is_italic: bool = False
     menu_scope: Optional[str] = None
@@ -51,6 +52,7 @@ class NavigationItemUpdate(BaseModel):
     icon_file_url: Optional[str] = None
 
     color: Optional[str] = None
+    show_icon: Optional[bool] = None
     is_bold: Optional[bool] = None
     is_italic: Optional[bool] = None
     system_key: Optional[str] = None
@@ -86,6 +88,7 @@ class NavigationItemResponse(BaseModel):
     icon_file_url: Optional[str] = None
 
     color: Optional[str] = None
+    show_icon: bool = True
     is_bold: bool
     is_italic: bool
     menu_scope: str

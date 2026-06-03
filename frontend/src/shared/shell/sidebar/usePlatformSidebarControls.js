@@ -42,10 +42,14 @@ export function usePlatformSidebarControls({
         Boolean(navigationItem?.object_type_id);
 
       if (isObjectTypeItem) {
+        const menuColor =
+          typeof data?.color === "string" ? data.color.trim() : data?.color;
         await menuEditor.updateItem?.(itemId, {
+          color: menuColor === "" ? null : menuColor,
           is_bold: data?.is_bold,
           is_italic: data?.is_italic,
           is_visible: data?.is_visible,
+          show_icon: data?.show_icon,
         });
         return;
       }

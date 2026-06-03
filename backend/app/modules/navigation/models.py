@@ -33,6 +33,7 @@ class NavigationItem(Base):
     icon_file_url = Column(String(1000), nullable=True)
 
     color = Column(String(50), nullable=True)
+    show_icon = Column(Boolean, default=True, nullable=False)
     is_bold = Column(Boolean, default=False)
     is_italic = Column(Boolean, default=False)
     menu_scope = Column(String(50), nullable=False, default="runtime")

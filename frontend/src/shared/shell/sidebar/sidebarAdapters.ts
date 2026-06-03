@@ -461,7 +461,16 @@ function resolveRuntimeIconFileUrl(item: UnknownRecord): string | undefined {
 }
 
 function resolveRuntimeDisplayColor(item: UnknownRecord): string | undefined {
-  return asString(item.display_color) ?? asString(item.color);
+  const menuTextColor = asString(item.color);
+  if (menuTextColor) {
+    return menuTextColor;
+  }
+
+  if (isObjectTypeNavigationItem(item)) {
+    return undefined;
+  }
+
+  return asString(item.display_color);
 }
 
 function isObjectTypeNavigationItem(item: UnknownRecord): boolean {
@@ -587,6 +596,7 @@ function buildRuntimeItemMeta(
     display_icon_type: item.display_icon_type,
     display_icon_file_url: item.display_icon_file_url,
     display_color: item.display_color,
+    show_icon: item.show_icon,
     object_type_id: item.object_type_id,
     type: item.type,
     icon: item.icon,

@@ -171,10 +171,13 @@ function ShellSidebarView({
 
   const handleDeleteItem = async (itemId) => {
     const item = findItemById(navigationItems, itemId);
+    const isObjectTypeItem =
+      item?.type === "object_type" || Boolean(item?.object_type_id);
     if (
       String(itemId).startsWith("system-") ||
       item?.is_protected === true ||
-      item?.isProtected === true
+      item?.isProtected === true ||
+      isObjectTypeItem
     ) {
       return;
     }

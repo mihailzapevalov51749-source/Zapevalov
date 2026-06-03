@@ -16,6 +16,7 @@ const MENU_SECTIONS = [
     label: "Runtime",
     items: [
       { id: "open-runtime-preview", label: "Открыть Runtime Preview" },
+      { id: "manage-publication", label: "Управление публикацией" },
       { id: "publish-history", label: "История публикаций" },
     ],
   },
@@ -38,6 +39,8 @@ function notifySoon(actionId) {
 export default function ObjectTypeWorkspaceActionsMenu({
   isSystemObject = false,
   deleting = false,
+  showManagePublication = false,
+  onManagePublication,
   onDelete,
 }) {
   const menuId = useId();
@@ -117,17 +120,23 @@ export default function ObjectTypeWorkspaceActionsMenu({
               <div className="designer-workspace-menu__section-label" role="presentation">
                 {section.label}
               </div>
-              {section.items.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  role="menuitem"
-                  className="designer-workspace-menu__item"
-                  onClick={() => handleStubAction(item.id)}
-                >
-                  {item.label}
-                </button>
-              ))}
+              {section.items.map((item) => {
+                if (item.id === "manage-publication" && !showManagePublication) {
+                  return null;
+                }
+
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="menuitem"
+                    className="designer-workspace-menu__item"
+                    onClick={() => handleStubAction(item.id)}
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
             </div>
           ))}
 

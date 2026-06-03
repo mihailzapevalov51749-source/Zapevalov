@@ -90,6 +90,7 @@ def init_db():
     Base.metadata.create_all(bind=engine, tables=tables)
     ensure_navigation_scope_column()
     ensure_navigation_system_columns()
+    ensure_navigation_show_icon_column()
     ensure_designer_workspace_home_page_column()
     ensure_quality_issue_ai_fix_columns()
     ensure_platform_dashboard_analysis_columns()
@@ -254,6 +255,27 @@ def ensure_navigation_system_columns():
             text(
                 "UPDATE navigation_items SET is_protected = FALSE WHERE is_protected IS NULL"
             )
+        )
+
+
+def ensure_navigation_show_icon_column():
+    inspector = inspect(engine)
+    try:
+        columns = {column["name"] for column in inspector.get_columns("navigation_items")}
+    except Exception:
+        return
+
+    if "show_icon" in columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "ALTER TABLE navigation_items ADD COLUMN show_icon BOOLEAN NOT NULL DEFAULT TRUE"
+            )
+        )
+        connection.execute(
+            text("UPDATE navigation_items SET show_icon = TRUE WHERE show_icon IS NULL")
         )
 
 

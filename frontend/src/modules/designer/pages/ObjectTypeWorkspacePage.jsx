@@ -15,7 +15,11 @@ import ViewsTab from "../components/tabs/ViewsTab";
 import { DEFAULT_DESIGNER_TAB, isValidDesignerTab } from "../constants/tabs";
 import { useDesignerShell } from "../context/DesignerShellContext";
 import { getObjectTypeAppearanceFields } from "../../../shared/icons/iconFileUtils";
-import { dispatchDesignerNavigationReload } from "../utils/navigationReload";
+import { detectObjectTypeMenuPlacement } from "../utils/detectObjectTypeMenuPlacement";
+import {
+  dispatchDesignerNavigationReload,
+  dispatchPortalNavigationReload,
+} from "../utils/navigationReload";
 import { resolveObjectTypeLifecycleState } from "../utils/objectTypeLifecycleState";
 
 export default function ObjectTypeWorkspacePage() {
@@ -24,16 +28,14 @@ export default function ObjectTypeWorkspacePage() {
   const { objectTypeId, tab } = useParams();
 
   const [objectType, setObjectType] = useState(null);
-  const [catalogVersion, setCatalogVersion] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [publishing, setPublishing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isDraftDirty, setIsDraftDirty] = useState(false);
-  /** Placeholder until backend exposes draft vs published revision. */
-  const [needsPublish, setNeedsPublish] = useState(true);
-  const [hasPublishedBaseline, setHasPublishedBaseline] = useState(false);
+  const [hasMenuPlacement, setHasMenuPlacement] = useState(false);
+  const [catalogVersion, setCatalogVersion] = useState(null);
   const generalSaveRef = useRef(null);
   const [generalSaveReady, setGeneralSaveReady] = useState(false);
   const [appearanceDraft, setAppearanceDraft] = useState({
@@ -54,13 +56,14 @@ export default function ObjectTypeWorkspacePage() {
         runtimeCatalogApi.getCatalogVersion(tenantId).catch(() => null),
       ]);
 
+      const nextCatalogVersion = catalogInfo?.catalog_version ?? null;
+      const menuPlaced = await detectObjectTypeMenuPlacement(tenantId, objectTypeId);
+
       setObjectType(objectTypeData);
       setAppearanceDraft(getObjectTypeAppearanceFields(objectTypeData));
-      setCatalogVersion(catalogInfo?.catalog_version ?? null);
+      setCatalogVersion(nextCatalogVersion);
+      setHasMenuPlacement(menuPlaced);
       setIsDraftDirty(false);
-      const hasCatalog = Boolean(catalogInfo?.catalog_version);
-      setHasPublishedBaseline(hasCatalog);
-      setNeedsPublish(!hasCatalog);
     } catch (err) {
       setError(getApiErrorMessage(err, "Не удалось загрузить Object Type"));
     } finally {
@@ -78,7 +81,58 @@ export default function ObjectTypeWorkspacePage() {
     dispatchDesignerNavigationReload();
   }, []);
 
-  const handlePublish = () => {
+  const lifecycle = useMemo(
+    () =>
+      resolveObjectTypeLifecycleState({
+        isDirty: isDraftDirty,
+        objectType,
+        catalogVersion,
+        hasMenuPlacement,
+      }),
+    [catalogVersion, hasMenuPlacement, isDraftDirty, objectType],
+  );
+
+  const handleUpdatePublication = useCallback(async () => {
+    setPublishing(true);
+    setMenuPublishMessage("");
+
+    try {
+      if (isDraftDirty && generalSaveRef.current) {
+        await generalSaveRef.current();
+        setIsDraftDirty(false);
+      }
+
+      const publishResult = await designerApi.publishCatalog(tenantId);
+      setCatalogVersion(publishResult?.catalog_version ?? null);
+
+      const objectTypeData = await designerApi.getObjectType(tenantId, objectTypeId);
+      setObjectType(objectTypeData);
+      setAppearanceDraft(getObjectTypeAppearanceFields(objectTypeData));
+
+      dispatchDesignerNavigationReload();
+      dispatchPortalNavigationReload();
+
+      setMenuPublishMessage(
+        "Публикация обновлена. Данные объекта синхронизированы, размещение в меню не изменилось.",
+      );
+    } catch (err) {
+      window.alert(getApiErrorMessage(err, "Не удалось обновить публикацию"));
+    } finally {
+      setPublishing(false);
+    }
+  }, [isDraftDirty, objectTypeId, tenantId]);
+
+  const handlePublish = useCallback(() => {
+    if (lifecycle.publishAction === "update-catalog") {
+      handleUpdatePublication();
+      return;
+    }
+
+    setMenuPublishMessage("");
+    setMenuDialogOpen(true);
+  }, [handleUpdatePublication, lifecycle.publishAction]);
+
+  const handleManagePublication = () => {
     setMenuPublishMessage("");
     setMenuDialogOpen(true);
   };
@@ -105,31 +159,24 @@ export default function ObjectTypeWorkspacePage() {
         }
       }
 
-      setHasPublishedBaseline(true);
-      setNeedsPublish(false);
+      setHasMenuPlacement(true);
       setMenuPublishMessage(
-        "Каталог опубликован. Объект доступен в Runtime Preview и размещён в меню Студии.",
+        "Каталог опубликован. Объект доступен в Runtime Preview и размещён в меню.",
       );
 
       try {
-        const objectTypeData = await designerApi.getObjectType(tenantId, objectTypeId);
+        const [objectTypeData, menuPlaced] = await Promise.all([
+          designerApi.getObjectType(tenantId, objectTypeId),
+          detectObjectTypeMenuPlacement(tenantId, objectTypeId),
+        ]);
         setObjectType(objectTypeData);
         setAppearanceDraft(getObjectTypeAppearanceFields(objectTypeData));
+        setHasMenuPlacement(menuPlaced);
       } catch {
-        // workspace meta refresh is best-effort
+        setHasMenuPlacement(true);
       }
     },
     [tenantId, objectTypeId],
-  );
-
-  const lifecycle = useMemo(
-    () =>
-      resolveObjectTypeLifecycleState({
-        isDirty: isDraftDirty,
-        needsPublish,
-        hasPublishedBaseline,
-      }),
-    [isDraftDirty, needsPublish, hasPublishedBaseline],
   );
 
   const handleDeleteObject = async () => {
@@ -172,7 +219,6 @@ export default function ObjectTypeWorkspacePage() {
 
     try {
       await generalSaveRef.current();
-      setNeedsPublish(true);
       setIsDraftDirty(false);
     } catch (err) {
       window.alert(getApiErrorMessage(err, "Не удалось сохранить"));
@@ -283,6 +329,8 @@ export default function ObjectTypeWorkspacePage() {
           deleting={deleting}
           onSave={handleHeaderSave}
           onPublish={handlePublish}
+          onManagePublication={handleManagePublication}
+          showManagePublication={Boolean(hasMenuPlacement)}
           onDeleteObject={handleDeleteObject}
         />
       }

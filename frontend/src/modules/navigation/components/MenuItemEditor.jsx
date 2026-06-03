@@ -65,12 +65,15 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
   const [iconFileUrl, setIconFileUrl] = useState(
     item.display_icon_file_url || item.icon_file_url || null,
   );
-  const [color, setColor] = useState(item.display_color || item.color || "");
+  const [color, setColor] = useState(
+    isObjectTypeMenuItem ? item.color || "" : item.display_color || item.color || "",
+  );
   const [isBold, setIsBold] = useState(Boolean(item.is_bold));
   const [isItalic, setIsItalic] = useState(Boolean(item.is_italic));
   const [isVisible, setIsVisible] = useState(
     item.is_visible === undefined ? true : Boolean(item.is_visible)
   );
+  const [showIcon, setShowIcon] = useState(item.show_icon !== false);
   const [isColorPaletteOpen, setIsColorPaletteOpen] = useState(false);
 
   const handleUploadIcon = async (event) => {
@@ -98,10 +101,13 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
 
   const handleSave = async () => {
     if (isObjectTypeMenuItem) {
+      const trimmedColor = String(color || "").trim();
       await onSave({
+        color: trimmedColor || null,
         is_bold: isBold,
         is_italic: isItalic,
         is_visible: isVisible,
+        show_icon: showIcon,
         isSystem,
       });
       return;
@@ -159,12 +165,7 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
           }
         />
 
-        <div
-          style={{
-            ...colorPickerWrapperStyle,
-            ...(isObjectTypeMenuItem ? { pointerEvents: "none", opacity: 0.55 } : {}),
-          }}
-        >
+        <div style={colorPickerWrapperStyle}>
           <button
             type="button"
             onClick={() => setIsColorPaletteOpen((prev) => !prev)}
@@ -216,7 +217,14 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
         </div>
       </div>
 
-      <div style={controlsRowStyle}>
+      <div
+        style={{
+          ...controlsRowStyle,
+          ...(isObjectTypeMenuItem
+            ? { gridTemplateColumns: "28px 28px auto" }
+            : {}),
+        }}
+      >
         <button
           type="button"
           onClick={() => setIsBold((prev) => !prev)}
@@ -242,50 +250,62 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
           К
         </button>
 
-        {!isObjectTypeMenuItem ? (
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            style={iconButtonTextStyle}
-            title={iconFileUrl ? "Заменить иконку" : "Добавить иконку"}
+        {isObjectTypeMenuItem ? (
+          <label
+            style={compactCheckboxLabelStyle}
+            title="Показывать иконку Object Type в меню"
           >
-            Иконка
-          </button>
+            <input
+              type="checkbox"
+              checked={showIcon}
+              onChange={(event) => setShowIcon(event.target.checked)}
+            />
+            <span>Иконка</span>
+          </label>
         ) : (
-          <span style={{ ...iconButtonTextStyle, cursor: "default", opacity: 0.55 }}>
-            Иконка из Object Type
-          </span>
+          <>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              style={iconButtonTextStyle}
+              title={iconFileUrl ? "Заменить иконку" : "Добавить иконку"}
+            >
+              Иконка
+            </button>
+
+            <button
+              type="button"
+              onClick={handleRemoveIcon}
+              disabled={!iconFileUrl}
+              style={{
+                ...smallIconButtonStyle,
+                opacity: iconFileUrl ? 1 : 0.35,
+                cursor: iconFileUrl ? "pointer" : "default",
+              }}
+              title="Удалить иконку"
+            >
+              <Trash2 size={14} />
+            </button>
+          </>
         )}
 
-        <button
-          type="button"
-          onClick={handleRemoveIcon}
-          disabled={!iconFileUrl || isObjectTypeMenuItem}
-          style={{
-            ...smallIconButtonStyle,
-            opacity: iconFileUrl ? 1 : 0.35,
-            cursor: iconFileUrl ? "pointer" : "default",
-          }}
-          title="Удалить иконку"
-        >
-          <Trash2 size={14} />
-        </button>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".jpg,.jpeg,.png,.svg,.gif"
-          onChange={handleUploadIcon}
-          style={{ display: "none" }}
-        />
+        {!isObjectTypeMenuItem ? (
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".jpg,.jpeg,.png,.svg,.gif"
+            onChange={handleUploadIcon}
+            style={{ display: "none" }}
+          />
+        ) : null}
       </div>
 
       <div style={footerRowStyle}>
-        {!isSystem && (
+        {!isSystem && !isObjectTypeMenuItem ? (
           <button type="button" onClick={onDelete} style={deleteButtonStyle}>
             <Trash2 size={14} />
           </button>
-        )}
+        ) : null}
 
         <div style={footerActionsStyle}>
           <button type="button" onClick={onClose} style={closeButtonStyle}>
@@ -491,4 +511,16 @@ const deleteButtonStyle = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
+};
+
+const compactCheckboxLabelStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  minWidth: 0,
+  fontSize: 12,
+  lineHeight: 1.2,
+  color: "#334155",
+  cursor: "pointer",
+  userSelect: "none",
 };
