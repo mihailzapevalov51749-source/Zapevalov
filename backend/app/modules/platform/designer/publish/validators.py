@@ -13,6 +13,10 @@ from app.modules.platform.designer.publish.schemas import (
     ValidationIssue,
 )
 from app.modules.platform.shared.enums import FieldType, RelationType, ViewType
+from app.modules.platform.shared.relation_field_contract import (
+    is_relation_field_type,
+    validate_relation_field_for_publish,
+)
 
 TEXT_LIKE_FIELD_TYPES = {"text", "textarea"}
 
@@ -235,6 +239,24 @@ def validate_tenant_draft_catalog(catalog: TenantDraftCatalog) -> PublishValidat
             )
 
     object_type_keys = {row.key: row.id for row in object_types}
+    relations_by_key = {relation.key: relation for relation in relations}
+
+    for field in fields:
+        if not is_relation_field_type(field.field_type):
+            continue
+
+        field_path = f"fields[{field.key}]"
+        if field.object_type_id not in object_type_by_id:
+            continue
+
+        for issue in validate_relation_field_for_publish(
+            field_key=field.key,
+            settings_json=field.settings_json if isinstance(field.settings_json, dict) else {},
+            object_type_id=field.object_type_id,
+            relations_by_key=relations_by_key,
+            default_value_json=field.default_value_json,
+        ):
+            errors.append(_error(issue.code, issue.path, issue.message))
 
     for relation in relations:
         rel_path = f"relations[{relation.key}]"
@@ -256,15 +278,6 @@ def validate_tenant_draft_catalog(catalog: TenantDraftCatalog) -> PublishValidat
                     "relation_invalid_target",
                     rel_path,
                     "target_object_type не найден среди active ObjectType",
-                ),
-            )
-
-        if source and target and source.id == target.id:
-            errors.append(
-                _error(
-                    "relation_self_reference",
-                    rel_path,
-                    "source_object_type_id и target_object_type_id не могут совпадать",
                 ),
             )
 

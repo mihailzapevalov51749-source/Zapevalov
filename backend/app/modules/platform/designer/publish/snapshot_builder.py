@@ -23,6 +23,7 @@ def _serialize_field(field) -> dict[str, Any]:
         "sort_order": field.sort_order,
         "is_required": field.is_required,
         "is_unique": field.is_unique,
+        "quick_create": field.quick_create,
         "is_system": field.is_system,
         "default_value_json": field.default_value_json,
         "settings_json": field.settings_json or {},

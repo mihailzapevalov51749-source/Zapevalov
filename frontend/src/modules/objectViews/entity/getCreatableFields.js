@@ -32,9 +32,13 @@ export function getCreatableFields(catalog, objectTypeKey) {
         return false;
       }
 
-      const rawType = String(field.field_type || field.type || "").trim();
+      const rawType = String(field.field_type || field.type || "").trim().toLowerCase();
 
       if (isFileFieldType(rawType)) {
+        return false;
+      }
+
+      if (rawType === "relation") {
         return false;
       }
 

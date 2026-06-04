@@ -1,3 +1,5 @@
+import { isHierarchySubtaskParentRelationDefinition } from "../../../shared/relation/hierarchyRelationProfile.js";
+
 function normalizeKey(value) {
   return String(value ?? "").trim();
 }
@@ -33,6 +35,10 @@ export function resolveCreatableRelationOptions(catalog, currentObjectTypeKey) {
     const targetKey = normalizeKey(relation?.target_object_type_key);
 
     if (!relationKey || !sourceKey || !targetKey) {
+      continue;
+    }
+
+    if (isHierarchySubtaskParentRelationDefinition(relation, currentKey)) {
       continue;
     }
 

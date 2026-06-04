@@ -293,6 +293,7 @@ export default function ObjectTypeWorkspacePage() {
       <FieldsTab
         tenantId={tenantId}
         objectTypeId={objectTypeId}
+        objectType={objectType}
         onSchemaChanged={handleSchemaChanged}
       />
     );

@@ -27,6 +27,7 @@ SCANNED_FRONTEND_PATHS = (
 
 SCANNED_FRONTEND_EVIDENCE_FILES = (
     "api/runtimeRelationsApi.js",
+    "api/runtimeRelationFieldsApi.js",
     "api/platformSearchApi.js",
     "modules/objectEntities/components/ObjectEntityRelatedEntities.jsx",
     "modules/objectEntities/hooks/useObjectEntityRelations.js",

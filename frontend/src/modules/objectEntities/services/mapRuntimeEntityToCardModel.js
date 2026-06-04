@@ -1,5 +1,6 @@
 import { buildInitialCreateFormValues } from "../../objectViews/entity/buildCreateEntityPayload";
 import { getCreatableFields } from "../../objectViews/entity/getCreatableFields";
+import { getEntityCardLayoutFields } from "../../objectViews/entity/getEntityCardLayoutFields";
 import { getReadableSystemFields } from "../../objectViews/entity/getReadableSystemFields";
 import { findCatalogObjectType } from "../../objectViews/table/services/adapters/ObjectTypeTableAdapter";
 import { buildInitialFormValuesFromEntity } from "./buildEntityUpdatePayload";
@@ -30,7 +31,8 @@ export function buildCreateCardModel({
 }) {
   const objectType = findCatalogObjectType(catalog, objectTypeKey);
   const objectTypeName = String(objectType?.name || objectTypeKey || "запись").trim();
-  const editableFields = getCreatableFields(catalog, objectTypeKey);
+  const layoutFields = getEntityCardLayoutFields(catalog, objectTypeKey);
+  const creatableFields = getCreatableFields(catalog, objectTypeKey);
 
   return {
     entityId: null,
@@ -45,8 +47,8 @@ export function buildCreateCardModel({
     titleFieldKey: titleFieldKey || null,
     systemFields: [],
     readOnlyFields: [],
-    editableFields,
-    formValues: buildInitialCreateFormValues(editableFields),
+    editableFields: layoutFields,
+    formValues: buildInitialCreateFormValues(creatableFields),
     rawEntity: null,
   };
 }
@@ -70,7 +72,8 @@ export function mapRuntimeEntityToCardModel({
   const entityValues =
     entity?.values && typeof entity.values === "object" ? entity.values : {};
 
-  const editableFields = getCreatableFields(catalog, objectTypeKey);
+  const layoutFields = getEntityCardLayoutFields(catalog, objectTypeKey);
+  const creatableFields = getCreatableFields(catalog, objectTypeKey);
   const readOnlyFields = getReadableSystemFields(catalog, objectTypeKey);
 
   const title =
@@ -93,8 +96,8 @@ export function mapRuntimeEntityToCardModel({
     titleFieldKey: titleFieldKey || null,
     systemFields: [],
     readOnlyFields,
-    editableFields,
-    formValues: buildInitialFormValuesFromEntity(entity, editableFields),
+    editableFields: layoutFields,
+    formValues: buildInitialFormValuesFromEntity(entity, creatableFields),
     rawEntity: entity,
   };
 }

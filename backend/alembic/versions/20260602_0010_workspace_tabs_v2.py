@@ -17,31 +17,44 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _workspace_tab_columns() -> set[str]:
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    return {c["name"] for c in insp.get_columns("designer_workspace_tabs")}
+
+
 def upgrade() -> None:
-    op.add_column(
-        "designer_workspace_tabs",
-        sa.Column("slug_is_manual", sa.Boolean(), nullable=False, server_default=sa.false()),
-    )
-    op.add_column(
-        "designer_workspace_tabs",
-        sa.Column("tab_type", sa.String(length=30), nullable=False, server_default="object"),
-    )
-    op.add_column(
-        "designer_workspace_tabs",
-        sa.Column("target_type", sa.String(length=30), nullable=True),
-    )
-    op.add_column(
-        "designer_workspace_tabs",
-        sa.Column("target_id", sa.String(length=255), nullable=True),
-    )
-    op.add_column(
-        "designer_workspace_tabs",
-        sa.Column("url", sa.Text(), nullable=True),
-    )
-    op.add_column(
-        "designer_workspace_tabs",
-        sa.Column("open_in_new_tab", sa.Boolean(), nullable=False, server_default=sa.false()),
-    )
+    cols = _workspace_tab_columns()
+    if "slug_is_manual" not in cols:
+        op.add_column(
+            "designer_workspace_tabs",
+            sa.Column("slug_is_manual", sa.Boolean(), nullable=False, server_default=sa.false()),
+        )
+    if "tab_type" not in cols:
+        op.add_column(
+            "designer_workspace_tabs",
+            sa.Column("tab_type", sa.String(length=30), nullable=False, server_default="object"),
+        )
+    if "target_type" not in cols:
+        op.add_column(
+            "designer_workspace_tabs",
+            sa.Column("target_type", sa.String(length=30), nullable=True),
+        )
+    if "target_id" not in cols:
+        op.add_column(
+            "designer_workspace_tabs",
+            sa.Column("target_id", sa.String(length=255), nullable=True),
+        )
+    if "url" not in cols:
+        op.add_column(
+            "designer_workspace_tabs",
+            sa.Column("url", sa.Text(), nullable=True),
+        )
+    if "open_in_new_tab" not in cols:
+        op.add_column(
+            "designer_workspace_tabs",
+            sa.Column("open_in_new_tab", sa.Boolean(), nullable=False, server_default=sa.false()),
+        )
 
     op.execute(
         """
@@ -60,9 +73,13 @@ def upgrade() -> None:
         """
     )
 
-    op.alter_column("designer_workspace_tabs", "slug_is_manual", server_default=None)
-    op.alter_column("designer_workspace_tabs", "tab_type", server_default=None)
-    op.alter_column("designer_workspace_tabs", "open_in_new_tab", server_default=None)
+    cols = _workspace_tab_columns()
+    if "slug_is_manual" in cols:
+        op.alter_column("designer_workspace_tabs", "slug_is_manual", server_default=None)
+    if "tab_type" in cols:
+        op.alter_column("designer_workspace_tabs", "tab_type", server_default=None)
+    if "open_in_new_tab" in cols:
+        op.alter_column("designer_workspace_tabs", "open_in_new_tab", server_default=None)
 
 
 def downgrade() -> None:

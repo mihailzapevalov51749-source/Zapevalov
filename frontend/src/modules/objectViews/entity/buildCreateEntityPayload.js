@@ -1,4 +1,5 @@
 import { normalizeFieldEditorType } from "../../../shared/fieldEditors/fieldEditorRegistry";
+import { isRelationFieldType } from "../../designer/components/fields/relationFieldFormUtils";
 import { serializeUserFieldValue } from "../../../shared/fieldEditors/userFieldValueUtils";
 
 /**
@@ -65,6 +66,12 @@ export function buildCreateEntityPayload(formValues, fields = []) {
     const key = String(field.key || "").trim();
 
     if (!key) {
+      continue;
+    }
+
+    const rawFieldType = String(field.rawFieldType || field.type || "").trim();
+
+    if (isRelationFieldType(rawFieldType)) {
       continue;
     }
 

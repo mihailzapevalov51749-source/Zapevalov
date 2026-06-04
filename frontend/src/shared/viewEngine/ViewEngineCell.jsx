@@ -1,6 +1,8 @@
 import FieldEditor from "../fieldEditors/FieldEditor";
 import FieldValueRenderer from "../fieldTypes/FieldValueRenderer";
+import RelationTableCellRenderer from "../fieldTypes/relation/RelationTableCellRenderer";
 import ExpandableTableCell from "../table/ExpandableTableCell";
+import { isRelationTableValue } from "../../modules/objectViews/services/relationTableValue";
 import { isCreatableFieldType } from "../fieldEditors/fieldEditorRegistry";
 
 import {
@@ -55,11 +57,15 @@ export default function ViewEngineCell({
     isViewEngineSystemColumn(column) &&
     normalizeSystemColumnKey(column?.key) === SYSTEM_COLUMN_KEYS.status;
 
+  const isRelationColumn =
+    normalizedType === "relation" || isRelationTableValue(value);
+
   const canInlineEdit =
     !readOnly &&
     !isEntitySystemStatusColumn &&
     resolvedFieldDef &&
     !isViewEngineSystemColumn(column) &&
+    !isRelationColumn &&
     isCreatableFieldType(resolvedFieldDef.rawFieldType || resolvedFieldDef.type);
 
   const rendererRow = row
@@ -124,6 +130,13 @@ export default function ViewEngineCell({
           >
             {value != null && value !== "" ? String(value) : emptyValue}
           </span>
+        ) : isRelationColumn ? (
+          <RelationTableCellRenderer
+            value={value}
+            compact={compact}
+            emptyValue={emptyValue}
+            onOpenRelatedEntity={rendererContext?.onOpenRelatedEntity}
+          />
         ) : canInlineEdit ? (
           <div
             className="view-engine-table-cell-editor"

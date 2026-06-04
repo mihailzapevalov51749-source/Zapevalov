@@ -59,6 +59,7 @@ DEVELOPMENT_STAGE_KEYS: Final[tuple[str, ...]] = (
     "dev-designer",
     "dev-dashboard",
     "dev-yasii",
+    "dev-relation-field-type",
     "dev-processes",
     "dev-status-sync",
 )
@@ -635,11 +636,27 @@ def _development_stages() -> tuple[OwnerStageDefinition, ...]:
             meta={"scope": "development_ai"},
         ),
         OwnerStageDefinition(
+            key="dev-relation-field-type",
+            section_key="development",
+            title='Тип поля "Связи"',
+            description=(
+                "Программа field_type relation над runtime_relation_instances "
+                "(ADR-Object-Relation-Field)."
+            ),
+            order_index=7,
+            readiness_rule=ReadinessRule.NONE,
+            steps=(),
+            meta={
+                "implementation_stage_slugs": ("relation-field-type",),
+                "uses_implementation_stage_works": True,
+            },
+        ),
+        OwnerStageDefinition(
             key="dev-processes",
             section_key="development",
             title="Процессы",
             description="BPMN и process engine в программе развития.",
-            order_index=7,
+            order_index=8,
             readiness_rule=ReadinessRule.NONE,
             steps=(
                 _step(
@@ -656,7 +673,7 @@ def _development_stages() -> tuple[OwnerStageDefinition, ...]:
             section_key="development",
             title="Синхронизация статусов",
             description="Документация и статусы этапов после завершения работ (lifecycle sync).",
-            order_index=8,
+            order_index=9,
             readiness_rule=ReadinessRule.NONE,
             steps=(
                 _step(

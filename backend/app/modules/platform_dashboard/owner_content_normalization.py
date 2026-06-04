@@ -56,6 +56,7 @@ _SLUG_OWNER_PHRASES: dict[str, str] = {
     "legacy-removal": "Выполняется вывод устаревшей табличной модели из продукта.",
     "runtime-foundation": "Развивается рабочая среда портала для сотрудников.",
     "designer-foundation": "Развивается Studio и сценарии публикации.",
+    "relation-field-type": 'Программа типа поля «Связи» над relation engine.',
 }
 
 _LINE_REWRITE_RULES: tuple[tuple[re.Pattern[str], str], ...] = (
@@ -144,6 +145,7 @@ def rewrite_development_item_list(items: list[str]) -> list[str]:
 
 
 SUMMARY_STAGE_KEYS = frozenset({"dev-platform-transition"})
+SUMMARY_EXCLUDED_STAGE_KEYS = frozenset({"dev-relation-field-type"})
 SUMMARY_LIST_THRESHOLD = 5
 
 
@@ -157,6 +159,9 @@ def apply_development_work_summary(
 ) -> tuple[list[str], list[str], list[str], dict[str, object]]:
     """Owner summary mode for large implementation-stage lists (T0.6 §7)."""
     raw_items = {"done": list(done), "inWork": list(in_work), "remaining": list(remaining)}
+    if stage_key in SUMMARY_EXCLUDED_STAGE_KEYS:
+        return done, in_work, remaining, {}
+
     use_summary = stage_key in SUMMARY_STAGE_KEYS or (
         len(done) >= threshold or len(remaining) >= threshold
     )
@@ -173,16 +178,22 @@ def apply_development_work_summary(
 
 
 def normalize_development_stage_content(stage: "OwnerStageView") -> "OwnerStageView":
-    done = rewrite_development_item_list(stage.done)
-    in_work = rewrite_development_item_list(stage.inWork)
-    remaining = rewrite_development_item_list(stage.remaining)
+    if stage.id in SUMMARY_EXCLUDED_STAGE_KEYS:
+        done = list(stage.done)
+        in_work = list(stage.inWork)
+        remaining = list(stage.remaining)
+        extra_meta: dict[str, Any] = {}
+    else:
+        done = rewrite_development_item_list(stage.done)
+        in_work = rewrite_development_item_list(stage.inWork)
+        remaining = rewrite_development_item_list(stage.remaining)
 
-    extra_meta: dict[str, Any] = {}
-    if stage.id in SUMMARY_STAGE_KEYS or stage.id.startswith("dev-"):
-        done, in_work, remaining, summary_meta = apply_development_work_summary(
-            stage.id, done, in_work, remaining
-        )
-        extra_meta.update(summary_meta)
+        extra_meta = {}
+        if stage.id in SUMMARY_STAGE_KEYS or stage.id.startswith("dev-"):
+            done, in_work, remaining, summary_meta = apply_development_work_summary(
+                stage.id, done, in_work, remaining
+            )
+            extra_meta.update(summary_meta)
 
     return enrich_stage_meta(
         stage.model_copy(

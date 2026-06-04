@@ -70,7 +70,7 @@ export function buildTableBaseStateContract(
         defaultQuickFilterId: null,
       },
       sort: {
-        rules: [],
+        rules: [...DEFAULT_OBJECT_VIEW_QUERY.sort.rules],
       },
       pagination: {
         defaultPageSize: Number(pageSize) || 20,

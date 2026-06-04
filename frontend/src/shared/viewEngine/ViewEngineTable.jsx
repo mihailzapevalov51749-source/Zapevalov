@@ -43,6 +43,7 @@ export default function ViewEngineTable({
   className = "",
   columnWidths = null,
   onColumnResize = null,
+  onColumnResizeEnd = null,
   isInlineEditMode = false,
   onCellChange = null,
 }) {
@@ -51,6 +52,7 @@ export default function ViewEngineTable({
     {
       columnWidths,
       onColumnResize,
+      onColumnResizeEnd,
     },
   );
 
@@ -140,8 +142,7 @@ export default function ViewEngineTable({
                       isTitle={column.isTitle}
                       enableResize={
                         enableColumnResize &&
-                        column.source === "field" &&
-                        !column.isSystem
+                        (column.source === "field" || column.source === "system")
                       }
                       onSortToggle={() => onToggleColumnSort?.(column.key)}
                       onResizeMouseDown={(event) =>

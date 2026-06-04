@@ -155,9 +155,20 @@ export default function ObjectViewHost({
     definitions.publishedTableViewKey,
   ]);
 
+  const presentationPrefsScope = useMemo(
+    () => ({
+      tenantId,
+      userId: getStoredCurrentUserId(),
+      objectTypeKey,
+    }),
+    [tenantId, objectTypeKey],
+  );
+
   const session = useObjectViewSession({
     resolvedContract: resolvedContractForSession,
     activeViewKey: definitions.activeViewKey,
+    presentationPrefsScope,
+    persistUserViewOnPresentationChange: isOfficeRuntime,
   });
 
   const query = useObjectViewQuery({

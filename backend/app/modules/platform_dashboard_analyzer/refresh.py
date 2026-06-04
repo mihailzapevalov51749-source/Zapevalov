@@ -156,6 +156,242 @@ def _format_dashboard_refresh_result(
 
         lines.extend(f"- {item}" for item in changed_work_items)
 
+
+RELATION_FIELD_TYPE_HISTORY_SLUG = "relation-field-type-roadmap-history-20260604"
+RELATION_FIELD_TYPE_CHANGELOG_SLUG = "relation-field-type-changelog-20260604"
+RELATION_FIELD_TYPE_SELF_RELATION_SLUG = "relation-field-type-self-relation-20260604"
+RELATION_FIELD_TYPE_TASK_SUBTASK_SPEC_SLUG = (
+    "relation-field-type-task-subtask-spec-20260604"
+)
+RELATION_FIELD_TYPE_TASK_SUBTASK_DOMAIN_SLUG = (
+    "relation-field-type-task-subtask-domain-20260604"
+)
+RELATION_FIELD_TYPE_PARENT_SECTION_SLUG = (
+    "relation-field-type-parent-section-20260604"
+)
+RELATION_FIELD_TYPE_SUBTASKS_RELATION_ENGINE_SLUG = (
+    "relation-field-type-subtasks-relation-engine-20260604"
+)
+RELATION_FIELD_TYPE_SUBTASKS_RELATIONS_TAB_UX_SLUG = (
+    "relation-field-type-subtasks-relations-tab-ux-20260604"
+)
+RELATION_FIELD_TYPE_QUICK_CREATE_FORM_SLUG = (
+    "relation-field-type-quick-create-form-20260604"
+)
+
+_RELATION_FIELD_TYPE_HISTORY_DESCRIPTION = (
+    'Для компонента "Тип поля Связи" детализирована дорожная карта развития '
+    "relation engine и перехода Parent Record на Relation Engine."
+)
+
+_RELATION_FIELD_TYPE_CHANGELOG_DESCRIPTION = (
+    'Компонент "Тип поля Связи" обновлён. '
+    "Добавлены детализированные шаги реализации relation engine."
+)
+
+_RELATION_FIELD_TYPE_SELF_RELATION_DESCRIPTION = (
+    'Этап "Тип поля Связи": завершена поддержка self-relation '
+    "(Object A → Object A) через Relation Engine без отдельного движка."
+)
+
+_RELATION_FIELD_TYPE_TASK_SUBTASK_SPEC_DESCRIPTION = (
+    'Подготовлена каноническая спецификация task_subtask (ADR): '
+    "relation_key task_subtask, source=Parent, target=Child, one_to_many, "
+    "SoT runtime_relation_instances. Реализация — следующие этапы Dashboard."
+)
+
+_RELATION_FIELD_TYPE_TASK_SUBTASK_DOMAIN_DESCRIPTION = (
+    'Этап "Тип поля Связи": доменные ограничения task_subtask в Relation Engine — '
+    "один родитель, запрет самоссылки и защита от циклов (только profile task_subtask)."
+)
+
+_RELATION_FIELD_TYPE_PARENT_SECTION_DESCRIPTION = (
+    'Этап "Тип поля Связи": Parent Section карточки объекта переведена на Relation Engine — '
+    "incoming hierarchy relation (child=target), Title Field родителя, без parent_row_id."
+)
+
+_RELATION_FIELD_TYPE_SUBTASKS_RELATION_ENGINE_DESCRIPTION = (
+    'Этап "Тип поля Связи": подзадачи через Relation Engine — дочерние элементы во вкладке '
+    "«Связанные записи», создание и привязка без терминов Relation Engine; "
+    "SoT runtime_relation_instances."
+)
+
+_RELATION_FIELD_TYPE_SUBTASKS_RELATIONS_TAB_UX_DESCRIPTION = (
+    'Корректировка UX подзадач: убран отдельный блок «Подзадачи» из тела карточки; '
+    "дочерние задачи отображаются во вкладке «Связанные записи» с кнопкой «+ Подзадачу»."
+)
+
+_RELATION_FIELD_TYPE_QUICK_CREATE_FORM_DESCRIPTION = (
+    'Платформенная быстрая форма создания записи: свойство поля quick_create в Studio, '
+    "PlatformQuickCreateForm через Platform Modal для обычного create и подзадач."
+)
+
+
+def _ensure_relation_field_type_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    """Idempotent owner history + changelog entries for relation-field-type roadmap."""
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "relation-field-type")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=RELATION_FIELD_TYPE_HISTORY_SLUG,
+        title='Тип поля "Связи": дорожная карта',
+        description=_RELATION_FIELD_TYPE_HISTORY_DESCRIPTION,
+        result="Детализированы шаги программы relation engine и перехода Parent Record.",
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+
+    if _add_activity(
+        db,
+        slug=RELATION_FIELD_TYPE_CHANGELOG_SLUG,
+        title='Журнал изменений: тип поля "Связи"',
+        description=_RELATION_FIELD_TYPE_CHANGELOG_DESCRIPTION,
+        result=_RELATION_FIELD_TYPE_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_RELATION_FIELD_TYPE_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=RELATION_FIELD_TYPE_SELF_RELATION_SLUG,
+        title='Тип поля "Связи": self-relation support',
+        description=_RELATION_FIELD_TYPE_SELF_RELATION_DESCRIPTION,
+        result=(
+            "Designer, Publish, Runtime и Relation Engine поддерживают связи "
+            "между записями одного ObjectType (включая A → A)."
+        ),
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_RELATION_FIELD_TYPE_SELF_RELATION_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=RELATION_FIELD_TYPE_TASK_SUBTASK_SPEC_SLUG,
+        title='Тип поля "Связи": спецификация task_subtask',
+        description=_RELATION_FIELD_TYPE_TASK_SUBTASK_SPEC_DESCRIPTION,
+        result=(
+            "Зафиксирован ADR docs/architecture/ADR_TASK_SUBTASK_RELATION_SPEC.md. "
+            "Канон: task_subtask, Parent=source, Subtask=target, one_to_many."
+        ),
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_RELATION_FIELD_TYPE_TASK_SUBTASK_SPEC_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=RELATION_FIELD_TYPE_TASK_SUBTASK_DOMAIN_SLUG,
+        title='Тип поля "Связи": доменные ограничения task_subtask',
+        description=_RELATION_FIELD_TYPE_TASK_SUBTASK_DOMAIN_DESCRIPTION,
+        result=(
+            "Runtime: validate_relation_instance_domain_rules — один родитель, "
+            "запрет A→A и anti-cycle для relation_key task_subtask; "
+            "прочие self-relations без изменений."
+        ),
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_RELATION_FIELD_TYPE_TASK_SUBTASK_DOMAIN_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=RELATION_FIELD_TYPE_PARENT_SECTION_SLUG,
+        title='Тип поля "Связи": Parent Section через relation engine',
+        description=_RELATION_FIELD_TYPE_PARENT_SECTION_DESCRIPTION,
+        result=(
+            "OEC: блок «Родительская запись» читает runtime_relation_instances "
+            "(hierarchy semantic_profile / task_subtask), отображает Title Field."
+        ),
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_RELATION_FIELD_TYPE_PARENT_SECTION_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=RELATION_FIELD_TYPE_SUBTASKS_RELATION_ENGINE_SLUG,
+        title='Тип поля "Связи": подзадачи через relation engine',
+        description=_RELATION_FIELD_TYPE_SUBTASKS_RELATION_ENGINE_DESCRIPTION,
+        result=(
+            "Вкладка «Связанные записи»: группа «Подзадачи», «+ Подзадачу», "
+            "создание/привязка; hierarchy fields скрыты из сетки полей."
+        ),
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_RELATION_FIELD_TYPE_SUBTASKS_RELATION_ENGINE_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=RELATION_FIELD_TYPE_SUBTASKS_RELATIONS_TAB_UX_SLUG,
+        title='Тип поля "Связи": подзадачи во вкладке «Связанные записи»',
+        description=_RELATION_FIELD_TYPE_SUBTASKS_RELATIONS_TAB_UX_DESCRIPTION,
+        result=(
+            "Удалён отдельный блок «Подзадачи» над полями; UX перенесён во вкладку "
+            "«Связанные записи» (HierarchyChildRelationsGroup, настраиваемые подписи)."
+        ),
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_RELATION_FIELD_TYPE_SUBTASKS_RELATIONS_TAB_UX_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=RELATION_FIELD_TYPE_QUICK_CREATE_FORM_SLUG,
+        title='Тип поля "Связи": быстрая форма создания записи',
+        description=_RELATION_FIELD_TYPE_QUICK_CREATE_FORM_DESCRIPTION,
+        result=(
+            "quick_create в Field Definition; PlatformQuickCreateForm; "
+            "единый create-flow для таблицы и подзадач."
+        ),
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_RELATION_FIELD_TYPE_QUICK_CREATE_FORM_DESCRIPTION)
+
+    return added, journal_lines
+
     if initiated_by_name:
 
         lines.append(f"Инициатор: {initiated_by_name}")
@@ -659,6 +895,15 @@ def refresh_platform_dashboard(db: Session, repo_root=None, initiated_by=None) -
     overall = round(sum(readiness_values) / len(readiness_values)) if readiness_values else None
 
 
+
+    notes_added, journal_lines = _ensure_relation_field_type_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += notes_added
+    if journal_lines:
+        changed_work_items = [*changed_work_items, *journal_lines]
 
     dashboard_meta = {
 

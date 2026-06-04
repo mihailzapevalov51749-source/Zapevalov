@@ -35,6 +35,8 @@ export default function ObjectEntityCardTabsBlock({
   initialContext = null,
   relationsState = null,
   onOpenRelatedEntity = null,
+  onBeginCreateHierarchyChild = null,
+  canCreateHierarchyChild = false,
   onNotesCountChange = null,
   isCreate = false,
   createPendingMessage = "Сохраните запись, чтобы работать с этим разделом",
@@ -121,7 +123,8 @@ export default function ObjectEntityCardTabsBlock({
         <ObjectEntityRelatedEntities
           loading={relationsState?.loading}
           error={relationsState?.error}
-          groups={relationsState?.groups || []}
+          hierarchyChildGroups={relationsState?.hierarchyChildGroups || []}
+          regularGroups={relationsState?.regularGroups || []}
           currentObjectTypeKey={cardModel.objectTypeKey}
           tenantId={cardModel.tenantId}
           entityId={cardModel.entityId}
@@ -130,6 +133,8 @@ export default function ObjectEntityCardTabsBlock({
           creating={relationsState?.creating}
           deletingInstanceId={relationsState?.deletingInstanceId}
           mutationError={relationsState?.mutationError}
+          canCreateHierarchyChild={canCreateHierarchyChild}
+          onBeginCreateHierarchyChild={onBeginCreateHierarchyChild}
           onOpenRelatedEntity={onOpenRelatedEntity}
           onReload={relationsState?.reload}
           onCreateRelation={relationsState?.createRelation}

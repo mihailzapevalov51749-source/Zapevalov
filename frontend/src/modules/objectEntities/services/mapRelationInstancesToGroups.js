@@ -1,4 +1,13 @@
 import { findCatalogObjectType } from "../../objectViews/table/services/adapters/ObjectTypeTableAdapter";
+import {
+  isHierarchyRelationDefinition,
+  isHierarchySubtaskParentRelationDefinition,
+} from "../../../shared/relation/hierarchyRelationProfile.js";
+import { resolveHierarchyChildUiLabels } from "../../../shared/relation/hierarchyRelationDisplayLabels.js";
+import {
+  readRelationEntityFieldLabel,
+  resolveSubtaskDisplayFieldKeys,
+} from "./resolveSubtasksFromRelations.js";
 import { resolveEntityTitle } from "./resolveEntityTitle";
 
 const DEFAULT_CONCURRENCY = 4;
@@ -84,6 +93,49 @@ function resolveRelatedEntityRef(instance, currentEntityId) {
   return null;
 }
 
+function shouldHideHierarchyInstanceInRelatedTab(
+  catalogRelation,
+  relatedRef,
+  currentObjectTypeKey,
+) {
+  if (
+    !catalogRelation ||
+    !relatedRef ||
+    !isHierarchyRelationDefinition(catalogRelation, currentObjectTypeKey)
+  ) {
+    return false;
+  }
+
+  const settings =
+    catalogRelation.settings_json && typeof catalogRelation.settings_json === "object"
+      ? catalogRelation.settings_json
+      : {};
+
+  const parentSide = normalizeId(settings.parent_entity_side || "source");
+  const childSide = normalizeId(settings.child_entity_side || "target");
+
+  if (parentSide === "source" && childSide === "target") {
+    return relatedRef.direction === "incoming";
+  }
+
+  if (parentSide === "target" && childSide === "source") {
+    return relatedRef.direction === "outgoing";
+  }
+
+  return false;
+}
+
+function isHierarchyChildrenPresentation(
+  catalogRelation,
+  relatedRef,
+  currentObjectTypeKey,
+) {
+  return (
+    isHierarchySubtaskParentRelationDefinition(catalogRelation, currentObjectTypeKey) &&
+    relatedRef?.direction === "outgoing"
+  );
+}
+
 async function mapWithConcurrency(items, mapper, concurrency = DEFAULT_CONCURRENCY) {
   if (!items.length) {
     return [];
@@ -119,6 +171,10 @@ async function mapWithConcurrency(items, mapper, concurrency = DEFAULT_CONCURREN
  *   currentObjectTypeKey: string | null,
  *   fetchEntity: (entityId: string, objectTypeKey: string) => Promise<Record<string, unknown> | null>,
  * }} params
+ * @returns {Promise<{
+ *   hierarchyChildGroups: Array<Record<string, unknown>>,
+ *   regularGroups: Array<Record<string, unknown>>,
+ * }>}
  */
 export async function mapRelationInstancesToGroups({
   instances = [],
@@ -129,6 +185,8 @@ export async function mapRelationInstancesToGroups({
   fetchEntity,
 }) {
   const catalogByKey = buildCatalogRelationsMap(catalog);
+  const normalizedObjectTypeKey = normalizeId(currentObjectTypeKey);
+  const displayKeys = resolveSubtaskDisplayFieldKeys(catalog, normalizedObjectTypeKey);
   const draftItems = [];
 
   for (const instance of instances) {
@@ -148,10 +206,28 @@ export async function mapRelationInstancesToGroups({
       key: relationKey,
       name: relationKey,
     };
+
+    if (
+      shouldHideHierarchyInstanceInRelatedTab(
+        catalogRelation,
+        relatedRef,
+        normalizedObjectTypeKey,
+      )
+    ) {
+      continue;
+    }
+
     const { title, relationType } = resolveRelationMeta(
       catalogRelation,
       relatedRef.direction,
     );
+    const presentation = isHierarchyChildrenPresentation(
+      catalogRelation,
+      relatedRef,
+      normalizedObjectTypeKey,
+    )
+      ? "hierarchy-children"
+      : "generic";
 
     draftItems.push({
       relationKey,
@@ -161,9 +237,14 @@ export async function mapRelationInstancesToGroups({
       relationInstanceId: normalizeId(instance?.id),
       entityId: relatedRef.entityId,
       objectTypeKey: relatedRef.objectTypeKey,
-      isSameObjectType:
-        relatedRef.objectTypeKey === normalizeId(currentObjectTypeKey),
+      isSameObjectType: relatedRef.objectTypeKey === normalizedObjectTypeKey,
       objectTypeLabel: resolveObjectTypeLabel(catalog, relatedRef.objectTypeKey),
+      presentation,
+      catalogRelation,
+      uiLabels:
+        presentation === "hierarchy-children"
+          ? resolveHierarchyChildUiLabels(catalogRelation)
+          : null,
     });
   }
 
@@ -171,6 +252,8 @@ export async function mapRelationInstancesToGroups({
     let rawEntity = null;
     let title = "";
     let status = "";
+    let assignee = "";
+    let dueDate = "";
     let loadError = null;
 
     try {
@@ -193,7 +276,11 @@ export async function mapRelationInstancesToGroups({
           resolveEntityTitle(values, titleFieldKey) ||
           String(item.objectTypeLabel || item.objectTypeKey || "Сущность");
 
-        status = String(rawEntity?.status || "").trim();
+        status =
+          readRelationEntityFieldLabel(values, displayKeys.statusFieldKey) ||
+          String(rawEntity?.status || "").trim();
+        assignee = readRelationEntityFieldLabel(values, displayKeys.assigneeFieldKey);
+        dueDate = readRelationEntityFieldLabel(values, displayKeys.dueFieldKey);
       } else {
         loadError = "not_found";
         title = "Сущность недоступна";
@@ -207,6 +294,8 @@ export async function mapRelationInstancesToGroups({
       ...item,
       title,
       status: status || "—",
+      assignee: assignee || "—",
+      dueDate: dueDate || "—",
       rawEntity,
       loadError,
       canOpen:
@@ -217,41 +306,59 @@ export async function mapRelationInstancesToGroups({
     };
   });
 
-  const groupsMap = new Map();
+  const hierarchyGroupsMap = new Map();
+  const regularGroupsMap = new Map();
 
   for (const item of enrichedItems) {
+    const targetMap =
+      item.presentation === "hierarchy-children"
+        ? hierarchyGroupsMap
+        : regularGroupsMap;
     const groupKey = `${item.relationKey}__${item.direction}`;
 
-    if (!groupsMap.has(groupKey)) {
-      groupsMap.set(groupKey, {
+    if (!targetMap.has(groupKey)) {
+      targetMap.set(groupKey, {
         relationKey: item.relationKey,
-        title: item.title,
+        title:
+          item.presentation === "hierarchy-children"
+            ? item.uiLabels?.groupTitle || item.title
+            : item.title,
         direction: item.direction,
         relationType: item.relationType,
+        presentation: item.presentation,
+        uiLabels: item.uiLabels,
         items: [],
       });
     }
 
-    groupsMap.get(groupKey).items.push({
+    targetMap.get(groupKey).items.push({
       relationInstanceId: item.relationInstanceId,
       entityId: item.entityId,
       objectTypeKey: item.objectTypeKey,
       objectTypeLabel: item.objectTypeLabel,
       title: item.title,
       status: item.status,
+      assignee: item.assignee,
+      dueDate: item.dueDate,
       rawEntity: item.rawEntity,
       canOpen: item.canOpen,
       loadError: item.loadError,
     });
   }
 
-  return [...groupsMap.values()].sort((left, right) => {
-    const titleCompare = left.title.localeCompare(right.title, "ru");
+  const sortGroups = (groups) =>
+    [...groups].sort((left, right) => {
+      const titleCompare = left.title.localeCompare(right.title, "ru");
 
-    if (titleCompare !== 0) {
-      return titleCompare;
-    }
+      if (titleCompare !== 0) {
+        return titleCompare;
+      }
 
-    return left.direction.localeCompare(right.direction, "ru");
-  });
+      return left.direction.localeCompare(right.direction, "ru");
+    });
+
+  return {
+    hierarchyChildGroups: sortGroups([...hierarchyGroupsMap.values()]),
+    regularGroups: sortGroups([...regularGroupsMap.values()]),
+  };
 }

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 
 import { PlatformModal } from "../../../../shared/platformModal";
 import { getNextSortRules } from "../../services/sortRulesUtils";
+import { buildTableQueryFieldOptions } from "../../services/catalogFieldsForTableQueryUi";
 import {
   findCatalogObjectType,
   getObjectTypeFields,
@@ -40,35 +41,17 @@ export default function ObjectTableViewSettingsSortModal({
   objectTypeKey,
   sessionApi,
 }) {
-  const fieldOptions = useMemo(() => {
-    const keysFromProjection = effectiveContract?.projection?.fieldKeys || [];
-    const objectType = findCatalogObjectType(catalog, objectTypeKey);
-    const fields = getObjectTypeFields(objectType);
-    const byKey = new Map();
-
-    for (const field of fields) {
-      const key = String(field?.key || "").trim();
-
-      if (!key) {
-        continue;
-      }
-
-      byKey.set(key, {
-        key,
-        label: String(field?.name || field?.label || key),
-      });
-    }
-
-    for (const key of keysFromProjection) {
-      if (!byKey.has(key)) {
-        byKey.set(key, { key, label: key });
-      }
-    }
-
-    return Array.from(byKey.values()).sort((a, b) =>
-      a.label.localeCompare(b.label, "ru"),
-    );
-  }, [catalog, objectTypeKey, effectiveContract]);
+  const fieldOptions = useMemo(
+    () =>
+      buildTableQueryFieldOptions({
+        catalog,
+        objectTypeKey,
+        projectionFieldKeys: effectiveContract?.projection?.fieldKeys || [],
+        findObjectType: findCatalogObjectType,
+        getFields: getObjectTypeFields,
+      }),
+    [catalog, objectTypeKey, effectiveContract],
+  );
 
   const sortRules = effectiveContract?.query?.sort?.rules || [];
 

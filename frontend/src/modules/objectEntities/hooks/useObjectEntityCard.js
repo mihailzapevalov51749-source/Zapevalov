@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { createRelation } from "../../../api/runtimeRelationsApi";
 import { getApiErrorMessage } from "../../designer/api/platformApiClient";
-import { getCreatableFields } from "../../objectViews/entity/getCreatableFields";
+import { getQuickCreateFields } from "../../objectViews/entity/getQuickCreateFields";
+import { findCatalogObjectType } from "../../objectViews/table/services/adapters/ObjectTypeTableAdapter";
 import {
   buildCreateEntityPayload,
   buildInitialCreateFormValues,
@@ -9,7 +11,6 @@ import {
 import { getRuntimeEntity } from "../../runtimeWriteGateway/api/runtimeEntitiesApi";
 import { runtimeWriteGateway } from "../../runtimeWriteGateway";
 import {
-  buildCreateCardModel,
   mapRuntimeEntityToCardModel,
 } from "../services/mapRuntimeEntityToCardModel";
 import useObjectEntityUpdate from "./useObjectEntityUpdate";
@@ -35,6 +36,14 @@ export default function useObjectEntityCard({
   const [initialContext, setInitialContext] = useState(null);
   const [openError, setOpenError] = useState("");
   const [createSubmitting, setCreateSubmitting] = useState(false);
+  const [quickCreateOpen, setQuickCreateOpen] = useState(false);
+  const [quickCreateTitle, setQuickCreateTitle] = useState("Новая запись");
+  const [quickCreateSubmitLabel, setQuickCreateSubmitLabel] = useState("Создать");
+  const [quickCreateFormValues, setQuickCreateFormValues] = useState({});
+  const [quickCreateFieldErrors, setQuickCreateFieldErrors] = useState({});
+  const [quickCreateSubmitError, setQuickCreateSubmitError] = useState("");
+  const [subtasksReloadToken, setSubtasksReloadToken] = useState(0);
+  const pendingSubtaskLinkRef = useRef(null);
   const catalogFormSyncKeyRef = useRef("");
 
   function resolveEntityOpenError(error) {
@@ -51,17 +60,23 @@ export default function useObjectEntityCard({
     return getApiErrorMessage(error, "Не удалось открыть объект");
   }
 
-  const creatableFields = useMemo(() => {
+  const quickCreateFields = useMemo(() => {
     if (!enabled) {
       return [];
     }
 
-    return getCreatableFields(catalog, objectTypeKey);
+    return getQuickCreateFields(catalog, objectTypeKey);
   }, [catalog, objectTypeKey, enabled]);
 
   const canCreate = Boolean(
-    enabled && tenantId && objectTypeKey && creatableFields.length > 0,
+    enabled && tenantId && objectTypeKey && quickCreateFields.length > 0,
   );
+
+  const objectTypeLabel = useMemo(() => {
+    const objectType = findCatalogObjectType(catalog, objectTypeKey);
+
+    return String(objectType?.name || objectType?.key || objectTypeKey || "").trim();
+  }, [catalog, objectTypeKey]);
 
   const listEntity = useMemo(() => {
     if (!openEntityId || !Array.isArray(listItems)) {
@@ -77,7 +92,7 @@ export default function useObjectEntityCard({
   const activeEntity = localEntity || listEntity;
 
   useEffect(() => {
-    if (!enabled || cardMode === "create" || !localEntity || !catalog || !openEntityId) {
+    if (!enabled || !localEntity || !catalog || !openEntityId) {
       return;
     }
 
@@ -112,7 +127,6 @@ export default function useObjectEntityCard({
     setFormValues(model.formValues);
   }, [
     enabled,
-    cardMode,
     catalog,
     localEntity,
     openEntityId,
@@ -122,20 +136,7 @@ export default function useObjectEntityCard({
   ]);
 
   const cardModel = useMemo(() => {
-    if (!enabled) {
-      return null;
-    }
-
-    if (cardMode === "create") {
-      return buildCreateCardModel({
-        catalog,
-        objectTypeKey,
-        tenantId,
-        titleFieldKey,
-      });
-    }
-
-    if (!activeEntity) {
+    if (!enabled || !activeEntity) {
       return null;
     }
 
@@ -146,15 +147,7 @@ export default function useObjectEntityCard({
       tenantId,
       titleFieldKey,
     });
-  }, [
-    activeEntity,
-    cardMode,
-    catalog,
-    objectTypeKey,
-    tenantId,
-    titleFieldKey,
-    enabled,
-  ]);
+  }, [activeEntity, catalog, objectTypeKey, tenantId, titleFieldKey, enabled]);
 
   const handleEntityUpdated = useCallback(
     async (entity) => {
@@ -175,23 +168,88 @@ export default function useObjectEntityCard({
     onUpdated: handleEntityUpdated,
   });
 
-  const isOpen = Boolean(cardModel && (cardMode === "create" || openEntityId));
+  const isOpen = Boolean(cardModel && openEntityId);
 
-  const openCreateCard = useCallback(() => {
-    if (!canCreate) {
+  const openQuickCreate = useCallback(
+    ({ submitLabel } = {}) => {
+      if (!canCreate) {
+        return false;
+      }
+
+      setQuickCreateTitle("Новая запись");
+      setQuickCreateSubmitLabel(String(submitLabel || "").trim() || "Создать");
+      setQuickCreateFormValues(buildInitialCreateFormValues(quickCreateFields));
+      setQuickCreateFieldErrors({});
+      setQuickCreateSubmitError("");
+      setQuickCreateOpen(true);
+
+      return true;
+    },
+    [canCreate, quickCreateFields],
+  );
+
+  const closeQuickCreate = useCallback(() => {
+    if (createSubmitting) {
       return;
     }
 
-    setCardMode("create");
-    setOpenEntityId(null);
-    setLocalEntity(null);
-    setFormValues(buildInitialCreateFormValues(creatableFields));
-    setFieldErrors({});
-    setSubmitError("");
-    setInitialContext(null);
-    setOpenError("");
-    catalogFormSyncKeyRef.current = "";
-  }, [canCreate, creatableFields, setSubmitError]);
+    setQuickCreateOpen(false);
+    setQuickCreateFieldErrors({});
+    setQuickCreateSubmitError("");
+    pendingSubtaskLinkRef.current = null;
+  }, [createSubmitting]);
+
+  const setQuickCreateFieldValue = useCallback((fieldKey, nextValue) => {
+    const normalizedKey = String(fieldKey || "").trim();
+
+    if (!normalizedKey) {
+      return;
+    }
+
+    setQuickCreateFormValues((current) => ({
+      ...current,
+      [normalizedKey]: nextValue,
+    }));
+
+    setQuickCreateFieldErrors((current) => {
+      if (!current[normalizedKey]) {
+        return current;
+      }
+
+      const next = { ...current };
+      delete next[normalizedKey];
+      return next;
+    });
+  }, []);
+
+  const beginCreateSubtask = useCallback(
+    (relationKey) => {
+      const parentEntityId = String(openEntityId || "").trim();
+      const normalizedRelationKey = String(relationKey || "").trim();
+
+      if (!canCreate || !parentEntityId || !normalizedRelationKey) {
+        return false;
+      }
+
+      pendingSubtaskLinkRef.current = {
+        parentEntityId,
+        relationKey: normalizedRelationKey,
+      };
+
+      return openQuickCreate({
+        submitLabel: "Создать",
+      });
+    },
+    [canCreate, openEntityId, openQuickCreate],
+  );
+
+  const openCreateCard = useCallback(() => {
+    pendingSubtaskLinkRef.current = null;
+
+    return openQuickCreate({
+      submitLabel: "Создать",
+    });
+  }, [openQuickCreate]);
 
   const openCard = useCallback(
     async (entityId, options = {}) => {
@@ -291,6 +349,7 @@ export default function useObjectEntityCard({
     setSubmitError("");
     setInitialContext(null);
     setOpenError("");
+    pendingSubtaskLinkRef.current = null;
   }, [submitting, createSubmitting, setSubmitError]);
 
   const setFieldValue = useCallback((fieldKey, nextValue) => {
@@ -322,11 +381,6 @@ export default function useObjectEntityCard({
 
       if (!normalizedKey) {
         return { ok: false };
-      }
-
-      if (cardMode === "create") {
-        setFieldValue(normalizedKey, nextValue);
-        return { ok: true };
       }
 
       if (!cardModel?.entityId) {
@@ -388,24 +442,24 @@ export default function useObjectEntityCard({
     ],
   );
 
-  const saveCreate = useCallback(async () => {
-    if (!tenantId || !objectTypeKey || !cardModel?.editableFields) {
-      setSubmitError("Не задан object type");
+  const submitQuickCreate = useCallback(async () => {
+    if (!tenantId || !objectTypeKey) {
+      setQuickCreateSubmitError("Не задан object type");
       return { ok: false };
     }
 
     const { values, fieldErrors: nextFieldErrors } = buildCreateEntityPayload(
-      formValues,
-      cardModel.editableFields,
+      quickCreateFormValues,
+      quickCreateFields,
     );
 
     if (Object.keys(nextFieldErrors).length > 0) {
-      setFieldErrors(nextFieldErrors);
+      setQuickCreateFieldErrors(nextFieldErrors);
       return { ok: false };
     }
 
-    setSubmitError("");
-    setFieldErrors({});
+    setQuickCreateSubmitError("");
+    setQuickCreateFieldErrors({});
     setCreateSubmitting(true);
 
     try {
@@ -418,28 +472,56 @@ export default function useObjectEntityCard({
       const normalizedId = String(entity?.id || "").trim();
 
       if (!normalizedId) {
-        setSubmitError("Запись создана, но не получен ID");
+        setQuickCreateSubmitError("Запись создана, но не получен ID");
         return { ok: false };
       }
 
-      setLocalEntity(entity);
-      setOpenEntityId(normalizedId);
-      setCardMode("edit");
+      const pendingSubtaskLink = pendingSubtaskLinkRef.current;
+      let subtaskLinkFailed = false;
 
-      const model = mapRuntimeEntityToCardModel({
-        entity,
-        catalog,
-        objectTypeKey,
-        tenantId,
-        titleFieldKey,
+      if (pendingSubtaskLink?.parentEntityId && pendingSubtaskLink?.relationKey) {
+        try {
+          await createRelation(tenantId, pendingSubtaskLink.relationKey, {
+            source_entity_id: pendingSubtaskLink.parentEntityId,
+            target_entity_id: normalizedId,
+          });
+          setSubtasksReloadToken((value) => value + 1);
+        } catch (linkError) {
+          subtaskLinkFailed = true;
+          setQuickCreateSubmitError(
+            getApiErrorMessage(
+              linkError,
+              "Запись создана, но не удалось связать её как подзадачу",
+            ),
+          );
+        } finally {
+          pendingSubtaskLinkRef.current = null;
+        }
+      } else {
+        pendingSubtaskLinkRef.current = null;
+      }
+
+      if (!subtaskLinkFailed) {
+        setQuickCreateSubmitError("");
+        setQuickCreateFieldErrors({});
+        setQuickCreateFormValues(buildInitialCreateFormValues(quickCreateFields));
+      }
+
+      setQuickCreateOpen(false);
+
+      await onSaved?.(entity, {
+        created: true,
+        quickCreate: true,
+        subtaskLinked: Boolean(pendingSubtaskLink && !subtaskLinkFailed),
+        subtaskLinkFailed,
+        parentEntityId: pendingSubtaskLink?.parentEntityId || null,
       });
 
-      setFormValues(model.formValues);
-      await onSaved?.(entity, { created: true });
-
-      return { ok: true, entity };
+      return { ok: true, entity, subtaskLinkFailed };
     } catch (error) {
-      setSubmitError(getApiErrorMessage(error, "Не удалось создать объект"));
+      setQuickCreateSubmitError(
+        getApiErrorMessage(error, "Не удалось создать запись"),
+      );
       return { ok: false };
     } finally {
       setCreateSubmitting(false);
@@ -447,19 +529,14 @@ export default function useObjectEntityCard({
   }, [
     tenantId,
     objectTypeKey,
-    cardModel,
-    formValues,
+    quickCreateFormValues,
+    quickCreateFields,
     catalog,
     titleFieldKey,
     onSaved,
-    setSubmitError,
   ]);
 
   const save = useCallback(async () => {
-    if (cardMode === "create") {
-      return saveCreate();
-    }
-
     if (!cardModel?.entityId) {
       return { ok: false };
     }
@@ -491,7 +568,6 @@ export default function useObjectEntityCard({
     cardModel,
     formValues,
     submitUpdate,
-    saveCreate,
     catalog,
     objectTypeKey,
     tenantId,
@@ -500,11 +576,13 @@ export default function useObjectEntityCard({
 
   return {
     cardMode,
-    isCreateMode: cardMode === "create",
+    isCreateMode: false,
     canCreate,
     isOpen,
     openCard,
     openCreateCard,
+    beginCreateSubtask,
+    subtasksReloadToken,
     closeCard,
     cardModel,
     formValues,
@@ -512,11 +590,26 @@ export default function useObjectEntityCard({
     updateFieldValue,
     fieldErrors,
     save,
-    submitting: submitting || createSubmitting,
+    submitting,
     submitError,
     initialContext,
     openError,
     clearOpenError: () => setOpenError(""),
     refreshEntity: handleEntityUpdated,
+    quickCreate: {
+      open: quickCreateOpen,
+      title: quickCreateTitle,
+      objectTypeLabel,
+      submitLabel: quickCreateSubmitLabel,
+      fields: quickCreateFields,
+      formValues: quickCreateFormValues,
+      fieldErrors: quickCreateFieldErrors,
+      submitError: quickCreateSubmitError,
+      submitting: createSubmitting,
+      modalKey: `platform_quick_create_v2_${String(objectTypeKey || "object")}`,
+      close: closeQuickCreate,
+      setFieldValue: setQuickCreateFieldValue,
+      submit: submitQuickCreate,
+    },
   };
 }

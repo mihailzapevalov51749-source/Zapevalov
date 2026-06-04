@@ -1,0 +1,35 @@
+.date-field-editor {
+  position: relative;
+  width: 100%;
+  cursor: pointer;
+}
+
+.date-field-editor.is-readonly {
+  cursor: default;
+}
+
+.date-field-editor__input {
+  width: 100%;
+  cursor: pointer;
+}
+
+.date-field-editor.is-readonly .date-field-editor__input {
+  cursor: default;
+}
+
+/* Whole field opens native picker, not only the calendar glyph (WebKit/Blink). */
+.date-field-editor__input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.date-field-editor.is-readonly .date-field-editor__input::-webkit-calendar-picker-indicator {
+  cursor: default;
+  pointer-events: none;
+}

@@ -6,6 +6,7 @@ from app.modules.platform.runtime.entities.system_fields import (
     strip_client_system_values,
 )
 from app.modules.platform.shared.enums import FieldType
+from app.modules.platform.shared.relation_field_contract import is_relation_field_type
 
 
 def _choice_option_keys(settings_json: dict[str, Any] | None) -> set[str]:
@@ -36,6 +37,13 @@ def _validate_file_entry(field_key: str, item: Any, index: int) -> None:
 def validate_field_value(field_metadata: dict[str, Any], value: Any) -> None:
     field_key = field_metadata.get("key", "?")
     field_type = field_metadata.get("field_type", "")
+
+    if is_relation_field_type(field_type):
+        if value is not None:
+            raise ValueError(
+                f"Поле '{field_key}': relation field не использует runtime_entity_values",
+            )
+        return
 
     if value is None:
         return
@@ -127,12 +135,34 @@ def _fields_by_key(fields: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return {field["key"]: field for field in fields if field.get("key")}
 
 
+def _resolve_title_field_key(object_type_metadata: dict[str, Any]) -> str | None:
+    title_key = object_type_metadata.get("title_field_key")
+    if isinstance(title_key, str) and title_key.strip():
+        return title_key.strip()
+    return None
+
+
+def _is_required_on_create(field: dict[str, Any], title_field_key: str | None) -> bool:
+    if not field.get("is_required"):
+        return False
+
+    field_key = str(field.get("key") or "").strip()
+    if not field_key:
+        return False
+
+    if title_field_key and field_key == title_field_key:
+        return True
+
+    return bool(field.get("quick_create"))
+
+
 def validate_entity_create(
     values: dict[str, Any],
     object_type_metadata: dict[str, Any],
 ) -> None:
     fields = object_type_metadata.get("fields") or []
     field_map = _fields_by_key(fields)
+    title_field_key = _resolve_title_field_key(object_type_metadata)
     errors: list[str] = []
 
     for key in values:
@@ -143,7 +173,13 @@ def validate_entity_create(
         field_key = field["key"]
         if field.get("is_system") or is_runtime_system_field_key(field_key):
             continue
-        if field.get("is_required") and field_key not in values:
+        if is_relation_field_type(field.get("field_type")):
+            if field_key in values:
+                errors.append(
+                    f"Поле '{field_key}': relation field не использует runtime_entity_values",
+                )
+            continue
+        if _is_required_on_create(field, title_field_key) and field_key not in values:
             errors.append(f"Обязательное поле отсутствует: {field_key}")
 
     if errors:
@@ -152,6 +188,11 @@ def validate_entity_create(
     for key, value in values.items():
         field_meta = field_map.get(key)
         if not field_meta:
+            continue
+        if is_relation_field_type(field_meta.get("field_type")):
+            errors.append(
+                f"Поле '{key}': relation field не использует runtime_entity_values",
+            )
             continue
         try:
             validate_field_value(field_meta, value)
@@ -178,6 +219,10 @@ def validate_entity_update(
         field_meta = field_map[key]
         if field_meta.get("is_system") or is_runtime_system_field_key(key):
             errors.append(f"Системное поле нельзя изменять: {key}")
+        if is_relation_field_type(field_meta.get("field_type")):
+            errors.append(
+                f"Поле '{key}': relation field не использует runtime_entity_values",
+            )
 
     if errors:
         raise ValueError("; ".join(errors))
@@ -185,6 +230,8 @@ def validate_entity_update(
     for key, value in values.items():
         field_meta = field_map[key]
         if field_meta.get("is_system") or is_runtime_system_field_key(key):
+            continue
+        if is_relation_field_type(field_meta.get("field_type")):
             continue
         try:
             validate_field_value(field_meta, value)

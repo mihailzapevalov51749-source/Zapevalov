@@ -44,3 +44,14 @@ export function getPrimarySortState(rules = []) {
     order: primary.order === "asc" ? "asc" : "desc",
   };
 }
+
+/** Default list order: oldest first, new records at the bottom (matches column «№»). */
+export const DEFAULT_RUNTIME_LIST_SORT = {
+  field: "created_at",
+  order: "asc",
+};
+
+/** Runtime list sort when contract has no active user sort rules. */
+export function resolveRuntimeListSort(rules = []) {
+  return getPrimarySortState(rules) || { ...DEFAULT_RUNTIME_LIST_SORT };
+}

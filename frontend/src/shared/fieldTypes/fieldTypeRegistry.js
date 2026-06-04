@@ -7,6 +7,7 @@ import UserValueRenderer from "./user/UserValueRenderer";
 import FileValueRenderer from "./file/FileValueRenderer";
 import LinkValueRenderer from "./link/LinkValueRenderer";
 import LookupValueRenderer from "./lookup/LookupValueRenderer";
+import RelationFieldRenderer from "./relation/RelationFieldRenderer";
 import BooleanValueRenderer from "./boolean/BooleanValueRenderer";
 import TableValueRenderer from "./table/TableValueRenderer";
 
@@ -21,6 +22,7 @@ export const FIELD_TYPE_LINK = "link";
 export const FIELD_TYPE_LOOKUP = "lookup";
 export const FIELD_TYPE_BOOLEAN = "boolean";
 export const FIELD_TYPE_TABLE = "table";
+export const FIELD_TYPE_RELATION = "relation";
 
 export const fieldTypeRegistry = {
   [FIELD_TYPE_TEXT]: {
@@ -76,6 +78,11 @@ export const fieldTypeRegistry = {
   [FIELD_TYPE_TABLE]: {
     type: FIELD_TYPE_TABLE,
     renderer: TableValueRenderer,
+  },
+
+  [FIELD_TYPE_RELATION]: {
+    type: FIELD_TYPE_RELATION,
+    renderer: RelationFieldRenderer,
   },
 };
 

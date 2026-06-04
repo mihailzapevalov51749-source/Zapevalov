@@ -17,10 +17,14 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "navigation_items",
-        sa.Column("show_icon", sa.Boolean(), nullable=False, server_default=sa.true()),
-    )
+    bind = op.get_bind()
+    insp = sa.inspect(bind)
+    cols = {c["name"] for c in insp.get_columns("navigation_items")}
+    if "show_icon" not in cols:
+        op.add_column(
+            "navigation_items",
+            sa.Column("show_icon", sa.Boolean(), nullable=False, server_default=sa.true()),
+        )
 
 
 def downgrade() -> None:

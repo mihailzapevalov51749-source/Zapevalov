@@ -20,12 +20,18 @@ export default function PlatformModal({
   contentStyle: contentStyleOverride = null,
   hideHeader = false,
   transparentBackdrop = false,
+  keepFullyVisible = false,
+  viewportInset = 24,
+  headerDensity = "default",
+  titleAccessory = null,
 }) {
   const layout = usePlatformModalLayout({
     modalKey,
     open,
     canCustomizeLayout,
     defaultBounds,
+    keepFullyVisible,
+    viewportInset,
   });
 
   const { persistCurrentBounds } = layout;
@@ -77,6 +83,8 @@ export default function PlatformModal({
       startResize={layout.startResize}
       hideHeader={hideHeader}
       transparentBackdrop={transparentBackdrop}
+      headerDensity={headerDensity}
+      titleAccessory={titleAccessory}
     >
       {renderedChildren}
     </PlatformModalShell>

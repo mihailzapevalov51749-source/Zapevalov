@@ -24,6 +24,7 @@ def _relation_metadata(**overrides):
         "source_object_type_key": "task",
         "target_object_type_key": "project",
         "is_active": True,
+        "settings_json": {},
     }
     defaults.update(overrides)
     return PublishedRelationMetadata(**defaults)
@@ -49,16 +50,27 @@ def test_validate_relation_instance_create_success() -> None:
     )
 
 
+def test_validate_relation_instance_create_allows_self_link() -> None:
+    entity_id = uuid4()
+
+    validators.validate_relation_instance_create(
+        relation_metadata=_relation_metadata(
+            source_object_type_key="task",
+            target_object_type_key="task",
+        ),
+        source_entity=_entity(entity_id, "task"),
+        target_entity=_entity(entity_id, "task"),
+        source_entity_id=entity_id,
+        target_entity_id=entity_id,
+    )
+
+
 @pytest.mark.parametrize(
     ("kwargs", "expected_fragment"),
     [
         (
             {"is_active": False},
             "не активна",
-        ),
-        (
-            {},
-            "source_entity_id и target_entity_id не могут совпадать",
         ),
         (
             {"source_object_type_key": "task", "target_object_type_key": "project"},
@@ -79,7 +91,7 @@ def test_validate_relation_instance_create_rejects_invalid_payload(
     expected_fragment: str,
 ) -> None:
     source_id = uuid4()
-    target_id = source_id if "совпадать" in expected_fragment else uuid4()
+    target_id = uuid4()
     metadata = _relation_metadata(**kwargs)
 
     source_type = "wrong" if "source_entity object_type_key" in expected_fragment else metadata.source_object_type_key

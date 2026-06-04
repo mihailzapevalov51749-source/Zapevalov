@@ -138,6 +138,13 @@ STAGE_DEFINITIONS = [
         "component_slugs": ["ai-context", "relations", "search"],
         "blocker_codes": [],
     },
+    {
+        "slug": "relation-field-type",
+        "title": 'Тип поля "Связи"',
+        "order_index": 7,
+        "component_slugs": ["relations", "object-type", "object-card"],
+        "blocker_codes": [],
+    },
 ]
 
 

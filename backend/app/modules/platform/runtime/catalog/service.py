@@ -73,6 +73,7 @@ class PublishedObjectTypeMetadata:
     object_type_id: UUID
     object_type_key: str
     fields: list[dict[str, Any]]
+    title_field_key: str | None = None
 
 
 def get_published_object_type_metadata(
@@ -97,6 +98,10 @@ def get_published_object_type_metadata(
         if not raw_id:
             break
 
+        from app.modules.platform.runtime.catalog.title_field import (
+            resolve_title_field_key_from_object_type,
+        )
+
         return PublishedObjectTypeMetadata(
             tenant_id=tenant_id,
             catalog_version=catalog_version,
@@ -104,6 +109,7 @@ def get_published_object_type_metadata(
             object_type_id=UUID(str(raw_id)),
             object_type_key=object_type_key,
             fields=merge_catalog_fields_with_system(object_type.get("fields") or []),
+            title_field_key=resolve_title_field_key_from_object_type(object_type),
         )
 
     raise CatalogNotFound(
@@ -122,6 +128,7 @@ class PublishedRelationMetadata:
     source_object_type_key: str
     target_object_type_key: str
     is_active: bool
+    settings_json: dict[str, Any]
 
 
 def get_published_relation_metadata(
@@ -146,6 +153,10 @@ def get_published_relation_metadata(
         if not raw_id:
             break
 
+        settings_json = relation.get("settings_json")
+        if not isinstance(settings_json, dict):
+            settings_json = {}
+
         return PublishedRelationMetadata(
             tenant_id=tenant_id,
             catalog_version=catalog_version,
@@ -155,6 +166,7 @@ def get_published_relation_metadata(
             source_object_type_key=str(relation.get("source_object_type_key", "")),
             target_object_type_key=str(relation.get("target_object_type_key", "")),
             is_active=bool(relation.get("is_active", True)),
+            settings_json=settings_json,
         )
 
     raise CatalogNotFound(

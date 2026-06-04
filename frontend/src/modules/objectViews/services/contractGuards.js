@@ -28,6 +28,20 @@ function isPresentationFieldKey(fieldKey, projectionKeys) {
   return projectionKeys.has(normalized);
 }
 
+function isPresentationWidthKey(fieldKey, projectionKeys) {
+  const normalized = String(fieldKey || "").trim();
+
+  if (!normalized) {
+    return false;
+  }
+
+  if (OBJECT_VIEW_SYSTEM_FIELD_KEYS.has(normalized)) {
+    return true;
+  }
+
+  return isPresentationFieldKey(fieldKey, projectionKeys);
+}
+
 /**
  * Sanitizes presentation.table — only real projection field keys.
  *
@@ -70,7 +84,7 @@ export function normalizePresentationTable(
       : {};
 
   for (const [key, value] of Object.entries(rawWidths)) {
-    if (!isPresentationFieldKey(key, projectionKeys)) {
+    if (!isPresentationWidthKey(key, projectionKeys)) {
       continue;
     }
 

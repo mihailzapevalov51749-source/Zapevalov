@@ -10,6 +10,9 @@ from app.modules.platform.shared.constants import (
     FIELD_DEFINITION_NAME_MAX_LENGTH,
 )
 from app.modules.platform.shared.enums import FieldType
+from app.modules.platform.shared.relation_field_contract import (
+    validate_relation_field_type_payload,
+)
 
 FIELD_KEY_PATTERN = re.compile(r"^[a-z][a-z0-9_]{2,63}$")
 CHOICE_FIELD_TYPES = {FieldType.CHOICE, FieldType.MULTI_CHOICE}
@@ -25,6 +28,7 @@ class FieldDefinitionCreate(BaseModel):
     sort_order: int = 0
     is_required: bool = False
     is_unique: bool = False
+    quick_create: bool = False
     is_system: bool = False
     default_value_json: Any | None = None
     settings_json: dict[str, Any] = Field(default_factory=dict)
@@ -76,6 +80,7 @@ class FieldDefinitionUpdate(BaseModel):
     sort_order: int | None = None
     is_required: bool | None = None
     is_unique: bool | None = None
+    quick_create: bool | None = None
     default_value_json: Any | None = None
     settings_json: dict[str, Any] | None = None
     validation_json: dict[str, Any] | None = None
@@ -114,6 +119,7 @@ class FieldDefinitionRead(BaseModel):
     sort_order: int
     is_required: bool
     is_unique: bool
+    quick_create: bool
     is_system: bool
     default_value_json: Any | None = None
     settings_json: dict[str, Any]
@@ -139,6 +145,7 @@ class FieldDefinitionListItem(BaseModel):
     sort_order: int
     is_required: bool
     is_unique: bool
+    quick_create: bool
     is_system: bool
     default_value_json: Any | None = None
     settings_json: dict[str, Any]
@@ -234,6 +241,12 @@ def _validate_field_type_payload(
                     raise ValueError(
                         f"default_value_json[{index}] для file должен быть объектом",
                     )
+
+    if field_type == FieldType.RELATION:
+        validate_relation_field_type_payload(
+            default_value_json=default_value_json,
+            settings_json=settings_json or {},
+        )
 
 
 def validate_field_update_payload(

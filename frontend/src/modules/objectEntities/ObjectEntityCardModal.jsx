@@ -56,6 +56,8 @@ export default function ObjectEntityCardModal({
   onSaveCardLayout = null,
   cardSettingsSaving = false,
   onOpenRelatedEntity = null,
+  onBeginCreateSubtask = null,
+  subtasksReloadToken = 0,
 }) {
   const normalizedContext = normalizeInitialContext(initialContext);
   const overlayIdRef = useRef(`object-card-modal-${Math.random().toString(36).slice(2, 10)}`);
@@ -132,6 +134,8 @@ export default function ObjectEntityCardModal({
           onSaveCardLayout={onSaveCardLayout}
           cardSettingsSaving={cardSettingsSaving}
           onOpenRelatedEntity={onOpenRelatedEntity}
+          onBeginCreateSubtask={onBeginCreateSubtask}
+          subtasksReloadToken={subtasksReloadToken}
         />
       </div>
     </div>,

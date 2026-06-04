@@ -26,9 +26,12 @@ export const panelShellStyle = {
   transform: "none",
 };
 
+export const PLATFORM_MODAL_HEADER_HEIGHT_DEFAULT = 68;
+export const PLATFORM_MODAL_HEADER_HEIGHT_COMPACT = 52;
+
 export const headerStyle = {
   flexShrink: 0,
-  minHeight: 68,
+  minHeight: PLATFORM_MODAL_HEADER_HEIGHT_DEFAULT,
   padding: "0 22px",
   borderBottom: "1px solid #E2E8F0",
   display: "flex",
@@ -44,11 +47,24 @@ export const headerStyle = {
   pointerEvents: "auto",
 };
 
+export const headerCompactStyle = {
+  ...headerStyle,
+  minHeight: PLATFORM_MODAL_HEADER_HEIGHT_COMPACT,
+  padding: "0 18px",
+  gap: 10,
+};
+
 export const titleStyle = {
   fontSize: 18,
   fontWeight: 700,
   color: "#0F172A",
   lineHeight: 1.2,
+};
+
+export const titleCompactStyle = {
+  ...titleStyle,
+  fontSize: 16,
+  fontWeight: 600,
 };
 
 export const subtitleStyle = {
@@ -73,6 +89,13 @@ export const closeButtonStyle = {
   flexShrink: 0,
 };
 
+export const closeButtonCompactStyle = {
+  ...closeButtonStyle,
+  width: 30,
+  height: 30,
+  borderRadius: 8,
+};
+
 export const contentStyle = {
   flex: 1,
   minHeight: 0,
@@ -88,6 +111,7 @@ export const footerShellStyle = {
   background: "#FFFFFF",
   borderTop: "1px solid #E2E8F0",
   boxSizing: "border-box",
+  overflow: "visible",
 };
 
 export const resizeHandleEastStyle = {

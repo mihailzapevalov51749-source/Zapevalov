@@ -1,0 +1,54 @@
+.designer-relation-field-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--designer-border, #e5e7eb);
+  border-radius: 10px;
+  background: var(--designer-surface-muted, #f9fafb);
+}
+
+.designer-relation-field-settings__title {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.designer-relation-field-settings__error {
+  margin: -4px 0 0;
+  font-size: 12px;
+  color: #b91c1c;
+}
+
+.designer-relation-field-settings__hint {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.designer-relation-field-settings__empty {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.designer-relation-field-settings__cta {
+  align-self: flex-start;
+}
+
+.designer-relation-field-settings__link-btn {
+  align-self: flex-start;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2563eb;
+  cursor: pointer;
+}
+
+.designer-relation-field-settings__link-btn:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}

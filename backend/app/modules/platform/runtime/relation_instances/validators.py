@@ -1,7 +1,12 @@
 from uuid import UUID
 
+from sqlalchemy.orm import Session
+
 from app.modules.platform.runtime.catalog.service import PublishedRelationMetadata
 from app.modules.platform.runtime.entities.models import RuntimeEntity
+from app.modules.platform.runtime.relation_instances.task_subtask_constraints import (
+    validate_task_subtask_instance_create,
+)
 from app.modules.platform.shared.enums import RelationType
 
 
@@ -12,14 +17,13 @@ def validate_relation_instance_create(
     target_entity: RuntimeEntity,
     source_entity_id: UUID,
     target_entity_id: UUID,
+    db: Session | None = None,
+    tenant_id: int | None = None,
 ) -> None:
     errors: list[str] = []
 
     if not relation_metadata.is_active:
         errors.append(f"Relation '{relation_metadata.relation_key}' не активна в catalog")
-
-    if source_entity_id == target_entity_id:
-        errors.append("source_entity_id и target_entity_id не могут совпадать")
 
     if source_entity.object_type_key != relation_metadata.source_object_type_key:
         errors.append(
@@ -42,3 +46,30 @@ def validate_relation_instance_create(
 
     if errors:
         raise ValueError("; ".join(errors))
+
+    if db is not None and tenant_id is not None:
+        validate_relation_instance_domain_rules(
+            db=db,
+            tenant_id=tenant_id,
+            relation_metadata=relation_metadata,
+            source_entity_id=source_entity_id,
+            target_entity_id=target_entity_id,
+        )
+
+
+def validate_relation_instance_domain_rules(
+    db: Session,
+    tenant_id: int,
+    *,
+    relation_metadata: PublishedRelationMetadata,
+    source_entity_id: UUID,
+    target_entity_id: UUID,
+) -> None:
+    """Semantic profile rules (task_subtask). Single entry for domain validation."""
+    validate_task_subtask_instance_create(
+        db,
+        tenant_id,
+        relation_metadata=relation_metadata,
+        source_entity_id=source_entity_id,
+        target_entity_id=target_entity_id,
+    )

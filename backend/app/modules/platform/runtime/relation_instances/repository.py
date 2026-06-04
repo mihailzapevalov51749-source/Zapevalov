@@ -121,6 +121,58 @@ def list_incoming(
     )
 
 
+def list_active_for_entity_relation_key(
+    db: Session,
+    tenant_id: int,
+    entity_id: UUID,
+    relation_key: str,
+    *,
+    side: str,
+) -> list[RuntimeRelationInstance]:
+    query = _active_graph_query(db, tenant_id).filter(
+        RuntimeRelationInstance.relation_key == relation_key,
+    )
+
+    if side == "outgoing":
+        query = query.filter(RuntimeRelationInstance.source_entity_id == entity_id)
+    elif side == "incoming":
+        query = query.filter(RuntimeRelationInstance.target_entity_id == entity_id)
+    else:
+        raise ValueError(f"Неподдерживаемый side: {side}")
+
+    return query.order_by(RuntimeRelationInstance.created_at.desc()).all()
+
+
+def list_active_edges_by_relation_key(
+    db: Session,
+    tenant_id: int,
+    relation_key: str,
+) -> list[tuple[UUID, UUID]]:
+    rows = (
+        _active_graph_query(db, tenant_id)
+        .filter(RuntimeRelationInstance.relation_key == relation_key)
+        .all()
+    )
+    return [(row.source_entity_id, row.target_entity_id) for row in rows]
+
+
+def find_active_incoming_for_target(
+    db: Session,
+    tenant_id: int,
+    relation_key: str,
+    target_entity_id: UUID,
+) -> RuntimeRelationInstance | None:
+    return (
+        _active_graph_query(db, tenant_id)
+        .filter(
+            RuntimeRelationInstance.relation_key == relation_key,
+            RuntimeRelationInstance.target_entity_id == target_entity_id,
+        )
+        .order_by(RuntimeRelationInstance.created_at.desc())
+        .first()
+    )
+
+
 def find_duplicate_active(
     db: Session,
     tenant_id: int,

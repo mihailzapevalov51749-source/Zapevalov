@@ -3,6 +3,7 @@ import { findDescriptionField } from "./runtimeEntityCardAdapter";
 
 export const OBJECT_ENTITY_SECTION_TYPES = {
   parentRow: "parentRow",
+  subtasksRow: "subtasksRow",
   mainFields: "mainFields",
   fieldsGrid: "fieldsGrid",
   attachments: "attachments",
@@ -16,6 +17,7 @@ export const REQUIRED_CARD_SECTION_IDS = ["main", "fields"];
 
 const SECTION_TYPE_BY_ID = {
   parent: OBJECT_ENTITY_SECTION_TYPES.parentRow,
+  subtasks: OBJECT_ENTITY_SECTION_TYPES.subtasksRow,
   main: OBJECT_ENTITY_SECTION_TYPES.mainFields,
   fields: OBJECT_ENTITY_SECTION_TYPES.fieldsGrid,
   tabs: OBJECT_ENTITY_SECTION_TYPES.tabs,
@@ -56,6 +58,7 @@ function enforceCanonicalSectionOrder(sections) {
 
 const SECTION_LABELS = {
   parent: "Родитель",
+  subtasks: "Подзадачи",
   main: "Основной блок",
   fields: "Поля",
   attachments: "Вложения",
@@ -194,7 +197,7 @@ function buildDefaultUtSections(editableFields, titleFieldKey, hiddenSet) {
       id: "comments",
       type: OBJECT_ENTITY_SECTION_TYPES.comments,
       visible: true,
-      order: 5,
+      order: 6,
       fieldKeys: [],
     },
   ];
@@ -589,7 +592,10 @@ export function buildDefaultObjectEntityCardUtLayout(
 
 export function resolveVisibleUtSections(layout) {
   return sortByOrder(layout?.sections || []).filter(
-    (section) => section.visible !== false,
+    (section) =>
+      section.visible !== false &&
+      section.type !== OBJECT_ENTITY_SECTION_TYPES.subtasksRow &&
+      section.id !== "subtasks",
   );
 }
 

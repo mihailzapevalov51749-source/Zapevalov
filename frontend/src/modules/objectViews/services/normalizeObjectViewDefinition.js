@@ -66,7 +66,7 @@ function normalizeSortRules(defaultSort) {
   const order =
     defaultSort.order === "asc" || defaultSort.order === "desc"
       ? defaultSort.order
-      : "desc";
+      : "asc";
 
   return [{ field, order }];
 }
@@ -407,6 +407,6 @@ export function objectViewContractToLegacyProjection(contract) {
           field: contract.query.sort.rules[0].field,
           order: contract.query.sort.rules[0].order,
         }
-      : { field: "created_at", order: "desc" },
+      : { field: "created_at", order: "asc" },
   };
 }

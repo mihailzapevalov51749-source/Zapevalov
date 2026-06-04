@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import FieldEditor from "../../../shared/fieldEditors/FieldEditor";
-import { normalizeFieldEditorType } from "../../../shared/fieldEditors/fieldEditorRegistry";
+import {
+  FIELD_EDITOR_TYPE_RELATION,
+  normalizeFieldEditorType,
+} from "../../../shared/fieldEditors/fieldEditorRegistry";
 import FieldValueRenderer from "../../../shared/fieldTypes/FieldValueRenderer";
+import RelationFieldCell from "./RelationFieldCell";
 import { fieldDefToRendererColumn } from "../../../shared/viewEngine/utils/fieldDefToRendererColumn";
 
 import textIcon from "../../../assets/icons/ClipboardList.svg";
@@ -52,12 +56,11 @@ function normalizeRendererType(field) {
     return "file";
   }
 
-  if (
-    type === "lookup" ||
-    type === "relation" ||
-    type === "linkedrow" ||
-    type === "linked_row"
-  ) {
+  if (type === "relation") {
+    return "relation";
+  }
+
+  if (type === "lookup" || type === "linkedrow" || type === "linked_row") {
     return "lookup";
   }
 
@@ -340,6 +343,11 @@ function RuntimeFieldCell({
   );
 }
 
+function isRelationField(field) {
+  const rawType = String(field?.rawFieldType || field?.type || "").toLowerCase();
+  return rawType === FIELD_EDITOR_TYPE_RELATION;
+}
+
 export default function ObjectEntityCardFieldsGrid({
   fields = [],
   formValues = {},
@@ -347,6 +355,12 @@ export default function ObjectEntityCardFieldsGrid({
   onFieldChange,
   readOnly = false,
   alwaysEditing = false,
+  tenantId = null,
+  entityId = null,
+  objectTypeKey = null,
+  catalog = null,
+  isCreate = false,
+  onOpenRelatedEntity = null,
 }) {
   if (!fields.length) {
     return null;
@@ -355,17 +369,31 @@ export default function ObjectEntityCardFieldsGrid({
   return (
     <section style={entityCardFieldsStyle}>
       <div style={entityCardFieldsGridStyle}>
-        {fields.map((field) => (
-          <RuntimeFieldCell
-            key={field.key}
-            field={field}
-            value={formValues[field.key]}
-            onFieldChange={onFieldChange}
-            readOnly={readOnly}
-            fieldErrors={fieldErrors}
-            alwaysEditing={alwaysEditing}
-          />
-        ))}
+        {fields.map((field) =>
+          isRelationField(field) ? (
+            <RelationFieldCell
+              key={field.key}
+              field={field}
+              tenantId={tenantId}
+              entityId={entityId}
+              objectTypeKey={objectTypeKey}
+              catalog={catalog}
+              readOnly={readOnly}
+              isCreate={isCreate}
+              onOpenRelatedEntity={onOpenRelatedEntity}
+            />
+          ) : (
+            <RuntimeFieldCell
+              key={field.key}
+              field={field}
+              value={formValues[field.key]}
+              onFieldChange={onFieldChange}
+              readOnly={readOnly}
+              fieldErrors={fieldErrors}
+              alwaysEditing={alwaysEditing}
+            />
+          ),
+        )}
       </div>
     </section>
   );

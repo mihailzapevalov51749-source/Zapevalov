@@ -4,6 +4,7 @@ import { mergeEffectiveContract } from "../services/mergeEffectiveContract";
 import { resolveCardLayoutPersistenceContract } from "../services/resolveCardLayoutPersistenceContract";
 
 import { ObjectEntityCardModal } from "../../objectEntities";
+import PlatformQuickCreateForm from "../../../shared/quickCreate/PlatformQuickCreateForm";
 import useObjectEntityCard from "../../objectEntities/hooks/useObjectEntityCard";
 import { resolveEntityCardLayoutForRender } from "../../objectEntities/services/resolveEntityCardPresentationLayout";
 import { resolveObjectTypeTitleFieldKey } from "../services/tableColumnOrder";
@@ -43,7 +44,10 @@ import {
   writeHiddenViewKeys,
 } from "./representations/objectTableRepresentationsPrefs";
 import useObjectTableColumns from "./hooks/useObjectTableColumns";
+import useRelationTableEnrichment from "./hooks/useRelationTableEnrichment";
 import useObjectTableSort from "./hooks/useObjectTableSort";
+import { resolveRelationTableColumns } from "../services/resolveRelationTableColumns";
+import { resolveRelatedEntityCardOpenArgs } from "./openRelatedEntityFromTable";
 
 import "../../../shared/viewEngine/viewEngineTable.css";
 
@@ -262,6 +266,8 @@ export default function ObjectTableView({
   const [settingsExpandedKey, setSettingsExpandedKey] = useState(null);
   const [isFiltersEditorOpen, setIsFiltersEditorOpen] = useState(false);
   const [visibilityRevision, setVisibilityRevision] = useState(0);
+  /** Optimistic widths until session/effectiveContract catches up (Universal Table override pattern). */
+  const [committedColumnWidths, setCommittedColumnWidths] = useState({});
   const settingsPanelAnchorRef = useRef(null);
   const [settingsPanelAnchor, setSettingsPanelAnchor] = useState(null);
   const [isQuickFilterDialogOpen, setIsQuickFilterDialogOpen] = useState(false);
@@ -382,6 +388,50 @@ export default function ObjectTableView({
     isAllMode: isTableBaseStateActive,
   });
 
+  const relationTableColumns = useMemo(
+    () =>
+      resolveRelationTableColumns(
+        tableData.columns,
+        query.catalog,
+        objectTypeKey,
+      ),
+    [tableData.columns, query.catalog, objectTypeKey],
+  );
+
+  const relationTable = useRelationTableEnrichment({
+    tenantId,
+    rows: tableData.rows,
+    columns: tableData.columns,
+    relationColumns: relationTableColumns,
+    enabled:
+      Boolean(tenantId) &&
+      relationTableColumns.length > 0 &&
+      !query.loading &&
+      tableData.rows.length > 0,
+  });
+
+  const displayRows = relationTable.enrichedRows;
+
+  const handleOpenRelatedEntityFromTable = useCallback(
+    ({ entityId, objectTypeKey: relatedObjectTypeKey }) => {
+      const openArgs = resolveRelatedEntityCardOpenArgs({
+        entityId,
+        relatedObjectTypeKey,
+        fallbackObjectTypeKey: objectTypeKey,
+        enabled: entityCardEnabled,
+      });
+
+      if (!openArgs) {
+        return;
+      }
+
+      void entityCard.openCard(openArgs.entityId, {
+        objectTypeKey: openArgs.objectTypeKey,
+      });
+    },
+    [entityCard.openCard, entityCardEnabled, objectTypeKey],
+  );
+
   const registryFieldLabels = useMemo(() => {
     const labels = {};
 
@@ -495,6 +545,7 @@ export default function ObjectTableView({
 
   const tableRendererContext = useMemo(
     () => ({
+      onOpenRelatedEntity: handleOpenRelatedEntityFromTable,
       onOpenFile: (file, meta = {}) => {
         const fileUrl = getFileUrl(file);
         const fileId = getTableFileId(file);
@@ -530,7 +581,7 @@ export default function ObjectTableView({
         });
       },
     }),
-    [objectTypeKey, tenantId],
+    [handleOpenRelatedEntityFromTable, objectTypeKey, tenantId],
   );
 
   const activeFilterCount = useMemo(() => {
@@ -680,8 +731,76 @@ export default function ObjectTableView({
   );
 
   const columnWidths = useMemo(() => {
-    return effectiveContract?.presentation?.table?.columnWidths || {};
-  }, [effectiveContract]);
+    const contractWidths = effectiveContract?.presentation?.table?.columnWidths;
+
+    if (!contractWidths || typeof contractWidths !== "object") {
+      return {};
+    }
+
+    const byColumnKey = { ...contractWidths };
+
+    for (const column of tableData.columns) {
+      const presentationKey = getColumnPresentationKey(column);
+      const columnKey = String(column?.key || "").trim();
+
+      if (
+        presentationKey &&
+        columnKey &&
+        contractWidths[presentationKey] != null
+      ) {
+        byColumnKey[columnKey] = contractWidths[presentationKey];
+      }
+    }
+
+    return {
+      ...byColumnKey,
+      ...committedColumnWidths,
+    };
+  }, [
+    effectiveContract?.presentation?.table?.columnWidths,
+    tableData.columns,
+    committedColumnWidths,
+  ]);
+
+  useEffect(() => {
+    const contractWidths = effectiveContract?.presentation?.table?.columnWidths;
+
+    if (!contractWidths || typeof contractWidths !== "object") {
+      return;
+    }
+
+    setCommittedColumnWidths((prev) => {
+      if (!Object.keys(prev).length) {
+        return prev;
+      }
+
+      const next = { ...prev };
+      let changed = false;
+
+      for (const column of tableData.columns) {
+        const columnKey = String(column?.key || "").trim();
+        const presentationKey = getColumnPresentationKey(column);
+
+        if (!columnKey || !presentationKey || next[columnKey] == null) {
+          continue;
+        }
+
+        const contractWidth = Number(contractWidths[presentationKey]);
+        const committedWidth = Number(next[columnKey]);
+
+        if (
+          Number.isFinite(contractWidth) &&
+          Number.isFinite(committedWidth) &&
+          Math.abs(contractWidth - committedWidth) < 0.5
+        ) {
+          delete next[columnKey];
+          changed = true;
+        }
+      }
+
+      return changed ? next : prev;
+    });
+  }, [effectiveContract?.presentation?.table?.columnWidths, tableData.columns]);
 
   const handleTableSurfaceClick = useCallback(
     (event) => {
@@ -735,24 +854,94 @@ export default function ObjectTableView({
     [entityCard, entityCardEnabled, inlineEdit.isInlineEditMode, tableData.rows],
   );
 
-  const handleColumnResize = useCallback(
-    (columnKey, width) => {
+  const resolveColumnResizeFieldKey = useCallback(
+    (columnKey) => {
       const presentationKey = String(columnKey || "").trim();
 
       if (!presentationKey) {
-        return;
+        return null;
       }
 
       const column = tableData.columns.find((item) => item.key === presentationKey);
-      const fieldKey = getColumnPresentationKey(column);
 
-      if (!fieldKey) {
+      return getColumnPresentationKey(column);
+    },
+    [tableData.columns],
+  );
+
+  const handleColumnResize = useCallback(
+    (columnKey, width) => {
+      const normalizedColumnKey = String(columnKey || "").trim();
+      const numericWidth = Number(width);
+      const fieldKey = resolveColumnResizeFieldKey(normalizedColumnKey);
+
+      if (!normalizedColumnKey || !fieldKey || !Number.isFinite(numericWidth)) {
         return;
       }
 
-      sessionApi?.setColumnWidth?.(fieldKey, width);
+      setCommittedColumnWidths((prev) => {
+        const previous = Number(prev[normalizedColumnKey]);
+
+        if (
+          Number.isFinite(previous) &&
+          Math.abs(previous - numericWidth) < 0.5
+        ) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          [normalizedColumnKey]: numericWidth,
+        };
+      });
+
+      sessionApi?.setColumnWidth?.(fieldKey, numericWidth);
     },
-    [tableData.columns, sessionApi],
+    [resolveColumnResizeFieldKey, sessionApi],
+  );
+
+  const handleColumnResizeEnd = useCallback(
+    (columnKey, width) => {
+      const normalizedColumnKey = String(columnKey || "").trim();
+      const fieldKey = resolveColumnResizeFieldKey(normalizedColumnKey);
+      const numericWidth = Number(width);
+      const contractWidths =
+        effectiveContract?.presentation?.table?.columnWidths || {};
+
+      if (
+        normalizedColumnKey &&
+        fieldKey &&
+        Number.isFinite(numericWidth) &&
+        numericWidth > 0
+      ) {
+        setCommittedColumnWidths((prev) => {
+          const previous = Number(prev[normalizedColumnKey]);
+
+          if (
+            Number.isFinite(previous) &&
+            Math.abs(previous - numericWidth) < 0.5
+          ) {
+            return prev;
+          }
+
+          return {
+            ...prev,
+            [normalizedColumnKey]: numericWidth,
+          };
+        });
+
+        sessionApi?.setColumnWidth?.(fieldKey, numericWidth);
+
+        sessionApi?.flushPresentationColumnWidths?.({
+          ...contractWidths,
+          [fieldKey]: numericWidth,
+        });
+        return;
+      }
+
+      sessionApi?.flushPresentationColumnWidths?.();
+    },
+    [effectiveContract, resolveColumnResizeFieldKey, sessionApi],
   );
 
   return (
@@ -901,7 +1090,7 @@ export default function ObjectTableView({
       >
         <ViewEngineTable
           columns={tableData.columns}
-          rows={tableData.rows}
+          rows={displayRows}
           loading={query.loading}
           error={query.error}
           sort={tableData.sort}
@@ -911,6 +1100,7 @@ export default function ObjectTableView({
           enableColumnResize={!inlineEdit.isInlineEditMode}
           columnWidths={columnWidths}
           onColumnResize={handleColumnResize}
+          onColumnResizeEnd={handleColumnResizeEnd}
           showSelectionColumn={showSelectionColumn}
           showRowNumberColumn={showRowNumberColumn}
           rowNumberOffset={rowNumberOffset}
@@ -930,10 +1120,26 @@ export default function ObjectTableView({
         </div>
       ) : null}
 
+        <PlatformQuickCreateForm
+          open={entityCard.quickCreate?.open}
+          onClose={entityCard.quickCreate?.close}
+          onSubmit={entityCard.quickCreate?.submit}
+          modalKey={entityCard.quickCreate?.modalKey}
+          title={entityCard.quickCreate?.title}
+          objectTypeLabel={entityCard.quickCreate?.objectTypeLabel}
+          fields={entityCard.quickCreate?.fields || []}
+          formValues={entityCard.quickCreate?.formValues || {}}
+          onFieldChange={entityCard.quickCreate?.setFieldValue}
+          fieldErrors={entityCard.quickCreate?.fieldErrors || {}}
+          submitting={entityCard.quickCreate?.submitting}
+          submitError={entityCard.quickCreate?.submitError}
+          submitLabel={entityCard.quickCreate?.submitLabel}
+        />
+
         <ObjectEntityCardModal
           open={entityCard.isOpen}
           suspendOverlayVisibility={isWorkspaceFileOpen}
-          mode={entityCard.cardMode}
+          mode="edit"
           cardModel={entityCard.cardModel}
           formValues={entityCard.formValues}
           fieldErrors={entityCard.fieldErrors}
@@ -954,6 +1160,8 @@ export default function ObjectTableView({
               objectTypeKey: relatedObjectTypeKey || objectTypeKey,
             });
           }}
+          onBeginCreateSubtask={entityCard.beginCreateSubtask}
+          subtasksReloadToken={entityCard.subtasksReloadToken}
         />
     </div>
     </YasiiSurfaceContextProvider>

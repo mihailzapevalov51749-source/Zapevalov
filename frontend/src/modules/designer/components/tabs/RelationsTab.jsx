@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getApiErrorMessage } from "../../api/platformApiClient";
 import * as designerApi from "../../api/designerApi";
+import CreateRelationDefinitionModal from "../relations/CreateRelationDefinitionModal";
 import PropertiesPanel from "../common/PropertiesPanel";
 
 export default function RelationsTab({ tenantId, objectTypeId, objectType }) {
@@ -11,8 +12,19 @@ export default function RelationsTab({ tenantId, objectTypeId, objectType }) {
   const [selectedId, setSelectedId] = useState(null);
   const [draft, setDraft] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const selected = items.find((item) => item.id === selectedId) || null;
+
+  const existingRelationKeys = useMemo(
+    () => items.map((item) => String(item?.key || "").trim()).filter(Boolean),
+    [items],
+  );
+
+  const objectTypeLabel = useMemo(
+    () => String(objectType?.name || objectType?.key || "").trim(),
+    [objectType],
+  );
 
   const loadItems = useCallback(async () => {
     setLoading(true);
@@ -47,29 +59,11 @@ export default function RelationsTab({ tenantId, objectTypeId, objectType }) {
     });
   }, [selected]);
 
-  const handleCreate = async () => {
-    const name = window.prompt("Название связи", "Новая связь");
-    if (!name) return;
+  const handleRelationCreated = async (created) => {
+    await loadItems();
 
-    const key = window.prompt("Key связи", "new_relation");
-    if (!key) return;
-
-    const targetId = window.prompt("Target object_type_id (UUID)");
-    if (!targetId) return;
-
-    try {
-      await designerApi.createRelation(tenantId, {
-        name,
-        key,
-        source_object_type_id: objectTypeId,
-        target_object_type_id: targetId,
-        relation_type: "many_to_many",
-        is_active: true,
-        bidirectional: true,
-      });
-      await loadItems();
-    } catch (err) {
-      window.alert(getApiErrorMessage(err, "Не удалось создать связь"));
+    if (created?.id) {
+      setSelectedId(created.id);
     }
   };
 
@@ -125,7 +119,7 @@ export default function RelationsTab({ tenantId, objectTypeId, objectType }) {
           <button
             type="button"
             className="designer-btn designer-btn--primary"
-            onClick={handleCreate}
+            onClick={() => setIsCreateModalOpen(true)}
           >
             + Добавить связь
           </button>
@@ -213,7 +207,6 @@ export default function RelationsTab({ tenantId, objectTypeId, objectType }) {
           >
             <option value="one_to_one">one_to_one</option>
             <option value="one_to_many">one_to_many</option>
-            <option value="many_to_one">many_to_one</option>
             <option value="many_to_many">many_to_many</option>
           </select>
           <div style={{ height: 10 }} />
@@ -238,6 +231,16 @@ export default function RelationsTab({ tenantId, objectTypeId, objectType }) {
           />
         </PropertiesPanel>
       ) : null}
+
+      <CreateRelationDefinitionModal
+        open={isCreateModalOpen}
+        tenantId={tenantId}
+        sourceObjectTypeId={objectTypeId}
+        sourceObjectTypeLabel={objectTypeLabel}
+        existingRelationKeys={existingRelationKeys}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreated={handleRelationCreated}
+      />
     </div>
   );
 }

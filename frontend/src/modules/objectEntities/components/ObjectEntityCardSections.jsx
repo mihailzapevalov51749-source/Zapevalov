@@ -28,6 +28,8 @@ export default function ObjectEntityCardSections({
   relationsState = null,
   onOpenRelatedEntity = null,
   parentContext = null,
+  canCreateHierarchyChild = false,
+  onBeginCreateHierarchyChild = null,
   submitting = false,
   submitError = "",
 }) {
@@ -213,6 +215,12 @@ export default function ObjectEntityCardSections({
               onFieldChange={onFieldChange}
               readOnly={false}
               alwaysEditing={isCreate}
+              tenantId={cardModel?.tenantId}
+              entityId={cardModel?.entityId}
+              objectTypeKey={cardModel?.objectTypeKey}
+              catalog={catalog}
+              isCreate={isCreate}
+              onOpenRelatedEntity={onOpenRelatedEntity}
             />
           );
         } else if (section.type === OBJECT_ENTITY_SECTION_TYPES.attachments) {
@@ -250,6 +258,8 @@ export default function ObjectEntityCardSections({
               initialContext={initialContext}
               relationsState={relationsState}
               onOpenRelatedEntity={onOpenRelatedEntity}
+              canCreateHierarchyChild={canCreateHierarchyChild}
+              onBeginCreateHierarchyChild={onBeginCreateHierarchyChild}
               isCreate={isCreate}
               createPendingMessage={CREATE_PENDING_MESSAGE}
             />

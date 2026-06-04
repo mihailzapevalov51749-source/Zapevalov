@@ -4,11 +4,13 @@ from app.modules.platform_dashboard.owner_content_normalization import (
     OWNER_STATUS_IN_PROGRESS,
     OWNER_STATUS_PLANNED,
     aggregate_history_events,
+    apply_development_work_summary,
+    normalize_development_stage_content,
     normalize_history_title,
     owner_status_from_readiness,
     rewrite_development_work_line,
 )
-from app.modules.platform_dashboard.owner_read_adapter import OwnerHistoryEvent
+from app.modules.platform_dashboard.owner_read_adapter import OwnerHistoryEvent, OwnerStageView
 from datetime import datetime
 
 
@@ -31,6 +33,51 @@ def test_rewrite_development_work_line_strips_technical_noise():
 def test_rewrite_slug_phrase_object_platform():
     result = rewrite_development_work_line("object-platform-independence phase")
     assert "объектн" in result.casefold()
+
+
+def test_apply_development_work_summary_keeps_relation_field_work_list():
+    remaining = [
+        "Self-relation support",
+        "Спецификация task_subtask",
+        "Доменные ограничения task_subtask",
+        "Parent Section через relation engine",
+        "Подзадачи через relation engine",
+        'Интеграция со "Связанными записями"',
+        "Фильтрация связей",
+        "Аналитика связей",
+        "Миграция UT parent_row_id",
+        "Tree View для Object Platform",
+    ]
+    done, in_work, owner_remaining, meta = apply_development_work_summary(
+        "dev-relation-field-type",
+        [],
+        [],
+        remaining,
+    )
+    assert meta == {}
+    assert owner_remaining == remaining
+    assert "7 работ" not in " ".join(owner_remaining)
+
+
+def test_normalize_development_relation_field_stage_lists_works():
+    stage = OwnerStageView(
+        id="dev-relation-field-type",
+        title='Тип поля "Связи"',
+        description="",
+        readiness=0,
+        done=[],
+        inWork=[],
+        remaining=[
+            "Контракт поля",
+            "Studio",
+            "Runtime API",
+        ],
+        meta={},
+    )
+    normalized = normalize_development_stage_content(stage)
+    assert len(normalized.remaining) == 3
+    assert normalized.remaining == ["Контракт поля", "Studio", "Runtime API"]
+    assert "работ" not in " ".join(normalized.remaining).casefold()
 
 
 def test_aggregate_dashboard_refresh_events():

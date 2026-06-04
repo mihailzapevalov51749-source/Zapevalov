@@ -1,9 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import {
   fieldEditorInlineInputStyle,
   fieldEditorInputStyle,
 } from "../fieldEditorStyles";
+
+import "./dateFieldEditor.css";
 
 function toDateInputValue(value) {
   if (!value) {
@@ -80,8 +82,8 @@ export default function DateFieldEditor({
     : toDateInputValue(value);
   const style = inline ? fieldEditorInlineInputStyle : fieldEditorInputStyle;
 
-  useEffect(() => {
-    if (!autoFocus || readOnly) {
+  const openPicker = useCallback(() => {
+    if (readOnly) {
       return;
     }
 
@@ -96,9 +98,17 @@ export default function DateFieldEditor({
     try {
       input.showPicker?.();
     } catch {
-      // showPicker may throw if not triggered by user gesture in some browsers
+      // showPicker may throw outside a user gesture in some browsers
     }
-  }, [autoFocus, readOnly]);
+  }, [readOnly]);
+
+  useEffect(() => {
+    if (!autoFocus || readOnly) {
+      return;
+    }
+
+    openPicker();
+  }, [autoFocus, readOnly, openPicker]);
 
   const handleChange = (event) => {
     const next = event.target.value;
@@ -123,19 +133,37 @@ export default function DateFieldEditor({
     }
   };
 
+  const wrapperClass = [
+    "date-field-editor",
+    readOnly ? "is-readonly" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <input
-      ref={inputRef}
-      type={inputType}
-      className="field-editor-input"
-      value={displayValue}
-      readOnly={readOnly}
-      disabled={readOnly}
-      autoFocus={autoFocus}
-      onChange={handleChange}
-      onBlur={() => onDismiss?.()}
-      onKeyDown={handleKeyDown}
-      style={style}
-    />
+    <div
+      className={wrapperClass}
+      onClick={openPicker}
+      onKeyDown={undefined}
+      role="presentation"
+    >
+      <input
+        ref={inputRef}
+        type={inputType}
+        className="field-editor-input date-field-editor__input"
+        value={displayValue}
+        readOnly={readOnly}
+        disabled={readOnly}
+        autoFocus={autoFocus}
+        onChange={handleChange}
+        onClick={(event) => {
+          event.stopPropagation();
+          openPicker();
+        }}
+        onBlur={() => onDismiss?.()}
+        onKeyDown={handleKeyDown}
+        style={style}
+      />
+    </div>
   );
 }

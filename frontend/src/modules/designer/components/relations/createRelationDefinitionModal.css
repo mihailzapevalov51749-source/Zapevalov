@@ -1,0 +1,112 @@
+.designer-create-relation-definition-modal__body {
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.designer-create-relation-definition-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0;
+}
+
+.designer-create-relation-definition-modal__info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 16px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--designer-surface-muted, #f8fafc);
+  border: 1px solid var(--designer-border, #e2e8f0);
+  box-sizing: border-box;
+}
+
+.designer-create-relation-definition-modal__info-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.4;
+}
+
+.designer-create-relation-definition-modal__info-text {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.designer-create-relation-definition-modal__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.designer-create-relation-definition-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.designer-create-relation-definition-modal__field .designer-label {
+  margin: 0;
+}
+
+.designer-create-relation-definition-modal__helper {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.designer-create-relation-definition-modal__error {
+  margin: 0;
+  font-size: 12px;
+  color: #b91c1c;
+  line-height: 1.35;
+}
+
+.designer-create-relation-definition-modal__error--submit {
+  padding-top: 4px;
+}
+
+.designer-create-relation-definition-modal__footer {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.designer-create-relation-definition-modal__footer .designer-btn {
+  flex: 0 0 auto;
+  min-width: 120px;
+  min-height: 40px;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.designer-create-relation-definition-modal__btn-create {
+  visibility: visible;
+}
+
+.designer-create-relation-definition-modal__footer .designer-btn--primary:disabled {
+  opacity: 1;
+  background: #93c5fd;
+  border-color: #93c5fd;
+  color: #fff;
+  cursor: not-allowed;
+}

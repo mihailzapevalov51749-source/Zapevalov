@@ -1,15 +1,24 @@
 import ChoiceOptionsEditor from "./ChoiceOptionsEditor";
+import RelationFieldSettings from "./RelationFieldSettings";
 import { FIELD_TYPE_OPTIONS } from "./CreateFieldModal";
 import {
   createEmptyChoiceOption,
   isChoiceFieldType,
   isFileFieldType,
 } from "./fieldFormUtils";
+import { isRelationFieldType } from "./relationFieldFormUtils";
 
 import "./fieldPropertiesPanel.css";
 
 export default function FieldPropertiesPanel({
   draft,
+  tenantId = null,
+  objectTypeId = null,
+  objectTypeLabel = "",
+  relationDefinitions = [],
+  existingRelationKeys = [],
+  onReloadRelations = null,
+  onOpenRelationsTab = null,
   saveError = "",
   saving = false,
   onDraftChange,
@@ -23,6 +32,7 @@ export default function FieldPropertiesPanel({
 
   const showChoiceOptions = isChoiceFieldType(draft.field_type);
   const showFileOptions = isFileFieldType(draft.field_type);
+  const showRelationOptions = isRelationFieldType(draft.field_type);
 
   return (
     <aside className="designer-properties-panel designer-field-properties-panel">
@@ -93,6 +103,12 @@ export default function FieldPropertiesPanel({
                   patch.file_multiple = true;
                 }
 
+                if (isRelationFieldType(nextFieldType)) {
+                  patch.relation_key = "";
+                  patch.relation_role = "";
+                  patch.relation_cardinality = "one";
+                }
+
                 onDraftChange?.({ ...draft, ...patch });
               }}
             >
@@ -154,6 +170,39 @@ export default function FieldPropertiesPanel({
             </div>
           ) : null}
 
+          {showRelationOptions ? (
+            <div className="designer-field-form__group">
+              <RelationFieldSettings
+                tenantId={tenantId}
+                objectTypeId={objectTypeId}
+                objectTypeLabel={objectTypeLabel}
+                relationDefinitions={relationDefinitions}
+                existingRelationKeys={existingRelationKeys}
+                relation_key={draft.relation_key}
+                role={draft.relation_role}
+                cardinality={draft.relation_cardinality}
+                errors={{
+                  relation_key: draft.relation_key_error,
+                  role: draft.relation_role_error,
+                  cardinality: draft.relation_cardinality_error,
+                }}
+                onReloadRelations={onReloadRelations}
+                onOpenRelationsTab={onOpenRelationsTab}
+                onChange={({ relation_key, role, cardinality }) =>
+                  onDraftChange?.({
+                    ...draft,
+                    relation_key,
+                    relation_role: role,
+                    relation_cardinality: cardinality,
+                    relation_key_error: "",
+                    relation_role_error: "",
+                    relation_cardinality_error: "",
+                  })
+                }
+              />
+            </div>
+          ) : null}
+
           {saveError ? (
             <p className="designer-field-form__error">{saveError}</p>
           ) : null}
@@ -179,6 +228,22 @@ export default function FieldPropertiesPanel({
               />
               Уникальное поле
             </label>
+            <label className="designer-field-form__checkbox">
+              <input
+                type="checkbox"
+                checked={Boolean(draft.quick_create)}
+                onChange={(event) =>
+                  onDraftChange?.({
+                    ...draft,
+                    quick_create: event.target.checked,
+                  })
+                }
+              />
+              Быстрая форма
+            </label>
+            <p className="designer-field-form__hint">
+              Показывать поле в быстрой форме создания записи
+            </p>
           </div>
         </div>
       </div>

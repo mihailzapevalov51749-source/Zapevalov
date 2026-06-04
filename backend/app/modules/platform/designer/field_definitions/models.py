@@ -48,6 +48,7 @@ class DesignerFieldDefinition(Base):
 
     is_required = Column(Boolean, nullable=False, default=False, server_default="false")
     is_unique = Column(Boolean, nullable=False, default=False, server_default="false")
+    quick_create = Column(Boolean, nullable=False, default=False, server_default="false")
     is_system = Column(Boolean, nullable=False, default=False, server_default="false")
 
     default_value_json = Column(JSONB, nullable=True)

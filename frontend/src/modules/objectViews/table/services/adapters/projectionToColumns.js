@@ -5,6 +5,8 @@ import {
 
 import { normalizeTableDisplayFieldKeys } from "../../../services/tableColumnOrder";
 
+import { isRelationFieldType } from "../../../../designer/components/fields/relationFieldFormUtils";
+
 import { catalogFieldToFieldDef } from "./catalogFieldToFieldDef";
 
 /** @type {import("../../../../../shared/viewEngine/contracts").ViewEngineColumn[]} */
@@ -173,6 +175,11 @@ export function projectionToColumns({
       continue;
     }
 
+    const rawFieldType = String(
+      catalogField?.field_type || catalogField?.type || fieldDef.type || "",
+    ).toLowerCase();
+    const isRelationColumn = isRelationFieldType(rawFieldType);
+
     columns.push({
       key: fieldDef.key,
       label: fieldDef.label,
@@ -181,7 +188,7 @@ export function projectionToColumns({
       source: fieldDef.isSystem ? "system" : "field",
       visible: true,
       sortable:
-        fieldDef.key === SYSTEM_COLUMN_KEYS.id ? false : true,
+        fieldDef.key === SYSTEM_COLUMN_KEYS.id || isRelationColumn ? false : true,
       isSystem: Boolean(fieldDef.isSystem),
       isTitle: resolvedTitleFieldKey === fieldDef.key,
       width: fieldDef.isSystem && fieldDef.key === SYSTEM_COLUMN_KEYS.id ? 280 : undefined,

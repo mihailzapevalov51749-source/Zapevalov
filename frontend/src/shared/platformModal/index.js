@@ -8,6 +8,7 @@ export {
 export { default as usePlatformModalLayout } from "./usePlatformModalLayout";
 export {
   clampModalBounds,
+  computeCenteredModalBounds,
   computeDefaultModalBounds,
   PLATFORM_MODAL_MIN_HEIGHT,
   PLATFORM_MODAL_MIN_WIDTH,

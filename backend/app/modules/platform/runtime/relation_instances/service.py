@@ -94,6 +94,8 @@ def create_relation_instance(
             target_entity=target_entity,
             source_entity_id=payload.source_entity_id,
             target_entity_id=payload.target_entity_id,
+            db=db,
+            tenant_id=tenant_id,
         )
     except ValueError as exc:
         raise _validation_http_error(str(exc)) from exc

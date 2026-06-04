@@ -170,11 +170,6 @@ def validate_relation_business_rules(
     source_is_system: bool,
     target_is_system: bool,
 ) -> None:
-    if source_object_type_id == target_object_type_id:
-        raise ValueError(
-            "source_object_type_id и target_object_type_id не могут совпадать (MVP)",
-        )
-
     if bidirectional and not (reverse_name and reverse_name.strip()):
         raise ValueError("reverse_name обязателен, если bidirectional = true")
 

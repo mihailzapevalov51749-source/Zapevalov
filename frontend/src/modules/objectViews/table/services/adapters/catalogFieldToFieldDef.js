@@ -39,6 +39,7 @@ export function catalogFieldToFieldDef(field) {
   return {
     key,
     type,
+    rawFieldType: rawType,
     label: String(field.name || field.label || key),
     settings,
     options,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   DEFAULT_COLUMN_WIDTH,
@@ -6,21 +6,95 @@ import {
   MIN_COLUMN_WIDTH,
 } from "../viewEngineStyles";
 
+function columnWidthChanged(previousWidth, nextWidth) {
+  const previous = Number(previousWidth);
+  const next = Number(nextWidth);
+
+  if (!Number.isFinite(next) || next <= 0) {
+    return false;
+  }
+
+  if (!Number.isFinite(previous) || previous <= 0) {
+    return true;
+  }
+
+  return Math.abs(previous - next) >= 0.5;
+}
+
 /**
  * Column width state — local (default) or controlled via props.
+ * Controlled: live drag uses transient overrides; parent/session updates on pointer up.
  */
 export default function useViewEngineColumnResize(
   columns = [],
-  { columnWidths = null, onColumnResize = null } = {},
+  {
+    columnWidths = null,
+    onColumnResize = null,
+    onColumnResizeEnd = null,
+  } = {},
 ) {
-  const isControlled =
-    columnWidths != null && typeof onColumnResize === "function";
+  const isControlled = typeof onColumnResize === "function";
 
   const [widthOverrides, setWidthOverrides] = useState({});
+  const [liveDragWidths, setLiveDragWidths] = useState({});
+  const [pendingCommitWidths, setPendingCommitWidths] = useState({});
   const [resizeState, setResizeState] = useState(null);
   const isResizingRef = useRef(false);
+  const lastLiveWidthRef = useRef(null);
 
-  const effectiveOverrides = isControlled ? columnWidths : widthOverrides;
+  const persistedOverrides = isControlled ? columnWidths || {} : widthOverrides;
+
+  const effectiveOverrides = useMemo(() => {
+    const merged = {
+      ...persistedOverrides,
+      ...pendingCommitWidths,
+    };
+
+    if (resizeState && Object.keys(liveDragWidths).length > 0) {
+      return {
+        ...merged,
+        ...liveDragWidths,
+      };
+    }
+
+    return merged;
+  }, [
+    persistedOverrides,
+    pendingCommitWidths,
+    liveDragWidths,
+    resizeState,
+  ]);
+
+  useEffect(() => {
+    if (!isControlled) {
+      return;
+    }
+
+    setPendingCommitWidths((prev) => {
+      if (!Object.keys(prev).length) {
+        return prev;
+      }
+
+      const next = { ...prev };
+      let changed = false;
+
+      for (const [key, width] of Object.entries(prev)) {
+        const persisted = Number(persistedOverrides[key]);
+        const pending = Number(width);
+
+        if (
+          Number.isFinite(persisted) &&
+          Number.isFinite(pending) &&
+          Math.abs(persisted - pending) < 0.5
+        ) {
+          delete next[key];
+          changed = true;
+        }
+      }
+
+      return changed ? next : prev;
+    });
+  }, [persistedOverrides, isControlled]);
 
   const getColumnWidth = useCallback(
     (column) => {
@@ -41,6 +115,31 @@ export default function useViewEngineColumnResize(
     [effectiveOverrides],
   );
 
+  const applyLiveDragWidth = useCallback((columnKey, nextWidth) => {
+    if (!columnKey) {
+      return;
+    }
+
+    if (!columnWidthChanged(lastLiveWidthRef.current, nextWidth)) {
+      return;
+    }
+
+    lastLiveWidthRef.current = nextWidth;
+
+    setLiveDragWidths((prev) => {
+      const previous = prev[columnKey];
+
+      if (!columnWidthChanged(previous, nextWidth)) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [columnKey]: nextWidth,
+      };
+    });
+  }, []);
+
   useEffect(() => {
     if (!resizeState) {
       return undefined;
@@ -54,17 +153,72 @@ export default function useViewEngineColumnResize(
       );
 
       if (isControlled) {
-        onColumnResize(resizeState.columnKey, nextWidth);
+        applyLiveDragWidth(resizeState.columnKey, nextWidth);
       } else {
-        setWidthOverrides((prev) => ({
-          ...prev,
-          [resizeState.columnKey]: nextWidth,
-        }));
+        setWidthOverrides((prev) => {
+          const previous = prev[resizeState.columnKey];
+
+          if (!columnWidthChanged(previous, nextWidth)) {
+            return prev;
+          }
+
+          return {
+            ...prev,
+            [resizeState.columnKey]: nextWidth,
+          };
+        });
       }
     };
 
-    const handleMouseUp = () => {
-      setResizeState(null);
+    const handleMouseUp = (event) => {
+      const delta = event.clientX - resizeState.startX;
+      const finalWidth = Math.min(
+        MAX_COLUMN_WIDTH,
+        Math.max(
+          MIN_COLUMN_WIDTH,
+          resizeState.startWidth + delta,
+        ),
+      );
+      const columnKey = resizeState.columnKey;
+      const startWidth = resizeState.startWidth;
+      const didChange = columnWidthChanged(startWidth, finalWidth);
+
+      if (isControlled) {
+        if (didChange) {
+          setPendingCommitWidths((prev) => {
+            const previous = prev[columnKey];
+
+            if (!columnWidthChanged(previous, finalWidth)) {
+              return prev;
+            }
+
+            return {
+              ...prev,
+              [columnKey]: finalWidth,
+            };
+          });
+          onColumnResize?.(columnKey, finalWidth);
+        }
+
+        setResizeState(null);
+        setLiveDragWidths({});
+        lastLiveWidthRef.current = null;
+        onColumnResizeEnd?.(columnKey, finalWidth);
+      } else if (didChange) {
+        setWidthOverrides((prev) => ({
+          ...prev,
+          [columnKey]: finalWidth,
+        }));
+        setResizeState(null);
+        setLiveDragWidths({});
+        lastLiveWidthRef.current = null;
+        onColumnResizeEnd?.(columnKey, finalWidth);
+      } else {
+        setResizeState(null);
+        setLiveDragWidths({});
+        lastLiveWidthRef.current = null;
+        onColumnResizeEnd?.(columnKey, finalWidth);
+      }
 
       setTimeout(() => {
         isResizingRef.current = false;
@@ -84,7 +238,13 @@ export default function useViewEngineColumnResize(
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [resizeState, isControlled, onColumnResize]);
+  }, [
+    resizeState,
+    isControlled,
+    onColumnResize,
+    onColumnResizeEnd,
+    applyLiveDragWidth,
+  ]);
 
   const handleResizeMouseDown = useCallback(
     (event, column) => {
@@ -92,10 +252,12 @@ export default function useViewEngineColumnResize(
       event.stopPropagation();
 
       isResizingRef.current = true;
+      lastLiveWidthRef.current = null;
 
       const columnKey = String(column?.key || "");
       const startWidth = getColumnWidth(column);
 
+      setLiveDragWidths({});
       setResizeState({
         columnKey,
         startWidth,

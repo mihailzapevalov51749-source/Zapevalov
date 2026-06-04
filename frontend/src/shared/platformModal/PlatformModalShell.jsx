@@ -3,16 +3,21 @@ import { createPortal } from "react-dom";
 import closeIcon from "../../assets/icons/x.svg";
 
 import {
+  closeButtonCompactStyle,
   closeButtonStyle,
   contentStyle,
   footerShellStyle,
+  headerCompactStyle,
   headerStyle,
   overlayStyle,
   panelShellStyle,
+  PLATFORM_MODAL_HEADER_HEIGHT_COMPACT,
+  PLATFORM_MODAL_HEADER_HEIGHT_DEFAULT,
   resizeHandleEastStyle,
   resizeHandleSouthEastStyle,
   resizeHandleSouthStyle,
   subtitleStyle,
+  titleCompactStyle,
   titleStyle,
 } from "./platformModalStyles";
 
@@ -53,10 +58,22 @@ export default function PlatformModalShell({
   startResize,
   hideHeader = false,
   transparentBackdrop = false,
+  headerDensity = "default",
+  titleAccessory = null,
 }) {
   if (!open) {
     return null;
   }
+
+  const isCompactHeader = headerDensity === "compact";
+  const resolvedHeaderStyle = isCompactHeader ? headerCompactStyle : headerStyle;
+  const resolvedTitleStyle = isCompactHeader ? titleCompactStyle : titleStyle;
+  const resolvedCloseButtonStyle = isCompactHeader
+    ? closeButtonCompactStyle
+    : closeButtonStyle;
+  const headerHeightPx = isCompactHeader
+    ? PLATFORM_MODAL_HEADER_HEIGHT_COMPACT
+    : PLATFORM_MODAL_HEADER_HEIGHT_DEFAULT;
 
   const panelStyle = {
     ...panelShellStyle,
@@ -102,19 +119,32 @@ export default function PlatformModalShell({
       >
         {hideHeader ? null : (
           <div
-            style={{ ...headerStyle, cursor: headerCursor }}
+            style={{ ...resolvedHeaderStyle, cursor: headerCursor }}
             onMouseDown={canCustomizeLayout ? startDrag : undefined}
             data-platform-modal-drag-handle
           >
             <div style={{ minWidth: 0, flex: 1 }}>
-              {title ? <div style={titleStyle}>{title}</div> : null}
+              {title || titleAccessory ? (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 8,
+                    minWidth: 0,
+                  }}
+                >
+                  {title ? <div style={resolvedTitleStyle}>{title}</div> : null}
+                  {titleAccessory || null}
+                </div>
+              ) : null}
               {subtitle ? <div style={subtitleStyle}>{subtitle}</div> : null}
             </div>
             <button
               type="button"
               onClick={() => onClose?.("close-button")}
               onMouseDown={(event) => event.stopPropagation()}
-              style={closeButtonStyle}
+              style={resolvedCloseButtonStyle}
               data-platform-modal-no-drag
               aria-label="Закрыть"
             >
@@ -137,8 +167,8 @@ export default function PlatformModalShell({
             <div
               style={{
                 ...resizeHandleEastStyle,
-                top: hideHeader ? 0 : resizeHandleEastStyle.top,
-                height: hideHeader ? "100%" : resizeHandleEastStyle.height,
+                top: hideHeader ? 0 : headerHeightPx,
+                height: hideHeader ? "100%" : `calc(100% - ${headerHeightPx}px)`,
                 zIndex: 20,
                 pointerEvents: "auto",
               }}

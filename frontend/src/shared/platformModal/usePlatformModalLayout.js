@@ -65,19 +65,44 @@ export function getViewportMetrics() {
 /**
  * @param {{ x: number, y: number, width: number, height: number }} bounds
  * @param {ReturnType<typeof getViewportMetrics>} [metrics]
+ * @param {{ keepFullyVisible?: boolean, viewportInset?: number }} [options]
  */
-export function clampModalBounds(bounds, metrics = getViewportMetrics()) {
+export function clampModalBounds(
+  bounds,
+  metrics = getViewportMetrics(),
+  options = {},
+) {
+  const { keepFullyVisible = false, viewportInset } = options;
+  const edge = viewportInset ?? metrics.edgeInset ?? PLATFORM_MODAL_EDGE_INSET_PX;
+
   const width = Math.min(
     Math.max(bounds.width, metrics.minWidth),
-    metrics.maxWidth,
+    keepFullyVisible
+      ? Math.max(metrics.minWidth, metrics.maxWidth - edge * 2)
+      : metrics.maxWidth,
   );
   const height = Math.min(
     Math.max(bounds.height, metrics.minHeight),
-    metrics.maxHeight,
+    keepFullyVisible
+      ? Math.max(metrics.minHeight, metrics.maxHeight - edge * 2)
+      : metrics.maxHeight,
   );
 
+  if (keepFullyVisible) {
+    const minX = edge;
+    const maxX = Math.max(edge, metrics.workspaceWidth - width - edge);
+    const minY = edge;
+    const maxY = Math.max(edge, metrics.workspaceHeight - height - edge);
+
+    return {
+      x: Math.min(Math.max(bounds.x, minX), maxX),
+      y: Math.min(Math.max(bounds.y, minY), maxY),
+      width,
+      height,
+    };
+  }
+
   const grip = PLATFORM_MODAL_MIN_VISIBLE_GRIP_PX;
-  const edge = metrics.edgeInset ?? PLATFORM_MODAL_EDGE_INSET_PX;
   const minX = -(width - grip);
   const maxX = metrics.workspaceWidth - grip;
   const minY = edge;
@@ -104,7 +129,7 @@ function readBoundNumber(value, fallback) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-export function computeDefaultModalBounds(defaults = {}) {
+export function computeDefaultModalBounds(defaults = {}, options = {}) {
   const metrics = getViewportMetrics();
   const width = readBoundNumber(defaults.width, metrics.minWidth);
   const height = readBoundNumber(
@@ -117,11 +142,45 @@ export function computeDefaultModalBounds(defaults = {}) {
   );
   const y = readBoundNumber(defaults.y, PLATFORM_MODAL_EDGE_INSET_PX);
 
-  return clampModalBounds({ x, y, width, height }, metrics);
+  return clampModalBounds({ x, y, width, height }, metrics, options);
 }
 
-function resolveInitialModalBounds(modalKey, canCustomizeLayout, defaultBounds) {
-  const defaults = computeDefaultModalBounds(defaultBounds);
+/**
+ * Centers modal in workspace with safe viewport insets (product forms).
+ *
+ * @param {{ width?: number, height?: number }} [defaults]
+ * @param {{ viewportInset?: number }} [options]
+ */
+export function computeCenteredModalBounds(defaults = {}, options = {}) {
+  const viewportInset = readBoundNumber(options.viewportInset, 24);
+  const metrics = getViewportMetrics();
+  const width = Math.min(
+    readBoundNumber(defaults.width, metrics.minWidth),
+    Math.max(metrics.minWidth, metrics.maxWidth - viewportInset * 2),
+  );
+  const height = Math.min(
+    readBoundNumber(defaults.height, metrics.minHeight),
+    Math.max(metrics.minHeight, metrics.maxHeight - viewportInset * 2),
+  );
+  const x = Math.round((metrics.workspaceWidth - width) / 2);
+  const y = Math.round((metrics.workspaceHeight - height) / 2);
+
+  return clampModalBounds(
+    { x, y, width, height },
+    metrics,
+    { keepFullyVisible: true, viewportInset },
+  );
+}
+
+function resolveInitialModalBounds(
+  modalKey,
+  canCustomizeLayout,
+  defaultBounds,
+  clampOptions = {},
+) {
+  const defaults = clampOptions.keepFullyVisible
+    ? computeCenteredModalBounds(defaultBounds, clampOptions)
+    : computeDefaultModalBounds(defaultBounds, clampOptions);
 
   if (!canCustomizeLayout) {
     return defaults;
@@ -134,15 +193,19 @@ function resolveInitialModalBounds(modalKey, canCustomizeLayout, defaultBounds) 
   }
 
   if (!isCardSettingsModalKey(modalKey)) {
-    return clampModalBounds(stored);
+    return clampModalBounds(stored, getViewportMetrics(), clampOptions);
   }
 
-  return clampModalBounds({
-    x: readBoundNumber(stored.x, defaults.x),
-    y: readBoundNumber(stored.y, defaults.y),
-    width: readBoundNumber(stored.width, defaults.width),
-    height: readBoundNumber(stored.height, defaults.height),
-  });
+  return clampModalBounds(
+    {
+      x: readBoundNumber(stored.x, defaults.x),
+      y: readBoundNumber(stored.y, defaults.y),
+      width: readBoundNumber(stored.width, defaults.width),
+      height: readBoundNumber(stored.height, defaults.height),
+    },
+    getViewportMetrics(),
+    clampOptions,
+  );
 }
 
 /**
@@ -151,6 +214,8 @@ function resolveInitialModalBounds(modalKey, canCustomizeLayout, defaultBounds) 
  *   open: boolean,
  *   canCustomizeLayout?: boolean,
  *   defaultBounds?: { width?: number, height?: number, x?: number, y?: number },
+ *   keepFullyVisible?: boolean,
+ *   viewportInset?: number,
  * }} params
  */
 export default function usePlatformModalLayout({
@@ -158,9 +223,17 @@ export default function usePlatformModalLayout({
   open,
   canCustomizeLayout = false,
   defaultBounds = {},
+  keepFullyVisible = false,
+  viewportInset = 24,
 }) {
+  const clampOptionsRef = useRef({
+    keepFullyVisible,
+    viewportInset,
+  });
   const [bounds, setBounds] = useState(() =>
-    computeDefaultModalBounds(defaultBounds),
+    keepFullyVisible
+      ? computeCenteredModalBounds(defaultBounds, clampOptionsRef.current)
+      : computeDefaultModalBounds(defaultBounds, clampOptionsRef.current),
   );
   const boundsRef = useRef(bounds);
   const defaultBoundsRef = useRef(defaultBounds);
@@ -168,6 +241,7 @@ export default function usePlatformModalLayout({
   const canCustomizeRef = useRef(canCustomizeLayout);
   const modalKeyRef = useRef(modalKey);
 
+  clampOptionsRef.current = { keepFullyVisible, viewportInset };
   defaultBoundsRef.current = defaultBounds;
   canCustomizeRef.current = canCustomizeLayout;
   modalKeyRef.current = modalKey;
@@ -177,7 +251,11 @@ export default function usePlatformModalLayout({
   }, [bounds]);
 
   const applyBounds = useCallback((rawBounds) => {
-    const next = clampModalBounds(rawBounds, getViewportMetrics());
+    const next = clampModalBounds(
+      rawBounds,
+      getViewportMetrics(),
+      clampOptionsRef.current,
+    );
     boundsRef.current = next;
     setBounds(next);
     return next;
@@ -192,7 +270,11 @@ export default function usePlatformModalLayout({
       return null;
     }
 
-    const next = clampModalBounds(boundsRef.current, getViewportMetrics());
+    const next = clampModalBounds(
+      boundsRef.current,
+      getViewportMetrics(),
+      clampOptionsRef.current,
+    );
     boundsRef.current = next;
     setBounds(next);
     saveModalBounds(modalKeyRef.current, next);
@@ -226,6 +308,7 @@ export default function usePlatformModalLayout({
         isCardSettingsModalKey(modalKey)
           ? CARD_SETTINGS_MODAL_DEFAULT_BOUNDS
           : defaultBoundsRef.current,
+        clampOptionsRef.current,
       );
       const next = applyBounds(initial);
 
@@ -256,7 +339,11 @@ export default function usePlatformModalLayout({
   useEffect(
     () => () => {
       if (wasOpenRef.current && canCustomizeRef.current) {
-        const next = clampModalBounds(boundsRef.current, getViewportMetrics());
+        const next = clampModalBounds(
+          boundsRef.current,
+          getViewportMetrics(),
+          clampOptionsRef.current,
+        );
         saveModalBounds(modalKeyRef.current, next);
       }
     },

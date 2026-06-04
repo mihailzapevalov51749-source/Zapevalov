@@ -1,5 +1,5 @@
 export const platformDevelopmentManifest = {
-  updatedAt: "2026-06-04T12:00:00",
+  updatedAt: "2026-06-04T17:15:00",
 
   title: "Развитие платформы ЯсноПро",
 
@@ -107,6 +107,14 @@ export const platformDevelopmentManifest = {
       percent: 0,
       meaning: "AI понимает объекты, связи и события платформы.",
     },
+    {
+      number: 7,
+      name: 'Тип поля "Связи"',
+      status: "planned",
+      percent: 0,
+      meaning:
+        "Реализация field_type relation как UI над runtime_relation_instances (7 этапов, от контракта до фильтрации).",
+    },
   ],
 
   currentWork: {
@@ -117,8 +125,12 @@ export const platformDevelopmentManifest = {
       { label: "ADR-001 принят", status: "done" },
       { label: "Архитектурные документы согласованы", status: "done" },
       { label: "Карточка объекта отделена от Universal Table", status: "done" },
-      { label: "Runtime Read Gateway cleanup", status: "next" },
+      { label: "Runtime Read Gateway cleanup", status: "planned" },
       { label: "Notification legacy cleanup", status: "planned" },
+      {
+        label: 'Тип поля "Связи" — этап 1. Контракт поля',
+        status: "next",
+      },
     ],
   },
 
@@ -155,6 +167,33 @@ export const platformDevelopmentManifest = {
       date: "2026-06-02",
       text: "Workspace Tabs Canonical Route Fix: контент вкладок рендерится внутри workspace route без replace на /page и /object-types.",
     },
+    {
+      date: "2026-06-04",
+      text: "ADR: поле «Связи» — UI над runtime_relation_instances; следующий этап — реализация field_type relation.",
+    },
+    {
+      date: "2026-06-04",
+      text: 'Запланирована реализация типа поля «Связи» на основе runtime_relation_instances (7 этапов на Dashboard).',
+    },
+  ],
+
+  platformChangelog: [
+    {
+      date: "2026-06-04",
+      version: null,
+      title: "ADR: поле «Связи» как relation instance view",
+      summary:
+        "Зафиксировано архитектурное решение: единственный SoT связи — runtime_relation_instances; поле не дублирует связь в value_json и не использует lookup.",
+      nextStage: "Подготовка реализации типа поля «Связи»",
+    },
+    {
+      date: "2026-06-04",
+      version: null,
+      title: 'План реализации: тип поля "Связи"',
+      summary:
+        "Запланирована реализация типа поля «Связи» на основе runtime_relation_instances. На Dashboard добавлен этап с 7 подэтапами (0% готовности, статус PLANNED).",
+      nextStage: 'Тип поля "Связи" — этап 1. Контракт поля',
+    },
   ],
 
   risks: [
@@ -185,12 +224,131 @@ export const platformDevelopmentManifest = {
   ],
 
   nextStep: {
-    title: "Runtime Read Gateway Cleanup",
-    titleLabel: "Очистка контура чтения данных",
+    title: 'Тип поля "Связи" — этап 1. Контракт поля',
+    titleLabel: "Активный подэтап программы relation field",
     description:
-      "Убрать неиспользуемый fallback на старые таблицы из контура чтения Object Views.",
+      "Добавить FieldType.RELATION, validation, settings_json, publish validation и runtime contract. Реализация не начата (0%).",
     expectedResult:
-      "Таблицы и представления объектов будут читать данные только через Runtime Entity API.",
+      "Поле relation существует в контракте платформы.",
+  },
+
+  relationFieldTypeProgram: {
+    title: 'Тип поля "Связи"',
+    status: "PLANNED",
+    readiness: 0,
+    adr: "ADR-Object-Relation-Field",
+    sourceOfTruth: "runtime_relation_instances",
+    activeSubPhaseKey: "relation-field-contract",
+    stages: [
+      {
+        key: "relation-field-contract",
+        number: 1,
+        title: "Контракт поля",
+        status: "PLANNED",
+        readiness: 0,
+        steps: [
+          "Добавить FieldType.RELATION",
+          "Добавить backend validation",
+          "Добавить settings_json для relation field",
+          "Добавить publish validation",
+          "Добавить runtime contract",
+        ],
+        completionCriterion:
+          "Поле relation существует в контракте платформы.",
+      },
+      {
+        key: "relation-field-studio",
+        number: 2,
+        title: "Studio",
+        status: "PLANNED",
+        readiness: 0,
+        steps: [
+          'Добавить тип поля "Связи"',
+          "Добавить настройки relation field",
+          "Выбор relation definition",
+          "Выбор роли source/target",
+          "Настройка cardinality",
+          "Настройка required",
+        ],
+        completionCriterion:
+          "Пользователь может создать relation field через Studio.",
+      },
+      {
+        key: "relation-field-runtime-api",
+        number: 3,
+        title: "Runtime API",
+        status: "PLANNED",
+        readiness: 0,
+        steps: [
+          "Получение relation instances по relation field",
+          "Создание relation instance через field",
+          "Удаление relation instance через field",
+          "Замена relation instance",
+        ],
+        completionCriterion:
+          "Relation field полностью работает через relation engine.",
+      },
+      {
+        key: "relation-field-object-card",
+        number: 4,
+        title: "Карточка объекта",
+        status: "PLANNED",
+        readiness: 0,
+        steps: [
+          "RelationValueRenderer",
+          "RelationFieldEditor",
+          "Отображение одной связи",
+          "Отображение множественных связей",
+          "Переход в связанную карточку",
+        ],
+        completionCriterion: "Связи работают в карточке объекта.",
+      },
+      {
+        key: "relation-field-object-table",
+        number: 5,
+        title: "Таблица объекта",
+        status: "PLANNED",
+        readiness: 0,
+        steps: [
+          "Отображение relation field в таблице",
+          "Поддержка множественных связей",
+          "Переход в связанную карточку",
+          "Оптимизация загрузки title",
+        ],
+        completionCriterion: "Связи корректно отображаются в таблице.",
+      },
+      {
+        key: "relation-field-related-records",
+        number: 6,
+        title: 'Интеграция со "Связанными записями"',
+        status: "PLANNED",
+        readiness: 0,
+        steps: [
+          "Проверить единый источник данных",
+          'Проверить совместимость relation field и Related Records',
+          "Исключить дублирование данных",
+          "Проверить обратные связи",
+        ],
+        completionCriterion:
+          'Поле "Связи" и вкладка "Связанные записи" используют один relation engine.',
+      },
+      {
+        key: "relation-field-analytics",
+        number: 7,
+        title: "Фильтрация и аналитика",
+        status: "PLANNED",
+        readiness: 0,
+        steps: [
+          "Фильтрация по связанному объекту",
+          "Фильтрация по наличию связи",
+          "Фильтрация по отсутствию связи",
+          "Сортировка по связанному объекту",
+          "Группировка по связанному объекту",
+        ],
+        completionCriterion:
+          "Relation field участвует в механизмах анализа данных.",
+      },
+    ],
   },
 
   platformArchitecture: [
@@ -248,11 +406,17 @@ export const platformDevelopmentManifest = {
       key: "relations",
       title: "Relations",
       description:
-        "Связи между объектами: описание в Studio и отображение связанных записей в runtime.",
+        "Relation engine (~58%): definitions, instances, вкладка «Связанные записи». Программа типа поля «Связи» — PLANNED, 0% (7 подэтапов в manifest).",
       status: "in_progress",
-      readiness: 55,
+      readiness: 58,
+      relationEngineReadiness: 58,
+      relationFieldTypeProgramReadiness: 0,
+      relationFieldTypeProgramStatus: "PLANNED",
       dependencies: ["Object Type", "Runtime Entity", "Object Card"],
-      risks: ["Неполное покрытие сценариев связей в UI"],
+      risks: [
+        "Неполное покрытие сценариев связей в UI",
+        "Риск реализации поля через lookup/value_json вместо relation instances",
+      ],
     },
     {
       key: "search",
@@ -413,6 +577,92 @@ export const platformDevelopmentManifest = {
       ],
     },
     {
+      key: "relation-field-type",
+      title: 'Тип поля "Связи"',
+      description:
+        "Реализация field_type relation как UI-представления над runtime_relation_instances (ADR-Object-Relation-Field). Семь подэтапов от контракта до фильтрации.",
+      status: "planned",
+      ownerStatus: "PLANNED",
+      readiness: 0,
+      ownerFocus:
+        "Пошагово закрывать подэтапы программы relation field; не начинать реализацию без контракта (этап 1).",
+      result:
+        "Поле «Связи» в Studio и Office: карточка, таблица, единый relation engine с вкладкой «Связанные записи».",
+      nextMilestone:
+        "Этап 1. Контракт поля — FieldType.RELATION, settings_json, publish и runtime contract.",
+      activeSubPhaseKey: "relation-field-contract",
+      linkedContours: ["Relations", "Object Type", "Runtime Entity", "Object Card"],
+      linkedDebt: [],
+      linkedAdr: "ADR-Object-Relation-Field",
+      subPhases: [
+        {
+          key: "relation-field-contract",
+          title: "Контракт поля",
+          readiness: 0,
+          status: "PLANNED",
+        },
+        {
+          key: "relation-field-studio",
+          title: "Studio",
+          readiness: 0,
+          status: "PLANNED",
+        },
+        {
+          key: "relation-field-runtime-api",
+          title: "Runtime API",
+          readiness: 0,
+          status: "PLANNED",
+        },
+        {
+          key: "relation-field-object-card",
+          title: "Карточка объекта",
+          readiness: 0,
+          status: "PLANNED",
+        },
+        {
+          key: "relation-field-object-table",
+          title: "Таблица объекта",
+          readiness: 0,
+          status: "PLANNED",
+        },
+        {
+          key: "relation-field-related-records",
+          title: 'Интеграция со "Связанными записями"',
+          readiness: 0,
+          status: "PLANNED",
+        },
+        {
+          key: "relation-field-analytics",
+          title: "Фильтрация и аналитика",
+          readiness: 0,
+          status: "PLANNED",
+        },
+      ],
+      keyWorks: [
+        "Этап 1. Контракт поля — FieldType.RELATION, validation, publish (0%)",
+        "Этап 2. Studio — тип поля и настройки relation field (0%)",
+        "Этап 3. Runtime API — CRUD instances через field (0%)",
+        "Этап 4. Карточка — RelationValueRenderer / RelationFieldEditor (0%)",
+        "Этап 5. Таблица — колонка relation field (0%)",
+        "Этап 6. Интеграция с «Связанными записями» (0%)",
+        "Этап 7. Фильтрация и аналитика (0%)",
+      ],
+      risks: [
+        "Дублирование SoT (value_json vs relation instances)",
+        "Преждевременная реализация UI до контракта и publish validation",
+        "Сложность filter/sort по связям в object view query",
+      ],
+      completionCriteria: [
+        "Поле relation существует в контракте платформы",
+        "Пользователь может создать relation field через Studio",
+        "Relation field полностью работает через relation engine",
+        "Связи работают в карточке объекта",
+        "Связи корректно отображаются в таблице",
+        'Поле "Связи" и вкладка "Связанные записи" используют один relation engine',
+        "Relation field участвует в механизмах анализа данных",
+      ],
+    },
+    {
       key: "legacy-isolation",
       title: "Legacy Isolation",
       description:
@@ -568,8 +818,8 @@ export const platformDevelopmentManifest = {
         focus: "Убрать fallback на legacy-таблицы в контуре чтения.",
       },
       {
-        label: "Roadmap реализации на Dashboard",
-        focus: "Показать этапы, фокус и критерии готовности в одном месте.",
+        label: 'Тип поля "Связи" — этап 1. Контракт поля',
+        focus: "FieldType.RELATION, settings_json, publish и runtime contract (0%).",
       },
       {
         label: "Freeze legacy-блоков",
@@ -772,6 +1022,32 @@ export const platformDevelopmentManifest = {
       relatedDebt: [],
       relatedAdr: "ADR-002",
     },
+    {
+      key: "adr-object-relation-field-instance-view",
+      date: "2026-06-04",
+      title: "ADR: поле «Связи» как представление над relation instances",
+      type: "decision",
+      description:
+        "Принят ADR_OBJECT_RELATION_FIELD_AS_RELATION_INSTANCE_VIEW: поле «Связи» (field_type relation) управляет runtime_relation_instances по relation_key; запрещены lookup, value_json и copied title как источник истины.",
+      impact:
+        "Снимает архитектурную неопределённость перед реализацией типа поля; единый граф связей для карточки, таблицы и вкладки «Связанные записи».",
+      relatedContours: ["Relations", "Object Type", "Runtime Entity", "Object Card"],
+      relatedDebt: [],
+      relatedAdr: "ADR-Object-Relation-Field",
+    },
+    {
+      key: "relation-field-type-program-planned",
+      date: "2026-06-04",
+      title: 'Запланирован этап «Тип поля "Связи"» на Dashboard',
+      type: "planning",
+      description:
+        "Запланирована реализация типа поля «Связи» на основе runtime_relation_instances. В manifest добавлена программа из 7 подэтапов (0%, PLANNED); активный — этап 1. Контракт поля.",
+      impact:
+        "Прогресс реализации relation field можно отслеживать по шагам без старта кода до закрытия контракта.",
+      relatedContours: ["Relations", "Object Type", "Runtime Entity", "Object Card"],
+      relatedDebt: [],
+      relatedAdr: "ADR-Object-Relation-Field",
+    },
   ],
 
   architectureDecisions: [
@@ -854,6 +1130,26 @@ export const platformDevelopmentManifest = {
       relatedContours: ["Object Platform", "Publish"],
       relatedDebt: ["Legacy Block Isolation", "Universal Table Retirement"],
       relatedPhases: ["Legacy Isolation", "Legacy Removal"],
+    },
+    {
+      key: "adr-object-relation-field",
+      code: "ADR-Object-Relation-Field",
+      title: "Object Relation Field as Relation Instance View",
+      date: "2026-06-04",
+      status: "accepted",
+      decision:
+        "Поле «Связи» (field_type relation) — UI-представление над runtime_relation_instances по relation_key; единственный SoT факта связи — таблица instances, не value_json и не lookup.",
+      reason:
+        "Relation engine уже есть; дублирование связи в поле привело бы к расхождению данных и блокировало граф, права и автоматизацию.",
+      impact:
+        "Определяет контракт publish, runtime read/write и UI для Studio/Office перед реализацией типа поля «Связи».",
+      relatedContours: ["Relations", "Object Type", "Runtime Entity", "Object Card"],
+      relatedDebt: [],
+      relatedPhases: [
+        "Object Platform Independence",
+        "Designer Foundation",
+        'Тип поля "Связи"',
+      ],
     },
   ],
 };

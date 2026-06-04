@@ -15,8 +15,13 @@ from app.modules.platform.designer.field_definitions.schemas import (
     validate_field_update_payload,
 )
 from app.modules.platform.designer.object_types import repository as object_type_repository
+from app.modules.platform.designer.relation_definitions import repository as relation_repository
 from app.modules.platform.runtime.entities.system_fields import is_runtime_system_field_key
 from app.modules.platform.shared.enums import FieldType
+from app.modules.platform.shared.relation_field_contract import (
+    validate_relation_field_settings,
+    validate_relation_field_with_definition,
+)
 from app.modules.users.models import User
 
 
@@ -36,6 +41,7 @@ def _to_read(entity: DesignerFieldDefinition) -> FieldDefinitionRead:
         sort_order=entity.sort_order,
         is_required=entity.is_required,
         is_unique=entity.is_unique,
+        quick_create=entity.quick_create,
         is_system=entity.is_system,
         default_value_json=entity.default_value_json,
         settings_json=entity.settings_json or {},
@@ -67,6 +73,31 @@ def _ensure_object_type(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="ObjectType не найден",
         )
+
+
+def _ensure_relation_field_binding(
+    db: Session,
+    tenant_id: int,
+    object_type_id: UUID,
+    settings_json: dict,
+) -> None:
+    normalized = validate_relation_field_settings(settings_json)
+    relation = relation_repository.get_by_key(
+        db,
+        tenant_id,
+        normalized["relation_key"],
+    )
+    try:
+        validate_relation_field_with_definition(
+            settings_json=normalized,
+            object_type_id=object_type_id,
+            relation=relation,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
 
 
 def _touch_parent_object_type(
@@ -130,6 +161,14 @@ def create_field(
             detail="Зарезервированный системный key поля",
         )
 
+    if payload.field_type == FieldType.RELATION:
+        _ensure_relation_field_binding(
+            db,
+            tenant_id,
+            object_type_id,
+            payload.settings_json,
+        )
+
     user_id = _actor_user_id(current_user)
 
     entity = DesignerFieldDefinition(
@@ -142,6 +181,7 @@ def create_field(
         sort_order=payload.sort_order,
         is_required=payload.is_required,
         is_unique=payload.is_unique,
+        quick_create=payload.quick_create,
         is_system=False,
         default_value_json=payload.default_value_json,
         settings_json=payload.settings_json,
@@ -224,6 +264,14 @@ def update_field(
                 detail=str(exc),
             ) from exc
 
+    if effective_field_type == FieldType.RELATION:
+        _ensure_relation_field_binding(
+            db,
+            tenant_id,
+            entity.object_type_id,
+            effective_settings,
+        )
+
     if "key" in updates:
         new_key = updates["key"]
         if new_key is None:
@@ -257,6 +305,8 @@ def update_field(
         entity.is_required = updates["is_required"]
     if "is_unique" in updates:
         entity.is_unique = updates["is_unique"]
+    if "quick_create" in updates:
+        entity.quick_create = updates["quick_create"]
     if "default_value_json" in updates:
         entity.default_value_json = updates["default_value_json"]
     if "settings_json" in updates:

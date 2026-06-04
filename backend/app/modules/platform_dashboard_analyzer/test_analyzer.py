@@ -122,6 +122,57 @@ def test_ai_native_stage_readiness_is_zero_without_implementation():
     assert len(ai_stage.next_tasks) == len(STAGE_CANONICAL["ai-native-layer"]["works"])
 
 
+def test_relation_field_type_stage_marks_contract_done_when_implemented():
+    ctx = build_scan_context()
+    stages = analyze_stages(ctx, analyze_components(ctx))
+    relation_stage = next(item for item in stages if item.slug == "relation-field-type")
+    assert "Контракт поля" in relation_stage.completed_items
+    assert "Studio" in relation_stage.completed_items
+    assert "Runtime API" in relation_stage.completed_items
+    assert "Карточка объекта" in relation_stage.completed_items
+    assert "Таблица объекта" in relation_stage.completed_items
+    assert "Self-relation support" in relation_stage.completed_items
+    assert "Спецификация task_subtask" in relation_stage.completed_items
+    assert "Доменные ограничения task_subtask" in relation_stage.completed_items
+    assert "Parent Section через relation engine" in relation_stage.completed_items
+    assert "Подзадачи через relation engine" in relation_stage.completed_items
+    assert relation_stage.readiness == round(10 / 15 * 100)
+    assert 'Интеграция со "Связанными записями"' in relation_stage.next_tasks
+
+
+def test_relation_field_type_stage_readiness_is_zero_without_implementation():
+    ctx = ScanContext(
+        repo_root=None,  # type: ignore[arg-type]
+        backend=SimpleNamespace(
+            module_paths=set(),
+            router_markers=set(),
+            model_tables=set(),
+            test_paths=set(),
+            main_py_text="",
+        ),
+        frontend=SimpleNamespace(
+            module_paths=set(),
+            file_contents={},
+            manifest_fallback_files=set(),
+        ),
+        docs=SimpleNamespace(
+            status_tables={},
+            migration_phases={},
+            debt_items=[],
+            adr_items=[],
+            roadmap_milestones=[],
+        ),
+    )
+
+    stages = analyze_stages(ctx, analyze_components(ctx))
+    relation_stage = next(item for item in stages if item.slug == "relation-field-type")
+
+    assert relation_stage.readiness == 0
+    assert relation_stage.status == "planned"
+    assert len(relation_stage.completed_items) == 0
+    assert len(relation_stage.next_tasks) == len(STAGE_CANONICAL["relation-field-type"]["works"])
+
+
 def test_legacy_isolation_readiness_uses_code_guards_not_doc_markers():
     ctx = build_scan_context()
     phase_doc = ctx.docs.migration_phases.get("legacy-isolation", {})

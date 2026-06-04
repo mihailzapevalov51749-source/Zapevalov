@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "check:runtime-boundaries": "node scripts/check-runtime-boundaries.js",
-    "test:unit": "node --test \"src/yasii/*.test.js\" \"src/modules/notifications/navigation/*.test.js\" \"src/modules/runtimeReadGateway/gateway/*.test.js\" \"src/modules/objectViews/hooks/useObjectViewQuery.test.js\" \"src/shared/search/*.test.js\" \"src/modules/documentLibraries/**/*.test.js\""
+    "test:unit": "node --test \"src/yasii/*.test.js\" \"src/modules/notifications/navigation/*.test.js\" \"src/modules/runtimeReadGateway/gateway/*.test.js\" \"src/modules/objectViews/hooks/useObjectViewQuery.test.js\" \"src/shared/search/*.test.js\" \"src/shared/relation/*.test.js\" \"src/modules/documentLibraries/**/*.test.js\" \"src/modules/objectEntities/services/*relationField*.test.js\" \"src/modules/objectEntities/services/hierarchyParentRelation.test.js\" \"src/modules/objectEntities/services/resolveParentContextFromRelations.test.js\" \"src/modules/objectEntities/services/resolveSubtasksFromRelations.test.js\" \"src/modules/objectViews/entity/getEntityCardLayoutFields.test.js\" \"src/modules/objectViews/entity/getQuickCreateFields.test.js\" \"src/shared/fieldTypes/relation/*.test.js\" \"src/modules/objectViews/services/relationTableValue.test.js\" \"src/modules/objectViews/services/catalogFieldsForTableQueryUi.test.js\" \"src/modules/objectViews/services/enrichTableRowsWithRelationFields.test.js\" \"src/modules/objectViews/table/services/adapters/projectionToColumns.relation.test.js\" \"src/modules/objectViews/table/openRelatedEntityFromTable.test.js\" \"src/shared/fieldTypes/relation/RelationTableCellRenderer.test.js\""
   },
   "dependencies": {
     "@onlyoffice/document-editor-react": "^2.1.1",

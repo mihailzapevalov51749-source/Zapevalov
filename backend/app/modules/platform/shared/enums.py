@@ -18,6 +18,7 @@ class FieldType(StrEnum):
     UUID = "uuid"
     USER = "user"
     FILE = "file"
+    RELATION = "relation"
 
 
 class RelationType(StrEnum):

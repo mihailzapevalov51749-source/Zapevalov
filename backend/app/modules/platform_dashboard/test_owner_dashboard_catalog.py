@@ -61,6 +61,7 @@ def test_deprecated_development_stages_absent():
     assert "dev-object-platform" not in stage_keys
     assert "dev-legacy-transition" not in stage_keys
     assert "dev-platform-transition" in stage_keys
+    assert "dev-relation-field-type" in stage_keys
 
 
 def test_development_stage_keys_match_addendum():
@@ -148,6 +149,10 @@ def test_build_owner_dashboard_view_smoke(db):
     development = next(section for section in view.sections if section.key == "development")
     assert any(stage.id == "dev-yasii" for stage in development.stages)
     yasii = next(stage for stage in development.stages if stage.id == "dev-yasii")
+    relation_field = next(
+        stage for stage in development.stages if stage.id == "dev-relation-field-type"
+    )
+    assert relation_field.title == 'Тип поля "Связи"'
     assert yasii.readiness is None or isinstance(yasii.readiness, int)
 
     history = next(section for section in view.sections if section.key == "history")

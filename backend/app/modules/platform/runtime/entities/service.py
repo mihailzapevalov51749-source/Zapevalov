@@ -8,6 +8,7 @@ from app.modules.platform.runtime.entities import repository, serializer, valida
 from app.modules.platform.runtime.entities.models import RuntimeEntity, RuntimeEntityValue
 from app.modules.platform.runtime.entities.schemas import EntityCreate, EntityRead, EntityUpdate
 from app.modules.platform.shared.exceptions import CatalogNotFound
+from app.modules.platform.shared.relation_field_contract import is_relation_field_type
 from app.modules.users.models import User
 
 
@@ -19,6 +20,18 @@ def _metadata_as_dict(metadata: catalog_service.PublishedObjectTypeMetadata) -> 
     return {
         "fields": metadata.fields,
         "object_type_key": metadata.object_type_key,
+        "title_field_key": metadata.title_field_key,
+    }
+
+
+def _scalar_user_values(
+    values: dict,
+    field_map: dict[str, dict],
+) -> dict:
+    return {
+        key: value
+        for key, value in values.items()
+        if not is_relation_field_type((field_map.get(key) or {}).get("field_type"))
     }
 
 
@@ -52,7 +65,11 @@ def create_entity(
     except CatalogNotFound as exc:
         raise _catalog_http_error(exc) from exc
 
-    user_values = validators.strip_client_system_values(payload.values)
+    field_map = {field["key"]: field for field in metadata.fields if field.get("key")}
+    user_values = _scalar_user_values(
+        validators.strip_client_system_values(payload.values),
+        field_map,
+    )
 
     try:
         validators.validate_entity_create(
@@ -63,7 +80,6 @@ def create_entity(
         raise _validation_http_error(exc) from exc
 
     user_id = _actor_user_id(current_user)
-    field_map = {field["key"]: field for field in metadata.fields if field.get("key")}
 
     entity = RuntimeEntity(
         tenant_id=tenant_id,
@@ -172,7 +188,11 @@ def update_entity(
             detail="Entity не найдена",
         )
 
-    user_values = validators.strip_client_system_values(payload.values)
+    field_map = {field["key"]: field for field in metadata.fields if field.get("key")}
+    user_values = _scalar_user_values(
+        validators.strip_client_system_values(payload.values),
+        field_map,
+    )
 
     try:
         validators.validate_entity_update(
@@ -181,8 +201,6 @@ def update_entity(
         )
     except ValueError as exc:
         raise _validation_http_error(exc) from exc
-
-    field_map = {field["key"]: field for field in metadata.fields if field.get("key")}
     user_id = _actor_user_id(current_user)
 
     try:

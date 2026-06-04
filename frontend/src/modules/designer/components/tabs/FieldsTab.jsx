@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { getApiErrorMessage } from "../../api/platformApiClient";
 import * as designerApi from "../../api/designerApi";
@@ -15,8 +16,20 @@ import {
   normalizeChoiceOptionsFromSettings,
   resolveChoiceFieldTypeForSave,
 } from "../fields/fieldFormUtils";
+import {
+  buildRelationSettingsPayload,
+  isRelationFieldType,
+  normalizeRelationSettingsFromField,
+  validateRelationFieldDraft,
+} from "../fields/relationFieldFormUtils";
 
-export default function FieldsTab({ tenantId, objectTypeId, onSchemaChanged }) {
+export default function FieldsTab({
+  tenantId,
+  objectTypeId,
+  objectType = null,
+  onSchemaChanged,
+}) {
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -27,6 +40,7 @@ export default function FieldsTab({ tenantId, objectTypeId, onSchemaChanged }) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [createError, setCreateError] = useState("");
+  const [relationDefinitions, setRelationDefinitions] = useState([]);
 
   const selected = items.find((item) => item.id === selectedId) || null;
   const existingFieldKeys = items
@@ -51,6 +65,39 @@ export default function FieldsTab({ tenantId, objectTypeId, onSchemaChanged }) {
     loadItems();
   }, [loadItems]);
 
+  const reloadRelations = useCallback(async () => {
+    try {
+      const data = await designerApi.listRelations(tenantId, objectTypeId);
+      const nextList = Array.isArray(data) ? data : [];
+      setRelationDefinitions(nextList);
+      return nextList;
+    } catch {
+      setRelationDefinitions([]);
+      return [];
+    }
+  }, [tenantId, objectTypeId]);
+
+  useEffect(() => {
+    void reloadRelations();
+  }, [reloadRelations]);
+
+  const objectTypeLabel = useMemo(
+    () => String(objectType?.name || objectType?.key || "").trim(),
+    [objectType],
+  );
+
+  const existingRelationKeys = useMemo(
+    () =>
+      relationDefinitions
+        .map((item) => String(item?.key || "").trim())
+        .filter(Boolean),
+    [relationDefinitions],
+  );
+
+  const handleOpenRelationsTab = useCallback(() => {
+    navigate(`/designer/tenant/${tenantId}/object-types/${objectTypeId}/relations`);
+  }, [navigate, tenantId, objectTypeId]);
+
   useEffect(() => {
     if (!selected) {
       setDraft(null);
@@ -60,6 +107,9 @@ export default function FieldsTab({ tenantId, objectTypeId, onSchemaChanged }) {
 
     const { options: choice_options, multiple: settingsMultiple } =
       normalizeChoiceOptionsFromSettings(selected.settings_json);
+    const relationSettings = normalizeRelationSettingsFromField(
+      selected.settings_json,
+    );
 
     setDraft({
       name: selected.name,
@@ -67,6 +117,7 @@ export default function FieldsTab({ tenantId, objectTypeId, onSchemaChanged }) {
       field_type: selected.field_type,
       is_required: selected.is_required,
       is_unique: selected.is_unique,
+      quick_create: Boolean(selected.quick_create),
       description: selected.description || "",
       choice_options,
       choice_multiple: isChoiceMultipleFromField(
@@ -77,7 +128,13 @@ export default function FieldsTab({ tenantId, objectTypeId, onSchemaChanged }) {
         selected.field_type,
         selected.settings_json,
       ),
+      relation_key: relationSettings.relation_key,
+      relation_role: relationSettings.role,
+      relation_cardinality: relationSettings.cardinality || "one",
       choice_options_error: "",
+      relation_key_error: "",
+      relation_role_error: "",
+      relation_cardinality_error: "",
     });
     setSaveError("");
   }, [selected]);
@@ -115,6 +172,7 @@ export default function FieldsTab({ tenantId, objectTypeId, onSchemaChanged }) {
       field_type: draft.field_type,
       is_required: Boolean(draft.is_required),
       is_unique: Boolean(draft.is_unique),
+      quick_create: Boolean(draft.quick_create),
       description: String(draft.description || "").trim(),
     };
 
@@ -145,6 +203,35 @@ export default function FieldsTab({ tenantId, objectTypeId, onSchemaChanged }) {
 
     if (isFileFieldType(draft.field_type)) {
       payload.settings_json = buildFileSettingsPayload(draft.file_multiple);
+    }
+
+    if (isRelationFieldType(draft.field_type)) {
+      const relationErrors = validateRelationFieldDraft({
+        relation_key: draft.relation_key,
+        role: draft.relation_role,
+        cardinality: draft.relation_cardinality,
+      });
+
+      if (Object.keys(relationErrors).length > 0) {
+        setDraft((current) =>
+          current
+            ? {
+                ...current,
+                relation_key_error: relationErrors.relation_key || "",
+                relation_role_error: relationErrors.role || "",
+                relation_cardinality_error: relationErrors.cardinality || "",
+              }
+            : current,
+        );
+        setSaveError("Заполните настройки поля «Связи»");
+        return;
+      }
+
+      payload.settings_json = buildRelationSettingsPayload({
+        relation_key: draft.relation_key,
+        role: draft.relation_role,
+        cardinality: draft.relation_cardinality,
+      });
     }
 
     setSaving(true);
@@ -223,6 +310,7 @@ export default function FieldsTab({ tenantId, objectTypeId, onSchemaChanged }) {
                 <th>Тип</th>
                 <th>Обязательное</th>
                 <th>Уникальное</th>
+                <th>Быстрая форма</th>
               </tr>
             </thead>
             <tbody>
@@ -239,6 +327,7 @@ export default function FieldsTab({ tenantId, objectTypeId, onSchemaChanged }) {
                   <td>{getFieldTypeLabel(item.field_type, FIELD_TYPE_OPTIONS)}</td>
                   <td>{item.is_required ? "Да" : "Нет"}</td>
                   <td>{item.is_unique ? "Да" : "Нет"}</td>
+                  <td>{item.quick_create ? "Да" : "Нет"}</td>
                 </tr>
               ))}
             </tbody>
@@ -249,6 +338,13 @@ export default function FieldsTab({ tenantId, objectTypeId, onSchemaChanged }) {
       {selected && draft ? (
         <FieldPropertiesPanel
           draft={draft}
+          tenantId={tenantId}
+          objectTypeId={objectTypeId}
+          objectTypeLabel={objectTypeLabel}
+          relationDefinitions={relationDefinitions}
+          existingRelationKeys={existingRelationKeys}
+          onReloadRelations={reloadRelations}
+          onOpenRelationsTab={handleOpenRelationsTab}
           saveError={saveError}
           saving={saving}
           onDraftChange={setDraft}
@@ -261,6 +357,13 @@ export default function FieldsTab({ tenantId, objectTypeId, onSchemaChanged }) {
       <CreateFieldModal
         isOpen={isCreateModalOpen}
         existingFieldKeys={existingFieldKeys}
+        tenantId={tenantId}
+        objectTypeId={objectTypeId}
+        objectTypeLabel={objectTypeLabel}
+        relationDefinitions={relationDefinitions}
+        existingRelationKeys={existingRelationKeys}
+        onReloadRelations={reloadRelations}
+        onOpenRelationsTab={handleOpenRelationsTab}
         isSubmitting={isCreating}
         submitError={createError}
         onClose={() => setIsCreateModalOpen(false)}

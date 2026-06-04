@@ -1,4 +1,5 @@
 import { normalizeFieldEditorType } from "../../../shared/fieldEditors/fieldEditorRegistry";
+import { isRelationFieldType } from "../../designer/components/fields/relationFieldFormUtils";
 import { serializeUserFieldValue } from "../../../shared/fieldEditors/userFieldValueUtils";
 
 function isEmptyValue(editorType, value) {
@@ -42,6 +43,12 @@ export function buildEntityUpdatePayload(formValues, fields = []) {
     const key = String(field.key || "").trim();
 
     if (!key) {
+      continue;
+    }
+
+    const rawFieldType = String(field.rawFieldType || field.type || "").trim();
+
+    if (isRelationFieldType(rawFieldType)) {
       continue;
     }
 
@@ -124,6 +131,12 @@ export function buildInitialFormValuesFromEntity(entity, editableFields = []) {
     const key = String(field.key || "").trim();
 
     if (!key) {
+      continue;
+    }
+
+    const rawFieldType = String(field.rawFieldType || field.type || "").trim();
+
+    if (isRelationFieldType(rawFieldType)) {
       continue;
     }
 

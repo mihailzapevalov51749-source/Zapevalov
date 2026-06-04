@@ -91,12 +91,49 @@ export function resolveVisibleFieldKeys(contract, runtimeProjection = null, opti
 /**
  * @param {{ key?: string, isSystem?: boolean, source?: string } | null | undefined} column
  */
+/**
+ * @param {Record<string, number> | null | undefined} left
+ * @param {Record<string, number> | null | undefined} right
+ */
+export function areColumnWidthsEqual(left, right) {
+  const a = left && typeof left === "object" ? left : {};
+  const b = right && typeof right === "object" ? right : {};
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+
+  if (keysA.length !== keysB.length) {
+    return false;
+  }
+
+  for (const key of keysA) {
+    if (Number(a[key]) !== Number(b[key])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export function getColumnPresentationKey(column) {
-  if (!column || column.isSystem || column.source === "system") {
+  if (!column) {
     return null;
   }
 
-  return String(column.key || "").trim() || null;
+  const key = String(column.key || "").trim();
+
+  if (!key) {
+    return null;
+  }
+
+  if (column.source === "field" && !column.isSystem) {
+    return key;
+  }
+
+  if (column.source === "system") {
+    return key;
+  }
+
+  return null;
 }
 
 /**
@@ -125,7 +162,7 @@ export function contractToDisplayProjection(
         field: contract.query.sort.rules[0].field,
         order: contract.query.sort.rules[0].order,
       }
-    : runtimeProjection?.default_sort || { field: "created_at", order: "desc" };
+    : runtimeProjection?.default_sort || { field: "created_at", order: "asc" };
 
   if (runtimeProjection && typeof runtimeProjection === "object") {
     return {

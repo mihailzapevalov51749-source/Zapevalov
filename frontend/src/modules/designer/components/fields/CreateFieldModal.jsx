@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import ChoiceOptionsEditor from "./ChoiceOptionsEditor";
+import RelationFieldSettings from "./RelationFieldSettings";
 import {
   buildChoiceSettingsPayload,
   buildFileSettingsPayload,
@@ -10,6 +11,11 @@ import {
   isFileFieldType,
   resolveChoiceFieldTypeForSave,
 } from "./fieldFormUtils";
+import {
+  buildRelationSettingsPayload,
+  isRelationFieldType,
+  validateRelationFieldDraft,
+} from "./relationFieldFormUtils";
 
 import "./createFieldModal.css";
 
@@ -28,6 +34,7 @@ export const FIELD_TYPE_OPTIONS = [
   { value: "uuid", label: "UUID" },
   { value: "user", label: "Пользователь" },
   { value: "file", label: "Вложения" },
+  { value: "relation", label: "Связи" },
 ];
 
 const INITIAL_FORM = {
@@ -38,9 +45,13 @@ const INITIAL_FORM = {
   description: "",
   is_required: false,
   is_unique: false,
+  quick_create: false,
   choice_options: [],
   choice_multiple: false,
   file_multiple: true,
+  relation_key: "",
+  relation_role: "",
+  relation_cardinality: "one",
 };
 
 function validateForm(form, existingFieldKeys) {
@@ -81,6 +92,17 @@ function validateForm(form, existingFieldKeys) {
     }
   }
 
+  if (isRelationFieldType(fieldType)) {
+    Object.assign(
+      errors,
+      validateRelationFieldDraft({
+        relation_key: form.relation_key,
+        role: form.relation_role,
+        cardinality: form.relation_cardinality,
+      }),
+    );
+  }
+
   return errors;
 }
 
@@ -96,6 +118,7 @@ function buildCreatePayload(form, existingFieldKeys) {
     field_type: fieldType,
     is_required: Boolean(form.is_required),
     is_unique: Boolean(form.is_unique),
+    quick_create: Boolean(form.quick_create),
     settings_json: {},
   };
 
@@ -118,6 +141,14 @@ function buildCreatePayload(form, existingFieldKeys) {
     payload.settings_json = buildFileSettingsPayload(form.file_multiple);
   }
 
+  if (isRelationFieldType(fieldType)) {
+    payload.settings_json = buildRelationSettingsPayload({
+      relation_key: form.relation_key,
+      role: form.relation_role,
+      cardinality: form.relation_cardinality,
+    });
+  }
+
   void existingFieldKeys;
 
   return payload;
@@ -126,6 +157,13 @@ function buildCreatePayload(form, existingFieldKeys) {
 export default function CreateFieldModal({
   isOpen = false,
   existingFieldKeys = [],
+  tenantId = null,
+  objectTypeId = null,
+  objectTypeLabel = "",
+  relationDefinitions = [],
+  existingRelationKeys = [],
+  onReloadRelations = null,
+  onOpenRelationsTab = null,
   isSubmitting = false,
   submitError = "",
   onClose,
@@ -197,6 +235,7 @@ export default function CreateFieldModal({
 
   const showChoiceOptions = isChoiceFieldType(form.field_type);
   const showFileOptions = isFileFieldType(form.field_type);
+  const showRelationOptions = isRelationFieldType(form.field_type);
 
   return (
     <div
@@ -281,6 +320,12 @@ export default function CreateFieldModal({
                     patch.choice_options = [createEmptyChoiceOption()];
                   }
 
+                  if (isRelationFieldType(nextFieldType)) {
+                    patch.relation_key = "";
+                    patch.relation_role = "";
+                    patch.relation_cardinality = "one";
+                  }
+
                   return patch;
                 });
               }}
@@ -339,6 +384,34 @@ export default function CreateFieldModal({
             </label>
           ) : null}
 
+          {showRelationOptions ? (
+            <RelationFieldSettings
+              tenantId={tenantId}
+              objectTypeId={objectTypeId}
+              objectTypeLabel={objectTypeLabel}
+              relationDefinitions={relationDefinitions}
+              existingRelationKeys={existingRelationKeys}
+              relation_key={form.relation_key}
+              role={form.relation_role}
+              cardinality={form.relation_cardinality}
+              errors={{
+                relation_key: errors.relation_key,
+                role: errors.role,
+                cardinality: errors.cardinality,
+              }}
+              onReloadRelations={onReloadRelations}
+              onOpenRelationsTab={onOpenRelationsTab}
+              onChange={({ relation_key, role, cardinality }) =>
+                setForm((prev) => ({
+                  ...prev,
+                  relation_key,
+                  relation_role: role,
+                  relation_cardinality: cardinality,
+                }))
+              }
+            />
+          ) : null}
+
           <div className="designer-create-field-modal__flags">
             <label className="designer-create-field-modal__checkbox">
               <input
@@ -359,6 +432,19 @@ export default function CreateFieldModal({
                 }
               />
               Уникальное
+            </label>
+            <label className="designer-create-field-modal__checkbox">
+              <input
+                type="checkbox"
+                checked={form.quick_create}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    quick_create: event.target.checked,
+                  }))
+                }
+              />
+              Быстрая форма
             </label>
           </div>
 

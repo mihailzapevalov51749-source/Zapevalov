@@ -1,0 +1,8 @@
+﻿slug relation-field-type-roadmap-history-20260604 found True
+ title: ╥шя яюы  "╤т чш": фюЁюцэр  ърЁЄр
+ desc: ─ы  ъюьяюэхэЄр "╥шя яюы  ╤т чш" фхЄрышчшЁютрэр фюЁюцэр  ърЁЄр ЁрчтшЄш  relation engine ш яхЁхїюфр Parent Record эр Relation Engine.
+ type: milestone
+slug relation-field-type-changelog-20260604 found True
+ title: ╞єЁэры шчьхэхэшщ: Єшя яюы  "╤т чш"
+ desc: ╩юьяюэхэЄ "╥шя яюы  ╤т чш" юсэюты╕э. ─юсртыхэ√ фхЄрышчшЁютрээ√х °руш ЁхрышчрЎшш relation engine.
+ type: milestone
