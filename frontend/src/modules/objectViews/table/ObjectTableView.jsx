@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { mergeEffectiveContract } from "../services/mergeEffectiveContract";
+import { resolveCardLayoutPersistenceContract } from "../services/resolveCardLayoutPersistenceContract";
 
 import { ObjectEntityCardModal } from "../../objectEntities";
 import useObjectEntityCard from "../../objectEntities/hooks/useObjectEntityCard";
+import { resolveEntityCardLayoutForRender } from "../../objectEntities/services/resolveEntityCardPresentationLayout";
+import { resolveObjectTypeTitleFieldKey } from "../services/tableColumnOrder";
 import {
   openFileViewer,
   REOPEN_OBJECT_ENTITY_CARD_EVENT,
@@ -99,7 +102,10 @@ export default function ObjectTableView({
   allowOfficeUserPersistence = false,
   representationsPrefsScopeKey = null,
   isTableBaseStateActive = false,
+  publishedTableViewKey = "default_table",
   onSelectTableBaseState = null,
+  viewDefinitionsForCardLayout = [],
+  onCardLayoutSaved = null,
 }) {
   void viewLabel;
 
@@ -124,10 +130,77 @@ export default function ObjectTableView({
     onEntityUpdated: () => query.reload?.(),
   });
 
-  const titleFieldKey =
-    effectiveContract?.projection?.titleFieldKey ||
-    resolvedContract?.projection?.titleFieldKey ||
-    null;
+  const titleFieldKey = useMemo(() => {
+    const objectType = findCatalogObjectType(query.catalog, objectTypeKey);
+    const fieldKeys = effectiveContract?.projection?.fieldKeys || [];
+    const runtimeProjection =
+      query.projectionValid && query.projection ? query.projection : null;
+
+    const publishedViewKey = isTableBaseStateActive
+      ? String(publishedTableViewKey || "default_table").trim()
+      : String(activeViewKey || publishedTableViewKey || "default_table").trim();
+
+    return (
+      resolveObjectTypeTitleFieldKey(objectType, fieldKeys, {
+        publishedViewKey,
+        runtimeProjection,
+      }) ||
+      effectiveContract?.projection?.titleFieldKey ||
+      resolvedContract?.projection?.titleFieldKey ||
+      null
+    );
+  }, [
+    query.catalog,
+    query.projection,
+    query.projectionValid,
+    objectTypeKey,
+    activeViewKey,
+    isTableBaseStateActive,
+    publishedTableViewKey,
+    effectiveContract?.projection?.titleFieldKey,
+    effectiveContract?.projection?.fieldKeys,
+    resolvedContract?.projection?.titleFieldKey,
+  ]);
+
+  const cardLayoutPersistenceContract = useMemo(
+    () =>
+      resolveCardLayoutPersistenceContract({
+        effectiveContract,
+        resolvedContract,
+        publishedTableViewKey,
+        isTableBaseStateActive,
+        viewDefinitions: viewDefinitionsForCardLayout,
+      }),
+    [
+      effectiveContract,
+      resolvedContract,
+      publishedTableViewKey,
+      isTableBaseStateActive,
+      viewDefinitionsForCardLayout,
+    ],
+  );
+
+  const entityCardLayout = useMemo(
+    () =>
+      resolveEntityCardLayoutForRender({
+        effectiveCardLayout: effectiveContract?.presentation?.card,
+        persistenceCardLayout: cardLayoutPersistenceContract?.presentation?.card,
+        catalog: query.catalog,
+        objectTypeKey,
+        publishedViewKey: isTableBaseStateActive
+          ? publishedTableViewKey
+          : activeViewKey || publishedTableViewKey,
+      }),
+    [
+      effectiveContract?.presentation?.card,
+      cardLayoutPersistenceContract?.presentation?.card,
+      query.catalog,
+      objectTypeKey,
+      isTableBaseStateActive,
+      publishedTableViewKey,
+      activeViewKey,
+    ],
+  );
 
   const entityCard = useObjectEntityCard({
     tenantId,
@@ -251,11 +324,11 @@ export default function ObjectTableView({
   const canConfigureEntityCard =
     entityCardEnabled &&
     allowDesignerPersistence &&
-    Boolean(effectiveContract?.meta?.viewId);
+    Boolean(cardLayoutPersistenceContract?.meta?.viewId);
 
   const handleSaveCardLayout = useCallback(
     async (layout) => {
-      if (!sessionApi || !persistenceApi || !resolvedContract) {
+      if (!sessionApi || !persistenceApi || !cardLayoutPersistenceContract) {
         return false;
       }
 
@@ -264,8 +337,7 @@ export default function ObjectTableView({
       try {
         sessionApi.setCardLayout(layout);
 
-        const contractToSave = mergeEffectiveContract(resolvedContract, {
-          ...sessionApi.sessionDelta,
+        const contractToSave = mergeEffectiveContract(cardLayoutPersistenceContract, {
           cardLayout: layout,
         });
 
@@ -277,12 +349,19 @@ export default function ObjectTableView({
 
         sessionApi.markSaved();
         await onRefreshViews?.();
+        await onCardLayoutSaved?.();
         return true;
       } finally {
         setCardSettingsSaving(false);
       }
     },
-    [sessionApi, persistenceApi, resolvedContract, onRefreshViews],
+    [
+      sessionApi,
+      persistenceApi,
+      cardLayoutPersistenceContract,
+      onRefreshViews,
+      onCardLayoutSaved,
+    ],
   );
 
   const dirtyGuard = useObjectViewDirtyGuard({
@@ -299,6 +378,8 @@ export default function ObjectTableView({
     contract: contractForColumns,
     objectTypeKey,
     viewKey: activeViewKey,
+    publishedTableViewKey,
+    isAllMode: isTableBaseStateActive,
   });
 
   const registryFieldLabels = useMemo(() => {
@@ -864,7 +945,7 @@ export default function ObjectTableView({
           initialContext={entityCard.initialContext}
           catalog={query.catalog}
           onEntityUpdated={entityCard.refreshEntity}
-          cardLayout={effectiveContract?.presentation?.card}
+          cardLayout={entityCardLayout}
           canConfigureCard={canConfigureEntityCard}
           onSaveCardLayout={canConfigureEntityCard ? handleSaveCardLayout : null}
           cardSettingsSaving={cardSettingsSaving}

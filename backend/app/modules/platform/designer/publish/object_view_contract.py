@@ -119,6 +119,150 @@ def sanitize_presentation_table(
     }
 
 
+def _normalize_card_visible_flag(value: Any) -> bool:
+    """Canonical card visibility: only explicit false hides a block/tab/field."""
+    return value is not False
+
+
+def sanitize_presentation_card(
+    presentation_card: dict[str, Any] | None,
+    *,
+    field_keys: set[str] | None = None,
+) -> dict[str, Any] | None:
+    """Light sanitization for object card layout before catalog snapshot."""
+    if not isinstance(presentation_card, dict):
+        return None
+
+    allowed_keys = field_keys or set()
+
+    def _keep_field_key(key: str) -> bool:
+        normalized = str(key or "").strip()
+        if not normalized or normalized in OBJECT_VIEW_SYSTEM_FIELD_KEYS:
+            return False
+        if not allowed_keys:
+            return True
+        return normalized in allowed_keys
+
+    sections: list[dict[str, Any]] = []
+    for index, section in enumerate(presentation_card.get("sections") or []):
+        if not isinstance(section, dict):
+            continue
+
+        field_keys_norm = [
+            str(key)
+            for key in (section.get("fieldKeys") or [])
+            if _keep_field_key(str(key))
+        ]
+        tab_ids_norm = [
+            str(tab_id).strip()
+            for tab_id in (section.get("tabIds") or [])
+            if str(tab_id or "").strip()
+        ]
+
+        sections.append(
+            {
+                "id": str(section.get("id") or f"section-{index + 1}"),
+                "type": str(section.get("type") or "").strip() or None,
+                "title": str(section.get("title") or "").strip(),
+                "fieldKeys": field_keys_norm,
+                "tabIds": tab_ids_norm,
+                "visible": _normalize_card_visible_flag(section.get("visible")),
+                "order": int(section["order"])
+                if isinstance(section.get("order"), (int, float))
+                else index,
+            }
+        )
+
+    tabs: list[dict[str, Any]] = []
+    for index, tab in enumerate(presentation_card.get("tabs") or []):
+        if not isinstance(tab, dict):
+            continue
+        tab_id = str(tab.get("id") or "").strip()
+        if not tab_id:
+            continue
+        tabs.append(
+            {
+                "id": tab_id,
+                "visible": _normalize_card_visible_flag(tab.get("visible")),
+                "order": int(tab["order"])
+                if isinstance(tab.get("order"), (int, float))
+                else index,
+            }
+        )
+
+    hidden_field_keys = [
+        str(key)
+        for key in (presentation_card.get("hiddenFieldKeys") or [])
+        if _keep_field_key(str(key))
+    ]
+
+    if not sections and not tabs and not hidden_field_keys:
+        return None
+
+    return {
+        "sections": sections,
+        "tabs": tabs,
+        "hiddenFieldKeys": hidden_field_keys,
+    }
+
+
+def _enforce_title_field_first_in_column_order(
+    column_order: list[str],
+    title_field: str | None,
+) -> list[str]:
+    title = str(title_field or "").strip()
+    if not title:
+        return column_order
+
+    without_title = [key for key in column_order if key != title]
+    if title not in column_order:
+        return column_order
+
+    return [title, *without_title]
+
+
+def sync_object_view_projection_from_legacy(
+    object_view: dict[str, Any],
+    legacy_projection: dict[str, Any],
+    *,
+    field_keys: set[str],
+) -> dict[str, Any]:
+    """Apply Studio legacy projection.title_field onto objectView before publish."""
+    object_view = dict(object_view)
+    projection_raw = object_view.get("projection")
+    projection = dict(projection_raw) if isinstance(projection_raw, dict) else {}
+
+    legacy_title = legacy_projection.get("title_field")
+    if isinstance(legacy_title, str) and legacy_title.strip():
+        normalized_title = legacy_title.strip()
+        if not field_keys or normalized_title in field_keys:
+            projection["titleFieldKey"] = normalized_title
+
+    legacy_visible = legacy_projection.get("visible_fields")
+    legacy_order = legacy_projection.get("field_order")
+    if _is_str_list(legacy_order):
+        order = [
+            str(key).strip()
+            for key in legacy_order
+            if str(key or "").strip() and str(key) not in OBJECT_VIEW_SYSTEM_FIELD_KEYS
+        ]
+        if order:
+            projection["fieldKeys"] = order
+            projection["fieldOrder"] = list(order)
+    elif _is_str_list(legacy_visible):
+        visible = [
+            str(key).strip()
+            for key in legacy_visible
+            if str(key or "").strip() and str(key) not in OBJECT_VIEW_SYSTEM_FIELD_KEYS
+        ]
+        if visible:
+            projection["fieldKeys"] = visible
+            projection["fieldOrder"] = list(visible)
+
+    object_view["projection"] = projection
+    return object_view
+
+
 def merge_object_view_projection_field_keys(
     object_view: dict[str, Any],
     *,
@@ -187,7 +331,11 @@ def merge_object_view_projection_field_keys(
                 if key not in column_seen:
                     column_order.append(key)
                     column_seen.add(key)
-            table["columnOrder"] = column_order
+            title_key = projection.get("titleFieldKey") or projection.get("title_field_key")
+            table["columnOrder"] = _enforce_title_field_first_in_column_order(
+                column_order,
+                title_key if isinstance(title_key, str) else None,
+            )
             presentation = dict(presentation)
             presentation["table"] = table
             object_view["presentation"] = presentation
@@ -272,21 +420,37 @@ def normalize_settings_json_for_publish(
     if isinstance(object_view, dict):
         presentation = object_view.get("presentation")
         if isinstance(presentation, dict):
+            presentation = dict(presentation)
             table = presentation.get("table")
             if isinstance(table, dict):
-                presentation = dict(presentation)
                 presentation["table"] = sanitize_presentation_table(
                     table,
                     field_keys=field_keys,
                 )
-                object_view = dict(object_view)
-                object_view["presentation"] = presentation
+            card = presentation.get("card")
+            if isinstance(card, dict):
+                sanitized_card = sanitize_presentation_card(
+                    card,
+                    field_keys=field_keys,
+                )
+                if sanitized_card is not None:
+                    presentation["card"] = sanitized_card
+            object_view = dict(object_view)
+            object_view["presentation"] = presentation
 
         ordered_non_system = [
             str(key)
             for key in (ordered_field_keys or sorted(field_keys))
             if str(key or "").strip() and str(key) not in OBJECT_VIEW_SYSTEM_FIELD_KEYS
         ]
+        legacy_projection = settings.get("projection")
+        if isinstance(legacy_projection, dict):
+            object_view = sync_object_view_projection_from_legacy(
+                object_view,
+                legacy_projection,
+                field_keys=field_keys,
+            )
+
         object_view = merge_object_view_projection_field_keys(
             object_view,
             ordered_non_system_field_keys=ordered_non_system,

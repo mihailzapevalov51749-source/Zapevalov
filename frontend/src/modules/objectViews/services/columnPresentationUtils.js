@@ -16,11 +16,12 @@ export function getProjectionFieldKeys(contract) {
  *
  * @param {import('./objectViewContract').ObjectViewContract | null | undefined} contract
  */
-export function resolvePanelColumnOrder(contract, runtimeProjection = null) {
+export function resolvePanelColumnOrder(contract, runtimeProjection = null, options = {}) {
   const projectionKeys = getProjectionFieldKeys(contract);
   const { titleFieldKey, isAllMode } = resolveTableDisplayContext(
     contract,
     runtimeProjection,
+    options,
   );
 
   if (isTableBaseStateKey(contract?.key)) {
@@ -69,15 +70,16 @@ export function resolvePanelColumnOrder(contract, runtimeProjection = null) {
  *
  * @param {import('./objectViewContract').ObjectViewContract | null | undefined} contract
  */
-export function resolveVisibleFieldKeys(contract, runtimeProjection = null) {
+export function resolveVisibleFieldKeys(contract, runtimeProjection = null, options = {}) {
   const projectionKeys = getProjectionFieldKeys(contract);
   const hidden = new Set(contract?.presentation?.table?.hiddenFieldKeys || []);
   const { titleFieldKey, isAllMode } = resolveTableDisplayContext(
     contract,
     runtimeProjection,
+    options,
   );
 
-  const panelOrder = resolvePanelColumnOrder(contract, runtimeProjection);
+  const panelOrder = resolvePanelColumnOrder(contract, runtimeProjection, options);
   const visible = panelOrder.filter((key) => !hidden.has(key));
 
   return normalizeTableDisplayFieldKeys(visible, {
@@ -101,7 +103,11 @@ export function getColumnPresentationKey(column) {
  * @param {import('./objectViewContract').ObjectViewContract | null | undefined} contract
  * @param {Record<string, unknown> | null | undefined} [runtimeProjection]
  */
-export function contractToDisplayProjection(contract, runtimeProjection = null) {
+export function contractToDisplayProjection(
+  contract,
+  runtimeProjection = null,
+  options = {},
+) {
   if (!contract) {
     return runtimeProjection;
   }
@@ -109,9 +115,10 @@ export function contractToDisplayProjection(contract, runtimeProjection = null) 
   const { titleFieldKey: titleField, isAllMode } = resolveTableDisplayContext(
     contract,
     runtimeProjection,
+    options,
   );
 
-  const visibleKeys = resolveVisibleFieldKeys(contract, runtimeProjection);
+  const visibleKeys = resolveVisibleFieldKeys(contract, runtimeProjection, options);
 
   const defaultSort = contract.query?.sort?.rules?.[0]
     ? {

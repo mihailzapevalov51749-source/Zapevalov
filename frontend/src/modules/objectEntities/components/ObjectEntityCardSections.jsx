@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 
+import { isFileFieldType } from "../../../shared/files/attachments/utils/attachmentFileTypes";
 import { OBJECT_ENTITY_SECTION_TYPES } from "../services/objectEntityCardSectionsLayout";
 import { getFileFieldsFromCatalog } from "../services/getFileFieldsFromCatalog";
 import { findDescriptionField } from "../services/runtimeEntityCardAdapter";
@@ -94,20 +95,21 @@ export default function ObjectEntityCardSections({
   );
 
   const resolvedTitleField = useMemo(() => {
-    const mainKeys = mainSection?.fieldKeys || [];
-    const configuredKey = String(mainKeys[0] || "").trim();
     const titleKey = String(cardModel?.titleFieldKey || "").trim();
-
-    if (configuredKey && fieldsByKey.has(configuredKey)) {
-      return fieldsByKey.get(configuredKey);
-    }
 
     if (titleKey && fieldsByKey.has(titleKey)) {
       return fieldsByKey.get(titleKey);
     }
 
+    const mainKeys = mainSection?.fieldKeys || [];
+    const configuredKey = String(mainKeys[0] || "").trim();
+
+    if (configuredKey && fieldsByKey.has(configuredKey)) {
+      return fieldsByKey.get(configuredKey);
+    }
+
     return titleField;
-  }, [mainSection?.fieldKeys, cardModel?.titleFieldKey, fieldsByKey, titleField]);
+  }, [cardModel?.titleFieldKey, mainSection?.fieldKeys, fieldsByKey, titleField]);
 
   const resolvedDescriptionField = useMemo(() => {
     const mainKeys = mainSection?.fieldKeys || [];
@@ -151,21 +153,6 @@ export default function ObjectEntityCardSections({
         </div>
       ) : null}
 
-      {!isCreate && (cardModel?.readOnlyFields || []).length > 0 ? (
-        <ObjectEntityCardFieldsGrid
-          fields={cardModel.readOnlyFields}
-          formValues={{
-            ...formValues,
-            ...(cardModel?.rawEntity?.values && typeof cardModel.rawEntity.values === "object"
-              ? cardModel.rawEntity.values
-              : {}),
-          }}
-          fieldErrors={{}}
-          onFieldChange={null}
-          readOnly
-        />
-      ) : null}
-
       {sections.map((section) => {
         if (section.visible === false) {
           return null;
@@ -192,9 +179,31 @@ export default function ObjectEntityCardSections({
             />
           );
         } else if (section.type === OBJECT_ENTITY_SECTION_TYPES.fieldsGrid) {
+          const catalogFileKeys = new Set(
+            getFileFieldsFromCatalog(catalog, cardModel?.objectTypeKey).map(
+              (field) => String(field.key),
+            ),
+          );
+
           const fields = (section.fieldKeys || [])
             .map((key) => fieldsByKey.get(String(key)))
-            .filter(Boolean);
+            .filter((field) => {
+              if (!field) {
+                return false;
+              }
+
+              const fieldKey = String(field?.key || "");
+
+              if (catalogFileKeys.has(fieldKey)) {
+                return false;
+              }
+
+              const rawType = String(
+                field?.rawFieldType || field?.type || "",
+              ).toLowerCase();
+
+              return !isFileFieldType(rawType);
+            });
 
           renderedSection = (
             <ObjectEntityCardFieldsGrid

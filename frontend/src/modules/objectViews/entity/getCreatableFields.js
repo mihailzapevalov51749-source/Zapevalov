@@ -1,3 +1,4 @@
+import { isFileFieldType } from "../../../shared/files/attachments/utils/attachmentFileTypes";
 import {
   isCreatableFieldType,
   normalizeFieldEditorType,
@@ -32,6 +33,10 @@ export function getCreatableFields(catalog, objectTypeKey) {
       }
 
       const rawType = String(field.field_type || field.type || "").trim();
+
+      if (isFileFieldType(rawType)) {
+        return false;
+      }
 
       return isCreatableFieldType(rawType);
     })

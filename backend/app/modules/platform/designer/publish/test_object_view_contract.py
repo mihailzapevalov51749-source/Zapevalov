@@ -9,6 +9,7 @@ from app.modules.platform.designer.publish.object_view_contract import (
     merge_object_view_projection_field_keys,
     normalize_settings_json_for_publish,
     projection_from_object_view,
+    sanitize_presentation_card,
     sanitize_presentation_table,
     validate_object_view_for_publish,
 )
@@ -90,6 +91,37 @@ def test_validate_object_view_key_mismatch() -> None:
     )
 
     assert any(code == "object_view_key_mismatch" for code, _ in issues)
+
+
+def test_normalize_settings_json_applies_legacy_title_field_to_object_view() -> None:
+    settings = {
+        "objectView": {
+            "schemaVersion": OBJECT_VIEW_SCHEMA_VERSION,
+            "key": "default_table",
+            "viewType": "table",
+            "projection": {
+                "fieldKeys": ["title", "assignee"],
+                "fieldOrder": ["title", "assignee"],
+                "titleFieldKey": "title",
+            },
+        },
+        "projection": {
+            "visible_fields": ["title", "assignee"],
+            "field_order": ["title", "assignee"],
+            "title_field": "assignee",
+            "default_sort": {"field": "created_at", "order": "desc"},
+        },
+    }
+
+    normalized = normalize_settings_json_for_publish(
+        settings,
+        view_key="default_table",
+        view_type="table",
+        field_keys={"title", "assignee"},
+    )
+
+    assert normalized["projection"]["title_field"] == "assignee"
+    assert normalized["objectView"]["projection"]["titleFieldKey"] == "assignee"
 
 
 def test_normalize_settings_json_syncs_projection_from_object_view_on_drift() -> None:
@@ -373,3 +405,72 @@ def test_normalize_legacy_projection_only_appends_new_fields() -> None:
 
     assert normalized["projection"]["field_order"] == ["title", "priority"]
     assert normalized["projection"]["visible_fields"] == ["title", "priority"]
+
+
+def test_normalize_settings_json_preserves_card_visibility_on_publish() -> None:
+    settings = {
+        "objectView": {
+            "schemaVersion": OBJECT_VIEW_SCHEMA_VERSION,
+            "key": "default_table",
+            "viewType": "table",
+            "projection": {
+                "fieldKeys": ["title", "assignee"],
+                "fieldOrder": ["title", "assignee"],
+            },
+            "presentation": {
+                "table": {"hiddenFieldKeys": [], "columnOrder": ["title", "assignee"]},
+                "card": {
+                    "sections": [
+                        {
+                            "id": "comments",
+                            "type": "comments",
+                            "visible": False,
+                            "order": 5,
+                            "fieldKeys": [],
+                        },
+                        {
+                            "id": "attachments",
+                            "type": "attachments",
+                            "visible": True,
+                            "order": 4,
+                            "fieldKeys": [],
+                        },
+                    ],
+                    "tabs": [
+                        {"id": "notes", "visible": False, "order": 0},
+                        {"id": "relations", "visible": True, "order": 1},
+                    ],
+                    "hiddenFieldKeys": ["assignee"],
+                },
+            },
+        },
+    }
+
+    normalized = normalize_settings_json_for_publish(
+        settings,
+        view_key="default_table",
+        view_type="table",
+        field_keys={"title", "assignee"},
+    )
+
+    card = normalized["objectView"]["presentation"]["card"]
+    comments = next(section for section in card["sections"] if section["id"] == "comments")
+    notes = next(tab for tab in card["tabs"] if tab["id"] == "notes")
+
+    assert comments["visible"] is False
+    assert notes["visible"] is False
+    assert card["hiddenFieldKeys"] == ["assignee"]
+
+
+def test_sanitize_presentation_card_keeps_explicit_false_visible() -> None:
+    card = sanitize_presentation_card(
+        {
+            "sections": [{"id": "comments", "visible": False, "fieldKeys": []}],
+            "tabs": [],
+            "hiddenFieldKeys": [],
+        },
+        field_keys={"title"},
+    )
+
+    assert card is not None
+    assert card["sections"][0]["visible"] is False

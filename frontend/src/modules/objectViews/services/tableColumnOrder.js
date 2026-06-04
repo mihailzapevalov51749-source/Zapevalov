@@ -144,6 +144,28 @@ function readViewProjection(view) {
     return view.projection;
   }
 
+  const settings =
+    view.settings_json && typeof view.settings_json === "object"
+      ? view.settings_json
+      : null;
+
+  if (settings?.projection && typeof settings.projection === "object") {
+    return settings.projection;
+  }
+
+  const objectView = settings?.objectView;
+
+  if (objectView?.projection && typeof objectView.projection === "object") {
+    const ovProjection = objectView.projection;
+
+    return {
+      visible_fields: ovProjection.fieldKeys || ovProjection.field_keys || [],
+      field_order: ovProjection.fieldOrder || ovProjection.field_order || [],
+      title_field:
+        ovProjection.titleFieldKey || ovProjection.title_field_key || null,
+    };
+  }
+
   if (
     view.config &&
     typeof view.config === "object" &&
@@ -254,10 +276,20 @@ export function orderAllModeTableFieldKeys(fields, options = {}) {
  * @param {import('./objectViewContract').ObjectViewContract | null | undefined} contract
  * @param {Record<string, unknown> | null | undefined} [runtimeProjection]
  */
-export function resolveTableDisplayContext(contract, runtimeProjection = null) {
+export function resolveTableDisplayContext(
+  contract,
+  runtimeProjection = null,
+  options = {},
+) {
   const runtimeTitle = String(runtimeProjection?.title_field || "").trim();
+  const fieldKeys = contract?.projection?.fieldKeys || [];
+  const catalogTitle = resolveObjectTypeTitleFieldKey(options.objectType, fieldKeys, {
+    publishedViewKey: options.publishedViewKey,
+    runtimeProjection,
+  });
   const contractTitle = String(contract?.projection?.titleFieldKey || "").trim();
-  const titleFieldKey = runtimeTitle || contractTitle || null;
+
+  const titleFieldKey = runtimeTitle || catalogTitle || contractTitle || null;
 
   return {
     titleFieldKey,

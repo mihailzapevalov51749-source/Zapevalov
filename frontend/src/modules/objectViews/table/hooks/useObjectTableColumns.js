@@ -5,6 +5,7 @@ import {
   contractToDisplayProjection,
 } from "../../services/columnPresentationUtils";
 import { resolveTableDisplayContext } from "../../services/tableColumnOrder";
+import { findCatalogObjectType } from "../services/adapters/ObjectTypeTableAdapter";
 import {
   buildObjectTypeTableModelFromCatalog,
 } from "../services/tableModelAdapter";
@@ -17,24 +18,52 @@ export default function useObjectTableColumns({
   contract,
   objectTypeKey,
   viewKey,
+  publishedTableViewKey = "default_table",
+  isAllMode = false,
 }) {
   const displayProjection = useMemo(() => {
     const runtimeProjection =
       query.projectionValid && query.projection ? query.projection : null;
+    const objectType = findCatalogObjectType(query.catalog, objectTypeKey);
+    const displayOptions = {
+      objectType,
+      publishedViewKey: isAllMode
+        ? String(publishedTableViewKey || "default_table").trim()
+        : String(viewKey || publishedTableViewKey || "default_table").trim(),
+    };
 
     if (contract) {
-      return contractToDisplayProjection(contract, runtimeProjection);
+      return contractToDisplayProjection(
+        contract,
+        runtimeProjection,
+        displayOptions,
+      );
     }
 
     return runtimeProjection;
-  }, [query.projection, query.projectionValid, contract]);
+  }, [
+    query.projection,
+    query.projectionValid,
+    contract,
+    query.catalog,
+    objectTypeKey,
+    viewKey,
+    publishedTableViewKey,
+    isAllMode,
+  ]);
 
   const tableModel = useMemo(() => {
     if (!objectTypeKey) {
       return null;
     }
 
-    const displayContext = resolveTableDisplayContext(contract, displayProjection);
+    const objectType = findCatalogObjectType(query.catalog, objectTypeKey);
+    const displayContext = resolveTableDisplayContext(contract, displayProjection, {
+      objectType,
+      publishedViewKey: isAllMode
+        ? String(publishedTableViewKey || "default_table").trim()
+        : String(viewKey || publishedTableViewKey || "default_table").trim(),
+    });
 
     return buildObjectTypeTableModelFromCatalog({
       catalog: query.catalog,
@@ -55,6 +84,8 @@ export default function useObjectTableColumns({
     query.tableSort,
     objectTypeKey,
     viewKey,
+    publishedTableViewKey,
+    isAllMode,
     contract,
   ]);
 

@@ -1,5 +1,5 @@
 export const platformDevelopmentManifest = {
-  updatedAt: "2026-06-02T18:05:00",
+  updatedAt: "2026-06-04T12:00:00",
 
   title: "Развитие платформы ЯсноПро",
 
@@ -719,6 +719,58 @@ export const platformDevelopmentManifest = {
       relatedContours: ["Object Platform", "Publish"],
       relatedDebt: [],
       relatedAdr: null,
+    },
+    {
+      key: "object-card-publish-pipeline",
+      date: "2026-06-04",
+      title: "Публикация layout карточки объекта в Office",
+      type: "quality",
+      description:
+        "Сохранение настроек карточки обновляет updated_at объекта (неопубликованные изменения), publish переносит presentation.card в catalog snapshot; страница данных Studio получила Publish и onSchemaChanged после save card layout.",
+      impact:
+        "Цикл Studio → Save card → Есть неопубликованные изменения → Publish → Office применяет видимость блоков карточки.",
+      relatedContours: ["Object Card", "Publish", "Object Platform"],
+      relatedDebt: [],
+      relatedAdr: "ADR-002",
+    },
+    {
+      key: "object-card-visibility-persistence-fix",
+      date: "2026-06-04",
+      title: "Исправление сохранения и применения видимости блоков карточки объекта",
+      type: "quality",
+      description:
+        "Карточка в Studio (режим «Все») читала layout из published catalog вместо сохранённого designer view; после Save видимость сбрасывалась. Добавлен resolveEntityCardLayoutForRender и исправлены toggle вкладок.",
+      impact:
+        "Скрытие/показ блоков, вкладок, полей и комментариев сохраняется в presentation.card и применяется при повторном открытии; после Publish — в Office.",
+      relatedContours: ["Object Card", "Object Platform"],
+      relatedDebt: [],
+      relatedAdr: "ADR-002",
+    },
+    {
+      key: "object-card-comments-visibility",
+      date: "2026-06-04",
+      title: "Добавление управления видимостью комментариев в настройках карточки объекта",
+      type: "quality",
+      description:
+        "В структуру presentation.card добавлен блок «Комментарии»; видимость управляет правой панелью комментариев. Исправлено сохранение скрытия/показа блока вкладок и восстановление полей в fieldsGrid после повторного включения.",
+      impact:
+        "Studio настраивает комментарии как остальные блоки карточки; состояние сохраняется в view contract и применяется в Office после Publish.",
+      relatedContours: ["Object Card", "Object Platform"],
+      relatedDebt: [],
+      relatedAdr: "ADR-002",
+    },
+    {
+      key: "studio-object-card-settings-restored",
+      date: "2026-06-04",
+      title: "Восстановление настроек карточки объекта в Studio",
+      type: "quality",
+      description:
+        "В режиме таблицы «Все» (base state) шестерёнка настройки layout карточки снова доступна в Studio: сохранение идёт в опубликованное table-представление (default_table), в Office кнопка по-прежнему скрыта.",
+      impact:
+        "Конструктор может настраивать layout карточки из данных объекта без переключения на отдельное представление; runtime Office не получает Studio-инструменты.",
+      relatedContours: ["Object Card", "Object Platform", "Publish"],
+      relatedDebt: [],
+      relatedAdr: "ADR-002",
     },
   ],
 

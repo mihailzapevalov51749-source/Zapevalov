@@ -93,41 +93,6 @@ export default function ObjectViewHost({
 
   const isBaseStateActive = isTableBaseStateKey(definitions.activeViewKey);
 
-  const catalogSyncedResolvedContract = useMemo(
-    () =>
-      syncObjectViewContractWithCatalog(
-        definitions.resolvedContract,
-        runtimeCatalog,
-        objectTypeKey,
-      ),
-    [definitions.resolvedContract, runtimeCatalog, objectTypeKey],
-  );
-
-  const resolvedContractForSession = useMemo(() => {
-    if (!isBaseStateActive) {
-      return catalogSyncedResolvedContract;
-    }
-
-    if (!runtimeCatalog) {
-      return catalogSyncedResolvedContract;
-    }
-
-    return syncObjectViewContractWithCatalog(
-      buildTableBaseStateContract(runtimeCatalog, objectTypeKey, pageSize, {
-        publishedViewKey: definitions.publishedTableViewKey,
-      }),
-      runtimeCatalog,
-      objectTypeKey,
-    );
-  }, [
-    isBaseStateActive,
-    catalogSyncedResolvedContract,
-    runtimeCatalog,
-    objectTypeKey,
-    pageSize,
-    definitions.publishedTableViewKey,
-  ]);
-
   const representationSlotViews = useMemo(
     () =>
       filterRepresentationSlotViews(definitions.views, {
@@ -146,6 +111,48 @@ export default function ObjectViewHost({
     isBaseStateActive,
     definitions.publishedTableViewKey,
     definitions.activeViewKey,
+  ]);
+
+  const catalogSyncedResolvedContract = useMemo(
+    () =>
+      syncObjectViewContractWithCatalog(
+        definitions.resolvedContract,
+        runtimeCatalog,
+        objectTypeKey,
+        { publishedViewKey: definitions.publishedTableViewKey },
+      ),
+    [
+      definitions.resolvedContract,
+      runtimeCatalog,
+      objectTypeKey,
+      definitions.publishedTableViewKey,
+    ],
+  );
+
+  const resolvedContractForSession = useMemo(() => {
+    if (!isBaseStateActive) {
+      return catalogSyncedResolvedContract;
+    }
+
+    if (!runtimeCatalog) {
+      return catalogSyncedResolvedContract;
+    }
+
+    return syncObjectViewContractWithCatalog(
+      buildTableBaseStateContract(runtimeCatalog, objectTypeKey, pageSize, {
+        publishedViewKey: definitions.publishedTableViewKey,
+      }),
+      runtimeCatalog,
+      objectTypeKey,
+      { publishedViewKey: definitions.publishedTableViewKey },
+    );
+  }, [
+    isBaseStateActive,
+    catalogSyncedResolvedContract,
+    runtimeCatalog,
+    objectTypeKey,
+    pageSize,
+    definitions.publishedTableViewKey,
   ]);
 
   const session = useObjectViewSession({
@@ -498,6 +505,7 @@ export default function ObjectViewHost({
           query={query}
           views={representationSlotViews}
           activeViewKey={definitions.activeViewKey}
+          publishedTableViewKey={definitions.publishedTableViewKey}
           isTableBaseStateActive={isBaseStateActive}
           onSelectTableBaseState={handleSelectTableBaseState}
           activeViewContract={activeContract}
@@ -529,6 +537,8 @@ export default function ObjectViewHost({
           allowDesignerPersistence={allowDesignerApi}
           allowOfficeUserPersistence={isOfficeRuntime}
           representationsPrefsScopeKey={officePrefsScopeKey}
+          viewDefinitionsForCardLayout={definitions.views}
+          onCardLayoutSaved={allowDesignerApi ? notifySchemaChanged : null}
         />
       </div>
     );

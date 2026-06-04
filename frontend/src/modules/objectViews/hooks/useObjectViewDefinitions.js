@@ -6,6 +6,8 @@ import { getApiErrorMessage } from "../../designer/api/platformApiClient";
 import { buildObjectViewPayload } from "../services/buildObjectViewPayload";
 import { generateViewKey } from "../services/generateViewKey";
 import { normalizeObjectViewDefinition } from "../services/normalizeObjectViewDefinition";
+import { normalizePresentationCard } from "../services/contractGuards";
+import { hasUsableCardLayout } from "../../objectEntities/services/resolveEntityCardPresentationLayout";
 import {
   isTableViewDefinition,
   resolveActiveTableView,
@@ -306,11 +308,31 @@ export default function useObjectViewDefinitions({
 
   const resolvedContract = useMemo(() => {
     if (isTableBaseStateKey(selectedViewKey)) {
-      return normalizeObjectViewDefinition(null, {
+      const baseContract = normalizeObjectViewDefinition(null, {
         viewKey: TABLE_BASE_STATE_KEY,
         pageSize,
         projection: runtimeProjection,
+        isPublished: definitionSource === "published",
       });
+
+      const publishedKey = String(publishedTableViewKey || "default_table").trim();
+      const lookupViews = tabLookupViews.length ? tabLookupViews : fallbackViews;
+      const publishedTableView = lookupViews.find(
+        (item) => String(item?.contract?.key || "").trim() === publishedKey,
+      );
+      const publishedCard = publishedTableView?.contract?.presentation?.card;
+
+      if (!hasUsableCardLayout(publishedCard)) {
+        return baseContract;
+      }
+
+      return {
+        ...baseContract,
+        presentation: {
+          ...baseContract.presentation,
+          card: normalizePresentationCard(publishedCard),
+        },
+      };
     }
 
     if (!activeView?.contract) {
@@ -339,7 +361,16 @@ export default function useObjectViewDefinitions({
     }
 
     return activeView.contract;
-  }, [activeView, pageSize, runtimeProjection, definitionSource, selectedViewKey]);
+  }, [
+    activeView,
+    pageSize,
+    runtimeProjection,
+    definitionSource,
+    selectedViewKey,
+    publishedTableViewKey,
+    tabLookupViews,
+    fallbackViews,
+  ]);
 
   const selectView = useCallback((viewKey) => {
     const normalized = String(viewKey || "").trim();

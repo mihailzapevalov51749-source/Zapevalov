@@ -76,6 +76,25 @@ describe("tableColumnOrder", () => {
     ]);
   });
 
+  it("resolves title from published catalog view settings_json.projection", () => {
+    const title = resolveObjectTypeTitleFieldKey(
+      {
+        views: [
+          {
+            key: "default_table",
+            settings_json: {
+              projection: { title_field: "assignee" },
+            },
+          },
+        ],
+      },
+      ["title", "assignee", "finish"],
+      { publishedViewKey: "default_table" },
+    );
+
+    expect(title).toBe("assignee");
+  });
+
   it("resolves title from published default_table view", () => {
     const title = resolveObjectTypeTitleFieldKey(
       {

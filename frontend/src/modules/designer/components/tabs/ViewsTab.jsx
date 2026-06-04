@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import { getApiErrorMessage } from "../../api/platformApiClient";
 import * as designerApi from "../../api/designerApi";
+import { syncViewSettingsFromDraftProjection } from "../../utils/syncViewSettingsProjection";
 import ViewPropertiesPanel from "../views/ViewPropertiesPanel";
 
 export default function ViewsTab({
@@ -161,12 +162,10 @@ export default function ViewsTab({
     setSaving(true);
 
     try {
-      const nextSettings = {
-        ...(draft.settings_json || {}),
-        projection: {
-          ...draft.projection,
-        },
-      };
+      const nextSettings = syncViewSettingsFromDraftProjection(
+        draft.settings_json,
+        draft.projection,
+      );
 
       await designerApi.updateView(tenantId, selected.id, {
         name: draft.name,

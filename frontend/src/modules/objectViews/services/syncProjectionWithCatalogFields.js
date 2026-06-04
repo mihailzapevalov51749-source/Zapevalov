@@ -107,7 +107,7 @@ export function getCatalogFieldsForProjection(catalog, objectTypeKey) {
  * }} projection
  * @param {Array<Record<string, unknown>>} catalogFields
  */
-export function mergeProjectionWithCatalogFields(projection, catalogFields) {
+export function mergeProjectionWithCatalogFields(projection, catalogFields, options = {}) {
   const source = projection && typeof projection === "object" ? projection : {};
 
   const existingOrder = dedupeFieldKeys([
@@ -132,10 +132,14 @@ export function mergeProjectionWithCatalogFields(projection, catalogFields) {
   const fieldKeys = dedupeFieldKeys([...existingOrder, ...newKeys]);
   const fieldOrder = [...fieldKeys];
 
+  const forcedTitle = String(options.forceTitleFieldKey || "").trim();
+
   let titleFieldKey =
-    typeof source.titleFieldKey === "string" && source.titleFieldKey.trim()
-      ? source.titleFieldKey.trim()
-      : null;
+    forcedTitle && fieldKeys.includes(forcedTitle)
+      ? forcedTitle
+      : typeof source.titleFieldKey === "string" && source.titleFieldKey.trim()
+        ? source.titleFieldKey.trim()
+        : null;
 
   if (!titleFieldKey || !fieldKeys.includes(titleFieldKey)) {
     titleFieldKey =
@@ -184,16 +188,27 @@ export function syncObjectViewContractWithCatalog(
   contract,
   catalog,
   objectTypeKey,
+  options = {},
 ) {
   if (!contract) {
     return contract;
   }
 
+  const objectType = findCatalogObjectType(catalog, objectTypeKey);
+  const runtimeProjection = options.runtimeProjection || null;
+  const publishedViewKey = options.publishedViewKey || "default_table";
+
   if (isTableBaseStateKey(contract.key)) {
-    const objectType = findCatalogObjectType(catalog, objectTypeKey);
     const fields = getObjectTypeFields(objectType);
-    const fieldKeys = orderAllModeTableFieldKeys(fields, { objectType });
-    const titleFieldKey = resolveObjectTypeTitleFieldKey(objectType, fieldKeys);
+    const fieldKeys = orderAllModeTableFieldKeys(fields, {
+      objectType,
+      publishedViewKey,
+      runtimeProjection,
+    });
+    const titleFieldKey = resolveObjectTypeTitleFieldKey(objectType, fieldKeys, {
+      publishedViewKey,
+      runtimeProjection,
+    });
 
     return {
       ...contract,
@@ -220,19 +235,33 @@ export function syncObjectViewContractWithCatalog(
     return contract;
   }
 
+  const fieldKeysForTitle = contract.projection?.fieldKeys || [];
+  const canonicalTitle = resolveObjectTypeTitleFieldKey(
+    objectType,
+    fieldKeysForTitle,
+    {
+      publishedViewKey,
+      runtimeProjection,
+    },
+  );
+
   const syncedProjection = mergeProjectionWithCatalogFields(
     contract.projection,
     catalogFields,
+    { forceTitleFieldKey: canonicalTitle },
   );
 
   const previousKeys = contract.projection?.fieldKeys || [];
   const nextKeys = syncedProjection.fieldKeys || [];
+  const previousTitle = String(contract.projection?.titleFieldKey || "").trim();
+  const nextTitle = String(syncedProjection.titleFieldKey || "").trim();
 
   const keysUnchanged =
     previousKeys.length === nextKeys.length &&
     previousKeys.every((key, index) => key === nextKeys[index]);
+  const titleUnchanged = previousTitle === nextTitle;
 
-  if (keysUnchanged) {
+  if (keysUnchanged && titleUnchanged) {
     return contract;
   }
 

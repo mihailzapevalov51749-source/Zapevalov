@@ -35,6 +35,11 @@ function isFieldVisible(fieldKey, layout) {
   return !(layout.hiddenFieldKeys || []).includes(fieldKey);
 }
 
+/** Canonical visibility: `visible === false` means hidden; omitted/true means shown. */
+function toggleVisibleFlag(currentVisible) {
+  return currentVisible !== false ? false : true;
+}
+
 export default function useObjectEntityCardSettings({
   editableFields = [],
   titleFieldKey = null,
@@ -69,10 +74,7 @@ export default function useObjectEntityCardSettings({
     return draftLayout.sections.map((section) => ({
       ...section,
       label: getUtSectionLabel(section),
-      canHide:
-        section.id !== "main" &&
-        section.id !== "fields" &&
-        section.id !== "parent",
+      canHide: section.id !== "main" && section.id !== "fields",
     }));
   }, [draftLayout.sections]);
 
@@ -85,7 +87,7 @@ export default function useObjectEntityCardSettings({
   }, [draftLayout]);
 
   const toggleSectionVisibility = useCallback((sectionId) => {
-    if (sectionId === "main" || sectionId === "fields" || sectionId === "parent") {
+    if (sectionId === "main" || sectionId === "fields") {
       return;
     }
 
@@ -93,7 +95,7 @@ export default function useObjectEntityCardSettings({
       ...current,
       sections: current.sections.map((section) =>
         section.id === sectionId
-          ? { ...section, visible: section.visible === false }
+          ? { ...section, visible: toggleVisibleFlag(section.visible) }
           : section,
       ),
     }));
@@ -102,7 +104,9 @@ export default function useObjectEntityCardSettings({
   const toggleTabVisibility = useCallback((tabId) => {
     setDraftLayout((current) => {
       const nextTabs = resolveAllTabsForSettings(current).map((tab) =>
-        tab.id === tabId ? { ...tab, visible: tab.visible === false } : tab,
+        tab.id === tabId
+          ? { ...tab, visible: toggleVisibleFlag(tab.visible) }
+          : tab,
       );
 
       const visibleTabIds = nextTabs
@@ -112,15 +116,19 @@ export default function useObjectEntityCardSettings({
       return {
         ...current,
         tabs: nextTabs,
-        sections: current.sections.map((section) =>
-          section.id === "tabs"
-            ? {
-                ...section,
-                tabIds: visibleTabIds,
-                visible: visibleTabIds.length > 0,
-              }
-            : section,
-        ),
+        sections: current.sections.map((section) => {
+          if (section.id !== "tabs") {
+            return section;
+          }
+
+          const sectionExplicitlyHidden = section.visible === false;
+
+          return {
+            ...section,
+            tabIds: visibleTabIds,
+            visible: sectionExplicitlyHidden ? false : visibleTabIds.length > 0,
+          };
+        }),
       };
     });
   }, []);

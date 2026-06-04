@@ -1,3 +1,4 @@
+import { isFileFieldType } from "../../../shared/files/attachments/utils/attachmentFileTypes";
 import { findDescriptionField } from "./runtimeEntityCardAdapter";
 
 export const OBJECT_ENTITY_SECTION_TYPES = {
@@ -6,6 +7,7 @@ export const OBJECT_ENTITY_SECTION_TYPES = {
   fieldsGrid: "fieldsGrid",
   attachments: "attachments",
   tabs: "tabs",
+  comments: "comments",
 };
 
 export const OBJECT_ENTITY_INNER_TAB_IDS = ["notes", "relations"];
@@ -18,6 +20,7 @@ const SECTION_TYPE_BY_ID = {
   fields: OBJECT_ENTITY_SECTION_TYPES.fieldsGrid,
   tabs: OBJECT_ENTITY_SECTION_TYPES.tabs,
   attachments: OBJECT_ENTITY_SECTION_TYPES.attachments,
+  comments: OBJECT_ENTITY_SECTION_TYPES.comments,
 };
 
 const INNER_TAB_LABELS = {
@@ -25,13 +28,14 @@ const INNER_TAB_LABELS = {
   relations: "Связанные записи",
 };
 
-/** Эталонный порядок секций UT Card: Parent → Main → Fields → Tabs → Attachments */
+/** Эталонный порядок секций UT Card: Parent → Main → Fields → Tabs → Attachments → Comments */
 const CANONICAL_SECTION_ORDER = {
   parent: 0,
   main: 1,
   fields: 2,
   tabs: 3,
   attachments: 4,
+  comments: 5,
 };
 
 function enforceCanonicalSectionOrder(sections) {
@@ -56,6 +60,7 @@ const SECTION_LABELS = {
   fields: "Поля",
   attachments: "Вложения",
   tabs: "Блок вкладок",
+  comments: "Комментарии",
 };
 
 function sortByOrder(items) {
@@ -144,7 +149,7 @@ function buildDefaultUtSections(editableFields, titleFieldKey, hiddenSet) {
         return false;
       }
 
-      return rawType !== "file" && rawType !== "files";
+      return !isFileFieldType(rawType);
     })
     .map((field) => String(field.key));
 
@@ -183,6 +188,13 @@ function buildDefaultUtSections(editableFields, titleFieldKey, hiddenSet) {
       type: OBJECT_ENTITY_SECTION_TYPES.attachments,
       visible: true,
       order: 4,
+      fieldKeys: [],
+    },
+    {
+      id: "comments",
+      type: OBJECT_ENTITY_SECTION_TYPES.comments,
+      visible: true,
+      order: 5,
       fieldKeys: [],
     },
   ];
@@ -284,37 +296,133 @@ function syncTabsSectionWithSettings(sections, tabsForSettings) {
       return normalizeSectionArrays(section);
     }
 
+    const sectionExplicitlyHidden = section.visible === false;
+
     return normalizeSectionArrays({
       ...section,
       tabIds: visibleTabIds,
-      visible: visibleTabIds.length > 0,
+      visible: sectionExplicitlyHidden ? false : visibleTabIds.length > 0,
     });
   });
 }
 
-function repairFieldsGridFieldKeys(sections, editableFields, titleFieldKey, hiddenSet) {
+function buildFieldsGridExclusionContext(
+  editableFields,
+  titleFieldKey,
+  hiddenSet,
+  catalogFileFieldKeys = [],
+) {
+  const titleKey = String(titleFieldKey || "").trim();
+  const descriptionField = findDescriptionField(editableFields, titleKey);
+  const descriptionKey = descriptionField?.key
+    ? String(descriptionField.key)
+    : null;
+  const mainKeys = new Set(
+    uniqueKeys([titleKey, descriptionKey].filter(Boolean)),
+  );
+  const fieldsByKey = new Map(
+    editableFields.map((field) => [String(field?.key || "").trim(), field]),
+  );
+  const fileKeys = new Set(
+    safeArray(catalogFileFieldKeys)
+      .map((key) => String(key || "").trim())
+      .filter(Boolean),
+  );
+
+  const shouldExcludeFromFieldsGrid = (key) => {
+    const normalizedKey = String(key || "").trim();
+
+    if (!normalizedKey || hiddenSet.has(normalizedKey) || mainKeys.has(normalizedKey)) {
+      return true;
+    }
+
+    if (fileKeys.has(normalizedKey)) {
+      return true;
+    }
+
+    const field = fieldsByKey.get(normalizedKey);
+
+    if (!field) {
+      return false;
+    }
+
+    const rawType = String(field?.rawFieldType || field?.type || "").toLowerCase();
+
+    return isFileFieldType(rawType);
+  };
+
+  return { shouldExcludeFromFieldsGrid };
+}
+
+function repairMainSectionFieldKeys(sections, editableFields, titleFieldKey) {
+  const titleKey = String(titleFieldKey || "").trim();
+
+  if (!titleKey) {
+    return sections;
+  }
+
+  const descriptionField = findDescriptionField(editableFields, titleKey);
+  const descriptionKey = descriptionField?.key
+    ? String(descriptionField.key)
+    : null;
+  const canonicalMainKeys = uniqueKeys(
+    [titleKey, descriptionKey].filter(Boolean),
+  );
+
+  return sections.map((section) => {
+    if (
+      section.id !== "main" &&
+      section.type !== OBJECT_ENTITY_SECTION_TYPES.mainFields
+    ) {
+      return section;
+    }
+
+    return normalizeSectionArrays({
+      ...section,
+      fieldKeys: canonicalMainKeys,
+    });
+  });
+}
+
+function repairFieldsGridFieldKeys(
+  sections,
+  editableFields,
+  titleFieldKey,
+  hiddenSet,
+  catalogFileFieldKeys = [],
+) {
   const defaults = buildDefaultUtSections(editableFields, titleFieldKey, hiddenSet);
   const defaultFieldsSection = defaults.find((section) => section.id === "fields");
+  const { shouldExcludeFromFieldsGrid } = buildFieldsGridExclusionContext(
+    editableFields,
+    titleFieldKey,
+    hiddenSet,
+    catalogFileFieldKeys,
+  );
+
+  const canonicalGridKeys = safeArray(defaultFieldsSection?.fieldKeys).filter(
+    (key) => !shouldExcludeFromFieldsGrid(key),
+  );
 
   return sections.map((section) => {
     if (section.type !== OBJECT_ENTITY_SECTION_TYPES.fieldsGrid) {
       return section;
     }
 
-    const keys = uniqueKeys(safeArray(section.fieldKeys));
+    const savedOrder = uniqueKeys(safeArray(section.fieldKeys)).filter(
+      (key) => !shouldExcludeFromFieldsGrid(key),
+    );
+    const mergedKeys = [...savedOrder];
 
-    if (keys.length > 0) {
-      return normalizeSectionArrays({
-        ...section,
-        fieldKeys: keys.filter((key) => !hiddenSet.has(key)),
-      });
+    for (const key of canonicalGridKeys) {
+      if (!mergedKeys.includes(key)) {
+        mergedKeys.push(key);
+      }
     }
 
     return normalizeSectionArrays({
       ...section,
-      fieldKeys: safeArray(defaultFieldsSection?.fieldKeys).filter(
-        (key) => !hiddenSet.has(key),
-      ),
+      fieldKeys: mergedKeys.length > 0 ? mergedKeys : canonicalGridKeys,
     });
   });
 }
@@ -356,6 +464,7 @@ export function normalizeObjectEntityCardUtLayout(
   savedLayout,
   editableFields = [],
   titleFieldKey = null,
+  catalogFileFieldKeys = [],
 ) {
   const allowedFieldKeys = new Set(
     editableFields.map((field) => String(field.key || "").trim()).filter(Boolean),
@@ -420,11 +529,14 @@ export function normalizeObjectEntityCardUtLayout(
     }
   }
 
+  sections = repairMainSectionFieldKeys(sections, editableFields, titleFieldKey);
+
   sections = repairFieldsGridFieldKeys(
     sections,
     editableFields,
     titleFieldKey,
     hiddenSet,
+    catalogFileFieldKeys,
   );
 
   const tabsForSettings =
@@ -479,4 +591,15 @@ export function resolveVisibleUtSections(layout) {
   return sortByOrder(layout?.sections || []).filter(
     (section) => section.visible !== false,
   );
+}
+
+/** Whether the comments sidebar should render for the normalized card layout. */
+export function isCommentsSectionVisible(layout) {
+  const section = (layout?.sections || []).find((item) => item?.id === "comments");
+
+  if (!section) {
+    return true;
+  }
+
+  return section.visible !== false;
 }

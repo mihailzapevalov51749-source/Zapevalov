@@ -1,17 +1,25 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { getApiErrorMessage } from "../api/platformApiClient";
 import * as designerApi from "../api/designerApi";
 import * as runtimeCatalogApi from "../api/runtimeCatalogApi";
 import { useDesignerShell } from "../context/DesignerShellContext";
+import ObjectTypePublishToMenuDialog from "../components/objectTypes/ObjectTypePublishToMenuDialog";
+import ObjectTypeWorkspaceHeader from "../components/objectTypes/ObjectTypeWorkspaceHeader";
 import { ObjectViewHost } from "../../objectViews";
 import ObjectTypeIcon from "../../../shared/icons/ObjectTypeIcon";
 import { getObjectTypeAppearanceFields } from "../../../shared/icons/iconFileUtils";
+import { detectObjectTypeMenuPlacement } from "../utils/detectObjectTypeMenuPlacement";
+import {
+  dispatchDesignerNavigationReload,
+  dispatchPortalNavigationReload,
+} from "../utils/navigationReload";
 import {
   clearDesignerObjectViewHeader,
   publishDesignerObjectViewHeader,
 } from "../utils/designerObjectViewHeaderBridge";
+import { resolveObjectTypeLifecycleState } from "../utils/objectTypeLifecycleState";
 
 const DEFAULT_VIEW_KEY = "default_table";
 const DEFAULT_VIEW_LABEL = "Таблица";
@@ -22,8 +30,12 @@ export default function ObjectTypeDataPage() {
 
   const [objectType, setObjectType] = useState(null);
   const [catalogVersion, setCatalogVersion] = useState(null);
+  const [hasMenuPlacement, setHasMenuPlacement] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [publishing, setPublishing] = useState(false);
+  const [menuDialogOpen, setMenuDialogOpen] = useState(false);
+  const [menuPublishMessage, setMenuPublishMessage] = useState("");
 
   const settingsPath = `/designer/tenant/${tenantId}/object-types/${objectTypeId}/general`;
 
@@ -37,11 +49,15 @@ export default function ObjectTypeDataPage() {
         runtimeCatalogApi.getCatalogVersion(tenantId).catch(() => null),
       ]);
 
+      const menuPlaced = await detectObjectTypeMenuPlacement(tenantId, objectTypeId);
+
       setObjectType(objectTypeData);
       setCatalogVersion(catalogInfo?.catalog_version ?? null);
+      setHasMenuPlacement(menuPlaced);
     } catch (err) {
       setObjectType(null);
       setCatalogVersion(null);
+      setHasMenuPlacement(false);
       setError(getApiErrorMessage(err, "Не удалось загрузить объект"));
     } finally {
       setLoading(false);
@@ -57,6 +73,99 @@ export default function ObjectTypeDataPage() {
       clearDesignerObjectViewHeader();
     };
   }, []);
+
+  const handleSchemaChanged = useCallback(async () => {
+    try {
+      const objectTypeData = await designerApi.getObjectType(tenantId, objectTypeId);
+      setObjectType(objectTypeData);
+    } catch (err) {
+      console.warn(
+        "[ObjectTypeDataPage] Failed to reload object type after card layout save",
+        err,
+      );
+    }
+  }, [tenantId, objectTypeId]);
+
+  const lifecycle = useMemo(
+    () =>
+      resolveObjectTypeLifecycleState({
+        isDirty: false,
+        objectType,
+        catalogVersion,
+        hasMenuPlacement,
+      }),
+    [objectType, catalogVersion, hasMenuPlacement],
+  );
+
+  const handleUpdatePublication = useCallback(async () => {
+    setPublishing(true);
+    setMenuPublishMessage("");
+
+    try {
+      const publishResult = await designerApi.publishCatalog(tenantId);
+      const nextCatalogVersion = publishResult?.catalog_version ?? null;
+      setCatalogVersion(nextCatalogVersion);
+
+      const objectTypeData = await designerApi.getObjectType(tenantId, objectTypeId);
+      setObjectType(objectTypeData);
+
+      dispatchDesignerNavigationReload();
+      dispatchPortalNavigationReload();
+
+      setMenuPublishMessage(
+        "Публикация обновлена. Карточка и представления синхронизированы с Office.",
+      );
+    } catch (err) {
+      window.alert(getApiErrorMessage(err, "Не удалось обновить публикацию"));
+    } finally {
+      setPublishing(false);
+    }
+  }, [objectTypeId, tenantId]);
+
+  const handlePublish = useCallback(() => {
+    if (lifecycle.publishAction === "update-catalog") {
+      void handleUpdatePublication();
+      return;
+    }
+
+    setMenuPublishMessage("");
+    setMenuDialogOpen(true);
+  }, [handleUpdatePublication, lifecycle.publishAction]);
+
+  const handleMenuPlacementSuccess = useCallback(
+    async ({ catalogVersion: nextCatalogVersion } = {}) => {
+      if (nextCatalogVersion != null) {
+        setCatalogVersion(nextCatalogVersion);
+      } else {
+        try {
+          const catalogInfo = await runtimeCatalogApi.getCatalogVersion(tenantId);
+          setCatalogVersion(catalogInfo?.catalog_version ?? null);
+        } catch {
+          // ignore refresh errors
+        }
+      }
+
+      setHasMenuPlacement(true);
+      setMenuPublishMessage(
+        "Каталог опубликован. Объект доступен в Office и размещён в меню.",
+      );
+
+      try {
+        const [objectTypeData, menuPlaced] = await Promise.all([
+          designerApi.getObjectType(tenantId, objectTypeId),
+          detectObjectTypeMenuPlacement(tenantId, objectTypeId),
+        ]);
+        setObjectType(objectTypeData);
+        setHasMenuPlacement(menuPlaced);
+      } catch {
+        setHasMenuPlacement(true);
+      }
+
+      dispatchDesignerNavigationReload();
+      dispatchPortalNavigationReload();
+    },
+    [objectTypeId, tenantId],
+  );
 
   const handleActiveViewContextChange = useCallback(
     (context) => {
@@ -94,13 +203,22 @@ export default function ObjectTypeDataPage() {
         minWidth: 0,
       }}
     >
+      <ObjectTypePublishToMenuDialog
+        open={menuDialogOpen}
+        tenantId={tenantId}
+        objectType={objectType}
+        onClose={() => setMenuDialogOpen(false)}
+        onPublishingChange={setPublishing}
+        onSuccess={handleMenuPlacementSuccess}
+      />
+
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "flex-start",
           gap: 16,
-          marginBottom: 16,
+          marginBottom: 12,
           flexWrap: "wrap",
         }}
       >
@@ -133,6 +251,29 @@ export default function ObjectTypeDataPage() {
           Настроить объект
         </Link>
       </div>
+
+      {catalogPublished ? (
+        <ObjectTypeWorkspaceHeader
+          objectType={objectType}
+          lifecycle={lifecycle}
+          saving={false}
+          publishing={publishing}
+          saveAvailable={false}
+          saveDisabled
+          deleting={false}
+          onSave={() => {}}
+          onPublish={handlePublish}
+          onManagePublication={() => setMenuDialogOpen(true)}
+          showManagePublication={Boolean(hasMenuPlacement)}
+          onDeleteObject={() => {}}
+        />
+      ) : null}
+
+      {menuPublishMessage ? (
+        <div className="designer-publish-dialog__success" role="status" style={{ marginBottom: 12 }}>
+          {menuPublishMessage}
+        </div>
+      ) : null}
 
       {!catalogPublished ? (
         <div className="designer-error" style={{ marginBottom: 16 }}>
@@ -170,6 +311,7 @@ export default function ObjectTypeDataPage() {
             pageSize={20}
             minHeight={320}
             onActiveViewContextChange={handleActiveViewContextChange}
+            onSchemaChanged={handleSchemaChanged}
           />
         </div>
       ) : null}

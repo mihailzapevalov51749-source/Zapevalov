@@ -6,11 +6,13 @@ import ObjectEntityCardHeader from "./components/ObjectEntityCardHeader";
 import ObjectEntityCardSections from "./components/ObjectEntityCardSections";
 import ObjectEntityCardSettingsPanel from "./components/ObjectEntityCardSettingsPanel";
 import ObjectEntityComments from "./components/ObjectEntityComments";
+import { getFileFieldsFromCatalog } from "./services/getFileFieldsFromCatalog";
 import useObjectEntityRelations from "./hooks/useObjectEntityRelations";
 import {
   buildDefaultObjectEntityCardUtLayout,
   isValidObjectEntityCardLayout,
   normalizeObjectEntityCardUtLayout,
+  isCommentsSectionVisible,
   OBJECT_ENTITY_SECTION_TYPES,
   resolveVisibleUtSections,
 } from "./services/objectEntityCardSectionsLayout";
@@ -36,11 +38,20 @@ export default function ObjectEntityCardView({
 }) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  const catalogFileFieldKeys = useMemo(
+    () =>
+      getFileFieldsFromCatalog(catalog, cardModel?.objectTypeKey).map(
+        (field) => field.key,
+      ),
+    [catalog, cardModel?.objectTypeKey],
+  );
+
   const utLayout = useMemo(() => {
     const normalized = normalizeObjectEntityCardUtLayout(
       cardLayout,
       cardModel?.editableFields || [],
       cardModel?.titleFieldKey || null,
+      catalogFileFieldKeys,
     );
 
     if (!isValidObjectEntityCardLayout(normalized)) {
@@ -51,10 +62,20 @@ export default function ObjectEntityCardView({
     }
 
     return normalized;
-  }, [cardLayout, cardModel?.editableFields, cardModel?.titleFieldKey]);
+  }, [
+    cardLayout,
+    cardModel?.editableFields,
+    cardModel?.titleFieldKey,
+    catalogFileFieldKeys,
+  ]);
 
   const visibleSections = useMemo(
     () => resolveVisibleUtSections(utLayout),
+    [utLayout],
+  );
+
+  const showCommentsSidebar = useMemo(
+    () => isCommentsSectionVisible(utLayout),
     [utLayout],
   );
 
@@ -157,11 +178,13 @@ export default function ObjectEntityCardView({
             />
           }
           sidebar={
-            <ObjectEntityComments
-              runtimeEntityId={cardModel.entityId}
-              isCreate={isCreate}
-              initialContext={initialContext}
-            />
+            showCommentsSidebar ? (
+              <ObjectEntityComments
+                runtimeEntityId={cardModel.entityId}
+                isCreate={isCreate}
+                initialContext={initialContext}
+              />
+            ) : null
           }
         />
 
