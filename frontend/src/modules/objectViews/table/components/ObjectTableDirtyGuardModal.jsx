@@ -1,81 +1,147 @@
+import { Info, Pencil } from "lucide-react";
+
+import closeIcon from "../../../../assets/icons/x.svg";
+import { PlatformModal } from "../../../../shared/platformModal";
+
+import "./objectTableDirtyGuardModal.css";
+import {
+  OFFICE_USER_VIEW_UNSAVED_CHANGES_DEFAULT_BOUNDS,
+  OFFICE_USER_VIEW_UNSAVED_CHANGES_MODAL_KEY,
+} from "./objectTableDirtyGuardModalKeys";
+import {
+  resolveDirtyGuardFooterActions,
+  resolveDirtyGuardModalCopy,
+} from "./objectTableDirtyGuardModalModel";
+
 /**
- * Confirms view switch when session has unsaved query changes.
+ * Confirms view switch when session has unsaved changes (Office user views).
  */
 export default function ObjectTableDirtyGuardModal({
   open = false,
+  mode = "userView",
+  viewName = "Представление",
   saving = false,
   onSave,
+  onSaveAsNew,
   onDiscard,
   onCancel,
 }) {
-  if (!open) {
-    return null;
-  }
+  const copy = resolveDirtyGuardModalCopy(mode, viewName);
+  const footerActions = resolveDirtyGuardFooterActions(mode);
 
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="object-view-dirty-guard-title"
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 4100,
-        background: "rgba(15, 23, 42, 0.35)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-      }}
-      onClick={onCancel}
-    >
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: 12,
-          padding: 20,
-          maxWidth: 440,
-          width: "100%",
-          boxShadow: "0 16px 40px rgba(15, 23, 42, 0.16)",
-        }}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <h3
-          id="object-view-dirty-guard-title"
-          style={{ margin: "0 0 8px", fontSize: 16 }}
-        >
-          Есть несохранённые изменения
-        </h3>
-        <p style={{ margin: "0 0 16px", color: "#64748b", fontSize: 13 }}>
-          Сохранить текущее представление перед переключением?
-        </p>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+  const footer = (
+    <div className="ot-dirty-guard-modal__footer">
+      <div className="ot-dirty-guard-modal__footer-left">
+        {footerActions.showDiscard ? (
           <button
             type="button"
-            className="designer-btn designer-btn--primary"
+            className="ot-dirty-guard-modal__btn ot-dirty-guard-modal__btn--secondary"
             disabled={saving}
-            onClick={onSave}
-          >
-            {saving ? "Сохранение…" : "Сохранить"}
-          </button>
-          <button
-            type="button"
-            className="designer-btn"
-            disabled={saving}
-            onClick={onDiscard}
+            onClick={() => onDiscard?.()}
           >
             Не сохранять
           </button>
+        ) : null}
+      </div>
+
+      <div className="ot-dirty-guard-modal__footer-center">
+        {footerActions.showSaveAsNew ? (
           <button
             type="button"
-            className="designer-btn designer-btn--ghost"
-            disabled={saving}
-            onClick={onCancel}
+            className="ot-dirty-guard-modal__btn ot-dirty-guard-modal__btn--outline"
+            disabled={saving || typeof onSaveAsNew !== "function"}
+            onClick={() => onSaveAsNew?.()}
           >
-            Отмена
+            Сохранить как новое
           </button>
-        </div>
+        ) : null}
+      </div>
+
+      <div className="ot-dirty-guard-modal__footer-right">
+        {footerActions.showSave ? (
+          <button
+            type="button"
+            className="ot-dirty-guard-modal__btn ot-dirty-guard-modal__btn--primary"
+            disabled={saving}
+            onClick={() => onSave?.()}
+          >
+            {saving ? "Сохранение…" : "Сохранить"}
+          </button>
+        ) : null}
       </div>
     </div>
+  );
+
+  return (
+    <PlatformModal
+      open={open}
+      modalKey={OFFICE_USER_VIEW_UNSAVED_CHANGES_MODAL_KEY}
+      onClose={onCancel}
+      hideHeader
+      canCustomizeLayout
+      keepFullyVisible
+      viewportInset={24}
+      defaultBounds={OFFICE_USER_VIEW_UNSAVED_CHANGES_DEFAULT_BOUNDS}
+      ariaLabel={copy.title}
+      footer={footer}
+      contentStyle={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
+        padding: 0,
+        overflow: "hidden",
+      }}
+    >
+      {({ startDrag, headerCursor }) => (
+        <div className="ot-dirty-guard-modal">
+          <header
+            className="ot-dirty-guard-modal__header"
+            style={{ cursor: headerCursor }}
+            onMouseDown={startDrag}
+            data-platform-modal-drag-handle
+          >
+            <div className="ot-dirty-guard-modal__icon-wrap" aria-hidden="true">
+              <Pencil size={22} strokeWidth={2.2} />
+            </div>
+
+            <div className="ot-dirty-guard-modal__title-wrap">
+              <h2 className="ot-dirty-guard-modal__title">{copy.title}</h2>
+            </div>
+
+            <button
+              type="button"
+              className="ot-dirty-guard-modal__close-btn"
+              aria-label="Закрыть"
+              disabled={saving}
+              onClick={() => onCancel?.()}
+              onMouseDown={(event) => event.stopPropagation()}
+              data-platform-modal-no-drag
+            >
+              <img src={closeIcon} alt="" width={16} height={16} draggable={false} />
+            </button>
+          </header>
+
+          <div className="ot-dirty-guard-modal__divider" aria-hidden="true" />
+
+          <div className="ot-dirty-guard-modal__body">
+            <p className="ot-dirty-guard-modal__message">
+              {copy.messageLine1}
+              <br />
+              {copy.messageLine2}
+            </p>
+
+            <p className="ot-dirty-guard-modal__hint">
+              <Info
+                size={16}
+                strokeWidth={2}
+                className="ot-dirty-guard-modal__hint-icon"
+                aria-hidden="true"
+              />
+              <span>{copy.hint}</span>
+            </p>
+          </div>
+        </div>
+      )}
+    </PlatformModal>
   );
 }

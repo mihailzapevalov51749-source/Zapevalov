@@ -2,9 +2,14 @@ import FieldEditor from "../fieldEditors/FieldEditor";
 import FieldValueRenderer from "../fieldTypes/FieldValueRenderer";
 import RelationTableCellRenderer from "../fieldTypes/relation/RelationTableCellRenderer";
 import ExpandableTableCell from "../table/ExpandableTableCell";
+import ViewEngineHierarchyTitleChrome from "./ViewEngineHierarchyTitleChrome.jsx";
+import ViewEngineTitleFieldChrome from "./components/ViewEngineTitleFieldChrome.jsx";
+import ViewEngineTitlePositionBadge from "./ViewEngineTitlePositionBadge.jsx";
 import { isRelationTableValue } from "../../modules/objectViews/services/relationTableValue";
 import { isCreatableFieldType } from "../fieldEditors/fieldEditorRegistry";
 
+import { isTableRowNumberPresentationFieldKey } from "../runtime/systemEntityFields";
+import { formatSystemRowNumber } from "../entity-ui/entityValueUtils";
 import {
   SYSTEM_COLUMN_KEYS,
   isViewEngineSystemColumn,
@@ -27,6 +32,29 @@ function isTextLikeField(type) {
   return TEXT_FIELD_TYPES.has(String(type || "").toLowerCase());
 }
 
+function resolveRowEntityTitle(row, titleFieldKey) {
+  const normalizedKey = String(titleFieldKey || "").trim();
+
+  if (!row || !normalizedKey) {
+    return "";
+  }
+
+  const cells = Array.isArray(row.cells) ? row.cells : [];
+  const titleCell = cells.find((cell) => String(cell?.fieldKey || "") === normalizedKey);
+
+  if (titleCell?.value != null && titleCell.value !== "") {
+    return String(titleCell.value);
+  }
+
+  const values = row.values && typeof row.values === "object" ? row.values : {};
+
+  if (values[normalizedKey] != null && values[normalizedKey] !== "") {
+    return String(values[normalizedKey]);
+  }
+
+  return "";
+}
+
 /**
  * Platform-agnostic cell renderer.
  * Contract: fieldDef + value (+ optional rendererContext) → FieldValueRenderer.
@@ -43,6 +71,7 @@ export default function ViewEngineCell({
   isTitle = false,
   readOnly = true,
   onChange,
+  isRowHovered = false,
 }) {
   const resolvedFieldDef = fieldDef || column?.fieldDef || null;
   const rendererColumn = fieldDefToRendererColumn(resolvedFieldDef);
@@ -53,9 +82,29 @@ export default function ViewEngineCell({
   );
   const isTextField = isTextLikeField(normalizedType);
   const isPrimary = Boolean(isTitle || column?.isTitle);
+  const hierarchyMeta =
+    row?.hierarchy && typeof row.hierarchy === "object" ? row.hierarchy : null;
+  const showHierarchyChrome =
+    isPrimary &&
+    hierarchyMeta &&
+    rendererContext?.hierarchyTree?.enabled;
+  const positionNumber = String(
+    row?.positionNumber ?? row?.displayPosition ?? "",
+  ).trim();
+  const showPositionBadge = isPrimary && Boolean(positionNumber);
+  const rowActions = rendererContext?.rowActions || null;
+  const rowActionsEnabled = Boolean(isPrimary && rowActions?.enabled);
+  const entityTitle = resolveRowEntityTitle(
+    row,
+    rowActions?.titleFieldKey || column?.key,
+  );
   const isEntitySystemStatusColumn =
     isViewEngineSystemColumn(column) &&
     normalizeSystemColumnKey(column?.key) === SYSTEM_COLUMN_KEYS.status;
+  const isEntityRecordNumberColumn =
+    isTableRowNumberPresentationFieldKey(column?.key) ||
+    (isViewEngineSystemColumn(column) &&
+      normalizeSystemColumnKey(column?.key) === SYSTEM_COLUMN_KEYS.recordNumber);
 
   const isRelationColumn =
     normalizedType === "relation" || isRelationTableValue(value);
@@ -130,6 +179,18 @@ export default function ViewEngineCell({
           >
             {value != null && value !== "" ? String(value) : emptyValue}
           </span>
+        ) : isEntityRecordNumberColumn ? (
+          <span
+            className="view-engine-table-record-number-cell"
+            title={value != null && value !== "" ? String(value) : undefined}
+            style={{
+              fontWeight: 600,
+              fontVariantNumeric: "tabular-nums",
+              color: "#64748b",
+            }}
+          >
+            {formatSystemRowNumber(value)}
+          </span>
         ) : isRelationColumn ? (
           <RelationTableCellRenderer
             value={value}
@@ -151,15 +212,93 @@ export default function ViewEngineCell({
               inline
             />
           </div>
-        ) : (
-          <ExpandableTableCell
-            column={rendererColumn}
-            value={value}
-            align={rendererColumn?.align}
-            readOnly
+        ) : rowActionsEnabled ? (
+          <ViewEngineTitleFieldChrome
+            hierarchy={hierarchyMeta}
+            onToggleExpand={() =>
+              rendererContext?.hierarchyTree?.onToggleRowExpanded?.(row?.id)
+            }
+            positionNumber={positionNumber}
+            isRowHovered={isRowHovered}
+            rowActions={{
+              ...rowActions,
+              hierarchyTreeEnabled: showHierarchyChrome,
+            }}
+            onCreateSubtask={() =>
+              rowActions?.onCreateSubtask?.({
+                entityId: row?.id,
+                entityTitle,
+              })
+            }
+            onDelete={() =>
+              rowActions?.onBeginDeleteEntity?.({
+                entityId: row?.id,
+                entityTitle,
+              })
+            }
           >
-            {({ expanded }) => renderValue(expanded)}
-          </ExpandableTableCell>
+            <ExpandableTableCell
+              column={rendererColumn}
+              value={value}
+              align={rendererColumn?.align}
+              readOnly
+            >
+              {({ expanded }) => renderValue(expanded)}
+            </ExpandableTableCell>
+          </ViewEngineTitleFieldChrome>
+        ) : showHierarchyChrome ? (
+          <ViewEngineHierarchyTitleChrome
+            hierarchy={hierarchyMeta}
+            onToggleExpand={() =>
+              rendererContext?.hierarchyTree?.onToggleRowExpanded?.(row?.id)
+            }
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                minWidth: 0,
+                width: "100%",
+              }}
+            >
+              {showPositionBadge ? (
+                <ViewEngineTitlePositionBadge value={positionNumber} />
+              ) : null}
+              <div style={{ minWidth: 0, flex: 1, overflow: "hidden" }}>
+                <ExpandableTableCell
+                  column={rendererColumn}
+                  value={value}
+                  align={rendererColumn?.align}
+                  readOnly
+                >
+                  {({ expanded }) => renderValue(expanded)}
+                </ExpandableTableCell>
+              </div>
+            </div>
+          </ViewEngineHierarchyTitleChrome>
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              minWidth: 0,
+              width: "100%",
+            }}
+          >
+            {showPositionBadge ? (
+              <ViewEngineTitlePositionBadge value={positionNumber} />
+            ) : null}
+            <div style={{ minWidth: 0, flex: 1, overflow: "hidden" }}>
+              <ExpandableTableCell
+                column={rendererColumn}
+                value={value}
+                align={rendererColumn?.align}
+                readOnly
+              >
+                {({ expanded }) => renderValue(expanded)}
+              </ExpandableTableCell>
+            </div>
+          </div>
         )}
       </div>
     </div>

@@ -47,6 +47,7 @@ export function catalogFieldToFieldDef(field) {
     multiple: isMultiChoice || Boolean(settings.multiple),
     isRequired: Boolean(field.is_required ?? field.isRequired),
     isSystem: Boolean(field.is_system ?? field.isSystem),
+    defaultValueJson: field.default_value_json ?? field.defaultValueJson ?? null,
   };
 }
 

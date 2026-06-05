@@ -223,8 +223,10 @@ export default function useObjectEntityCard({
   }, []);
 
   const beginCreateSubtask = useCallback(
-    (relationKey) => {
-      const parentEntityId = String(openEntityId || "").trim();
+    (relationKey, options = {}) => {
+      const parentEntityId = String(
+        options.parentEntityId ?? openEntityId ?? "",
+      ).trim();
       const normalizedRelationKey = String(relationKey || "").trim();
 
       if (!canCreate || !parentEntityId || !normalizedRelationKey) {

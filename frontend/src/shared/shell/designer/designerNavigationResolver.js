@@ -112,6 +112,12 @@ export function getDesignerSectionDefinitions(tenantId) {
       match: (pathname) => /\/workspaces(?:\/|$)/.test(pathname),
     },
     {
+      key: "trash",
+      label: "Корзина",
+      path: `${base}/trash`,
+      match: (pathname) => /\/trash(?:\/|$)/.test(pathname),
+    },
+    {
       key: "publishing",
       label: "Публикация",
       path: `${base}/publishing`,

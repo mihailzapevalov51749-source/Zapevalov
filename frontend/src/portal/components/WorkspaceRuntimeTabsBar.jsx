@@ -37,7 +37,9 @@ export default function WorkspaceRuntimeTabsBar({
         const workspaceData = await getDesignerWorkspaceBySlug(portalId, workspaceSlug);
         if (!workspaceData?.id) return;
         await ensureDesignerWorkspaceTabs(portalId, workspaceData.id);
-        const tabsResponse = await listDesignerWorkspaceTabs(portalId, workspaceData.id);
+        const tabsResponse = await listDesignerWorkspaceTabs(portalId, workspaceData.id, {
+          forUserMenu: true,
+        });
         if (cancelled) return;
         setWorkspace(workspaceData);
         const allTabs = Array.isArray(tabsResponse?.tabs) ? tabsResponse.tabs : [];

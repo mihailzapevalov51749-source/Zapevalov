@@ -6,6 +6,7 @@ import settingsIcon from "../../../../assets/icons/settings.gif";
 import saveIcon from "../../../../assets/icons/save.gif";
 import MenuTree from "../../../../modules/navigation/components/MenuTree";
 import useMenuDragAndDrop from "../../../../modules/navigation/hooks/useMenuDragAndDrop";
+import { getNavigationDeleteBlockReason } from "../../../../modules/navigation/utils/navigationDeletePolicy";
 import { LAYOUT_TOKENS } from "../../../layout/layoutTokens";
 import { TRANSITION_TOKENS } from "../../../layout/transitionTokens";
 import SidebarTodayActiveTime from "./SidebarTodayActiveTime";
@@ -172,16 +173,13 @@ function ShellSidebarView({
 
   const handleDeleteItem = async (itemId) => {
     const item = findItemById(navigationItems, itemId);
-    const isObjectTypeItem =
-      item?.type === "object_type" || Boolean(item?.object_type_id);
-    if (
-      String(itemId).startsWith("system-") ||
-      item?.is_protected === true ||
-      item?.isProtected === true ||
-      isObjectTypeItem
-    ) {
+    const blockReason = getNavigationDeleteBlockReason(item);
+
+    if (blockReason) {
+      onAction?.("delete-menu-item-blocked", { id: itemId, reason: blockReason });
       return;
     }
+
     onAction?.("delete-menu-item", { id: itemId });
   };
 

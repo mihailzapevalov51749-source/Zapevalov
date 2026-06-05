@@ -1,3 +1,4 @@
+import { isTableRowNumberPresentationFieldKey } from "../../../../../shared/runtime/systemEntityFields";
 import {
   SYSTEM_COLUMN_KEYS,
   isViewEngineSystemColumn,
@@ -53,6 +54,13 @@ function resolveSystemEntityValue(entity, systemKey) {
         entity.recordVersion ??
         null
       );
+    case SYSTEM_COLUMN_KEYS.recordNumber:
+      return (
+        values[SYSTEM_COLUMN_KEYS.recordNumber] ??
+        entity.record_number ??
+        entity.recordNumber ??
+        null
+      );
     default:
       return null;
   }
@@ -66,6 +74,16 @@ function resolveSystemEntityValue(entity, systemKey) {
 export function resolveEntityCellValue(entity, column) {
   if (!entity || !column) {
     return null;
+  }
+
+  if (isTableRowNumberPresentationFieldKey(column.key)) {
+    const safeEntity = entity && typeof entity === "object" ? entity : {};
+
+    return (
+      safeEntity.record_number ??
+      safeEntity.recordNumber ??
+      resolveSystemEntityValue(safeEntity, SYSTEM_COLUMN_KEYS.recordNumber)
+    );
   }
 
   if (isViewEngineSystemColumn(column)) {
@@ -97,8 +115,14 @@ export function mapEntityToRow(entity, columns) {
     fieldDef: column.fieldDef ?? null,
   }));
 
+  const recordNumber =
+    safeEntity.record_number ??
+    safeEntity.recordNumber ??
+    resolveSystemEntityValue(safeEntity, SYSTEM_COLUMN_KEYS.recordNumber);
+
   return {
     id,
+    recordNumber,
     status:
       typeof safeEntity.status === "string" ? safeEntity.status : null,
     createdAt: normalizeIsoTimestamp(

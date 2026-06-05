@@ -54,6 +54,7 @@ export function isHierarchyRelationDefinition(relation, currentObjectTypeKey) {
   const relationKey = normalizeKey(relation.key);
 
   const markedHierarchy =
+    settings.is_hierarchy === true ||
     isHierarchySemanticProfile(profile) ||
     relationKey === TASK_SUBTASK_RELATION_KEY ||
     isHierarchySemanticProfile(relationKey);
@@ -69,13 +70,13 @@ export function isHierarchyRelationDefinition(relation, currentObjectTypeKey) {
 }
 
 /**
- * Relation field bound to a hierarchy definition — hide from card fields grid.
+ * Relation field bound to a hierarchy definition (card, table, filters).
  *
  * @param {Record<string, unknown> | null | undefined} field
  * @param {Record<string, unknown> | null | undefined} catalog
  * @param {string | null | undefined} objectTypeKey
  */
-export function isHierarchyRelationFieldForCard(field, catalog, objectTypeKey) {
+export function isHierarchyRelationField(field, catalog, objectTypeKey) {
   if (!field || typeof field !== "object") {
     return false;
   }
@@ -110,6 +111,16 @@ export function isHierarchyRelationFieldForCard(field, catalog, objectTypeKey) {
     catalogRelation &&
       isHierarchyRelationDefinition(catalogRelation, objectTypeKey),
   );
+}
+
+/** @deprecated Use {@link isHierarchyRelationField} — kept for card imports. */
+export function isHierarchyRelationFieldForCard(field, catalog, objectTypeKey) {
+  return isHierarchyRelationField(field, catalog, objectTypeKey);
+}
+
+/** Table projection/columns — same detector as card. */
+export function isHierarchyRelationFieldForTable(field, catalog, objectTypeKey) {
+  return isHierarchyRelationField(field, catalog, objectTypeKey);
 }
 
 /**

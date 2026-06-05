@@ -68,10 +68,23 @@ def test_relation_field_rejects_invalid_role_and_cardinality():
         )
 
 
-def test_relation_field_rejects_default_value():
-    with pytest.raises(ValueError, match="default_value_json"):
+def test_relation_field_accepts_structured_default_value():
+    entity_id = str(uuid4())
+
+    validate_relation_field_type_payload(
+        default_value_json={"type": "specific_record", "value": entity_id},
+        settings_json={
+            "relation_key": "task_project",
+            "role": "source",
+            "cardinality": "one",
+        },
+    )
+
+
+def test_relation_field_rejects_invalid_default_value():
+    with pytest.raises(ValueError, match="UUID"):
         validate_relation_field_type_payload(
-            default_value_json="x",
+            default_value_json={"type": "specific_record", "value": "not-a-uuid"},
             settings_json={
                 "relation_key": "task_project",
                 "role": "source",

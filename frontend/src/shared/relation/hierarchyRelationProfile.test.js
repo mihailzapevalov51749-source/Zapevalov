@@ -3,7 +3,9 @@ import { describe, it } from "node:test";
 
 import {
   isHierarchyRelationDefinition,
+  isHierarchyRelationField,
   isHierarchyRelationFieldForCard,
+  isHierarchyRelationFieldForTable,
   TASK_SUBTASK_RELATION_KEY,
 } from "./hierarchyRelationProfile.js";
 
@@ -35,31 +37,26 @@ describe("hierarchyRelationProfile", () => {
     );
   });
 
-  it("detects hierarchy relation field for card layout", () => {
-    assert.equal(
-      isHierarchyRelationFieldForCard(
-        {
-          key: "subtasks_field",
-          field_type: "relation",
-          settings_json: { relation_key: TASK_SUBTASK_RELATION_KEY, role: "source" },
-        },
-        catalog,
-        "task",
-      ),
-      true,
-    );
+  const subtaskField = {
+    key: "subtasks_field",
+    field_type: "relation",
+    settings_json: { relation_key: TASK_SUBTASK_RELATION_KEY, role: "source" },
+  };
 
-    assert.equal(
-      isHierarchyRelationFieldForCard(
-        {
-          key: "assignee_field",
-          field_type: "relation",
-          settings_json: { relation_key: "task_assignee", role: "source" },
-        },
-        catalog,
-        "task",
-      ),
-      false,
-    );
+  const assigneeField = {
+    key: "assignee_field",
+    field_type: "relation",
+    settings_json: { relation_key: "task_assignee", role: "source" },
+  };
+
+  it("detects hierarchy relation field (canonical)", () => {
+    assert.equal(isHierarchyRelationField(subtaskField, catalog, "task"), true);
+    assert.equal(isHierarchyRelationField(assigneeField, catalog, "task"), false);
+  });
+
+  it("card and table aliases use the same detector", () => {
+    assert.equal(isHierarchyRelationFieldForCard(subtaskField, catalog, "task"), true);
+    assert.equal(isHierarchyRelationFieldForTable(subtaskField, catalog, "task"), true);
+    assert.equal(isHierarchyRelationFieldForTable(assigneeField, catalog, "task"), false);
   });
 });

@@ -8,3 +8,8 @@ export function dispatchDesignerNavigationReload() {
 export function dispatchPortalNavigationReload() {
   window.dispatchEvent(new CustomEvent(PORTAL_NAVIGATION_RELOAD_EVENT));
 }
+
+export function dispatchPageStatusNavigationRefresh() {
+  dispatchDesignerNavigationReload();
+  dispatchPortalNavigationReload();
+}

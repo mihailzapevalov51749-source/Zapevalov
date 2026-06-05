@@ -11,6 +11,8 @@ import { TRANSITION_TOKENS } from "../../../shared/layout/transitionTokens";
 
 import MenuTree from "./MenuTree";
 import CreateMenuItemModal from "./CreateMenuItemModal";
+import NavigationDeleteDialogs from "./NavigationDeleteDialogs";
+import { getNavigationDeleteBlockReason } from "../utils/navigationDeletePolicy";
 
 import { getPageFull } from "../../../api/pagesApi";
 import {
@@ -156,6 +158,7 @@ export default function LeftSidebar({
   const editor = useMenuEditor({
     portalId,
     reload: reloadNavigation,
+    navigationItems: items,
   });
 
   const dragAndDrop = useMenuDragAndDrop({
@@ -282,8 +285,15 @@ export default function LeftSidebar({
   };
 
   const handleDeleteItem = async (itemId) => {
-    if (String(itemId).startsWith("system-")) return;
-    await editor.deleteItem(itemId);
+    const item = findNavigationItemById(items, itemId);
+    const blockReason = getNavigationDeleteBlockReason(item);
+
+    if (blockReason) {
+      editor.showDeleteNotice?.(blockReason);
+      return;
+    }
+
+    editor.requestDeleteItem?.(itemId);
   };
 
   const handleEditButtonClick = () => {
@@ -471,6 +481,16 @@ export default function LeftSidebar({
           onClose={() => setIsCreateOpen(false)}
         />
       )}
+      <NavigationDeleteDialogs
+        pendingDeleteId={editor.pendingDeleteId}
+        pendingDeleteItem={editor.pendingDeleteItem}
+        deleteError={editor.deleteError}
+        deleteNotice={editor.deleteNotice}
+        isSubmitting={editor.isSaving}
+        onCancelDelete={editor.cancelDeleteItem}
+        onConfirmDelete={editor.confirmDeleteItem}
+        onCloseNotice={editor.clearDeleteNotice}
+      />
     </aside>
   );
 }

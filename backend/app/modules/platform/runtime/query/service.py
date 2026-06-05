@@ -12,10 +12,10 @@ from app.modules.platform.runtime.query.schemas import (
     ViewProjectionResponse,
 )
 from app.modules.platform.runtime.query.validators import (
-    coerce_filters,
+    coerce_filter_conditions,
     fields_by_key,
-    parse_filter_params,
-    validate_filter_fields,
+    parse_filter_conditions,
+    validate_filter_conditions,
     validate_limit,
     validate_offset,
     validate_order,
@@ -61,18 +61,23 @@ def query_entities(
         raise _catalog_http_error(exc) from exc
 
     field_map = fields_by_key(metadata.fields)
-    filters_raw = parse_filter_params(query_params)
+    filter_conditions_raw = parse_filter_conditions(query_params)
 
     try:
         validate_limit(limit)
         validate_offset(offset)
         validate_order(order)
         validate_sort(sort, field_map)
-        validate_filter_fields(filters_raw, field_map)
-        filters = coerce_filters(filters_raw, field_map) if filters_raw else {}
-        for field_key, value in filters.items():
-            if field_map[field_key].get("field_type") == FieldType.UUID:
-                validate_uuid_string(str(value), field_key)
+        validate_filter_conditions(filter_conditions_raw, field_map)
+        filter_conditions = (
+            coerce_filter_conditions(filter_conditions_raw, field_map)
+            if filter_conditions_raw
+            else []
+        )
+        for condition in filter_conditions:
+            field_type = field_map[condition.field].get("field_type")
+            if field_type == FieldType.UUID and condition.value not in (None, ""):
+                validate_uuid_string(str(condition.value), condition.field)
     except ValueError as exc:
         raise _validation_http_error(exc) from exc
 
@@ -80,7 +85,8 @@ def query_entities(
         db,
         tenant_id,
         object_type_key,
-        filters=filters,
+        filter_conditions=filter_conditions,
+        field_map=field_map,
         sort_field=sort,
         sort_order=order,
         limit=limit,

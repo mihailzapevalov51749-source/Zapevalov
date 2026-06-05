@@ -1,33 +1,31 @@
-function formatReadiness(readiness) {
-  if (readiness == null || Number.isNaN(readiness)) {
-    return "Нет данных для расчёта";
-  }
-  return `${readiness}%`;
-}
+import { formatAbsoluteDateTime } from "../utils/formatDateTime";
+import {
+  formatReadinessPercent,
+  resolveStageDashboardProgress,
+} from "../dashboard/resolveStageDashboardProgress";
 
-function WorkList({ icon, title, items, emptyMessage }) {
+function DetailField({ label, children }) {
   return (
-    <section className="platform-dev__owner-work-block">
-      <h4 className="platform-dev__owner-work-title">{title}</h4>
-      {items?.length ? (
-        <ul className="platform-dev__owner-work-list">
-          {items.map((item) => (
-            <li key={item} className="platform-dev__owner-work-item">
-              <span className="platform-dev__owner-work-icon" aria-hidden="true">
-                {icon}
-              </span>
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="platform-dev__owner-work-empty">{emptyMessage}</p>
-      )}
-    </section>
+    <div className="platform-dev__detail-field">
+      <p className="platform-dev__detail-field-label">{label}</p>
+      <div className="platform-dev__detail-field-value">{children}</div>
+    </div>
   );
 }
 
-export default function OwnerStageDetailPanel({ stage, emptyMessage }) {
+function formatStepsCount(value) {
+  if (value == null || Number.isNaN(Number(value))) {
+    return "—";
+  }
+  return String(value);
+}
+
+export default function OwnerStageDetailPanel({
+  stage,
+  emptyMessage,
+  implementationStages = [],
+  dashboardRefreshedAt = null,
+}) {
   if (!stage) {
     return (
       <div className="platform-dev__detail-empty">
@@ -36,38 +34,44 @@ export default function OwnerStageDetailPanel({ stage, emptyMessage }) {
     );
   }
 
+  const progress = resolveStageDashboardProgress(stage, {
+    implementationStages,
+    dashboardRefreshedAt,
+  });
+
   return (
     <div className="platform-dev__detail-view platform-dev__detail-view--owner">
       <h3 className="platform-dev__detail-view-title">{stage.title}</h3>
 
-      <section className="platform-dev__owner-readiness">
-        <p className="platform-dev__owner-readiness-label">Готовность</p>
-        <p className="platform-dev__owner-readiness-value">
-          {formatReadiness(stage.readiness)}
-        </p>
-        {stage.ownerStatus ? (
-          <p className="platform-dev__owner-readiness-status">{stage.ownerStatus}</p>
-        ) : null}
-      </section>
+      <div className="platform-dev__detail-fields">
+        <DetailField label="Готовность">
+          <p className="platform-dev__owner-readiness-value">
+            {formatReadinessPercent(stage.readiness)}
+          </p>
+        </DetailField>
 
-      <WorkList
-        icon="✓"
-        title="Сделано"
-        items={stage.done}
-        emptyMessage="Пока нет завершённых шагов."
-      />
-      <WorkList
-        icon="•"
-        title="В работе"
-        items={stage.inWork}
-        emptyMessage="Сейчас нет активных шагов."
-      />
-      <WorkList
-        icon="□"
-        title="Осталось выполнить"
-        items={stage.remaining}
-        emptyMessage="Все шаги этапа выполнены."
-      />
+        <DetailField label="Выполнено этапов">
+          {formatStepsCount(progress.completedSteps)}
+        </DetailField>
+
+        <DetailField label="Всего этапов">
+          {formatStepsCount(progress.totalSteps)}
+        </DetailField>
+
+        <DetailField label="Следующий этап">
+          {progress.nextStep ? (
+            <p className="platform-dev__detail-multiline">{progress.nextStep}</p>
+          ) : (
+            "—"
+          )}
+        </DetailField>
+
+        <DetailField label="Последнее обновление">
+          {progress.lastUpdated
+            ? formatAbsoluteDateTime(progress.lastUpdated)
+            : "—"}
+        </DetailField>
+      </div>
     </div>
   );
 }

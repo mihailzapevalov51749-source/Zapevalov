@@ -1,5 +1,8 @@
 from sqlalchemy.orm import Session
 from typing import Optional
+
+from app.modules.platform.designer.shared.soft_delete import apply_soft_delete
+
 from .models import NavigationItem
 
 
@@ -27,7 +30,10 @@ def create_item(db: Session, data):
 
 
 def get_items_by_portal(db: Session, portal_id: int, menu_scope: Optional[str] = None):
-    query = db.query(NavigationItem).filter(NavigationItem.portal_id == portal_id)
+    query = db.query(NavigationItem).filter(
+        NavigationItem.portal_id == portal_id,
+        NavigationItem.deleted_at.is_(None),
+    )
 
     if menu_scope:
         query = query.filter(NavigationItem.menu_scope == menu_scope)
@@ -35,8 +41,24 @@ def get_items_by_portal(db: Session, portal_id: int, menu_scope: Optional[str] =
     return query.order_by(NavigationItem.sort_order.asc()).all()
 
 
-def get_item(db: Session, item_id: int):
-    return db.query(NavigationItem).filter(NavigationItem.id == item_id).first()
+def get_item(db: Session, item_id: int, *, include_deleted: bool = False):
+    query = db.query(NavigationItem).filter(NavigationItem.id == item_id)
+
+    if not include_deleted:
+        query = query.filter(NavigationItem.deleted_at.is_(None))
+
+    return query.first()
+
+
+def count_active_children(db: Session, item_id: int) -> int:
+    return (
+        db.query(NavigationItem)
+        .filter(
+            NavigationItem.parent_id == item_id,
+            NavigationItem.deleted_at.is_(None),
+        )
+        .count()
+    )
 
 
 def update_item(db: Session, item_id: int, data):
@@ -63,14 +85,15 @@ def update_item(db: Session, item_id: int, data):
     return item
 
 
-def delete_item(db: Session, item_id: int):
+def delete_item(db: Session, item_id: int, *, deleted_by: int | None = None):
     item = get_item(db, item_id)
 
-    if not item:
+    if not item or item.deleted_at is not None:
         return None
 
-    db.delete(item)
+    apply_soft_delete(item, deleted_by=deleted_by)
     db.commit()
+    db.refresh(item)
     return item
 
 

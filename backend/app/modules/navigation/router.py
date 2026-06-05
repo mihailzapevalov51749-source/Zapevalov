@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from app.db.session import get_db
+from app.modules.platform.shared.dependencies import require_designer_user
+from app.modules.users.models import User
 from .schemas import (
     NavigationItemCreate,
     NavigationItemUpdate,
@@ -41,10 +43,16 @@ def get_navigation_tree(
     scope: Optional[str] = None,
     mode: Optional[str] = None,
     context: Optional[str] = None,
+    for_edit_mode: bool = False,
     db: Session = Depends(get_db)
 ):
     menu_scope = scope or mode or context
-    return service.get_navigation_tree(db, portal_id, menu_scope)
+    return service.get_navigation_tree(
+        db,
+        portal_id,
+        menu_scope,
+        for_edit_mode=for_edit_mode,
+    )
 
 
 @router.put("/{item_id}", response_model=NavigationItemResponse)
@@ -64,12 +72,27 @@ def update_navigation_item(
 @router.delete("/{item_id}")
 def delete_navigation_item(
     item_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_designer_user),
 ):
     try:
-        item = service.delete_item(db, item_id)
+        item = service.delete_item(
+            db,
+            item_id,
+            deleted_by=current_user.id,
+            user=current_user,
+        )
     except ValueError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
+        message = str(exc)
+        lowered = message.lower()
+        status_code = 403
+
+        if "дочерн" in lowered:
+            status_code = 409
+        elif "не найден" in lowered or "уже удал" in lowered:
+            status_code = 404
+
+        raise HTTPException(status_code=status_code, detail=message) from exc
 
     if not item:
         raise HTTPException(status_code=404, detail="Элемент меню не найден")

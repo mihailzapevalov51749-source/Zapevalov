@@ -4,6 +4,15 @@ import {
   getQuickFilterConditions,
   mergeRuntimeFilterConditions,
 } from "./savedFilterUtils";
+import {
+  FILTER_OPERATOR_BOOLEAN_FALSE,
+  FILTER_OPERATOR_BOOLEAN_TRUE,
+  FILTER_OPERATOR_EQ,
+  FILTER_OPERATOR_IN,
+  FILTER_OPERATOR_IS_EMPTY,
+  FILTER_OPERATOR_IS_NOT_EMPTY,
+  FILTER_OPERATOR_NOT_IN,
+} from "./tableFilterOperators";
 
 /**
  * Maps Object View effective contract → runtime gateway params.
@@ -40,60 +49,106 @@ export function mapObjectViewQueryToRuntimeParams({
   };
 }
 
-function buildRuntimeFilterParams(conditions) {
+function normalizeRuntimeFilterValue(operator, value) {
+  if (operator === FILTER_OPERATOR_IN || operator === FILTER_OPERATOR_NOT_IN) {
+    if (Array.isArray(value)) {
+      return value;
+    }
+
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+
+      if (!trimmed) {
+        return [];
+      }
+
+      if (trimmed.startsWith("[")) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          return Array.isArray(parsed) ? parsed : [trimmed];
+        } catch {
+          return trimmed
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean);
+        }
+      }
+
+      return trimmed
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+  }
+
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  return value;
+}
+
+function mapConditionToRuntimeFilter(condition) {
+  const fieldKey = String(
+    condition?.fieldKey ?? condition?.field_key ?? "",
+  ).trim();
+
+  if (!fieldKey) {
+    return null;
+  }
+
+  let operator = String(condition?.operator || FILTER_OPERATOR_EQ)
+    .trim()
+    .toLowerCase();
+  let value = condition?.value;
+
+  if (operator === FILTER_OPERATOR_BOOLEAN_TRUE) {
+    operator = FILTER_OPERATOR_EQ;
+    value = true;
+  } else if (operator === FILTER_OPERATOR_BOOLEAN_FALSE) {
+    operator = FILTER_OPERATOR_EQ;
+    value = false;
+  }
+
+  if (operator === FILTER_OPERATOR_IS_EMPTY || operator === FILTER_OPERATOR_IS_NOT_EMPTY) {
+    return {
+      field: fieldKey,
+      op: operator,
+    };
+  }
+
+  const normalizedValue = normalizeRuntimeFilterValue(operator, value);
+
+  if (
+    normalizedValue === "" ||
+    normalizedValue === null ||
+    normalizedValue === undefined ||
+    (Array.isArray(normalizedValue) && !normalizedValue.length)
+  ) {
+    return null;
+  }
+
+  return {
+    field: fieldKey,
+    op: operator,
+    value: normalizedValue,
+  };
+}
+
+export function buildRuntimeFilterParams(conditions) {
   if (!Array.isArray(conditions) || !conditions.length) {
     return {};
   }
 
-  const params = {};
+  const payload = conditions
+    .map(mapConditionToRuntimeFilter)
+    .filter(Boolean);
 
-  for (const condition of conditions) {
-    const fieldKey = String(
-      condition?.fieldKey ?? condition?.field_key ?? "",
-    ).trim();
-
-    if (!fieldKey) {
-      continue;
-    }
-
-    const operator = String(condition?.operator || "eq").toLowerCase();
-    const value = condition?.value;
-
-    if (operator === "eq") {
-      if (value === undefined || value === null || value === "") {
-        continue;
-      }
-      params[`filter.${fieldKey}`] = String(value);
-      continue;
-    }
-
-    if (operator === "in") {
-      if (Array.isArray(value)) {
-        params[`filter.${fieldKey}`] = JSON.stringify(value);
-        continue;
-      }
-
-      if (typeof value === "string" && value.includes(",")) {
-        const parts = value
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean);
-        params[`filter.${fieldKey}`] = JSON.stringify(parts);
-        continue;
-      }
-
-      if (value !== undefined && value !== null && value !== "") {
-        params[`filter.${fieldKey}`] = String(value);
-        continue;
-      }
-    }
-
-    if (import.meta.env?.DEV) {
-      console.warn(
-        `[mapObjectViewQueryToRuntimeParams] Unsupported filter operator "${operator}" for field "${fieldKey}" — skipped.`,
-      );
-    }
+  if (!payload.length) {
+    return {};
   }
 
-  return params;
+  return {
+    filters: JSON.stringify(payload),
+  };
 }

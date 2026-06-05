@@ -48,6 +48,7 @@ export default function ObjectTableViewSettingsColumnsModal({
 
   const columnOrder = sessionApi?.panelColumnOrder || [];
   const titleFieldKey = effectiveContract?.projection?.titleFieldKey || null;
+  const columnMoveOptions = sessionApi?.columnMoveOptions || {};
 
   return (
     <PlatformModal
@@ -94,6 +95,7 @@ export default function ObjectTableViewSettingsColumnsModal({
                       "up",
                       columnOrder,
                       titleFieldKey,
+                      columnMoveOptions,
                     )
                   }
                   onClick={() => sessionApi?.moveColumn?.(fieldKey, "up")}
@@ -110,6 +112,7 @@ export default function ObjectTableViewSettingsColumnsModal({
                       "down",
                       columnOrder,
                       titleFieldKey,
+                      columnMoveOptions,
                     )
                   }
                   onClick={() => sessionApi?.moveColumn?.(fieldKey, "down")}

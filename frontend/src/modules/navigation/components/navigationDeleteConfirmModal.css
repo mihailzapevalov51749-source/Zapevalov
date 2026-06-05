@@ -1,0 +1,66 @@
+[data-platform-modal-key="navigation-delete-confirm-modal"][data-platform-modal-panel],
+[data-platform-modal-key="navigation-delete-notice-modal"][data-platform-modal-panel] {
+  min-width: 480px;
+  min-height: 280px;
+}
+
+.navigation-delete-modal__body {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.navigation-delete-modal__lead {
+  margin: 0;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.navigation-delete-modal__lead--secondary {
+  color: #64748b;
+}
+
+.navigation-delete-modal__error {
+  margin: 4px 0 0;
+  color: #b91c1c;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.navigation-delete-modal__footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.navigation-delete-modal__btn {
+  min-height: 38px;
+  min-width: 120px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.navigation-delete-modal__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.navigation-delete-modal__btn--secondary {
+  background: #fff;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.navigation-delete-modal__btn--danger {
+  background: #dc2626;
+  color: #fff;
+}

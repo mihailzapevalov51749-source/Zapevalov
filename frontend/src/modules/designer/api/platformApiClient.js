@@ -17,6 +17,7 @@ platformApiClient.interceptors.request.use((config) => {
   const token = getToken();
 
   if (token) {
+    config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
 

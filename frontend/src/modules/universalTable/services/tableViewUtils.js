@@ -1,3 +1,19 @@
+import {
+  buildRowNumbers,
+  formatPersistentRowNumber,
+  getRowParentId,
+  getRowPositionNumber,
+  getRowStableId,
+} from "../../../shared/table/buildRowNumbers";
+
+export {
+  buildRowNumbers,
+  formatPersistentRowNumber,
+  getRowParentId,
+  getRowPositionNumber,
+  getRowStableId,
+};
+
 const EMPTY_LOOKUP_VALUE = "__EMPTY_LOOKUP__";
 
 const isSameDay = (dateA, dateB) => {
@@ -386,14 +402,6 @@ const getStartOfWeek = (date) => {
   return getStartOfDay(nextDate);
 };
 
-const getRowParentId = (row) => {
-  return row?.parent_id ?? row?.parentId ?? row?.parent_row_id ?? null;
-};
-
-const getRowStableId = (row) => {
-  return row?.id ?? row?.rowId ?? row?.key ?? null;
-};
-
 const checkDateCondition = (rowDate, condition) => {
   const cellDate = parseDateValue(rowDate);
 
@@ -749,100 +757,4 @@ export function sortRowsAdvanced({ rows = [], columns = [], sortRules = [] }) {
       return leftItem.index - rightItem.index;
     })
     .map((item) => item.row);
-}
-
-export function buildRowNumbers({
-  rows = [],
-  mode = "tree",
-  separator = ".",
-  getParentId = getRowParentId,
-  getRowId = getRowStableId,
-} = {}) {
-  if (!Array.isArray(rows) || rows.length === 0) return {};
-
-  const rowNumbers = {};
-
-  if (mode === "none") {
-    return rowNumbers;
-  }
-
-  if (mode === "flat") {
-    rows.forEach((row, index) => {
-      const rowId = getRowId(row);
-      if (!rowId) return;
-
-      rowNumbers[String(rowId)] = String(index + 1);
-    });
-
-    return rowNumbers;
-  }
-
-  const rowsById = new Map();
-  const childrenByParentId = new Map();
-  const rootRows = [];
-
-  rows.forEach((row) => {
-    const rowId = getRowId(row);
-    if (!rowId) return;
-
-    rowsById.set(String(rowId), row);
-  });
-
-  rows.forEach((row) => {
-    const rowId = getRowId(row);
-    if (!rowId) return;
-
-    const parentId = getParentId(row);
-    const normalizedParentId =
-      parentId === null || parentId === undefined || parentId === ""
-        ? null
-        : String(parentId);
-
-    if (!normalizedParentId || !rowsById.has(normalizedParentId)) {
-      rootRows.push(row);
-      return;
-    }
-
-    if (!childrenByParentId.has(normalizedParentId)) {
-      childrenByParentId.set(normalizedParentId, []);
-    }
-
-    childrenByParentId.get(normalizedParentId).push(row);
-  });
-
-  const walkRows = (currentRows, prefix = "") => {
-    currentRows.forEach((row, index) => {
-      const rowId = getRowId(row);
-      if (!rowId) return;
-
-      const currentNumber = prefix
-        ? `${prefix}${separator}${index + 1}`
-        : String(index + 1);
-
-      rowNumbers[String(rowId)] = currentNumber;
-
-      const childRows = childrenByParentId.get(String(rowId)) || [];
-
-      if (childRows.length > 0) {
-        walkRows(childRows, currentNumber);
-      }
-    });
-  };
-
-  walkRows(rootRows);
-
-  return rowNumbers;
-}
-
-export function getRowPositionNumber(row, rowNumbers = "") {
-  const rowId = getRowStableId(row);
-  if (!rowId) return "";
-
-  return rowNumbers[String(rowId)] || "";
-}
-
-export function formatPersistentRowNumber(number, { prefix = "", pad = 5 } = {}) {
-  if (number === null || number === undefined || number === "") return "";
-
-  return `${prefix}${String(number).padStart(pad, "0")}`;
 }

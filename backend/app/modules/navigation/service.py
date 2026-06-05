@@ -3,6 +3,11 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from . import repository
+from .page_navigation_visibility import apply_page_status_visibility_update
+from .page_status_filter import (
+    filter_navigation_for_office_menu,
+    filter_navigation_for_user_menu,
+)
 from .enrichment import (
     enrich_navigation_list,
     enrich_navigation_tree,
@@ -11,6 +16,7 @@ from .enrichment import (
     OBJECT_TYPE_NAV_TYPE,
 )
 from .models import NavigationItem
+from .permissions import assert_can_delete_navigation_item
 
 
 DESIGNER_SYSTEM_ITEMS = [
@@ -162,10 +168,18 @@ def ensure_designer_system_items(db: Session, portal_id: int):
         db.commit()
 
 
-def get_navigation_tree(db: Session, portal_id: int, menu_scope: Optional[str] = None):
+def get_navigation_tree(
+    db: Session,
+    portal_id: int,
+    menu_scope: Optional[str] = None,
+    *,
+    for_edit_mode: bool = False,
+):
     if menu_scope == "designer":
         ensure_designer_system_items(db, portal_id)
     items = repository.get_items_by_portal(db, portal_id, menu_scope)
+    if menu_scope in {"runtime", "designer"}:
+        items = filter_navigation_for_user_menu(db, items, for_edit_mode=for_edit_mode)
     tree = build_tree(items)
     return enrich_navigation_tree(db, tree)
 
@@ -174,35 +188,76 @@ def get_navigation_list(db: Session, portal_id: int, menu_scope: Optional[str] =
     if menu_scope == "designer":
         ensure_designer_system_items(db, portal_id)
     items = repository.get_items_by_portal(db, portal_id, menu_scope)
+    if menu_scope == "runtime":
+        items = filter_navigation_for_office_menu(db, items)
     return enrich_navigation_list(db, items)
 
 
 def update_item(db: Session, item_id: int, data):
+    from app.modules.navigation.schemas import NavigationItemUpdate
+
     item = repository.get_item(db, item_id)
     if not item:
         return None
 
+    update_data = data.model_dump(exclude_unset=True)
+
     if is_object_type_navigation_item(item):
-        update_data = strip_object_type_metadata_updates(data.model_dump(exclude_unset=True))
-        from app.modules.navigation.schemas import NavigationItemUpdate
+        update_data = strip_object_type_metadata_updates(update_data)
 
-        data = NavigationItemUpdate(**update_data)
+    page_status_changed = False
+    if "is_visible" in update_data:
+        visible_value = update_data.pop("is_visible")
+        page_status_changed = apply_page_status_visibility_update(
+            db,
+            item,
+            is_visible=bool(visible_value),
+        )
 
-    updated = repository.update_item(db, item_id, data)
+    if not update_data:
+        if page_status_changed:
+            db.commit()
+        db.refresh(item)
+        enriched = enrich_navigation_list(db, [item])
+        return enriched[0] if enriched else item
+
+    updated = repository.update_item(db, item_id, NavigationItemUpdate(**update_data))
     if not updated:
         return None
+
+    if page_status_changed:
+        db.commit()
+        db.refresh(updated)
 
     enriched = enrich_navigation_list(db, [updated])
     return enriched[0] if enriched else updated
 
 
-def delete_item(db: Session, item_id: int):
+def delete_item(
+    db: Session,
+    item_id: int,
+    *,
+    deleted_by: int | None = None,
+    user=None,
+):
     item = repository.get_item(db, item_id)
     if not item:
         return None
-    if item.is_protected:
-        raise ValueError("Системный пункт меню защищён от удаления")
-    return repository.delete_item(db, item_id)
+
+    if user is not None:
+        assert_can_delete_navigation_item(user, item)
+    elif item.is_protected:
+        raise ValueError(
+            "Пункт меню нельзя удалить, так как он является системным "
+            "или имеет связанные зависимости."
+        )
+
+    if repository.count_active_children(db, item_id) > 0:
+        raise ValueError(
+            "Пункт меню нельзя удалить: сначала удалите дочерние пункты."
+        )
+
+    return repository.delete_item(db, item_id, deleted_by=deleted_by)
 
 
 def move_items(db: Session, items):

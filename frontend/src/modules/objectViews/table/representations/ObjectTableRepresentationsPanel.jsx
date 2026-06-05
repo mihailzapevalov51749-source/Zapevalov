@@ -24,6 +24,7 @@ export default function ObjectTableRepresentationsPanel({
   onSelectView,
   onToggleVisibility,
   onOpenViewSettings,
+  onSetDefaultView,
 }) {
   const summariesByKey = useMemo(() => {
     const map = new Map();
@@ -114,7 +115,6 @@ export default function ObjectTableRepresentationsPanel({
                 onClick={() => onSelectView?.(view)}
               >
                 <span className="object-table-representations-panel__title">
-                  {view.isDefault ? "★ " : ""}
                   {view.name}
                   {view.isDirty ? " *" : ""}
                 </span>
@@ -127,6 +127,28 @@ export default function ObjectTableRepresentationsPanel({
               </button>
 
               <div className="object-table-representations-panel__actions">
+                <button
+                  type="button"
+                  className={[
+                    "object-table-representations-panel__star-btn",
+                    view.isDefault ? " is-default" : "",
+                  ]
+                    .filter(Boolean)
+                    .join("")}
+                  title={
+                    view.isDefault
+                      ? "Представление по умолчанию"
+                      : "Сделать представлением по умолчанию"
+                  }
+                  disabled={view.isDefault}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onSetDefaultView?.(view);
+                  }}
+                >
+                  {view.isDefault ? "★" : "☆"}
+                </button>
+
                 {visibleSlotsLimit > 0 ? (
                   <select
                     className="object-table-representations-panel__slot-select"

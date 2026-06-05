@@ -1,34 +1,20 @@
 import { normalizeFieldEditorType } from "../../../shared/fieldEditors/fieldEditorRegistry";
 import { isRelationFieldType } from "../../designer/components/fields/relationFieldFormUtils";
 import { serializeUserFieldValue } from "../../../shared/fieldEditors/userFieldValueUtils";
+import {
+  buildInitialCreateFormValuesWithDefaults,
+  getDefaultValueResolveContext,
+} from "./applyDefaultValues";
 
 /**
  * @param {Array<{ key: string, rawFieldType?: string, isRequired?: boolean }>} fields
+ * @param {{ currentUserId?: number | null, now?: Date }} [context]
  */
-export function buildInitialCreateFormValues(fields = []) {
-  /** @type {Record<string, unknown>} */
-  const values = {};
-
-  for (const field of fields) {
-    const editorType = normalizeFieldEditorType(field.rawFieldType);
-
-    switch (editorType) {
-      case "boolean":
-        values[field.key] = false;
-        break;
-      case "multi_choice":
-        values[field.key] = [];
-        break;
-      case "number":
-        values[field.key] = "";
-        break;
-      default:
-        values[field.key] = "";
-        break;
-    }
-  }
-
-  return values;
+export function buildInitialCreateFormValues(fields = [], context = {}) {
+  return buildInitialCreateFormValuesWithDefaults(
+    fields,
+    getDefaultValueResolveContext(context),
+  );
 }
 
 function isEmptyValue(editorType, value) {

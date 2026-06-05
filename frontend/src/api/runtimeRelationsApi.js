@@ -78,6 +78,20 @@ function buildRelationInstancePath(tenantId, relationInstanceId) {
 }
 
 /**
+ * Batch list of runtime_relation_instances for a published relation_key (hierarchy tree SoT).
+ *
+ * @param {number} tenantId
+ * @param {string} relationKey
+ */
+export async function listRelationInstancesByKey(tenantId, relationKey) {
+  const { data } = await platformApiClient.get(
+    buildRelationKeyPath(tenantId, relationKey),
+  );
+
+  return Array.isArray(data) ? data : [];
+}
+
+/**
  * @param {number} tenantId
  * @param {string} relationKey
  * @param {{ source_entity_id: string, target_entity_id: string }} payload

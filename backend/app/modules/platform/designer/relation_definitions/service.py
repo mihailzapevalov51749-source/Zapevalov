@@ -23,6 +23,25 @@ def _actor_user_id(current_user: User | None) -> int | None:
     return current_user.id if current_user else None
 
 
+def _touch_relation_object_types(
+    db: Session,
+    tenant_id: int,
+    source_object_type_id: UUID,
+    target_object_type_id: UUID,
+    current_user: User | None,
+) -> None:
+    """Bump parent ObjectType.updated_at when relation schema changes."""
+    actor = _actor_user_id(current_user)
+
+    for object_type_id in {source_object_type_id, target_object_type_id}:
+        object_type_repository.touch_object_type_updated_at(
+            db,
+            tenant_id,
+            object_type_id,
+            updated_by=actor,
+        )
+
+
 def _get_object_type_or_404(
     db: Session,
     tenant_id: int,
@@ -245,6 +264,14 @@ def create_relation(
             detail="RelationDefinition с таким key уже существует в tenant",
         ) from exc
 
+    _touch_relation_object_types(
+        db,
+        tenant_id,
+        entity.source_object_type_id,
+        entity.target_object_type_id,
+        current_user,
+    )
+
     object_type_map = {source.id: source, target.id: target}
     return _to_read(entity, object_type_map)
 
@@ -368,6 +395,14 @@ def update_relation(
             detail="RelationDefinition с таким key уже существует в tenant",
         ) from exc
 
+    _touch_relation_object_types(
+        db,
+        tenant_id,
+        entity.source_object_type_id,
+        entity.target_object_type_id,
+        current_user,
+    )
+
     object_type_map = {source.id: source, target.id: target}
     return _to_read(entity, object_type_map)
 
@@ -395,4 +430,13 @@ def delete_relation(
     object_type_map = _object_type_map_for_entities(db, tenant_id, [entity])
     entity.updated_by = _actor_user_id(current_user)
     entity = repository.soft_delete_relation(db, entity)
+
+    _touch_relation_object_types(
+        db,
+        tenant_id,
+        entity.source_object_type_id,
+        entity.target_object_type_id,
+        current_user,
+    )
+
     return _to_read(entity, object_type_map)

@@ -1,7 +1,14 @@
 import { apiClient } from "./apiClient";
 
-export async function getPageFull(pageId) {
-  const res = await apiClient.get(`/pages/${pageId}/full`);
+export async function getPageFull(pageId, options = {}) {
+  const params = {};
+  if (options.officeAccess === true) {
+    params.office_access = true;
+  }
+  const res = await apiClient.get(
+    `/pages/${pageId}/full`,
+    Object.keys(params).length ? { params } : undefined,
+  );
   return res.data;
 }
 

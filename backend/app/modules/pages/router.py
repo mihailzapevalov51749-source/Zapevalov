@@ -1,7 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.modules.auth.dependencies import get_current_user
+from app.modules.users.models import User
+
 from .schemas import PageCreate, PageUpdate, PageResponse, PageFullResponse
 from . import service
 
@@ -30,8 +33,15 @@ def get_page(page_id: int, db: Session = Depends(get_db)):
 
 # ===== НОВЫЙ ENDPOINT =====
 @router.get("/{page_id}/full", response_model=PageFullResponse)
-def get_page_full(page_id: int, db: Session = Depends(get_db)):
-    data = service.get_page_full(db, page_id)
+def get_page_full(
+    page_id: int,
+    office_access: bool = Query(
+        False,
+        description="Проверка доступа страницы в Office runtime (draft блокируется).",
+    ),
+    db: Session = Depends(get_db),
+):
+    data = service.get_page_full(db, page_id, office_access=office_access)
 
     if not data:
         raise HTTPException(status_code=404, detail="Страница не найдена")
@@ -54,8 +64,12 @@ def update_page(
 
 
 @router.delete("/{page_id}")
-def delete_page(page_id: int, db: Session = Depends(get_db)):
-    page = service.delete_page(db, page_id)
+def delete_page(
+    page_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    page = service.delete_page(db, page_id, deleted_by=current_user.id)
 
     if not page:
         raise HTTPException(status_code=404, detail="Страница не найдена")

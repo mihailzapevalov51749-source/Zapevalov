@@ -35,6 +35,8 @@ import ObjectTypesPage from "./modules/designer/pages/ObjectTypesPage";
 import ObjectTypeWorkspacePage from "./modules/designer/pages/ObjectTypeWorkspacePage";
 import ObjectTypeDataPage from "./modules/designer/pages/ObjectTypeDataPage";
 import DesignerSectionPlaceholderPage from "./modules/designer/pages/DesignerSectionPlaceholderPage";
+import DesignerPagesPage from "./modules/designer/pages/DesignerPagesPage";
+import DesignerTrashPage from "./modules/designer/pages/DesignerTrashPage";
 import DesignerWorkspacesPage from "./modules/designer/pages/DesignerWorkspacesPage";
 import DesignerWorkspaceDetailPage from "./modules/designer/pages/DesignerWorkspaceDetailPage";
 import PlatformDevelopmentPage from "./modules/platformDashboard/pages/PlatformDevelopmentPage";
@@ -221,10 +223,8 @@ export default function App() {
             path="views"
             element={<DesignerSectionPlaceholderPage title="Представления" />}
           />
-          <Route
-            path="pages"
-            element={<DesignerSectionPlaceholderPage title="Страницы" />}
-          />
+          <Route path="pages" element={<DesignerPagesPage />} />
+          <Route path="trash" element={<DesignerTrashPage />} />
           <Route
             path="navigation"
             element={<DesignerSectionPlaceholderPage title="Навигация" />}

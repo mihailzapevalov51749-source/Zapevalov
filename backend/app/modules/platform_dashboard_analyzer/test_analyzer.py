@@ -304,6 +304,28 @@ def test_runtime_foundation_relation_engine_work_item_completed():
             assert evaluate_stage_work_status("runtime-foundation", work, ctx) == "planned"
 
 
+def test_relation_field_type_tree_view_work_item_completed():
+    ctx = build_scan_context()
+    phase_doc = ctx.docs.migration_phases.get("relation-field-type", {})
+    works = resolve_stage_works("relation-field-type", phase_doc)
+
+    tree_work = next(
+        work for work in works if "tree view" in work.lower()
+    )
+
+    status = evaluate_stage_work_status("relation-field-type", tree_work, ctx)
+
+    assert status == "done"
+    assert ctx.frontend.file_contents.get(
+        "modules/objectViews/table/hooks/useObjectTableHierarchyRows.js",
+        "",
+    )
+    assert "listRelationInstancesByKey" in ctx.frontend.file_contents.get(
+        "api/runtimeRelationsApi.js",
+        "",
+    )
+
+
 def test_library_deep_link_document_opening_evidence_accepts_constant_based_impl():
     ctx = build_scan_context()
     deeplink_source = ctx.frontend.file_contents.get(

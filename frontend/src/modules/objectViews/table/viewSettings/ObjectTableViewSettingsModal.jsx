@@ -166,7 +166,7 @@ export default function ObjectTableViewSettingsModal({
       <button
         type="button"
         className="object-table-view-settings__footer-save"
-        disabled={!canSave || saving}
+        disabled={!canSave || !isDirty || saving}
         title={
           !canSave
             ? "Сохранение недоступно"
@@ -412,6 +412,7 @@ export default function ObjectTableViewSettingsModal({
         objectTypeKey={objectTypeKey}
         sessionApi={sessionApi}
         onApplied={onAppliedFilters}
+        savedFilters={effectiveContract?.query?.filters?.savedFilters || []}
       />
 
       <ObjectTableViewSettingsSortModal

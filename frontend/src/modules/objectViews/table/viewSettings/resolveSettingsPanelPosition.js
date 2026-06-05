@@ -64,3 +64,75 @@ export function anchorToModalDefaultBounds(
     height: resolvedHeight,
   };
 }
+
+const TITLE_FIELD_PANEL_GAP = 12;
+const TITLE_FIELD_VIEWPORT_MARGIN = 12;
+
+/**
+ * Начальные bounds PlatformModal от anchor кнопки глаза у Title Field.
+ */
+export function anchorRectToModalDefaultBounds(
+  anchorRect,
+  {
+    width = 320,
+    height = 500,
+    fallback = null,
+  } = {},
+) {
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  const resolvedWidth = Math.min(
+    width,
+    viewportWidth - TITLE_FIELD_VIEWPORT_MARGIN * 2,
+  );
+  const resolvedHeight = Math.min(
+    height,
+    viewportHeight - TITLE_FIELD_VIEWPORT_MARGIN * 2,
+  );
+
+  if (!anchorRect) {
+    const base = fallback || {
+      x: 48,
+      y: 72,
+      width: resolvedWidth,
+      height: resolvedHeight,
+    };
+
+    return {
+      x: base.x,
+      y: base.y,
+      width: resolvedWidth,
+      height: resolvedHeight,
+    };
+  }
+
+  let x = anchorRect.left;
+  let y = anchorRect.top - resolvedHeight - TITLE_FIELD_PANEL_GAP;
+
+  if (y < TITLE_FIELD_VIEWPORT_MARGIN) {
+    y = anchorRect.bottom + TITLE_FIELD_PANEL_GAP;
+  }
+
+  x = Math.max(
+    TITLE_FIELD_VIEWPORT_MARGIN,
+    Math.min(
+      x,
+      viewportWidth - resolvedWidth - TITLE_FIELD_VIEWPORT_MARGIN,
+    ),
+  );
+  y = Math.max(
+    TITLE_FIELD_VIEWPORT_MARGIN,
+    Math.min(
+      y,
+      viewportHeight - resolvedHeight - TITLE_FIELD_VIEWPORT_MARGIN,
+    ),
+  );
+
+  return {
+    x,
+    y,
+    width: resolvedWidth,
+    height: resolvedHeight,
+  };
+}

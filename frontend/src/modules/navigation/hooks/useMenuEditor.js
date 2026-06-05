@@ -1,14 +1,41 @@
 import { useState } from "react";
 
+import { resolveNavigationDeleteError } from "../../../api/navigationApi";
 import { getLegacyStorageBlockedMessageForNavigationType } from "../../../shared/legacy";
 import { navigationService } from "../services/navigationService";
+import { getNavigationDeleteBlockReason } from "../utils/navigationDeletePolicy";
 
-export default function useMenuEditor({ portalId, reload }) {
+export default function useMenuEditor({ portalId, reload, navigationItems = [] }) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
+  const [deleteError, setDeleteError] = useState(null);
+  const [deleteNotice, setDeleteNotice] = useState(null);
 
   const enterEditMode = () => setIsEditMode(true);
   const exitEditMode = () => setIsEditMode(false);
+
+  const findNavigationItem = (itemId) => {
+    const normalizedId = String(itemId ?? "").trim();
+    if (!normalizedId) {
+      return null;
+    }
+
+    const stack = Array.isArray(navigationItems) ? [...navigationItems] : [];
+
+    while (stack.length) {
+      const current = stack.shift();
+      if (String(current?.id ?? "") === normalizedId) {
+        return current;
+      }
+
+      if (Array.isArray(current?.children) && current.children.length) {
+        stack.push(...current.children);
+      }
+    }
+
+    return null;
+  };
 
   const createItem = async ({
     type,
@@ -94,19 +121,60 @@ export default function useMenuEditor({ portalId, reload }) {
     }
   };
 
-  const deleteItem = async (id) => {
-    const confirmed = window.confirm("Удалить этот элемент меню?");
-    if (!confirmed) return;
+  const requestDeleteItem = (id) => {
+    const item = findNavigationItem(id);
+    const blockReason = getNavigationDeleteBlockReason(item);
+
+    setDeleteError(null);
+    setDeleteNotice(null);
+
+    if (blockReason) {
+      setDeleteNotice(blockReason);
+      return { ok: false, reason: blockReason };
+    }
+
+    setPendingDeleteId(id);
+    return { ok: true };
+  };
+
+  const cancelDeleteItem = () => {
+    setPendingDeleteId(null);
+    setDeleteError(null);
+  };
+
+  const clearDeleteNotice = () => {
+    setDeleteNotice(null);
+  };
+
+  const showDeleteNotice = (reason) => {
+    setDeleteError(null);
+    setPendingDeleteId(null);
+    setDeleteNotice(reason || getNavigationDeleteBlockReason(null));
+  };
+
+  const confirmDeleteItem = async () => {
+    if (pendingDeleteId == null) {
+      return { ok: false };
+    }
 
     setIsSaving(true);
+    setDeleteError(null);
 
     try {
-      await navigationService.deleteItem(id);
+      await navigationService.deleteItem(pendingDeleteId);
+      setPendingDeleteId(null);
       await reload();
+      return { ok: true };
+    } catch (error) {
+      const message = resolveNavigationDeleteError(error);
+      setDeleteError(message);
+      return { ok: false, error: message };
     } finally {
       setIsSaving(false);
     }
   };
+
+  const pendingDeleteItem = findNavigationItem(pendingDeleteId);
 
   return {
     isEditMode,
@@ -115,6 +183,14 @@ export default function useMenuEditor({ portalId, reload }) {
     exitEditMode,
     createItem,
     updateItem,
-    deleteItem,
+    requestDeleteItem,
+    cancelDeleteItem,
+    confirmDeleteItem,
+    pendingDeleteId,
+    pendingDeleteItem,
+    deleteError,
+    deleteNotice,
+    clearDeleteNotice,
+    showDeleteNotice,
   };
 }

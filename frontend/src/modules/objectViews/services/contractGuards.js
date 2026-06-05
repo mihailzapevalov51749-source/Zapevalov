@@ -1,7 +1,15 @@
 import { DEFAULT_TABLE_PRESENTATION } from "./objectViewContract";
+import {
+  ensureTableRowNumberPresentationFieldKey,
+  excludeTableDedicatedRecordNumberFieldKeys,
+} from "../../../shared/runtime/systemEntityFields";
 import { VIEW_ENGINE_SYSTEM_COLUMN_KEYS } from "../../../shared/viewEngine/contracts";
-import { normalizeTableDisplayFieldKeys } from "./tableColumnOrder";
+import {
+  normalizeTableDisplayFieldKeys,
+  preserveUserViewColumnOrder,
+} from "./tableColumnOrder";
 
+/** @deprecated Legacy prepend keys; table projection uses catalog system fields. */
 export const OBJECT_VIEW_SYSTEM_FIELD_KEYS = new Set(
   VIEW_ENGINE_SYSTEM_COLUMN_KEYS,
 );
@@ -17,10 +25,6 @@ function isPresentationFieldKey(fieldKey, projectionKeys) {
     return false;
   }
 
-  if (OBJECT_VIEW_SYSTEM_FIELD_KEYS.has(normalized)) {
-    return false;
-  }
-
   if (projectionKeys.size === 0) {
     return true;
   }
@@ -29,16 +33,6 @@ function isPresentationFieldKey(fieldKey, projectionKeys) {
 }
 
 function isPresentationWidthKey(fieldKey, projectionKeys) {
-  const normalized = String(fieldKey || "").trim();
-
-  if (!normalized) {
-    return false;
-  }
-
-  if (OBJECT_VIEW_SYSTEM_FIELD_KEYS.has(normalized)) {
-    return true;
-  }
-
   return isPresentationFieldKey(fieldKey, projectionKeys);
 }
 
@@ -53,10 +47,19 @@ export function normalizePresentationTable(
   table = null,
   projectionFieldKeys = [],
   titleFieldKey = null,
+  options = {},
 ) {
   const projectionKeys = new Set(
-    (projectionFieldKeys || []).map((key) => String(key || "").trim()).filter(Boolean),
+    ensureTableRowNumberPresentationFieldKey(
+      excludeTableDedicatedRecordNumberFieldKeys(
+        (projectionFieldKeys || [])
+          .map((key) => String(key || "").trim())
+          .filter(Boolean),
+      ),
+    ),
   );
+  const preserveExactColumnOrder = options.preserveExactColumnOrder === true;
+  const isAllMode = options.isAllMode === true;
 
   const source =
     table && typeof table === "object" ? table : DEFAULT_TABLE_PRESENTATION;
@@ -65,17 +68,21 @@ export function normalizePresentationTable(
     Array.isArray(source.hiddenFieldKeys) ? source.hiddenFieldKeys : []
   )
     .map((key) => String(key || "").trim())
+    .filter(
+      (key) =>
+        preserveExactColumnOrder || isPresentationFieldKey(key, projectionKeys),
+    );
+
+  const rawColumnOrder = (Array.isArray(source.columnOrder) ? source.columnOrder : [])
+    .map((key) => String(key || "").trim())
     .filter((key) => isPresentationFieldKey(key, projectionKeys));
 
-  const columnOrder = normalizeTableDisplayFieldKeys(
-    (Array.isArray(source.columnOrder) ? source.columnOrder : [])
-      .map((key) => String(key || "").trim())
-      .filter((key) => isPresentationFieldKey(key, projectionKeys)),
-    {
-      titleFieldKey,
-      isAllMode: false,
-    },
-  );
+  const columnOrder = preserveExactColumnOrder
+    ? preserveUserViewColumnOrder(rawColumnOrder, [...projectionKeys])
+    : normalizeTableDisplayFieldKeys(rawColumnOrder, {
+        titleFieldKey,
+        isAllMode,
+      });
 
   const columnWidths = {};
   const rawWidths =
@@ -148,6 +155,15 @@ export function normalizePresentationCard(card) {
   };
 }
 
+function presentationNormalizeOptions(contract) {
+  const isUserView = contract?.meta?.isUserView === true;
+
+  return {
+    preserveExactColumnOrder: isUserView,
+    isAllMode: false,
+  };
+}
+
 export function applyContractGuards(contract) {
   if (!contract) {
     return contract;
@@ -188,6 +204,7 @@ export function applyContractGuards(contract) {
         contract.presentation?.table,
         projectionFieldKeys,
         contract.projection?.titleFieldKey,
+        presentationNormalizeOptions(contract),
       ),
       card: normalizePresentationCard(contract.presentation?.card),
     },

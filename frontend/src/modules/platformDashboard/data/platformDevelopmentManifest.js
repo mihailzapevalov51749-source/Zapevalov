@@ -1,5 +1,5 @@
 export const platformDevelopmentManifest = {
-  updatedAt: "2026-06-04T17:15:00",
+  updatedAt: "2026-06-06T12:00:00",
 
   title: "Развитие платформы ЯсноПро",
 
@@ -15,15 +15,15 @@ export const platformDevelopmentManifest = {
   },
 
   readiness: {
-    targetPlatformPercent: 38,
-    currentPhasePercent: 65,
+    targetPlatformPercent: 39,
+    currentPhasePercent: 68,
     capabilities: [
       {
         name: "Модель объектов",
         status: "ready",
-        percent: 85,
+        percent: 88,
         businessMeaning:
-          "Можно описывать типы объектов, публиковать их и работать с записями.",
+          "Можно описывать типы объектов, задавать значения по умолчанию полей, публиковать и работать с записями.",
       },
       {
         name: "Представления",
@@ -68,7 +68,7 @@ export const platformDevelopmentManifest = {
       number: 1,
       name: "Независимость объектной платформы",
       status: "in_progress",
-      percent: 65,
+      percent: 67,
       meaning:
         "Новая объектная платформа перестаёт зависеть от старых таблиц.",
     },
@@ -135,6 +135,22 @@ export const platformDevelopmentManifest = {
   },
 
   achievements: [
+    {
+      date: "2026-06-05",
+      text: "Упрощён сценарий действий в модалке удаления объекта с зависимостями: единая кнопка «Удалить», выбор сценария карточками, без дублирующей кнопки открытия зависимостей.",
+    },
+    {
+      date: "2026-06-05",
+      text: "Исправлена работа действий в модалке удаления зависимостей Корзины: активные сценарии, открытие зависимостей и восстановление модалки после возврата назад.",
+    },
+    {
+      date: "2026-06-05",
+      text: "Модалка удаления зависимостей в Корзине переработана: двухколоночный layout, KPI-карточки, selectable-сценарии и единая кнопка удаления на PlatformModal.",
+    },
+    {
+      date: "2026-06-05",
+      text: "Корзина получила сценарии «очистить зависимости» и «каскадное удаление» с деревом зависимостей в PlatformModal.",
+    },
     {
       date: "2026-05-30",
       text: "Карточка объекта больше не зависит от Universal Table.",
@@ -765,6 +781,7 @@ export const platformDevelopmentManifest = {
         "Сценарии публикации и preview",
         "Понятная граница Studio и runtime",
         "Управление жизненным циклом типа объекта",
+        "Корзина платформы",
       ],
       risks: [
         "Размытая граница между черновиком и опубликованным",
@@ -995,6 +1012,97 @@ export const platformDevelopmentManifest = {
       relatedContours: ["Object Card", "Object Platform"],
       relatedDebt: [],
       relatedAdr: "ADR-002",
+    },
+    {
+      key: "page-status-runtime-contract",
+      date: "2026-06-04",
+      title: "Runtime-контракт статусов страниц",
+      type: "quality",
+      description:
+        "Внедрён строгий runtime-контракт статусов страниц: draft и hidden исключены из Office-навигации и Office runtime; published доступна при корректной привязке и is_visible.",
+      impact:
+        "Backend фильтрует runtime navigation по pages.status и navigation_items.is_visible; Office URL для draft/hidden возвращает 403; sidebar обновляется без F5 после смены статуса в Studio.",
+      relatedContours: ["Designer Foundation", "Object Platform", "Navigation"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "platform-trash-bin",
+      date: "2026-06-04",
+      title: "Корзина платформы",
+      type: "feature",
+      description:
+        "Двухэтапное удаление в Studio: soft delete (deleted_at, deleted_by), реестр «Корзина», восстановление и окончательное удаление с проверкой зависимостей.",
+      impact:
+        "Страницы, workspace, навигация и метаданные объектов попадают в корзину вместо немедленного hard delete; purge только из корзины.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "platform-trash-dependency-actions",
+      date: "2026-06-05",
+      title: "Dependency actions в Корзине платформы",
+      type: "feature",
+      description:
+        "Добавлены централизованные dependency actions: «Открыть», «Удалить и очистить зависимости», «Удалить каскадно». Блокировка purge теперь показывает дерево зависимостей и подтверждение каскадного удаления.",
+      impact:
+        "Пользователь завершает удаление прямо в модальном окне: очистка ссылок и каскадное удаление выполняются без ручного обхода Studio-разделов.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "platform-trash-purge-modal-footer-simplify",
+      date: "2026-06-05",
+      title: "Упрощение footer модалки удаления зависимостей",
+      type: "quality",
+      description:
+        "Удалена кнопка «Открыть зависимости» из footer; правый блок переименован в «Выбери сценарий действий»; вместо двух кнопок удаления — единая «Удалить» с выбором clear/cascade.",
+      impact:
+        "Studio → Корзина → модалка удаления: пользователь выбирает сценарий карточкой и подтверждает одной кнопкой «Удалить».",
+      relatedContours: ["Designer Foundation", "PlatformModal", "Object Platform"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "platform-trash-purge-modal-actions-fix",
+      date: "2026-06-05",
+      title: "Исправление действий модалки удаления зависимостей",
+      type: "quality",
+      description:
+        "Активированы кнопки «Открыть зависимости» и сценарии удаления; состояние модалки сохраняется в query params и восстанавливается после перехода к зависимости и возврата назад.",
+      impact:
+        "Studio → Корзина: пользователь не теряет контекст модалки при проверке зависимостей; выбранный сценарий clear/cascade сохраняется в URL.",
+      relatedContours: ["Designer Foundation", "PlatformModal", "Object Platform"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "field-default-value-system",
+      date: "2026-06-06",
+      title: "Значение по умолчанию для пользовательских полей",
+      type: "feature",
+      description:
+        "Реализован контракт default_value_json { type, value } в Field Definition: UI в свойствах поля Studio, валидация по типу поля, runtime-применение только при создании новой записи (ручной ввод имеет приоритет).",
+      impact:
+        "Studio → Тип объекта → Поля → Свойства поля → блок «Значение по умолчанию»; Office/Quick Create и runtime create подставляют defaults для новых записей без изменения существующих.",
+      relatedContours: ["Object Platform", "Designer Foundation", "Runtime Entity"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "platform-trash-purge-modal-ux",
+      date: "2026-06-05",
+      title: "UX модалки удаления зависимостей (PlatformModal)",
+      type: "quality",
+      description:
+        "Переработан интерфейс TrashPurgeModal: двухколоночная структура (зависимости / последствия), KPI-карточки, карточка удаляемого объекта, selectable-сценарии удаления, единая кнопка действия в footer, высота ~88vh.",
+      impact:
+        "Studio → Корзина → «Удалить окончательно» при зависимостях: пользователь видит структурированный сценарий выбора без «вертикальной простыни»; drag/resize/persist PlatformModal сохранены.",
+      relatedContours: ["Designer Foundation", "PlatformModal", "Object Platform"],
+      relatedDebt: [],
+      relatedAdr: null,
     },
     {
       key: "object-card-comments-visibility",

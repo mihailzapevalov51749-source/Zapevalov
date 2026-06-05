@@ -10,6 +10,7 @@ from app.modules.platform.shared.constants import (
     FIELD_DEFINITION_NAME_MAX_LENGTH,
 )
 from app.modules.platform.shared.enums import FieldType
+from app.modules.platform.shared.default_value import validate_default_value_json
 from app.modules.platform.shared.relation_field_contract import (
     validate_relation_field_type_payload,
 )
@@ -202,48 +203,19 @@ def _validate_field_type_payload(
     if field_type in CHOICE_FIELD_TYPES:
         _validate_choice_options(settings_json or {})
 
-    if field_type == FieldType.BOOLEAN:
-        if default_value_json is not None and not isinstance(default_value_json, bool):
-            raise ValueError("default_value_json для boolean должен быть true/false или null")
-
-    if field_type in {FieldType.DATE, FieldType.DATETIME}:
-        if default_value_json is not None and not isinstance(default_value_json, str):
-            raise ValueError(
-                "default_value_json для date/datetime должен быть ISO string или null",
-            )
-
-    if field_type == FieldType.UUID and default_value_json is not None:
-        if not isinstance(default_value_json, str):
-            raise ValueError("default_value_json для uuid должен быть string или null")
-
-    if field_type == FieldType.USER and default_value_json is not None:
-        if isinstance(default_value_json, bool) or not isinstance(
-            default_value_json,
-            (int, str),
-        ):
-            raise ValueError(
-                "default_value_json для user должен быть user_id (int) или null",
-            )
-
     if field_type == FieldType.FILE:
         settings = settings_json or {}
         if "multiple" in settings and not isinstance(settings["multiple"], bool):
             raise ValueError("settings_json.multiple для file должен быть boolean")
 
-        if default_value_json is not None:
-            if not isinstance(default_value_json, list):
-                raise ValueError(
-                    "default_value_json для file должен быть array или null",
-                )
-
-            for index, item in enumerate(default_value_json):
-                if not isinstance(item, dict):
-                    raise ValueError(
-                        f"default_value_json[{index}] для file должен быть объектом",
-                    )
-
     if field_type == FieldType.RELATION:
         validate_relation_field_type_payload(
+            default_value_json=default_value_json,
+            settings_json=settings_json or {},
+        )
+    else:
+        validate_default_value_json(
+            field_type=field_type,
             default_value_json=default_value_json,
             settings_json=settings_json or {},
         )

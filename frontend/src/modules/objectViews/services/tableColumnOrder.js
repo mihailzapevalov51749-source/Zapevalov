@@ -1,7 +1,11 @@
 import {
+  excludeTableDedicatedRecordNumberFieldKeys,
   isRuntimeSystemFieldKey,
+  isTableRowNumberPresentationFieldKey,
   orderUserThenSystemFieldKeys,
-  SYSTEM_ENTITY_FIELD_ORDER,
+  peelTableRowNumberPresentationFieldKey,
+  TABLE_PROJECTION_SYSTEM_FIELD_ORDER,
+  TABLE_ROW_NUMBER_PRESENTATION_FIELD_KEY,
 } from "../../../shared/runtime/systemEntityFields";
 import { isTableBaseStateKey } from "../table/preferences/tableBaseState";
 
@@ -42,9 +46,11 @@ export function enforceTitleFieldFirstInColumnOrder(fieldKeys, titleFieldKey) {
 export function normalizeTableDisplayFieldKeys(rawKeys, options = {}) {
   const title = String(options.titleFieldKey || "").trim();
   const isAllMode = options.isAllMode === true;
-  const keys = dedupeFieldKeys(rawKeys);
+  const deduped = excludeTableDedicatedRecordNumberFieldKeys(dedupeFieldKeys(rawKeys));
+  const rowNumberIndex = deduped.findIndex(isTableRowNumberPresentationFieldKey);
+  const { rowNumberIncluded, keys } = peelTableRowNumberPresentationFieldKey(deduped);
 
-  if (!keys.length) {
+  if (!keys.length && !rowNumberIncluded) {
     return [];
   }
 
@@ -65,7 +71,7 @@ export function normalizeTableDisplayFieldKeys(rawKeys, options = {}) {
     const systemSet = new Set(systemKeys);
     const orderedSystem = [];
 
-    for (const systemKey of SYSTEM_ENTITY_FIELD_ORDER) {
+    for (const systemKey of TABLE_PROJECTION_SYSTEM_FIELD_ORDER) {
       if (systemSet.has(systemKey)) {
         orderedSystem.push(systemKey);
       }
@@ -77,7 +83,11 @@ export function normalizeTableDisplayFieldKeys(rawKeys, options = {}) {
       }
     }
 
-    return [...orderedUser, ...orderedSystem];
+    return attachTableRowNumberPresentationFieldKey(
+      [...orderedUser, ...orderedSystem],
+      rowNumberIncluded,
+      rowNumberIndex,
+    );
   }
 
   const result = [];
@@ -95,7 +105,36 @@ export function normalizeTableDisplayFieldKeys(rawKeys, options = {}) {
     }
   }
 
-  return result;
+  return attachTableRowNumberPresentationFieldKey(
+    result,
+    rowNumberIncluded,
+    rowNumberIndex,
+  );
+}
+
+/**
+ * @param {string[]} keys
+ * @param {boolean} rowNumberIncluded
+ * @param {number} rowNumberIndex
+ * @returns {string[]}
+ */
+function attachTableRowNumberPresentationFieldKey(
+  keys,
+  rowNumberIncluded,
+  rowNumberIndex,
+) {
+  if (!rowNumberIncluded) {
+    return keys;
+  }
+
+  const insertAt =
+    rowNumberIndex >= 0 ? Math.min(rowNumberIndex, keys.length) : 0;
+
+  return [
+    ...keys.slice(0, insertAt),
+    TABLE_ROW_NUMBER_PRESENTATION_FIELD_KEY,
+    ...keys.slice(insertAt),
+  ];
 }
 
 /**
@@ -103,18 +142,21 @@ export function normalizeTableDisplayFieldKeys(rawKeys, options = {}) {
  * @param {"up" | "down"} direction
  * @param {string[]} columnOrder
  * @param {string | null | undefined} titleFieldKey
+ * @param {{ preserveExactOrder?: boolean }} [options]
  */
-export function canMoveTableColumn(fieldKey, direction, columnOrder, titleFieldKey) {
+export function canMoveTableColumn(
+  fieldKey,
+  direction,
+  columnOrder,
+  titleFieldKey,
+  options = {},
+) {
   const normalized = String(fieldKey || "").trim();
   const title = String(titleFieldKey || "").trim();
   const order = Array.isArray(columnOrder) ? columnOrder : [];
   const index = order.indexOf(normalized);
 
   if (index < 0) {
-    return false;
-  }
-
-  if (title && normalized === title) {
     return false;
   }
 
@@ -125,11 +167,49 @@ export function canMoveTableColumn(fieldKey, direction, columnOrder, titleFieldK
     return false;
   }
 
+  if (options.preserveExactOrder === true) {
+    return true;
+  }
+
+  if (title && normalized === title) {
+    return false;
+  }
+
   if (title && targetIndex === 0) {
     return false;
   }
 
   return true;
+}
+
+/**
+ * Keeps user-defined column order for Office user views (no title/system reordering).
+ *
+ * @param {string[]} rawKeys
+ * @param {string[]} projectionFieldKeys
+ */
+export function preserveUserViewColumnOrder(rawKeys, projectionFieldKeys = []) {
+  const projectionSet = new Set(
+    (Array.isArray(projectionFieldKeys) ? projectionFieldKeys : [])
+      .map((key) => String(key || "").trim())
+      .filter(Boolean),
+  );
+  const order = dedupeFieldKeys(rawKeys).filter((key) => projectionSet.has(key));
+
+  if (
+    projectionSet.has(TABLE_ROW_NUMBER_PRESENTATION_FIELD_KEY) &&
+    !order.includes(TABLE_ROW_NUMBER_PRESENTATION_FIELD_KEY)
+  ) {
+    order.unshift(TABLE_ROW_NUMBER_PRESENTATION_FIELD_KEY);
+  }
+
+  for (const key of projectionFieldKeys) {
+    if (!order.includes(key) && !isTableRowNumberPresentationFieldKey(key)) {
+      order.push(key);
+    }
+  }
+
+  return order;
 }
 
 /**
@@ -253,7 +333,9 @@ export function resolveObjectTypeTitleFieldKey(objectType, fieldKeys = [], optio
  * }} [options]
  */
 export function orderAllModeTableFieldKeys(fields, options = {}) {
-  const catalogKeys = (Array.isArray(fields) ? fields : [])
+  const fieldList = Array.isArray(fields) ? fields : [];
+
+  const catalogKeys = fieldList
     .map((field) => String(field?.key || "").trim())
     .filter(Boolean);
 
@@ -264,7 +346,7 @@ export function orderAllModeTableFieldKeys(fields, options = {}) {
       runtimeProjection: options.runtimeProjection,
     });
 
-  const ordered = orderUserThenSystemFieldKeys(fields, resolvedTitle || null);
+  const ordered = orderUserThenSystemFieldKeys(fieldList, resolvedTitle || null);
 
   return normalizeTableDisplayFieldKeys(ordered, {
     titleFieldKey: resolvedTitle,

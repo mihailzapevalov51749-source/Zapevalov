@@ -1,15 +1,81 @@
 import {
+  ensureTableRowNumberPresentationFieldKey,
+  excludeTableDedicatedRecordNumberFieldKeys,
+  isTableRowNumberPresentationFieldKey,
+  TABLE_ROW_NUMBER_PRESENTATION_FIELD_KEY,
+  TABLE_ROW_NUMBER_PRESENTATION_LABEL,
+} from "../../../shared/runtime/systemEntityFields";
+import {
   normalizeTableDisplayFieldKeys,
+  preserveUserViewColumnOrder,
   resolveTableDisplayContext,
 } from "./tableColumnOrder";
 import { isTableBaseStateKey } from "../table/preferences/tableBaseState";
+import {
+  findCatalogObjectType,
+  getObjectTypeFields,
+} from "../table/services/adapters/ObjectTypeTableAdapter";
+import {
+  excludeHierarchyRelationFieldKeys,
+  isHierarchyRelationFieldKey,
+} from "./excludeHierarchyTableFields";
 
 /**
  * @param {import('./objectViewContract').ObjectViewContract | null | undefined} contract
  * @returns {string[]}
  */
 export function getProjectionFieldKeys(contract) {
-  return [...(contract?.projection?.fieldKeys || [])].filter(Boolean);
+  return excludeTableDedicatedRecordNumberFieldKeys(
+    [...(contract?.projection?.fieldKeys || [])].filter(Boolean),
+  );
+}
+
+/**
+ * Catalog/API projection keys + presentation-only «№» column.
+ *
+ * @param {import('./objectViewContract').ObjectViewContract | null | undefined} contract
+ * @returns {string[]}
+ */
+export function getTablePresentationFieldKeys(contract) {
+  return ensureTableRowNumberPresentationFieldKey(getProjectionFieldKeys(contract));
+}
+
+/**
+ * @param {Record<string, unknown> | null | undefined} catalog
+ * @param {string | null | undefined} objectTypeKey
+ * @param {import('./objectViewContract').ObjectViewContract | null | undefined} contract
+ */
+export function resolveTableFieldLabels(catalog, objectTypeKey, contract) {
+  const labels = new Map();
+
+  labels.set(
+    TABLE_ROW_NUMBER_PRESENTATION_FIELD_KEY,
+    TABLE_ROW_NUMBER_PRESENTATION_LABEL,
+  );
+
+  const objectType =
+    catalog && objectTypeKey
+      ? findCatalogObjectType(catalog, objectTypeKey)
+      : null;
+  const fields = getObjectTypeFields(objectType);
+
+  for (const field of fields) {
+    const key = String(field?.key || "").trim();
+
+    if (!key) {
+      continue;
+    }
+
+    labels.set(key, String(field?.name || field?.label || key));
+  }
+
+  for (const key of getTablePresentationFieldKeys(contract)) {
+    if (!labels.has(key)) {
+      labels.set(key, key);
+    }
+  }
+
+  return labels;
 }
 /**
  * Full column order for panel (all projection fields).
@@ -18,6 +84,7 @@ export function getProjectionFieldKeys(contract) {
  */
 export function resolvePanelColumnOrder(contract, runtimeProjection = null, options = {}) {
   const projectionKeys = getProjectionFieldKeys(contract);
+  const presentationKeys = getTablePresentationFieldKeys(contract);
   const { titleFieldKey, isAllMode } = resolveTableDisplayContext(
     contract,
     runtimeProjection,
@@ -25,14 +92,23 @@ export function resolvePanelColumnOrder(contract, runtimeProjection = null, opti
   );
 
   if (isTableBaseStateKey(contract?.key)) {
-    return normalizeTableDisplayFieldKeys(projectionKeys, {
+    const catalog = options.catalog ?? null;
+    const objectTypeKey = options.objectTypeKey ?? null;
+    const keysForDisplay =
+      catalog && objectTypeKey
+        ? excludeHierarchyRelationFieldKeys(presentationKeys, catalog, objectTypeKey)
+        : presentationKeys;
+
+    return normalizeTableDisplayFieldKeys(keysForDisplay, {
       titleFieldKey,
       isAllMode: true,
     });
   }
 
   const presentationOrder = contract?.presentation?.table?.columnOrder || [];
-  const fieldOrder = contract?.projection?.fieldOrder || projectionKeys;
+  const fieldOrder = ensureTableRowNumberPresentationFieldKey(
+    contract?.projection?.fieldOrder || projectionKeys,
+  );
 
   const orderSource =
     Array.isArray(presentationOrder) && presentationOrder.length
@@ -42,10 +118,25 @@ export function resolvePanelColumnOrder(contract, runtimeProjection = null, opti
   const seen = new Set();
   const result = [];
 
+  const catalog = options.catalog ?? null;
+  const objectTypeKey = options.objectTypeKey ?? null;
+
   for (const key of orderSource) {
     const normalized = String(key || "").trim();
 
-    if (!normalized || !projectionKeys.includes(normalized) || seen.has(normalized)) {
+    if (
+      !normalized ||
+      !presentationKeys.includes(normalized) ||
+      seen.has(normalized)
+    ) {
+      continue;
+    }
+
+    if (
+      catalog &&
+      objectTypeKey &&
+      isHierarchyRelationFieldKey(normalized, catalog, objectTypeKey)
+    ) {
       continue;
     }
 
@@ -53,10 +144,30 @@ export function resolvePanelColumnOrder(contract, runtimeProjection = null, opti
     result.push(normalized);
   }
 
-  for (const key of projectionKeys) {
-    if (!seen.has(key)) {
+  for (const key of presentationKeys) {
+    if (seen.has(key)) {
+      continue;
+    }
+
+    if (
+      catalog &&
+      objectTypeKey &&
+      isHierarchyRelationFieldKey(key, catalog, objectTypeKey)
+    ) {
+      continue;
+    }
+
+    if (isTableRowNumberPresentationFieldKey(key)) {
+      result.unshift(key);
+    } else {
       result.push(key);
     }
+  }
+
+  const isUserView = contract?.meta?.isUserView === true;
+
+  if (isUserView) {
+    return preserveUserViewColumnOrder(result, presentationKeys);
   }
 
   return normalizeTableDisplayFieldKeys(result, {
@@ -72,7 +183,6 @@ export function resolvePanelColumnOrder(contract, runtimeProjection = null, opti
  */
 export function resolveVisibleFieldKeys(contract, runtimeProjection = null, options = {}) {
   const projectionKeys = getProjectionFieldKeys(contract);
-  const hidden = new Set(contract?.presentation?.table?.hiddenFieldKeys || []);
   const { titleFieldKey, isAllMode } = resolveTableDisplayContext(
     contract,
     runtimeProjection,
@@ -80,9 +190,35 @@ export function resolveVisibleFieldKeys(contract, runtimeProjection = null, opti
   );
 
   const panelOrder = resolvePanelColumnOrder(contract, runtimeProjection, options);
-  const visible = panelOrder.filter((key) => !hidden.has(key));
 
-  return normalizeTableDisplayFieldKeys(visible, {
+  if (isTableBaseStateKey(contract?.key) || isAllMode) {
+    const catalog = options.catalog ?? null;
+    const objectTypeKey = options.objectTypeKey ?? null;
+    const withoutHierarchy =
+      catalog && objectTypeKey
+        ? excludeHierarchyRelationFieldKeys(panelOrder, catalog, objectTypeKey)
+        : panelOrder;
+
+    return normalizeTableDisplayFieldKeys(withoutHierarchy, {
+      titleFieldKey,
+      isAllMode: true,
+    });
+  }
+
+  const hidden = new Set(contract?.presentation?.table?.hiddenFieldKeys || []);
+  const visible = panelOrder.filter((key) => !hidden.has(key));
+  const catalog = options.catalog ?? null;
+  const objectTypeKey = options.objectTypeKey ?? null;
+  const withoutHierarchy =
+    catalog && objectTypeKey
+      ? excludeHierarchyRelationFieldKeys(visible, catalog, objectTypeKey)
+      : visible;
+
+  if (contract?.meta?.isUserView === true) {
+    return withoutHierarchy;
+  }
+
+  return normalizeTableDisplayFieldKeys(withoutHierarchy, {
     titleFieldKey,
     isAllMode,
   });

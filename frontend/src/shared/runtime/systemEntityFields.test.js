@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { orderUserThenSystemFieldKeys } from "./systemEntityFields";
+import {
+  excludeTableDedicatedRecordNumberFieldKeys,
+  orderUserThenSystemFieldKeys,
+  SYSTEM_ENTITY_FIELD_KEYS,
+} from "./systemEntityFields";
 
 describe("orderUserThenSystemFieldKeys", () => {
   it("places title first among user fields, then system fields in canonical order", () => {
@@ -28,5 +32,34 @@ describe("orderUserThenSystemFieldKeys", () => {
       "__system_updated_at",
       "__system_id",
     ]);
+  });
+
+  it("excludes record_number from table projection system field order", () => {
+    const keys = orderUserThenSystemFieldKeys(
+      [
+        { key: "title", name: "Название" },
+        {
+          key: SYSTEM_ENTITY_FIELD_KEYS.recordNumber,
+          name: "№ записи",
+          is_system: true,
+        },
+        { key: SYSTEM_ENTITY_FIELD_KEYS.id, name: "ID", is_system: true },
+      ],
+      "title",
+    );
+
+    expect(keys).not.toContain(SYSTEM_ENTITY_FIELD_KEYS.recordNumber);
+    expect(keys).toEqual(["title", SYSTEM_ENTITY_FIELD_KEYS.id]);
+  });
+
+  it("excludeTableDedicatedRecordNumberFieldKeys strips legacy and namespaced keys", () => {
+    expect(
+      excludeTableDedicatedRecordNumberFieldKeys([
+        "title",
+        "record_number",
+        SYSTEM_ENTITY_FIELD_KEYS.recordNumber,
+        "status",
+      ]),
+    ).toEqual(["title", "status"]);
   });
 });

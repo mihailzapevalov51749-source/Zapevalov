@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.modules.platform.shared.dependencies import require_designer_user
+from app.modules.users.models import User
 from app.modules.platform.designer.workspaces.schemas import (
     DesignerWorkspaceCreate,
     DesignerWorkspaceRead,
@@ -177,9 +179,15 @@ def post_designer_workspace_ensure_tabs(
 def get_designer_workspace_tabs(
     tenant_id: int,
     workspace_id: int,
+    for_user_menu: bool = False,
     db: Session = Depends(get_db),
 ):
-    tabs = list_workspace_tabs(db, tenant_id=tenant_id, workspace_id=workspace_id)
+    tabs = list_workspace_tabs(
+        db,
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        for_user_menu=for_user_menu,
+    )
     return WorkspaceTabsResponse(workspace_id=workspace_id, tabs=tabs)
 
 
@@ -221,12 +229,14 @@ def delete_designer_workspace_tab(
     workspace_id: int,
     tab_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_designer_user),
 ):
     delete_workspace_tab(
         db,
         tenant_id=tenant_id,
         workspace_id=workspace_id,
         tab_id=tab_id,
+        deleted_by=current_user.id,
     )
     return {"ok": True}
 
@@ -252,7 +262,13 @@ def delete_designer_workspace(
     tenant_id: int,
     workspace_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_designer_user),
 ):
-    delete_workspace(db, tenant_id=tenant_id, workspace_id=workspace_id)
+    delete_workspace(
+        db,
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        deleted_by=current_user.id,
+    )
     return {"ok": True}
 

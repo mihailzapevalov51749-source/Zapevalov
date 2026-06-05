@@ -2,6 +2,7 @@ import {
   isRelationFieldType,
   normalizeRelationSettingsFromField,
 } from "../../designer/components/fields/relationFieldFormUtils";
+import { isHierarchyRelationFieldForTable } from "../../../shared/relation/hierarchyRelationProfile";
 import { resolveRelationFieldPeerObjectTypeKey } from "../../objectEntities/services/resolveRelationFieldPeerObjectType";
 import { findCatalogObjectType } from "../table/services/adapters/ObjectTypeTableAdapter";
 
@@ -13,6 +14,8 @@ import { findCatalogObjectType } from "../table/services/adapters/ObjectTypeTabl
 export function resolveRelationTableColumns(columns = [], catalog = null, objectTypeKey = null) {
   const anchorKey = String(objectTypeKey ?? "").trim();
 
+  const objectType = findCatalogObjectType(catalog, anchorKey);
+
   return (Array.isArray(columns) ? columns : [])
     .filter((column) => {
       const fieldDef = column?.fieldDef;
@@ -20,7 +23,22 @@ export function resolveRelationTableColumns(columns = [], catalog = null, object
         fieldDef?.rawFieldType || fieldDef?.type || column?.type || "",
       ).toLowerCase();
 
-      return isRelationFieldType(rawType);
+      if (!isRelationFieldType(rawType)) {
+        return false;
+      }
+
+      const catalogField = (objectType?.fields || []).find(
+        (field) => String(field?.key || "").trim() === String(column.key || "").trim(),
+      );
+
+      if (
+        catalogField &&
+        isHierarchyRelationFieldForTable(catalogField, catalog, anchorKey)
+      ) {
+        return false;
+      }
+
+      return true;
     })
     .map((column) => {
       const fieldDef = column.fieldDef || {};
@@ -30,7 +48,6 @@ export function resolveRelationTableColumns(columns = [], catalog = null, object
           : {};
 
       const normalizedSettings = normalizeRelationSettingsFromField(settings);
-      const objectType = findCatalogObjectType(catalog, anchorKey);
       const catalogField = (objectType?.fields || []).find(
         (field) => String(field?.key || "").trim() === String(column.key || "").trim(),
       );

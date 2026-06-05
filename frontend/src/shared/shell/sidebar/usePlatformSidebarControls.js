@@ -8,6 +8,7 @@ import {
   renameLegacyStorageForPage,
 } from "../../../shared/legacy/adapters/legacyStorageAdapter";
 import { navigationService } from "../../../modules/navigation/services/navigationService";
+import { dispatchPageStatusNavigationRefresh } from "../../../modules/designer/utils/navigationReload";
 import {
   patchDesignerSystemMenuSettings,
   resolveDesignerSystemItemKey,
@@ -16,6 +17,7 @@ import {
 export function usePlatformSidebarControls({
   portalId = 1,
   reloadNavigation,
+  navigationItems = [],
   menuScale = 1,
   onChangeMenuScale,
   canEditMenu = true,
@@ -27,11 +29,13 @@ export function usePlatformSidebarControls({
     context: "runtime",
   },
   mode = "runtime",
+  onEditModeChange,
 }) {
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
   const menuEditor = useMenuEditor({
     portalId,
     reload: typeof reloadNavigation === "function" ? reloadNavigation : async () => {},
+    navigationItems,
   });
 
   const handleUpdateMenuItem = async (itemId, data, navigationItems = []) => {
@@ -84,6 +88,20 @@ export function usePlatformSidebarControls({
       }
 
       await menuEditor.updateItem?.(itemId, data);
+
+      const pageLinked =
+        navigationItem?.page_id != null ||
+        /\/page\/\d+/.test(
+          String(
+            navigationItem?.url ||
+              navigationItem?.route ||
+              navigationItem?.path ||
+              "",
+          ),
+        );
+      if (pageLinked && typeof data?.is_visible === "boolean") {
+        dispatchPageStatusNavigationRefresh();
+      }
     } catch (saveError) {
       console.error("Failed to save menu item:", saveError);
     }
@@ -97,8 +115,13 @@ export function usePlatformSidebarControls({
         }
         if (menuEditor.isEditMode) {
           menuEditor.exitEditMode?.();
+          onEditModeChange?.(false);
         } else {
           menuEditor.enterEditMode?.();
+          onEditModeChange?.(true);
+        }
+        if (typeof reloadNavigation === "function") {
+          void reloadNavigation();
         }
         return;
       case "menu-scale": {
@@ -166,10 +189,14 @@ export function usePlatformSidebarControls({
           Array.isArray(payload.navigationItems) ? payload.navigationItems : []
         );
         return;
+      case "delete-menu-item-blocked":
+        if (!canEditMenu) return;
+        menuEditor.showDeleteNotice?.(payload?.reason);
+        return;
       case "delete-menu-item":
         if (!canEditMenu) return;
         if (!payload?.id) return;
-        menuEditor.deleteItem?.(payload.id);
+        menuEditor.requestDeleteItem?.(payload.id);
         return;
       case "move-menu-items":
         if (!canDragItems) return;
@@ -221,8 +248,13 @@ export function usePlatformSidebarControls({
         }
         if (menuEditor.isEditMode) {
           menuEditor.exitEditMode?.();
+          onEditModeChange?.(false);
         } else {
           menuEditor.enterEditMode?.();
+          onEditModeChange?.(true);
+        }
+        if (typeof reloadNavigation === "function") {
+          void reloadNavigation();
         }
         return;
       default:
@@ -241,5 +273,13 @@ export function usePlatformSidebarControls({
         ...createPayloadDefaults,
       }),
     handleSidebarAction,
+    pendingDeleteId: menuEditor.pendingDeleteId,
+    pendingDeleteItem: menuEditor.pendingDeleteItem,
+    deleteError: menuEditor.deleteError,
+    deleteNotice: menuEditor.deleteNotice,
+    cancelDeleteItem: menuEditor.cancelDeleteItem,
+    confirmDeleteItem: menuEditor.confirmDeleteItem,
+    clearDeleteNotice: menuEditor.clearDeleteNotice,
+    showDeleteNotice: menuEditor.showDeleteNotice,
   };
 }

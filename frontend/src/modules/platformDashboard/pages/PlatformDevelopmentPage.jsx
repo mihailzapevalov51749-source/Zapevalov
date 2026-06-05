@@ -238,7 +238,8 @@ function OwnerStagesWorkspace({
   onSelectStage,
   statusSlot = null,
   emptyMessage,
-  preferOwnerStatus = false,
+  implementationStages = [],
+  dashboardRefreshedAt = null,
 }) {
   const selectedStage =
     stages.find((stage) => stage.id === selectedStageId) ?? null;
@@ -256,11 +257,16 @@ function OwnerStagesWorkspace({
             selectedStageId={selectedStageId}
             onSelectStage={onSelectStage}
             emptyMessage={emptyMessage}
-            preferOwnerStatus={preferOwnerStatus}
           />
         </>
       }
-      detail={<OwnerStageDetailPanel stage={selectedStage} />}
+      detail={
+        <OwnerStageDetailPanel
+          stage={selectedStage}
+          implementationStages={implementationStages}
+          dashboardRefreshedAt={dashboardRefreshedAt}
+        />
+      }
     />
   );
 }
@@ -1358,9 +1364,10 @@ export default function PlatformDevelopmentPage() {
     return <Navigate to={`${platformBasePath}/${activeSectionKey}`} replace />;
   }
 
-  const lastUpdatedLabel = formatManifestUpdatedAt(
-    dashboardSummary?.refreshed_at || dashboardSummary?.last_updated,
-  );
+  const dashboardRefreshedAt =
+    dashboardSummary?.refreshed_at || dashboardSummary?.last_updated || null;
+
+  const lastUpdatedLabel = formatManifestUpdatedAt(dashboardRefreshedAt);
   const isDashboardStale = Boolean(dashboardSummary?.is_stale);
 
   const renderDashboardStatus = () => {
@@ -1407,6 +1414,11 @@ export default function PlatformDevelopmentPage() {
     ? resolveOwnerSectionTitle(ownerDashboardView, "companies", "Компании")
     : "Компании";
 
+  const ownerStageWorkspaceProps = {
+    implementationStages,
+    dashboardRefreshedAt,
+  };
+
   const renderPlatformSection = () => (
     <OwnerStagesWorkspace
       sectionTitle={platformSectionTitle}
@@ -1415,6 +1427,7 @@ export default function PlatformDevelopmentPage() {
       onSelectStage={setSelectedPlatformStageId}
       statusSlot={renderDashboardStatus()}
       emptyMessage="Этапы платформы пока не загружены."
+      {...ownerStageWorkspaceProps}
     />
   );
 
@@ -1426,7 +1439,7 @@ export default function PlatformDevelopmentPage() {
       onSelectStage={setSelectedDevelopmentStageId}
       statusSlot={renderDashboardStatus()}
       emptyMessage="Этапы разработки пока не загружены."
-      preferOwnerStatus={ownerDashboardActive}
+      {...ownerStageWorkspaceProps}
     />
   );
 
@@ -1438,6 +1451,7 @@ export default function PlatformDevelopmentPage() {
       onSelectStage={setSelectedCompanyStageId}
       statusSlot={renderDashboardStatus()}
       emptyMessage="Компании пока не настроены."
+      {...ownerStageWorkspaceProps}
     />
   );
 

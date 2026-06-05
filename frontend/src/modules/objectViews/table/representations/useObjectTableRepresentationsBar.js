@@ -10,6 +10,7 @@ import {
   writeVisibleSlotsLimit,
 } from "./objectTableRepresentationsPrefs";
 import { sanitizePinnedViewKeys } from "../preferences/tableRepresentationSlots";
+import { getViewIdentity } from "../../services/resolveActiveView";
 
 function areStringArraysEqual(left = [], right = []) {
   if (left.length !== right.length) {
@@ -269,7 +270,9 @@ export default function useObjectTableRepresentationsBar({
 
       const key = String(view.key || "").trim();
 
-      if (!key || key === String(activeViewKey)) {
+      const activeIdentity = String(activeViewKey || "").trim();
+
+      if (!key || getViewIdentity(view) === activeIdentity || key === activeIdentity) {
         closePanel();
         return;
       }
@@ -287,8 +290,9 @@ export default function useObjectTableRepresentationsBar({
       return;
     }
 
+    const activeIdentity = String(activeViewKey || "").trim();
     const active = viewsWithVisibility.find(
-      (view) => view.key === String(activeViewKey),
+      (view) => getViewIdentity(view) === activeIdentity || view.key === activeIdentity,
     );
 
     if (!active || active.isVisible) {

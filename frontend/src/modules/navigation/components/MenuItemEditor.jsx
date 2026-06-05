@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Eye, EyeOff, Trash2, X, Check } from "lucide-react";
 
 import MenuColorPicker from "../../../shared/navigation/MenuColorPicker";
+import { canShowNavigationDeleteAction } from "../utils/navigationDeletePolicy";
 
 import { uploadIcon } from "../../../api/filesApi";
 
@@ -26,6 +27,8 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
     String(item?.id || "").startsWith("system-") ||
     isProtectedTitle;
 
+  const canDelete = canShowNavigationDeleteAction(item);
+
   const [title, setTitle] = useState(
     item.display_title || item.title || "",
   );
@@ -40,9 +43,14 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
   );
   const [isBold, setIsBold] = useState(Boolean(item.is_bold));
   const [isItalic, setIsItalic] = useState(Boolean(item.is_italic));
-  const [isVisible, setIsVisible] = useState(
-    item.is_visible === undefined ? true : Boolean(item.is_visible)
-  );
+  const resolveInitialVisibility = () => {
+    const pageStatus = String(item?.page_status || "").trim().toLowerCase();
+    if (pageStatus) {
+      return pageStatus === "published";
+    }
+    return item.is_visible === undefined ? true : Boolean(item.is_visible);
+  };
+  const [isVisible, setIsVisible] = useState(resolveInitialVisibility);
   const [showIcon, setShowIcon] = useState(item.show_icon !== false);
 
   const handleUploadIcon = async (event) => {
@@ -226,7 +234,7 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
       </div>
 
       <div style={footerRowStyle}>
-        {!isSystem && !isObjectTypeMenuItem ? (
+        {!isSystem && !isObjectTypeMenuItem && canDelete ? (
           <button type="button" onClick={onDelete} style={deleteButtonStyle}>
             <Trash2 size={14} />
           </button>

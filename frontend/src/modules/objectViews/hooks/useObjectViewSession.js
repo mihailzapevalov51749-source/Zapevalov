@@ -1,29 +1,34 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
-  loadTablePresentationColumnWidths,
-  saveTablePresentationColumnWidths,
-} from "../table/preferences/objectTablePresentationPrefs";
+  loadColumnWidths,
+  resolveColumnWidthsViewKey,
+  saveColumnWidths,
+} from "../table/services/objectTableColumnWidthsStorage";
 import { updateUserTableViewContract } from "../table/preferences/objectTableUserViewsStorage";
 
 import {
+  buildObjectViewResolvedFingerprint,
   isObjectViewQueryDirty,
   mergeEffectiveContract,
 } from "../services/mergeEffectiveContract";
 import { normalizePresentationTable } from "../services/contractGuards";
 import {
   areColumnWidthsEqual,
-  getProjectionFieldKeys,
+  getTablePresentationFieldKeys,
   resolvePanelColumnOrder,
 } from "../services/columnPresentationUtils";
 import {
   canMoveTableColumn,
   normalizeTableDisplayFieldKeys,
+  preserveUserViewColumnOrder,
   resolveTableDisplayContext,
 } from "../services/tableColumnOrder";
+import { isTableBaseStateKey } from "../table/preferences/tableBaseState";
 import {
-  buildQuickSavedFilter,
+  buildSavedFilter,
   cloneFilterConditions,
+  ensureSingleDefaultFilter,
   getQuickFilters,
 } from "../services/savedFilterUtils";
 
@@ -39,6 +44,80 @@ const EMPTY_SESSION_DELTA = {
   cardLayout: null,
 };
 
+function cloneContractSnapshot(contract) {
+  if (!contract) {
+    return null;
+  }
+
+  return JSON.parse(JSON.stringify(contract));
+}
+
+function buildInitialSessionFromResolved(
+  contract,
+  presentationPrefsScope,
+  activeViewKey,
+) {
+  if (!contract) {
+    return {
+      sessionDelta: EMPTY_SESSION_DELTA,
+      sessionBaseline: null,
+    };
+  }
+
+  const presentationKeys = getTablePresentationFieldKeys(contract);
+  const titleFieldKey = contract.projection?.titleFieldKey ?? null;
+
+  const baselineWidths = normalizePresentationTable(
+    {
+      columnWidths: contract.presentation?.table?.columnWidths || {},
+    },
+    presentationKeys,
+    titleFieldKey,
+  ).columnWidths;
+
+  let storedWidths = {};
+
+  if (presentationPrefsScope && activeViewKey) {
+    storedWidths = normalizePresentationTable(
+      {
+        columnWidths: loadColumnWidths({
+          tenantId: presentationPrefsScope.tenantId,
+          objectTypeKey: presentationPrefsScope.objectTypeKey,
+          userId: presentationPrefsScope.userId,
+          viewKey: resolveColumnWidthsViewKey(
+            activeViewKey,
+            contract.key,
+          ),
+          contract,
+        }),
+      },
+      presentationKeys,
+      titleFieldKey,
+    ).columnWidths;
+  }
+
+  const mergedWidths = {
+    ...baselineWidths,
+    ...storedWidths,
+  };
+
+  const hasMergedWidths = Object.keys(mergedWidths).length > 0;
+  const sessionDelta = {
+    ...EMPTY_SESSION_DELTA,
+    ...(hasMergedWidths ? { columnWidths: mergedWidths } : {}),
+  };
+  const sessionBaseline = mergeEffectiveContract(contract, sessionDelta);
+
+  return {
+    sessionDelta,
+    sessionBaseline: cloneContractSnapshot(sessionBaseline),
+    lastPersistedWidths: hasMergedWidths ? { ...mergedWidths } : null,
+    defaultQuickFilterId: contract.query?.filters?.defaultQuickFilterId
+      ? String(contract.query.filters.defaultQuickFilterId)
+      : null,
+  };
+}
+
 /**
  * Transient session layered on top of resolved view contract.
  */
@@ -47,8 +126,12 @@ export default function useObjectViewSession({
   activeViewKey = null,
   presentationPrefsScope = null,
   persistUserViewOnPresentationChange = false,
+  catalog = null,
+  objectTypeKey = null,
 }) {
   const [sessionDelta, setSessionDelta] = useState(EMPTY_SESSION_DELTA);
+  const [sessionBaseline, setSessionBaseline] = useState(null);
+  const [hasUserSessionEdits, setHasUserSessionEdits] = useState(false);
   const [activeQuickFilterId, setActiveQuickFilterId] = useState(null);
   const persistWidthsTimerRef = useRef(null);
   const persistUserViewTimerRef = useRef(null);
@@ -58,8 +141,12 @@ export default function useObjectViewSession({
 
   resolvedContractRef.current = resolvedContract;
 
-  // Do not include projection field keys: catalog/projection sync must not wipe session deltas.
-  const baselineKey = `${activeViewKey || ""}:${resolvedContract?.meta?.viewId || ""}:${resolvedContract?.meta?.userViewId || ""}`;
+  const viewSessionKey = `${activeViewKey || ""}:${resolvedContract?.meta?.viewId || ""}:${resolvedContract?.meta?.userViewId || ""}`;
+
+  const resolvedFingerprint = useMemo(
+    () => buildObjectViewResolvedFingerprint(resolvedContract),
+    [resolvedContract],
+  );
 
   const presentationPrefsScopeKey = presentationPrefsScope
     ? `${presentationPrefsScope.tenantId ?? ""}:${presentationPrefsScope.userId ?? ""}:${presentationPrefsScope.objectTypeKey ?? ""}`
@@ -67,7 +154,11 @@ export default function useObjectViewSession({
 
   const commitPresentationColumnWidths = useCallback(
     (columnWidths) => {
-      const viewKey = String(activeViewKey || "").trim();
+      const contract = effectiveContractRef.current;
+      const viewKey = resolveColumnWidthsViewKey(
+        activeViewKey,
+        contract?.key,
+      );
 
       if (!presentationPrefsScope || !viewKey || !columnWidths) {
         return;
@@ -78,11 +169,13 @@ export default function useObjectViewSession({
       }
 
       lastPersistedWidthsRef.current = { ...columnWidths };
-      saveTablePresentationColumnWidths(
-        presentationPrefsScope,
+      saveColumnWidths({
+        tenantId: presentationPrefsScope.tenantId,
+        objectTypeKey: presentationPrefsScope.objectTypeKey,
+        userId: presentationPrefsScope.userId,
         viewKey,
-        columnWidths,
-      );
+        contract,
+      }, columnWidths);
 
       const userViewId = effectiveContractRef.current?.meta?.userViewId;
 
@@ -123,59 +216,32 @@ export default function useObjectViewSession({
     };
   }, []);
 
-  useEffect(() => {
+  const applyInitialSession = useCallback(() => {
     const contract = resolvedContractRef.current;
+    const initial = buildInitialSessionFromResolved(
+      contract,
+      presentationPrefsScope,
+      activeViewKey,
+    );
 
-    if (!contract) {
-      setSessionDelta(EMPTY_SESSION_DELTA);
-      setActiveQuickFilterId(null);
-      lastPersistedWidthsRef.current = null;
+    setSessionDelta(initial.sessionDelta);
+    setSessionBaseline(initial.sessionBaseline);
+    setActiveQuickFilterId(initial.defaultQuickFilterId);
+    lastPersistedWidthsRef.current = initial.lastPersistedWidths;
+  }, [presentationPrefsScope, activeViewKey]);
+
+  useEffect(() => {
+    setHasUserSessionEdits(false);
+    applyInitialSession();
+  }, [viewSessionKey, applyInitialSession]);
+
+  useEffect(() => {
+    if (hasUserSessionEdits) {
       return;
     }
 
-    const projectionKeys = contract.projection?.fieldKeys || [];
-    const titleFieldKey = contract.projection?.titleFieldKey ?? null;
-
-    const baselineWidths = normalizePresentationTable(
-      {
-        columnWidths: contract.presentation?.table?.columnWidths || {},
-      },
-      projectionKeys,
-      titleFieldKey,
-    ).columnWidths;
-
-    let storedWidths = {};
-
-    if (presentationPrefsScope && activeViewKey) {
-      storedWidths = normalizePresentationTable(
-        {
-          columnWidths: loadTablePresentationColumnWidths(
-            presentationPrefsScope,
-            activeViewKey,
-          ),
-        },
-        projectionKeys,
-        titleFieldKey,
-      ).columnWidths;
-    }
-
-    const mergedWidths = {
-      ...baselineWidths,
-      ...storedWidths,
-    };
-
-    const hasMergedWidths = Object.keys(mergedWidths).length > 0;
-
-    setSessionDelta({
-      ...EMPTY_SESSION_DELTA,
-      ...(hasMergedWidths ? { columnWidths: mergedWidths } : {}),
-    });
-
-    lastPersistedWidthsRef.current = hasMergedWidths ? { ...mergedWidths } : null;
-
-    const defaultId = contract.query?.filters?.defaultQuickFilterId;
-    setActiveQuickFilterId(defaultId ? String(defaultId) : null);
-  }, [baselineKey, activeViewKey, presentationPrefsScopeKey]);
+    applyInitialSession();
+  }, [resolvedFingerprint, hasUserSessionEdits, applyInitialSession]);
 
   const sessionState = useMemo(
     () => ({
@@ -203,18 +269,24 @@ export default function useObjectViewSession({
   }, [effectiveContract]);
 
   const isDirty = useMemo(() => {
-    if (!resolvedContract || !effectiveContract) {
+    if (hasUserSessionEdits) {
+      return true;
+    }
+
+    if (!sessionBaseline || !effectiveContract) {
       return false;
     }
 
-    return isObjectViewQueryDirty(resolvedContract, effectiveContract);
-  }, [resolvedContract, effectiveContract]);
+    return isObjectViewQueryDirty(sessionBaseline, effectiveContract);
+  }, [hasUserSessionEdits, sessionBaseline, effectiveContract]);
 
   const getEffectiveSavedFilters = useCallback(() => {
     return effectiveContract?.query?.filters?.savedFilters || [];
   }, [effectiveContract]);
 
   const patchSession = useCallback((patch = {}) => {
+    setHasUserSessionEdits(true);
+
     setSessionDelta((current) => {
       if (
         patch.columnWidths != null &&
@@ -239,13 +311,80 @@ export default function useObjectViewSession({
     });
   }, []);
 
-  const resetSession = useCallback(() => {
-    setSessionDelta(EMPTY_SESSION_DELTA);
-    setActiveQuickFilterId(null);
+  /**
+   * Updates saved filter catalog (quick + saved) without marking the view dirty.
+   * Syncs catalog slice into session baseline so navigation guard stays clean.
+   */
+  const patchSavedFiltersCatalog = useCallback((patch = {}) => {
+    setSessionDelta((current) => {
+      const nextDelta = {
+        ...current,
+        ...patch,
+      };
+
+      const resolved = resolvedContractRef.current;
+
+      if (resolved) {
+        const merged = mergeEffectiveContract(resolved, nextDelta);
+
+        setSessionBaseline((baseline) => {
+          if (!baseline) {
+            return baseline;
+          }
+
+          return cloneContractSnapshot({
+            ...baseline,
+            query: {
+              ...baseline.query,
+              filters: {
+                ...baseline.query.filters,
+                savedFilters: merged.query.filters.savedFilters,
+                defaultQuickFilterId: merged.query.filters.defaultQuickFilterId,
+              },
+            },
+          });
+        });
+      }
+
+      return nextDelta;
+    });
   }, []);
 
+  const resetSession = useCallback(() => {
+    setHasUserSessionEdits(false);
+    applyInitialSession();
+  }, [applyInitialSession]);
+
   const markSaved = useCallback(() => {
-    setSessionDelta(EMPTY_SESSION_DELTA);
+    const saved = effectiveContractRef.current;
+    const resolved = resolvedContractRef.current;
+
+    if (saved) {
+      const baselineSnapshot = cloneContractSnapshot(saved);
+
+      if (resolved?.presentation?.table) {
+        baselineSnapshot.presentation = {
+          ...baselineSnapshot.presentation,
+          table: {
+            ...baselineSnapshot.presentation.table,
+            columnWidths: {
+              ...(resolved.presentation.table.columnWidths || {}),
+            },
+          },
+        };
+      }
+
+      setSessionBaseline(baselineSnapshot);
+    }
+
+    const localWidths = saved?.presentation?.table?.columnWidths;
+    setSessionDelta({
+      ...EMPTY_SESSION_DELTA,
+      ...(localWidths && Object.keys(localWidths).length > 0
+        ? { columnWidths: { ...localWidths } }
+        : {}),
+    });
+    setHasUserSessionEdits(false);
   }, []);
 
   const setActiveQuickFilter = useCallback(
@@ -257,40 +396,7 @@ export default function useObjectViewSession({
     [],
   );
 
-  const createQuickFilterFromCurrent = useCallback(
-    ({ label }) => {
-      const trimmedLabel = String(label || "").trim();
-      if (!trimmedLabel) {
-        return { ok: false, reason: "empty_label" };
-      }
-
-      const currentConditions =
-        sessionDelta.filterConditions != null
-          ? sessionDelta.filterConditions
-          : resolvedContract?.query?.filters?.conditions || [];
-
-      if (!currentConditions.length) {
-        return { ok: false, reason: "no_conditions" };
-      }
-
-      const existingSaved = getEffectiveSavedFilters();
-      const existingKeys = existingSaved.map((item) => item.key).filter(Boolean);
-      const newFilter = buildQuickSavedFilter({
-        label: trimmedLabel,
-        conditions: currentConditions,
-        existingKeys,
-      });
-
-      patchSession({
-        savedFilters: [...existingSaved, newFilter],
-      });
-
-      return { ok: true, filter: newFilter };
-    },
-    [sessionDelta.filterConditions, resolvedContract, getEffectiveSavedFilters, patchSession],
-  );
-
-  const removeQuickFilter = useCallback(
+  const deleteSavedFilter = useCallback(
     (filterId) => {
       const normalizedId = String(filterId || "").trim();
       if (!normalizedId) {
@@ -302,7 +408,7 @@ export default function useObjectViewSession({
         (item) => String(item.id) !== normalizedId,
       );
 
-      patchSession({
+      patchSavedFiltersCatalog({
         savedFilters: nextSaved,
         defaultQuickFilterId:
           effectiveContract?.query?.filters?.defaultQuickFilterId === normalizedId
@@ -316,11 +422,18 @@ export default function useObjectViewSession({
     },
     [
       getEffectiveSavedFilters,
-      patchSession,
+      patchSavedFiltersCatalog,
       effectiveContract,
       sessionDelta.defaultQuickFilterId,
       activeQuickFilterId,
     ],
+  );
+
+  const removeQuickFilter = useCallback(
+    (filterId) => {
+      deleteSavedFilter(filterId);
+    },
+    [deleteSavedFilter],
   );
 
   const updateQuickFilter = useCallback(
@@ -339,9 +452,9 @@ export default function useObjectViewSession({
         return { ...item, ...patch };
       });
 
-      patchSession({ savedFilters: nextSaved });
+      patchSavedFiltersCatalog({ savedFilters: nextSaved });
     },
-    [getEffectiveSavedFilters, patchSession],
+    [getEffectiveSavedFilters, patchSavedFiltersCatalog],
   );
 
   const setDefaultQuickFilter = useCallback(
@@ -350,12 +463,9 @@ export default function useObjectViewSession({
         filterId == null || filterId === "" ? null : String(filterId);
 
       const existingSaved = getEffectiveSavedFilters();
-      const nextSaved = existingSaved.map((item) => ({
-        ...item,
-        isDefault: normalizedId ? String(item.id) === normalizedId : false,
-      }));
+      const nextSaved = ensureSingleDefaultFilter(existingSaved, normalizedId);
 
-      patchSession({
+      patchSavedFiltersCatalog({
         savedFilters: nextSaved,
         defaultQuickFilterId: normalizedId,
       });
@@ -364,8 +474,152 @@ export default function useObjectViewSession({
         setActiveQuickFilterId(normalizedId);
       }
     },
-    [getEffectiveSavedFilters, patchSession],
+    [getEffectiveSavedFilters, patchSavedFiltersCatalog],
   );
+
+  const upsertSavedFilter = useCallback(
+    ({ id = null, label, conditions, isQuick = false, isDefault = false }) => {
+      const trimmedLabel = String(label || "").trim();
+      if (!trimmedLabel) {
+        return { ok: false, reason: "empty_label" };
+      }
+
+      const normalizedConditions = cloneFilterConditions(conditions).filter(
+        (item) => String(item?.fieldKey || "").trim(),
+      );
+
+      if (!normalizedConditions.length) {
+        return { ok: false, reason: "no_conditions" };
+      }
+
+      const existingSaved = getEffectiveSavedFilters();
+      const existingKeys = existingSaved.map((item) => item.key).filter(Boolean);
+      const normalizedId = id ? String(id) : null;
+      const existingFilter = normalizedId
+        ? existingSaved.find((item) => String(item.id) === normalizedId)
+        : null;
+
+      const nextFilter = buildSavedFilter({
+        id: normalizedId || existingFilter?.id || null,
+        key: existingFilter?.key || null,
+        label: trimmedLabel,
+        conditions: normalizedConditions,
+        existingKeys,
+        isQuick,
+        isDefault: isQuick && isDefault,
+      });
+
+      const withoutCurrent = normalizedId
+        ? existingSaved.filter((item) => String(item.id) !== normalizedId)
+        : existingSaved;
+
+      let nextSaved = [...withoutCurrent, nextFilter];
+      const currentDefaultId =
+        effectiveContract?.query?.filters?.defaultQuickFilterId != null
+          ? String(effectiveContract.query.filters.defaultQuickFilterId)
+          : null;
+
+      let nextDefaultId = currentDefaultId;
+
+      if (isQuick && isDefault) {
+        nextDefaultId = String(nextFilter.id);
+        nextSaved = ensureSingleDefaultFilter(nextSaved, nextFilter.id);
+      } else {
+        if (normalizedId && nextDefaultId === normalizedId) {
+          nextDefaultId = null;
+        }
+        nextSaved = ensureSingleDefaultFilter(nextSaved, nextDefaultId);
+      }
+
+      patchSavedFiltersCatalog({
+        savedFilters: nextSaved,
+        defaultQuickFilterId: nextDefaultId,
+      });
+
+      if (isQuick && isDefault) {
+        setActiveQuickFilterId(String(nextFilter.id));
+      } else if (
+        normalizedId &&
+        activeQuickFilterId === normalizedId &&
+        !isQuick
+      ) {
+        setActiveQuickFilterId(null);
+      }
+
+      return { ok: true, filter: nextFilter };
+    },
+    [
+      getEffectiveSavedFilters,
+      patchSavedFiltersCatalog,
+      effectiveContract,
+      activeQuickFilterId,
+    ],
+  );
+
+  const removeActiveFilterCondition = useCallback(
+    (conditionId, source = "base", sourceFilterId = null) => {
+      const normalizedConditionId = String(conditionId || "").trim();
+      if (!normalizedConditionId) {
+        return;
+      }
+
+      if (source === "quick" && sourceFilterId) {
+        const existingSaved = getEffectiveSavedFilters();
+        const normalizedFilterId = String(sourceFilterId);
+        const targetFilter = existingSaved.find(
+          (item) => String(item.id) === normalizedFilterId,
+        );
+
+        if (!targetFilter) {
+          return;
+        }
+
+        const nextConditions = cloneFilterConditions(
+          targetFilter.conditions || [],
+        ).filter((item) => String(item.id) !== normalizedConditionId);
+
+        if (!nextConditions.length) {
+          deleteSavedFilter(normalizedFilterId);
+          return;
+        }
+
+        const nextSaved = existingSaved.map((item) =>
+          String(item.id) === normalizedFilterId
+            ? { ...item, conditions: nextConditions }
+            : item,
+        );
+
+        patchSavedFiltersCatalog({ savedFilters: nextSaved });
+        return;
+      }
+
+      const currentConditions =
+        sessionDelta.filterConditions != null
+          ? cloneFilterConditions(sessionDelta.filterConditions)
+          : cloneFilterConditions(
+              resolvedContract?.query?.filters?.conditions || [],
+            );
+
+      patchSession({
+        filterConditions: currentConditions.filter(
+          (item) => String(item.id) !== normalizedConditionId,
+        ),
+      });
+    },
+    [
+      getEffectiveSavedFilters,
+      patchSession,
+      patchSavedFiltersCatalog,
+      deleteSavedFilter,
+      sessionDelta.filterConditions,
+      resolvedContract,
+    ],
+  );
+
+  const clearAllActiveFilters = useCallback(() => {
+    patchSession({ filterConditions: [] });
+    setActiveQuickFilterId(null);
+  }, [patchSession]);
 
   const quickFilters = useMemo(() => {
     return getQuickFilters(effectiveContract?.query?.filters?.savedFilters);
@@ -381,9 +635,30 @@ export default function useObjectViewSession({
     );
   }, [sessionDelta.filterConditions, resolvedContract]);
 
+  const panelPresentationOptions = useMemo(
+    () => ({
+      catalog,
+      objectTypeKey,
+    }),
+    [catalog, objectTypeKey],
+  );
+
+  const presentationNormalizeOptions = useMemo(() => {
+    const contract = effectiveContractRef.current || resolvedContract;
+
+    return {
+      preserveExactColumnOrder: contract?.meta?.isUserView === true,
+      isAllMode: isTableBaseStateKey(contract?.key),
+    };
+  }, [resolvedContract, effectiveContract]);
+
   const panelColumnOrder = useMemo(() => {
-    return resolvePanelColumnOrder(effectiveContract);
-  }, [effectiveContract]);
+    return resolvePanelColumnOrder(
+      effectiveContract,
+      null,
+      panelPresentationOptions,
+    );
+  }, [effectiveContract, panelPresentationOptions]);
 
   const hiddenFieldKeys = useMemo(() => {
     return effectiveContract?.presentation?.table?.hiddenFieldKeys || [];
@@ -414,7 +689,7 @@ export default function useObjectViewSession({
         return { ok: false, reason: "title_field_locked" };
       }
 
-      const projectionKeys = getProjectionFieldKeys(effectiveContract);
+      const presentationKeys = getTablePresentationFieldKeys(effectiveContract);
       const hidden = new Set(
         effectiveContract?.presentation?.table?.hiddenFieldKeys || [],
       );
@@ -422,7 +697,7 @@ export default function useObjectViewSession({
       if (hidden.has(normalized)) {
         hidden.delete(normalized);
       } else {
-        const visibleCount = projectionKeys.filter((key) => !hidden.has(key)).length;
+        const visibleCount = presentationKeys.filter((key) => !hidden.has(key)).length;
 
         if (visibleCount <= 1) {
           return { ok: false, reason: "last_visible_field" };
@@ -434,12 +709,14 @@ export default function useObjectViewSession({
       patchSession({
         hiddenFieldKeys: normalizePresentationTable(
           { hiddenFieldKeys: [...hidden] },
-          projectionKeys,
+          presentationKeys,
+          effectiveContract?.projection?.titleFieldKey,
+          presentationNormalizeOptions,
         ).hiddenFieldKeys,
       });
       return { ok: true };
     },
-    [effectiveContract, patchSession],
+    [effectiveContract, patchSession, presentationNormalizeOptions],
   );
 
   const setColumnOrder = useCallback(
@@ -447,23 +724,42 @@ export default function useObjectViewSession({
       patchSession({
         columnOrder: normalizePresentationTable(
           { columnOrder: Array.isArray(next) ? [...next] : [] },
-          effectiveContract?.projection?.fieldKeys || [],
+          getTablePresentationFieldKeys(effectiveContract),
           effectiveContract?.projection?.titleFieldKey,
+          presentationNormalizeOptions,
         ).columnOrder,
       });
     },
-    [effectiveContract, patchSession],
+    [effectiveContract, patchSession, presentationNormalizeOptions],
+  );
+
+  const columnMoveOptions = useMemo(
+    () => ({
+      preserveExactOrder: effectiveContract?.meta?.isUserView === true,
+    }),
+    [effectiveContract?.meta?.isUserView],
   );
 
   const moveColumn = useCallback(
     (fieldKey, direction) => {
       const normalized = String(fieldKey || "").trim();
-      const order = resolvePanelColumnOrder(effectiveContract);
-      const titleFieldKey = effectiveContract?.projection?.titleFieldKey || null;
+      const contract = effectiveContractRef.current;
 
-      if (
-        !canMoveTableColumn(normalized, direction, order, titleFieldKey)
-      ) {
+      if (!contract) {
+        return;
+      }
+
+      const order = resolvePanelColumnOrder(
+        contract,
+        null,
+        panelPresentationOptions,
+      );
+      const titleFieldKey = contract?.projection?.titleFieldKey || null;
+      const moveOptions = {
+        preserveExactOrder: contract?.meta?.isUserView === true,
+      };
+
+      if (!canMoveTableColumn(normalized, direction, order, titleFieldKey, moveOptions)) {
         return;
       }
 
@@ -475,15 +771,21 @@ export default function useObjectViewSession({
       nextOrder[index] = nextOrder[targetIndex];
       nextOrder[targetIndex] = temp;
 
+      const presentationKeys = getTablePresentationFieldKeys(contract);
+      const normalizedOrder = moveOptions.preserveExactOrder
+        ? preserveUserViewColumnOrder(nextOrder, presentationKeys)
+        : normalizePresentationTable(
+            { columnOrder: nextOrder },
+            presentationKeys,
+            titleFieldKey,
+            presentationNormalizeOptions,
+          ).columnOrder;
+
       patchSession({
-        columnOrder: normalizePresentationTable(
-          { columnOrder: nextOrder },
-          effectiveContract?.projection?.fieldKeys || [],
-          titleFieldKey,
-        ).columnOrder,
+        columnOrder: normalizedOrder,
       });
     },
-    [effectiveContract, patchSession],
+    [patchSession, panelPresentationOptions, presentationNormalizeOptions],
   );
 
   const flushPresentationColumnWidths = useCallback(
@@ -523,7 +825,7 @@ export default function useObjectViewSession({
 
     setSessionDelta((sessionCurrent) => {
       const mergedContract = mergeEffectiveContract(baseline, sessionCurrent);
-      const projectionKeys = mergedContract.projection?.fieldKeys || [];
+      const presentationKeys = getTablePresentationFieldKeys(mergedContract);
       const current = mergedContract.presentation?.table?.columnWidths || {};
       const previousWidth = Number(current[normalized]);
 
@@ -540,7 +842,7 @@ export default function useObjectViewSession({
           ...current,
           [normalized]: numericWidth,
         },
-        projectionKeys,
+        presentationKeys,
         mergedContract.projection?.titleFieldKey,
       ).columnWidths;
 
@@ -563,8 +865,23 @@ export default function useObjectViewSession({
       return nextDelta;
     });
 
+    if (committed) {
+      if (persistWidthsTimerRef.current) {
+        clearTimeout(persistWidthsTimerRef.current);
+      }
+
+      persistWidthsTimerRef.current = setTimeout(() => {
+        const widths =
+          effectiveContractRef.current?.presentation?.table?.columnWidths;
+
+        if (widths && typeof widths === "object") {
+          commitPresentationColumnWidths(widths);
+        }
+      }, 400);
+    }
+
     return committed;
-  }, []);
+  }, [commitPresentationColumnWidths]);
 
   const setDensity = useCallback(
     (density) => {
@@ -619,11 +936,15 @@ export default function useObjectViewSession({
     quickFilters,
     currentFilterConditions,
     setActiveQuickFilter,
-    createQuickFilterFromCurrent,
     removeQuickFilter,
     updateQuickFilter,
     setDefaultQuickFilter,
+    upsertSavedFilter,
+    deleteSavedFilter,
+    removeActiveFilterCondition,
+    clearAllActiveFilters,
     panelColumnOrder,
+    columnMoveOptions,
     hiddenFieldKeys,
     setHiddenFieldKeys,
     toggleFieldVisibility,

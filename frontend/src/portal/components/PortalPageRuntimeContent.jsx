@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { getPageFull } from "../../api/pagesApi";
+import { resolveOfficePageLoadError } from "../utils/officePageAccess";
 import ContentSection from "../../modules/sections/components/ContentSection";
 import SystemMessage from "../../system/SystemMessage";
 
@@ -36,14 +37,14 @@ export default function PortalPageRuntimeContent({
       try {
         setLoading(true);
         setError("");
-        const data = await getPageFull(resolvedPageId);
+        const data = await getPageFull(resolvedPageId, { officeAccess: true });
         if (!cancelled) {
           setPageData(data);
         }
-      } catch {
+      } catch (loadError) {
         if (!cancelled) {
           setPageData(null);
-          setError("Не удалось загрузить страницу");
+          setError(resolveOfficePageLoadError(loadError, "Не удалось загрузить страницу"));
         }
       } finally {
         if (!cancelled) {

@@ -1,6 +1,6 @@
 import { isFileFieldType } from "../../../shared/files/attachments/utils/attachmentFileTypes";
 import { FIELD_EDITOR_TYPE_RELATION } from "../../../shared/fieldEditors/fieldEditorRegistry";
-import { isHierarchyRelationFieldForCard } from "../../../shared/relation/hierarchyRelationProfile";
+import { isHierarchyRelationField } from "../../../shared/relation/hierarchyRelationProfile";
 import { isRelationFieldType } from "../../designer/components/fields/relationFieldFormUtils";
 import { catalogFieldToFieldDef } from "../table/services/adapters/catalogFieldToFieldDef";
 import { findCatalogObjectType } from "../table/services/adapters/ObjectTypeTableAdapter";
@@ -41,7 +41,7 @@ export function getEntityCardLayoutFields(catalog, objectTypeKey) {
         return false;
       }
 
-      if (isHierarchyRelationFieldForCard(field, catalog, objectTypeKey)) {
+      if (isHierarchyRelationField(field, catalog, objectTypeKey)) {
         return false;
       }
 

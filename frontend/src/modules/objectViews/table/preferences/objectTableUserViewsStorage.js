@@ -189,6 +189,58 @@ export function attachUserViewMeta(contract, meta) {
 }
 
 /**
+ * Preserves Office user-view meta after normalizeObjectViewDefinition(runtime projection).
+ *
+ * @param {import('../../services/objectViewContract').ObjectViewContract} contract
+ * @param {import('../../services/objectViewContract').ObjectViewContract | null | undefined} source
+ */
+export function reapplyUserViewMeta(contract, source) {
+  const userViewId = String(source?.meta?.userViewId || "").trim();
+
+  if (source?.meta?.isUserView !== true || !userViewId) {
+    return contract;
+  }
+
+  const sourcePresentation = source?.presentation;
+  const sourceTable = sourcePresentation?.table;
+  const contractTable = contract?.presentation?.table;
+
+  const sourceHiddenKeys = Array.isArray(sourceTable?.hiddenFieldKeys)
+    ? sourceTable.hiddenFieldKeys
+    : [];
+  const shouldPreservePresentation =
+    sourceTable &&
+    ((Array.isArray(sourceTable.columnOrder) && sourceTable.columnOrder.length > 0) ||
+      sourceHiddenKeys.length > 0);
+
+  return attachUserViewMeta(
+    {
+      ...contract,
+      name: String(source?.name || contract?.name || "").trim() || contract.name,
+      presentation: shouldPreservePresentation
+        ? {
+            ...contract.presentation,
+            table: {
+              ...(contractTable || {}),
+              ...sourceTable,
+              columnOrder: Array.isArray(sourceTable.columnOrder)
+                ? [...sourceTable.columnOrder]
+                : contractTable?.columnOrder || [],
+              hiddenFieldKeys: [...sourceHiddenKeys],
+              columnWidths:
+                sourceTable.columnWidths && typeof sourceTable.columnWidths === "object"
+                  ? { ...sourceTable.columnWidths }
+                  : contractTable?.columnWidths || {},
+            },
+            card: sourcePresentation?.card ?? contract.presentation?.card ?? null,
+          }
+        : contract.presentation,
+    },
+    { userViewId },
+  );
+}
+
+/**
  * @param {{ tenantId, userId?, objectTypeKey }} scope
  * @param {{ name: string, contract: object, sourcePublishedKey?: string | null }} params
  */

@@ -92,6 +92,7 @@ class DesignerRelationDefinition(Base):
     )
 
     deleted_at = Column(DateTime(timezone=True), nullable=True)
+    deleted_by = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     __table_args__ = (
         Index(

@@ -506,10 +506,14 @@ export default function MenuItem({
 
               setOpenedEditorItemId?.(null);
             }}
-            onDelete={async () => {
-              if (isSystem || objectTypeItem) return;
+            onDelete={() => {
+              if (isSystem || objectTypeItem) {
+                return;
+              }
 
-              await onDeleteItem(item.id);
+              void Promise.resolve(onDeleteItem(item.id)).catch((error) => {
+                console.error("Failed to start menu item delete:", error);
+              });
 
               setOpenedEditorItemId?.(null);
             }}

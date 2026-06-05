@@ -88,10 +88,12 @@ describe("ownerDashboardIntegration", () => {
 
   it("maps development stage without leaking forbidden meta", () => {
     const stage = resolveOwnerDashboardStages(sampleView, "development")[0];
-    assert.equal(stage.ownerStatus, "В планах");
+    assert.equal(stage.readiness, 0);
+    assert.deepEqual(stage.meta.implementation_stage_slugs, ["legacy-isolation"]);
     assert.equal(stage.done[0], "Завершено 9 ключевых работ.");
     assert.ok(!JSON.stringify(stage).includes("raw_items"));
     assert.ok(!JSON.stringify(stage).includes("modules/"));
+    assert.ok(!Object.prototype.hasOwnProperty.call(stage, "ownerStatus"));
   });
 
   it("maps company stage title from displayTitle", () => {

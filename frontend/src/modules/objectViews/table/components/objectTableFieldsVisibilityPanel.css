@@ -1,0 +1,91 @@
+.ot-fields-visibility-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.ot-fields-visibility-panel__search-wrap {
+  padding: 12px;
+  border-bottom: 1px solid #eef2f7;
+  flex-shrink: 0;
+}
+
+.ot-fields-visibility-panel__search {
+  width: 100%;
+  height: 34px;
+  border: 1px solid #dbe3ef;
+  border-radius: 9px;
+  padding: 0 10px;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.ot-fields-visibility-panel__body {
+  padding: 10px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.ot-fields-visibility-panel__section-title {
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 850;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ot-fields-visibility-panel__field-row {
+  width: 100%;
+  min-height: 34px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #0f172a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.ot-fields-visibility-panel__field-row.is-hidden {
+  font-weight: 500;
+}
+
+.ot-fields-visibility-panel__field-row:disabled {
+  color: #94a3b8;
+  cursor: default;
+}
+
+.ot-fields-visibility-panel__field-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ot-fields-visibility-panel__field-lock {
+  margin-left: 6px;
+  opacity: 0.7;
+}
+
+.ot-fields-visibility-panel__divider {
+  height: 1px;
+  background: #eef2f7;
+  margin: 10px 0;
+}
+
+.ot-fields-visibility-panel__empty {
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #94a3b8;
+}

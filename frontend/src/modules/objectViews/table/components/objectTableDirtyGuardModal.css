@@ -1,0 +1,476 @@
+[data-platform-modal-key="office-user-view-unsaved-changes-modal"][data-platform-modal-overlay] {
+
+  background: rgba(15, 23, 42, 0.35);
+
+  backdrop-filter: blur(4px);
+
+}
+
+
+
+[data-platform-modal-key="office-user-view-unsaved-changes-modal"][data-platform-modal-panel] {
+
+  border-radius: 18px;
+
+  border: 1px solid rgba(226, 232, 240, 0.9);
+
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.22);
+
+  min-width: 420px;
+
+  max-width: 620px;
+
+  min-height: 260px;
+
+  max-height: 70vh;
+
+}
+
+
+
+[data-platform-modal-key="office-user-view-unsaved-changes-modal"][data-platform-modal-panel]
+
+  > div:nth-child(2) {
+
+  padding: 0 !important;
+
+  border-top-color: #dbe3ef;
+
+}
+
+
+
+.ot-dirty-guard-modal {
+
+  display: flex;
+
+  flex-direction: column;
+
+  min-height: 0;
+
+  flex: 1;
+
+  height: 100%;
+
+}
+
+
+
+.ot-dirty-guard-modal__header {
+
+  display: flex;
+
+  align-items: flex-start;
+
+  gap: 14px;
+
+  padding: 28px 32px 18px;
+
+  flex-shrink: 0;
+
+  user-select: none;
+
+  touch-action: none;
+
+}
+
+
+
+.ot-dirty-guard-modal__icon-wrap {
+
+  width: 44px;
+
+  height: 44px;
+
+  border-radius: 50%;
+
+  background: #eff6ff;
+
+  color: #2563eb;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  flex-shrink: 0;
+
+}
+
+
+
+.ot-dirty-guard-modal__title-wrap {
+
+  min-width: 0;
+
+  flex: 1;
+
+  padding-top: 2px;
+
+}
+
+
+
+.ot-dirty-guard-modal__title {
+
+  margin: 0;
+
+  font-size: 22px;
+
+  font-weight: 700;
+
+  line-height: 1.2;
+
+  color: #1f2937;
+
+  word-break: break-word;
+
+}
+
+
+
+.ot-dirty-guard-modal__close-btn {
+
+  width: 34px;
+
+  height: 34px;
+
+  border: none;
+
+  border-radius: 8px;
+
+  background: transparent;
+
+  color: #64748b;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  cursor: pointer;
+
+  flex-shrink: 0;
+
+}
+
+
+
+.ot-dirty-guard-modal__close-btn:hover {
+
+  color: #1f2937;
+
+  background: #f8fafc;
+
+}
+
+
+
+.ot-dirty-guard-modal__divider {
+
+  height: 1px;
+
+  background: #dbe3ef;
+
+  margin: 0 32px;
+
+  flex-shrink: 0;
+
+}
+
+
+
+.ot-dirty-guard-modal__body {
+
+  flex: 1;
+
+  min-height: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: flex-start;
+
+  padding: 22px 32px 24px;
+
+  text-align: center;
+
+  overflow-y: auto;
+
+}
+
+
+
+.ot-dirty-guard-modal__message {
+
+  margin: 0;
+
+  font-size: 17px;
+
+  line-height: 1.45;
+
+  font-weight: 500;
+
+  color: #334155;
+
+  max-width: 100%;
+
+}
+
+
+
+.ot-dirty-guard-modal__hint {
+
+  margin: 14px 0 0;
+
+  display: inline-flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  font-size: 14px;
+
+  line-height: 1.4;
+
+  color: #64748b;
+
+  text-align: left;
+
+  max-width: 100%;
+
+}
+
+
+
+.ot-dirty-guard-modal__hint-icon {
+
+  color: #2563eb;
+
+  flex-shrink: 0;
+
+}
+
+
+
+.ot-dirty-guard-modal__footer {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 12px;
+
+  width: 100%;
+
+  padding: 18px 32px 24px;
+
+}
+
+
+
+.ot-dirty-guard-modal__footer-left,
+
+.ot-dirty-guard-modal__footer-center,
+
+.ot-dirty-guard-modal__footer-right {
+
+  display: flex;
+
+  flex: 1 1 auto;
+
+  min-width: 0;
+
+}
+
+
+
+.ot-dirty-guard-modal__footer-left {
+
+  justify-content: flex-start;
+
+}
+
+
+
+.ot-dirty-guard-modal__footer-center {
+
+  justify-content: center;
+
+}
+
+
+
+.ot-dirty-guard-modal__footer-right {
+
+  justify-content: flex-end;
+
+}
+
+
+
+.ot-dirty-guard-modal__btn {
+
+  height: 44px;
+
+  padding: 0 20px;
+
+  border-radius: 10px;
+
+  font-size: 15px;
+
+  font-weight: 600;
+
+  line-height: 1.2;
+
+  cursor: pointer;
+
+  white-space: nowrap;
+
+}
+
+
+
+.ot-dirty-guard-modal__btn:disabled {
+
+  opacity: 0.55;
+
+  cursor: not-allowed;
+
+}
+
+
+
+.ot-dirty-guard-modal__btn--secondary {
+
+  border: 1px solid #cbd5e1;
+
+  background: #ffffff;
+
+  color: #1f2937;
+
+}
+
+
+
+.ot-dirty-guard-modal__btn--secondary:hover:not(:disabled) {
+
+  background: #f8fafc;
+
+}
+
+
+
+.ot-dirty-guard-modal__btn--outline {
+
+  border: 1px solid #93c5fd;
+
+  background: #ffffff;
+
+  color: #2563eb;
+
+}
+
+
+
+.ot-dirty-guard-modal__btn--outline:hover:not(:disabled) {
+
+  background: #eff6ff;
+
+}
+
+
+
+.ot-dirty-guard-modal__btn--primary {
+
+  border: 1px solid #2563eb;
+
+  background: #2563eb;
+
+  color: #ffffff;
+
+}
+
+
+
+.ot-dirty-guard-modal__btn--primary:hover:not(:disabled) {
+
+  background: #1d4ed8;
+
+  border-color: #1d4ed8;
+
+}
+
+
+
+@media (max-width: 560px) {
+
+  .ot-dirty-guard-modal__header {
+
+    padding: 22px 20px 14px;
+
+    gap: 12px;
+
+  }
+
+
+
+  .ot-dirty-guard-modal__divider {
+
+    margin: 0 20px;
+
+  }
+
+
+
+  .ot-dirty-guard-modal__body {
+
+    padding: 18px 20px 20px;
+
+  }
+
+
+
+  .ot-dirty-guard-modal__footer {
+
+    padding: 14px 20px 20px;
+
+    flex-direction: column;
+
+    align-items: stretch;
+
+  }
+
+
+
+  .ot-dirty-guard-modal__footer-left,
+
+  .ot-dirty-guard-modal__footer-center,
+
+  .ot-dirty-guard-modal__footer-right {
+
+    justify-content: stretch;
+
+    width: 100%;
+
+  }
+
+
+
+  .ot-dirty-guard-modal__btn {
+
+    width: 100%;
+
+  }
+
+}
+

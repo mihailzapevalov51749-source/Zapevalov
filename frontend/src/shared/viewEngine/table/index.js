@@ -5,6 +5,8 @@
 
 export { default as ViewEngineTable } from "../ViewEngineTable";
 export { default as ViewEngineCell } from "../ViewEngineCell";
+export { default as ViewEngineRowMenu } from "../components/ViewEngineRowMenu";
+export { default as ViewEngineTitleFieldChrome } from "../components/ViewEngineTitleFieldChrome";
 export { default as ViewEngineHeaderCell } from "../ViewEngineHeaderCell";
 export { default as ViewEngineTableState } from "../ViewEngineTableState";
 export { default as ViewEnginePagination } from "../ViewEnginePagination";

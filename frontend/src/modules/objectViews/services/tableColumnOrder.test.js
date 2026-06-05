@@ -27,6 +27,16 @@ describe("tableColumnOrder", () => {
     expect(canMoveTableColumn("priority", "down", order, "title")).toBe(true);
   });
 
+  it("allows exact reorder in Office user views", () => {
+    const order = ["description", "title", "status"];
+    const moveOptions = { preserveExactOrder: true };
+
+    expect(canMoveTableColumn("title", "up", order, "title", moveOptions)).toBe(true);
+    expect(canMoveTableColumn("description", "down", order, "title", moveOptions)).toBe(
+      true,
+    );
+  });
+
   it("All mode: title → user fields → canonical system fields", () => {
     const result = normalizeTableDisplayFieldKeys(
       [
@@ -57,6 +67,23 @@ describe("tableColumnOrder", () => {
       SYSTEM_ENTITY_FIELD_KEYS.updatedAt,
       SYSTEM_ENTITY_FIELD_KEYS.id,
     ]);
+  });
+
+  it("strips dedicated record number field from saved projections", () => {
+    const result = normalizeTableDisplayFieldKeys(
+      [
+        SYSTEM_ENTITY_FIELD_KEYS.recordNumber,
+        "title",
+        "priority",
+        "record_number",
+      ],
+      {
+        titleFieldKey: "title",
+        isAllMode: false,
+      },
+    );
+
+    expect(result).toEqual(["title", "priority"]);
   });
 
   it("User view: title first, preserves custom order for other fields", () => {

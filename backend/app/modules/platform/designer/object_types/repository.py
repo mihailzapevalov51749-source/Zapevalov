@@ -170,7 +170,8 @@ def soft_delete_object_type(
     db: Session,
     entity: DesignerObjectType,
 ) -> DesignerObjectType:
-    entity.deleted_at = datetime.now(timezone.utc)
+    if entity.deleted_at is None:
+        entity.deleted_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(entity)
     return entity

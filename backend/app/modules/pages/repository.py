@@ -1,4 +1,7 @@
 from sqlalchemy.orm import Session
+
+from app.modules.platform.designer.shared.soft_delete import apply_soft_delete
+
 from .models import Page
 
 
@@ -13,7 +16,7 @@ def create_page(db: Session, data):
 def get_pages_by_portal(db: Session, portal_id: int):
     return (
         db.query(Page)
-        .filter(Page.portal_id == portal_id)
+        .filter(Page.portal_id == portal_id, Page.deleted_at.is_(None))
         .order_by(Page.sort_order.asc(), Page.id.asc())
         .all()
     )
@@ -21,6 +24,15 @@ def get_pages_by_portal(db: Session, portal_id: int):
 
 def get_page(db: Session, page_id: int):
     return db.query(Page).filter(Page.id == page_id).first()
+
+
+def get_active_page(db: Session, page_id: int):
+    """Страница для runtime и публичных сценариев — без soft-deleted."""
+    return (
+        db.query(Page)
+        .filter(Page.id == page_id, Page.deleted_at.is_(None))
+        .first()
+    )
 
 
 def update_page(db: Session, page_id: int, data):
@@ -39,12 +51,13 @@ def update_page(db: Session, page_id: int, data):
     return page
 
 
-def delete_page(db: Session, page_id: int):
+def delete_page(db: Session, page_id: int, *, deleted_by: int | None = None):
     page = get_page(db, page_id)
 
-    if not page:
+    if not page or page.deleted_at is not None:
         return None
 
-    db.delete(page)
+    apply_soft_delete(page, deleted_by=deleted_by)
     db.commit()
+    db.refresh(page)
     return page

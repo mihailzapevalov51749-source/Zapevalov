@@ -7,6 +7,20 @@ import { platformApiClient } from "../../designer/api/platformApiClient";
  * @param {string} objectTypeKey
  * @param {{ values: Record<string, unknown> }} payload
  */
+export async function listRuntimeEntities(tenantId, objectTypeKey) {
+  const normalizedKey = String(objectTypeKey ?? "").trim();
+
+  if (!normalizedKey) {
+    throw new Error("listRuntimeEntities: objectTypeKey is required");
+  }
+
+  const { data } = await platformApiClient.get(
+    `/runtime/entities/tenants/${tenantId}/${encodeURIComponent(normalizedKey)}`,
+  );
+
+  return data;
+}
+
 export async function createRuntimeEntity(tenantId, objectTypeKey, payload) {
   const { data } = await platformApiClient.post(
     `/runtime/entities/tenants/${tenantId}/${objectTypeKey}`,
@@ -51,6 +65,82 @@ export async function updateRuntimeEntity(
   const { data } = await platformApiClient.patch(
     `/runtime/entities/tenants/${tenantId}/${objectTypeKey}/${entityId}`,
     payload,
+  );
+
+  return data;
+}
+
+/**
+ * @param {number} tenantId
+ * @param {string} objectTypeKey
+ * @param {string} entityId
+ */
+export async function getRuntimeEntityDeletePreview(tenantId, objectTypeKey, entityId) {
+  const normalizedId = String(entityId ?? "").trim();
+  const normalizedKey = String(objectTypeKey ?? "").trim();
+
+  if (!normalizedId || !normalizedKey) {
+    throw new Error(
+      "getRuntimeEntityDeletePreview: tenantId, objectTypeKey and entityId are required",
+    );
+  }
+
+  const { data } = await platformApiClient.get(
+    `/runtime/entities/tenants/${tenantId}/${encodeURIComponent(normalizedKey)}/${encodeURIComponent(normalizedId)}/delete-preview`,
+  );
+
+  return data;
+}
+
+/**
+ * @param {number} tenantId
+ * @param {string} objectTypeKey
+ * @param {string} entityId
+ * @param {{ scenario?: string | null }} payload
+ */
+export async function deleteRuntimeEntityWithScenario(
+  tenantId,
+  objectTypeKey,
+  entityId,
+  payload = {},
+) {
+  const normalizedId = String(entityId ?? "").trim();
+  const normalizedKey = String(objectTypeKey ?? "").trim();
+
+  if (!normalizedId || !normalizedKey) {
+    throw new Error(
+      "deleteRuntimeEntityWithScenario: tenantId, objectTypeKey and entityId are required",
+    );
+  }
+
+  const body =
+    payload?.scenario != null && String(payload.scenario).trim()
+      ? { scenario: String(payload.scenario).trim() }
+      : {};
+
+  const { data } = await platformApiClient.post(
+    `/runtime/entities/tenants/${tenantId}/${encodeURIComponent(normalizedKey)}/${encodeURIComponent(normalizedId)}/delete`,
+    body,
+  );
+
+  return data;
+}
+
+/**
+ * @param {number} tenantId
+ * @param {string} objectTypeKey
+ * @param {string} entityId
+ */
+export async function deleteRuntimeEntity(tenantId, objectTypeKey, entityId) {
+  const normalizedId = String(entityId ?? "").trim();
+  const normalizedKey = String(objectTypeKey ?? "").trim();
+
+  if (!normalizedId || !normalizedKey) {
+    throw new Error("deleteRuntimeEntity: tenantId, objectTypeKey and entityId are required");
+  }
+
+  const { data } = await platformApiClient.delete(
+    `/runtime/entities/tenants/${tenantId}/${encodeURIComponent(normalizedKey)}/${encodeURIComponent(normalizedId)}`,
   );
 
   return data;

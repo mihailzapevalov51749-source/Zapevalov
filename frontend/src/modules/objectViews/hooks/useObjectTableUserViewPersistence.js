@@ -1,15 +1,15 @@
 import { useCallback, useState } from "react";
 
 import {
-  deleteUserTableView,
-  getStoredCurrentUserId,
-  renameUserTableView,
-  setUserDefaultTableView,
-  updateUserTableViewContract,
-} from "../table/preferences/objectTableUserViewsStorage";
+  deleteUserTableViewRemote,
+  renameUserTableViewRemote,
+  setUserDefaultTableViewRemote,
+  updateUserTableViewContractRemote,
+} from "../table/preferences/objectTableUserViewsRemote";
+import { getStoredCurrentUserId } from "../table/preferences/objectTableUserViewsStorage";
 
 /**
- * Office-only persistence for user table representations (localStorage).
+ * Office-only persistence for user table representations (runtime API).
  */
 export default function useObjectTableUserViewPersistence({
   tenantId,
@@ -42,14 +42,18 @@ export default function useObjectTableUserViewPersistence({
       setSaveError("");
 
       try {
-        const result = updateUserTableViewContract(scope(), userViewId, contract);
+        const result = await updateUserTableViewContractRemote(
+          scope(),
+          userViewId,
+          contract,
+        );
 
         if (!result.ok) {
           setSaveError("Пользовательское представление не найдено");
           return result;
         }
 
-        return { ok: true };
+        return { ok: true, contract: result.contract };
       } catch (err) {
         const message = "Не удалось сохранить представление";
         setSaveError(message);
@@ -74,7 +78,7 @@ export default function useObjectTableUserViewPersistence({
       setActionError("");
 
       try {
-        const result = renameUserTableView(scope(), userViewId, trimmedName);
+        const result = await renameUserTableViewRemote(scope(), userViewId, trimmedName);
 
         if (!result.ok) {
           setActionError("Не удалось переименовать представление");
@@ -102,7 +106,7 @@ export default function useObjectTableUserViewPersistence({
       setActionError("");
 
       try {
-        const result = deleteUserTableView(scope(), userViewId);
+        const result = await deleteUserTableViewRemote(scope(), userViewId);
 
         if (!result.ok) {
           setActionError("Не удалось удалить представление");
@@ -132,7 +136,7 @@ export default function useObjectTableUserViewPersistence({
       setActionError("");
 
       try {
-        const result = setUserDefaultTableView(scope(), viewKey);
+        const result = await setUserDefaultTableViewRemote(scope(), viewKey);
 
         if (!result.ok) {
           setActionError("Не удалось назначить представление по умолчанию");

@@ -173,6 +173,83 @@ export async function listPortalPages(portalId) {
   return data;
 }
 
+export async function listDesignerPagesRegistry(tenantId) {
+  const { data } = await platformApiClient.get(
+    `${tenantBase(tenantId)}/pages/registry`,
+  );
+  return data;
+}
+
+export async function getDesignerPageRegistry(tenantId, pageId) {
+  const { data } = await platformApiClient.get(
+    `${tenantBase(tenantId)}/pages/${pageId}/registry`,
+  );
+  return data;
+}
+
+export async function listDesignerTrash(tenantId) {
+  const { data } = await platformApiClient.get(`${tenantBase(tenantId)}/trash`);
+  return data;
+}
+
+export async function getDesignerTrashItem(tenantId, kind, entityId) {
+  const { data } = await platformApiClient.get(
+    `${tenantBase(tenantId)}/trash/${kind}/${entityId}`,
+  );
+  return data;
+}
+
+export async function checkDesignerTrashPurge(tenantId, kind, entityId) {
+  const { data } = await platformApiClient.get(
+    `${tenantBase(tenantId)}/trash/${kind}/${entityId}/purge-check`,
+  );
+  return data;
+}
+
+export async function restoreDesignerTrashItems(tenantId, items) {
+  const { data } = await platformApiClient.post(`${tenantBase(tenantId)}/trash/restore`, {
+    items,
+  });
+  return data;
+}
+
+export async function purgeDesignerTrashItems(tenantId, items) {
+  const { data } = await platformApiClient.post(`${tenantBase(tenantId)}/trash/purge`, {
+    items,
+  });
+  return data;
+}
+
+export async function clearDesignerTrashDependenciesAndPurge(tenantId, kind, entityId) {
+  const { data } = await platformApiClient.post(
+    `${tenantBase(tenantId)}/trash/${kind}/${entityId}/purge-clear-dependencies`,
+  );
+  return data;
+}
+
+export async function purgeDesignerTrashCascade(tenantId, kind, entityId, { confirm = false } = {}) {
+  const { data } = await platformApiClient.post(
+    `${tenantBase(tenantId)}/trash/${kind}/${entityId}/purge-cascade`,
+    undefined,
+    { params: { confirm } },
+  );
+  return data;
+}
+
+export async function duplicateDesignerPage(tenantId, pageId) {
+  const { data } = await platformApiClient.post(
+    `${tenantBase(tenantId)}/pages/${pageId}/duplicate`,
+  );
+  return data;
+}
+
+export async function deleteDesignerPage(tenantId, pageId) {
+  const { data } = await platformApiClient.delete(
+    `${tenantBase(tenantId)}/pages/${pageId}`,
+  );
+  return data;
+}
+
 export async function createDesignerWorkspace(tenantId, payload) {
   const { data } = await platformApiClient.post(
     `${tenantBase(tenantId)}/workspaces`,
@@ -202,9 +279,14 @@ export async function ensureDesignerWorkspaceTabs(tenantId, workspaceId) {
   return data;
 }
 
-export async function listDesignerWorkspaceTabs(tenantId, workspaceId) {
+export async function listDesignerWorkspaceTabs(tenantId, workspaceId, options = {}) {
+  const params = {};
+  if (options.forUserMenu) {
+    params.for_user_menu = true;
+  }
   const { data } = await platformApiClient.get(
     `${tenantBase(tenantId)}/workspaces/${workspaceId}/tabs`,
+    Object.keys(params).length > 0 ? { params } : undefined,
   );
   return data;
 }

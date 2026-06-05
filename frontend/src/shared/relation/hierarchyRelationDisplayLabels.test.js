@@ -2,18 +2,36 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
 import { resolveHierarchyChildUiLabels } from "./hierarchyRelationDisplayLabels.js";
+import { DEFAULT_HIERARCHY_LABELS } from "./hierarchyLabels.js";
 
 describe("hierarchyRelationDisplayLabels", () => {
-  it("uses task_subtask defaults for Задачник", () => {
+  it("uses hierarchy_labels when configured", () => {
+    const labels = resolveHierarchyChildUiLabels({
+      key: "task_subtask",
+      name: "Подзадача",
+      settings_json: {
+        semantic_profile: "task_subtask",
+        hierarchy_labels: {
+          child: "Подзадача",
+          children: "Подзадачи",
+        },
+      },
+    });
+
+    assert.equal(labels.groupTitle, "Подзадачи");
+    assert.equal(labels.addButtonLabel, "+ подзадачу");
+  });
+
+  it("falls back to universal labels without task_subtask wording", () => {
     const labels = resolveHierarchyChildUiLabels({
       key: "task_subtask",
       name: "Подзадача",
       settings_json: { semantic_profile: "task_subtask" },
     });
 
-    assert.equal(labels.groupTitle, "Подзадачи");
-    assert.equal(labels.addButtonLabel, "+ Подзадачу");
-    assert.equal(labels.unlinkLabel, "Убрать из подзадач");
+    assert.equal(labels.groupTitle, DEFAULT_HIERARCHY_LABELS.children);
+    assert.equal(labels.addButtonLabel, "+ дочернюю запись");
+    assert.ok(!labels.groupTitle.includes("Подзадач"));
   });
 
   it("allows relation metadata overrides for future card settings", () => {

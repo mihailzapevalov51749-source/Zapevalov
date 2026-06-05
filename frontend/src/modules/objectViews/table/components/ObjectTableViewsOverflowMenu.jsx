@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react";
+
+import { getViewIdentity } from "../../services/resolveActiveView";
 import { createPortal } from "react-dom";
 
 /**
@@ -93,7 +95,9 @@ export default function ObjectTableViewsOverflowMenu({
           {overflowViews.map((item) => {
             const key = String(item.contract?.key || "");
             const label = item.contract?.name || key;
-            const isActive = key === String(activeViewKey);
+            const isActive =
+              getViewIdentity(item) === String(activeViewKey || "").trim() ||
+              key === String(activeViewKey);
 
             return (
               <button

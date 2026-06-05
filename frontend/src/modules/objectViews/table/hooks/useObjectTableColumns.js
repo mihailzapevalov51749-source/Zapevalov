@@ -27,6 +27,8 @@ export default function useObjectTableColumns({
     const objectType = findCatalogObjectType(query.catalog, objectTypeKey);
     const displayOptions = {
       objectType,
+      catalog: query.catalog,
+      objectTypeKey,
       publishedViewKey: isAllMode
         ? String(publishedTableViewKey || "default_table").trim()
         : String(viewKey || publishedTableViewKey || "default_table").trim(),
@@ -75,6 +77,8 @@ export default function useObjectTableColumns({
       columnOptions: {
         titleFieldKey: displayContext.titleFieldKey,
         isAllMode: displayContext.isAllMode,
+        catalog: query.catalog,
+        objectTypeKey,
       },
     });
   }, [

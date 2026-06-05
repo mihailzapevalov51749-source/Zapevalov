@@ -78,15 +78,135 @@ export function createSavedFilterId() {
  * }} params
  */
 export function buildQuickSavedFilter({ label, conditions, existingKeys = [] }) {
-  const trimmedLabel = String(label || "").trim();
-  const key = generateViewKey(trimmedLabel, existingKeys);
-
-  return {
-    id: createSavedFilterId(),
-    key,
-    label: trimmedLabel,
-    conditions: cloneFilterConditions(conditions),
+  return buildSavedFilter({
+    label,
+    conditions,
+    existingKeys,
     isQuick: true,
     isDefault: false,
+  });
+}
+
+/**
+ * @param {{
+ *   label: string,
+ *   conditions: Array<Record<string, unknown>>,
+ *   existingKeys?: string[],
+ *   isQuick?: boolean,
+ *   isDefault?: boolean,
+ *   id?: string | null,
+ *   key?: string | null,
+ * }} params
+ */
+export function buildSavedFilter({
+  label,
+  conditions,
+  existingKeys = [],
+  isQuick = false,
+  isDefault = false,
+  id = null,
+  key = null,
+}) {
+  const trimmedLabel = String(label || "").trim() || "Новый фильтр";
+  const normalizedId = id ? String(id) : createSavedFilterId();
+  const normalizedKey =
+    key ||
+    generateViewKey(trimmedLabel, existingKeys) ||
+    normalizedId;
+
+  return {
+    id: normalizedId,
+    key: normalizedKey,
+    label: trimmedLabel,
+    conditions: cloneFilterConditions(conditions),
+    isQuick: Boolean(isQuick),
+    isDefault: Boolean(isQuick && isDefault),
   };
+}
+
+/**
+ * Ensures only one saved filter is marked default.
+ *
+ * @param {Array<Record<string, unknown>>} savedFilters
+ * @param {string | null | undefined} defaultId
+ */
+export function ensureSingleDefaultFilter(savedFilters = [], defaultId = null) {
+  const normalizedDefaultId =
+    defaultId == null || defaultId === "" ? null : String(defaultId);
+
+  return (savedFilters || []).map((item) => ({
+    ...item,
+    isDefault: normalizedDefaultId
+      ? String(item?.id) === normalizedDefaultId
+      : false,
+  }));
+}
+
+function isRuntimeReadyCondition(condition) {
+  const fieldKey = String(condition?.fieldKey || "").trim();
+  const operator = String(condition?.operator || "eq").trim().toLowerCase();
+
+  if (!fieldKey) {
+    return false;
+  }
+
+  if (operator === "is_empty" || operator === "is_not_empty") {
+    return true;
+  }
+
+  if (operator === "true" || operator === "false") {
+    return true;
+  }
+
+  const value = condition?.value;
+
+  if (value === undefined || value === null) {
+    return false;
+  }
+
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+
+  return String(value).trim() !== "";
+}
+
+/**
+ * @param {Record<string, unknown> | null | undefined} contract
+ * @param {string | null | undefined} activeQuickFilterId
+ */
+export function getMergedActiveFilterConditions(contract, activeQuickFilterId = null) {
+  const baseConditions = cloneFilterConditions(
+    contract?.query?.filters?.conditions || [],
+  );
+  const savedFilters = contract?.query?.filters?.savedFilters || [];
+  const quickConditions = getQuickFilterConditions(activeQuickFilterId, savedFilters);
+  const merged = mergeRuntimeFilterConditions(baseConditions, quickConditions);
+
+  return merged
+    .filter(isRuntimeReadyCondition)
+    .map((condition, index) => {
+      const conditionId = String(condition.id || `merged-${index + 1}`);
+      const inBase = baseConditions.some(
+        (item) => String(item?.id || "") === conditionId,
+      );
+      const inQuick = quickConditions.some(
+        (item) => String(item?.id || "") === conditionId,
+      );
+
+      return {
+        ...condition,
+        id: conditionId,
+        _filterSource: inQuick && !inBase ? "quick" : "base",
+        _sourceFilterId: inQuick ? String(activeQuickFilterId || "") : null,
+      };
+    });
+}
+
+/**
+ * @param {Record<string, unknown> | null | undefined} contract
+ * @param {string | null | undefined} activeQuickFilterId
+ */
+export function countActiveFilterConditions(contract, activeQuickFilterId = null) {
+  return getMergedActiveFilterConditions(contract, activeQuickFilterId).length;
 }

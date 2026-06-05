@@ -89,6 +89,8 @@ export default function ObjectTableViewSettingsPanel({
   actionLoading = false,
   actionError = "",
   onOpenFiltersEditor,
+  onEditSavedFilter,
+  onDeleteSavedFilter,
 }) {
   const renameInputRef = useRef(null);
   const [expandedKey, setExpandedKey] = useState(null);
@@ -331,6 +333,8 @@ export default function ObjectTableViewSettingsPanel({
                 catalog={catalog}
                 objectTypeKey={objectTypeKey}
                 onOpenFilters={onOpenFiltersEditor}
+                onEditSavedFilter={onEditSavedFilter}
+                onDeleteSavedFilter={onDeleteSavedFilter}
               />
             );
           }
@@ -363,6 +367,8 @@ export default function ObjectTableViewSettingsPanel({
       objectTypeKey,
       sessionApi,
       onOpenFiltersEditor,
+      onEditSavedFilter,
+      onDeleteSavedFilter,
     ],
   );
 
@@ -371,7 +377,7 @@ export default function ObjectTableViewSettingsPanel({
       <button
         type="button"
         className="ot-view-settings-panel__footer-save"
-        disabled={!canSave || saving}
+        disabled={!canSave || !isDirty || saving}
         title={
           !canSave
             ? "Сохранение недоступно"
@@ -611,6 +617,12 @@ export default function ObjectTableViewSettingsPanel({
               <button
                 type="button"
                 className="ot-view-settings-panel__action-btn object-table-view-settings__action-row"
+                disabled={isSystemRepresentation && !isDirty}
+                title={
+                  isSystemRepresentation && !isDirty
+                    ? "Сначала измените настройки таблицы"
+                    : ""
+                }
                 onClick={() => setIsSaveAsOpen(true)}
               >
                 <img

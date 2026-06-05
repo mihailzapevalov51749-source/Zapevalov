@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from . import repository
+from .runtime_access import assert_page_office_runtime_access
 from app.modules.sections import repository as sections_repo
 from app.modules.blocks import repository as blocks_repo
 
@@ -21,17 +22,20 @@ def update_page(db: Session, page_id: int, data):
     return repository.update_page(db, page_id, data)
 
 
-def delete_page(db: Session, page_id: int):
-    return repository.delete_page(db, page_id)
+def delete_page(db: Session, page_id: int, *, deleted_by: int | None = None):
+    return repository.delete_page(db, page_id, deleted_by=deleted_by)
 
 
 # ===== НОВОЕ =====
 
-def get_page_full(db: Session, page_id: int):
-    page = repository.get_page(db, page_id)
+def get_page_full(db: Session, page_id: int, *, office_access: bool = False):
+    page = repository.get_active_page(db, page_id)
 
     if not page:
         return None
+
+    if office_access:
+        assert_page_office_runtime_access(page.status)
 
     # получаем разделы
     sections = sections_repo.get_sections_by_page(db, page_id)

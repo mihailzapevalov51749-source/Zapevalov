@@ -99,6 +99,7 @@ class NavigationItemResponse(BaseModel):
     display_icon_type: Optional[str] = None
     display_icon_file_url: Optional[str] = None
     display_color: Optional[str] = None
+    page_status: Optional[str] = None
 
     class Config:
         from_attributes = True

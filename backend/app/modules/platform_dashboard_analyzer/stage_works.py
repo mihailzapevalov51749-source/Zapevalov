@@ -65,6 +65,11 @@ STAGE_CANONICAL: dict[str, dict[str, list[str]]] = {
             "Понятная граница Studio и runtime",
             "Управление жизненным циклом типа объекта",
             "UI Framework: единый стандарт модальных окон (PlatformModal)",
+            "Корзина платформы: soft delete, восстановление и окончательное удаление",
+            "Runtime-контракт статусов страниц (draft/published/hidden)",
+            "Места публикации страниц и скрытие hidden в пользовательских меню",
+            "Единый источник истины видимости страниц (pages.status)",
+            "Нормализация существующих страниц под новый контракт публикации",
         ],
         "completion_criteria": [
             "Studio — единая точка настройки object platform",
@@ -103,6 +108,12 @@ STAGE_CANONICAL: dict[str, dict[str, list[str]]] = {
             "Аналитика связей",
             "Миграция UT parent_row_id",
             "Tree View для Object Platform",
+            "Безопасное удаление с подзадачами (Object Table)",
+            "ViewEngineRowMenu (строковое меню Object Table)",
+            "Терминология иерархической связи (Studio + Object Table)",
+            "Массовое выделение строк Object Table",
+            "Массовое удаление записей Object Table",
+            "Пользовательские представления Object Table (стиль фильтров)",
         ],
         "completion_criteria": [
             "Поле relation существует в контракте платформы",
@@ -363,6 +374,91 @@ _OBJECT_SEARCH_PLATFORM_DESIGNER_MARKERS = (
     "designer.view",
     "designer.relation",
 )
+
+
+def _page_status_runtime_contract_complete(ctx: ScanContext) -> bool:
+    runtime_access_text = _backend_evidence_text(ctx, "modules/pages/runtime_access.py")
+    nav_filter_text = _backend_evidence_text(ctx, "modules/navigation/page_status_filter.py")
+    nav_reload_text = _frontend_evidence_text(ctx, "modules/designer/utils/navigationReload.js")
+    pages_page_text = _frontend_evidence_text(ctx, "modules/designer/pages/DesignerPagesPage.jsx")
+    if not runtime_access_text or not nav_filter_text or not nav_reload_text or not pages_page_text:
+        return False
+    return (
+        "OFFICE_RUNTIME_STATUSES = frozenset({PAGE_STATUS_PUBLISHED})" in runtime_access_text
+        and "resolve_navigation_page_id" in nav_filter_text
+        and "dispatchPageStatusNavigationRefresh" in nav_reload_text
+        and "dispatchPageStatusNavigationRefresh" in pages_page_text
+    )
+
+
+def _page_visibility_single_source_complete(ctx: ScanContext) -> bool:
+    visibility_text = _backend_evidence_text(ctx, "modules/navigation/page_navigation_visibility.py")
+    nav_service_text = _backend_evidence_text(ctx, "modules/navigation/service.py")
+    menu_editor_text = _frontend_evidence_text(ctx, "modules/navigation/components/MenuItemEditor.jsx")
+    nav_tree_text = _frontend_evidence_text(ctx, "modules/navigation/hooks/useNavigationTree.js")
+    if not visibility_text or not nav_service_text or not menu_editor_text or not nav_tree_text:
+        return False
+    return (
+        "apply_page_status_visibility_update" in visibility_text
+        and "for_edit_mode" in nav_service_text
+        and "page_status" in menu_editor_text
+        and "forEditMode" in nav_tree_text
+    )
+
+
+def _page_publication_places_complete(ctx: ScanContext) -> bool:
+    pages_service_text = _backend_evidence_text(ctx, "modules/platform/designer/pages/service.py")
+    nav_service_text = _backend_evidence_text(ctx, "modules/navigation/service.py")
+    pages_panel_text = _frontend_evidence_text(ctx, "modules/designer/components/pages/PageDetailPanel.jsx")
+    pages_utils_text = _frontend_evidence_text(ctx, "modules/designer/utils/pagesRegistryUtils.js")
+    if not pages_service_text or not nav_service_text or not pages_panel_text or not pages_utils_text:
+        return False
+    return (
+        "_build_publication_path_segments" in pages_service_text
+        and "_collect_placement_maps" in pages_service_text
+        and "filter_navigation_for_user_menu" in nav_service_text
+        and "Места публикации" in pages_panel_text
+        and "collectPublicationPaths" in pages_utils_text
+    )
+
+
+def _page_status_normalization_complete(ctx: ScanContext) -> bool:
+    normalization_text = _backend_evidence_text(
+        ctx,
+        "modules/platform/designer/pages/page_status_normalization.py",
+    )
+    script_text = _backend_evidence_text(ctx, "scripts/normalize_page_statuses.py")
+    tests_text = _backend_evidence_text(
+        ctx,
+        "modules/navigation/test_page_status_normalization.py",
+    )
+    if not normalization_text or not script_text or not tests_text:
+        return False
+    return (
+        "normalize_page_statuses" in normalization_text
+        and "plan_page_status_changes" in normalization_text
+        and "--dry-run" in script_text
+        and "--apply" in script_text
+        and "test_page_navigation_is_visible_false_moves_to_hidden_and_reset" in tests_text
+    )
+
+
+def _platform_trash_bin_complete(ctx: ScanContext) -> bool:
+    backend_text = _backend_evidence_text(ctx, "platform/designer/trash/service.py")
+    if not backend_text:
+        return False
+    if "restore_trash_item" not in backend_text or "purge_trash_item" not in backend_text:
+        return False
+    frontend_text = _frontend_evidence_text(ctx, "modules/designer/pages/DesignerTrashPage.jsx")
+    api_text = _frontend_evidence_text(ctx, "modules/designer/api/designerApi.js")
+    if not frontend_text or not api_text:
+        return False
+    return (
+        "listDesignerTrash" in api_text
+        and "restoreDesignerTrashItems" in api_text
+        and "purgeDesignerTrashItems" in api_text
+        and "Восстановить" in frontend_text
+    )
 
 _OBJECT_SEARCH_RUNTIME_TEST_MARKERS = (
     "runtime.company",
@@ -642,6 +738,20 @@ def evaluate_stage_work_status(slug: str, work: str, ctx: ScanContext) -> str:
         return "planned"
 
     if slug == "designer-foundation":
+        if "единый источник" in lower and "pages.status" in lower:
+            return "done" if _page_visibility_single_source_complete(ctx) else "in_progress"
+        if "единый источник" in lower and "видимост" in lower:
+            return "done" if _page_visibility_single_source_complete(ctx) else "in_progress"
+        if "места публикации" in lower or (
+            "публикац" in lower and "пользовательских меню" in lower
+        ):
+            return "done" if _page_publication_places_complete(ctx) else "in_progress"
+        if "нормализац" in lower and "страниц" in lower:
+            return "done" if _page_status_normalization_complete(ctx) else "in_progress"
+        if "статус" in lower and "страниц" in lower:
+            return "done" if _page_status_runtime_contract_complete(ctx) else "in_progress"
+        if "корзин" in lower:
+            return "done" if _platform_trash_bin_complete(ctx) else "in_progress"
         if "platformmodal" in lower.replace(" ", "") or (
             "ui framework" in lower and "модальн" in lower
         ):
@@ -676,9 +786,471 @@ def evaluate_stage_work_status(slug: str, work: str, ctx: ScanContext) -> str:
             return "done" if _relation_field_parent_section_complete(ctx) else "planned"
         if "подзадачи" in lower and "relation engine" in lower:
             return "done" if _relation_field_subtasks_relation_engine_complete(ctx) else "planned"
+        if "безопасное удаление" in lower and "подзадач" in lower:
+            return (
+                "done"
+                if _object_engine_safe_hierarchy_delete_complete(ctx)
+                else "planned"
+            )
+        if "массов" in lower and "выделен" in lower and "object table" in lower:
+            return (
+                "done"
+                if _object_table_bulk_selection_complete(ctx)
+                else "planned"
+            )
+        if "массов" in lower and "удален" in lower and "object table" in lower:
+            return (
+                "done"
+                if _object_table_bulk_delete_complete(ctx)
+                else "planned"
+            )
+        if "пользовательск" in lower and "представлен" in lower and "object table" in lower:
+            return (
+                "done"
+                if _object_table_representation_chip_style_complete(ctx)
+                else "planned"
+            )
+        if "терминолог" in lower and "иерархич" in lower:
+            return (
+                "done"
+                if _hierarchy_relation_terminology_complete(ctx)
+                else "planned"
+            )
+        if "viewenginerowmenu" in lower.replace(" ", "") or (
+            "строковое меню" in lower and "object table" in lower
+        ):
+            return (
+                "done"
+                if _view_engine_row_menu_complete(ctx)
+                else "planned"
+            )
+        if "tree view" in lower:
+            return (
+                "done"
+                if _relation_field_object_table_tree_view_complete(ctx)
+                else "planned"
+            )
         return "planned"
 
     return "planned"
+
+
+def _view_engine_row_menu_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    row_menu = frontend / "shared" / "viewEngine" / "components" / "ViewEngineRowMenu.jsx"
+    title_chrome = (
+        frontend / "shared" / "viewEngine" / "components" / "ViewEngineTitleFieldChrome.jsx"
+    )
+    table_view = frontend / "modules" / "objectViews" / "table" / "ObjectTableView.jsx"
+    cell = frontend / "shared" / "viewEngine" / "ViewEngineCell.jsx"
+    table = frontend / "shared" / "viewEngine" / "ViewEngineTable.jsx"
+    row_menu_test = (
+        frontend / "shared" / "viewEngine" / "components" / "ViewEngineRowMenu.test.js"
+    )
+
+    if not all(
+        path.is_file()
+        for path in (row_menu, title_chrome, table_view, cell, table, row_menu_test)
+    ):
+        return False
+
+    row_menu_text = row_menu.read_text(encoding="utf-8", errors="ignore")
+    table_view_text = table_view.read_text(encoding="utf-8", errors="ignore")
+    cell_text = cell.read_text(encoding="utf-8", errors="ignore")
+    table_text = table.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "createChildMenuLabel" in row_menu_text
+        and "Удалить" in row_menu_text
+        and "rowActions" in table_view_text
+        and "handleCreateSubtaskFromRow" in table_view_text
+        and "rendererContext?.rowActions" in cell_text
+        and "hoveredRowId" in table_text
+        and "isRowHovered" in table_text
+    )
+
+
+def _object_table_representation_chip_style_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    views_bar = (
+        frontend
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "components"
+        / "ObjectTableViewsBar.jsx"
+    )
+
+    if not views_bar.is_file():
+        return False
+
+    source = views_bar.read_text(encoding="utf-8", errors="ignore")
+
+    left_marker = 'className="view-engine-toolbar__left"'
+    right_marker = 'className="view-engine-toolbar__right"'
+    left_index = source.find(left_marker)
+    right_index = source.find(right_marker)
+    representations_on_right = (
+        left_index >= 0
+        and right_index > left_index
+        and "pinnedRepresentationViews.map" in source[right_index:]
+        and "pinnedRepresentationViews.map" not in source[left_index:right_index]
+    )
+
+    return (
+        "renderRepresentationButton" in source
+        and "view-engine-toolbar__quick-filter-btn" in source
+        and representations_on_right
+        and "view-engine-toolbar__views-group" not in source
+        and "view-engine-toolbar__rep" not in source
+    )
+
+
+def _object_table_bulk_delete_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    paths = (
+        frontend
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "hooks"
+        / "useObjectEntitiesBulkDelete.js",
+        frontend
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "services"
+        / "objectEntityBulkDeletePresentation.js",
+        frontend
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "ObjectTableView.jsx",
+        frontend
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "components"
+        / "ObjectTableBulkActionsBar.jsx",
+    )
+
+    if not all(path.is_file() for path in paths):
+        return False
+
+    hook_text = paths[0].read_text(encoding="utf-8", errors="ignore")
+    presentation_text = paths[1].read_text(encoding="utf-8", errors="ignore")
+    table_view_text = paths[2].read_text(encoding="utf-8", errors="ignore")
+    bulk_bar_text = paths[3].read_text(encoding="utf-8", errors="ignore")
+
+    labels_text = (
+        frontend / "shared" / "relation" / "hierarchyLabels.js"
+    ).read_text(encoding="utf-8", errors="ignore")
+    scenario_modal_text = (
+        frontend
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "components"
+        / "ObjectEntityDeleteScenarioModal.jsx"
+    ).read_text(encoding="utf-8", errors="ignore")
+
+    if not (frontend / "shared" / "relation" / "hierarchyLabels.js").is_file():
+        return False
+
+    return (
+        "aggregateBulkDeletePreview" in presentation_text
+        and "getRuntimeEntityDeletePreview" in hook_text
+        and "deleteRuntimeEntityWithScenario" in hook_text
+        and "useObjectEntitiesBulkDelete" in table_view_text
+        and "handleBulkDeleteClick" in table_view_text
+        and "mode={isBulkDeleteFlowActive ? \"bulk\" : \"single\"}" in table_view_text
+        and "disabled={deleting" in bulk_bar_text
+        and "Удаление…" in bulk_bar_text
+        and "buildBulkDeleteLabels" in labels_text
+        and "buildBulkDeleteStatsBadges" in labels_text
+        and "ObjectEntityDeleteBulkBadges" in scenario_modal_text
+    )
+
+
+def _object_table_bulk_selection_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    paths = (
+        frontend / "modules" / "objectViews" / "table" / "hooks" / "useObjectTableSelection.js",
+        frontend / "modules" / "objectViews" / "table" / "components" / "ObjectTableBulkActionsBar.jsx",
+        frontend / "modules" / "objectViews" / "table" / "ObjectTableView.jsx",
+        frontend / "shared" / "viewEngine" / "ViewEngineTable.jsx",
+        frontend / "shared" / "viewEngine" / "components" / "ViewEngineSelectionCell.jsx",
+    )
+
+    if not all(path.is_file() for path in paths):
+        return False
+
+    hook_text = paths[0].read_text(encoding="utf-8", errors="ignore")
+    table_view_text = paths[2].read_text(encoding="utf-8", errors="ignore")
+    view_engine_text = paths[3].read_text(encoding="utf-8", errors="ignore")
+    selection_cell_text = paths[4].read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "toggleAllVisible" in hook_text
+        and "headerIndeterminate" in hook_text
+        and "useObjectTableSelection" in table_view_text
+        and "ObjectTableBulkActionsBar" in table_view_text
+        and "rowSelection" in view_engine_text
+        and "stopPropagation" in selection_cell_text
+    )
+
+
+def _hierarchy_relation_terminology_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    backend = ctx.repo_root / "backend" / "app" / "modules" / "platform"
+
+    paths = (
+        frontend / "shared" / "relation" / "hierarchyLabels.js",
+        frontend / "shared" / "relation" / "hierarchyLabels.test.js",
+        frontend / "modules" / "designer" / "components" / "relations" / "RelationHierarchyLabelsEditor.jsx",
+        frontend / "modules" / "designer" / "components" / "tabs" / "RelationsTab.jsx",
+        frontend / "modules" / "objectViews" / "table" / "components" / "ObjectEntityDeleteScenarioModal.jsx",
+        backend / "shared" / "hierarchy_labels.py",
+        ctx.repo_root / "backend" / "tests" / "test_hierarchy_labels.py",
+        backend / "runtime" / "entities" / "schemas.py",
+    )
+
+    if not all(path.is_file() for path in paths):
+        return False
+
+    labels_js = (frontend / "shared" / "relation" / "hierarchyLabels.js").read_text(
+        encoding="utf-8",
+        errors="ignore",
+    )
+    relations_tab = (frontend / "modules" / "designer" / "components" / "tabs" / "RelationsTab.jsx").read_text(
+        encoding="utf-8",
+        errors="ignore",
+    )
+    scenario_modal = (
+        frontend / "modules" / "objectViews" / "table" / "components" / "ObjectEntityDeleteScenarioModal.jsx"
+    ).read_text(encoding="utf-8", errors="ignore")
+    table_view = (frontend / "modules" / "objectViews" / "table" / "ObjectTableView.jsx").read_text(
+        encoding="utf-8",
+        errors="ignore",
+    )
+    schemas = (backend / "runtime" / "entities" / "schemas.py").read_text(
+        encoding="utf-8",
+        errors="ignore",
+    )
+
+    return (
+        "suggestRussianHierarchyInflection" in labels_js
+        and "DEFAULT_HIERARCHY_LABELS" in labels_js
+        and "RelationHierarchyLabelsEditor" in relations_tab
+        and "hierarchy_labels" in relations_tab
+        and "hierarchyLabels" in scenario_modal
+        and "createChildMenuLabel" in table_view
+        and "hierarchy_labels" in schemas
+        and "Подзадача" not in scenario_modal
+    )
+
+
+def _object_engine_safe_hierarchy_delete_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    backend_service = (
+        ctx.repo_root
+        / "backend"
+        / "app"
+        / "modules"
+        / "platform"
+        / "runtime"
+        / "entities"
+        / "hierarchy_delete.py"
+    )
+    backend_test = (
+        ctx.repo_root
+        / "backend"
+        / "app"
+        / "modules"
+        / "platform"
+        / "runtime"
+        / "entities"
+        / "test_hierarchy_delete.py"
+    )
+    frontend_hook = (
+        ctx.repo_root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "hooks"
+        / "useObjectEntityDelete.js"
+    )
+    frontend_confirm = (
+        ctx.repo_root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "components"
+        / "ObjectEntityDeleteConfirmModal.jsx"
+    )
+    frontend_scenario = (
+        ctx.repo_root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "components"
+        / "ObjectEntityDeleteScenarioModal.jsx"
+    )
+    entities_api = (
+        ctx.repo_root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "runtimeWriteGateway"
+        / "api"
+        / "runtimeEntitiesApi.js"
+    )
+
+    if not all(
+        path.is_file()
+        for path in (
+            backend_service,
+            backend_test,
+            frontend_hook,
+            frontend_confirm,
+            frontend_scenario,
+            entities_api,
+        )
+    ):
+        return False
+
+    router_path = (
+        ctx.repo_root
+        / "backend"
+        / "app"
+        / "modules"
+        / "platform"
+        / "runtime"
+        / "entities"
+        / "router.py"
+    )
+    router_text = (
+        router_path.read_text(encoding="utf-8", errors="ignore")
+        if router_path.is_file()
+        else ""
+    )
+    api_text = entities_api.read_text(encoding="utf-8", errors="ignore")
+    hook_text = frontend_hook.read_text(encoding="utf-8", errors="ignore")
+    table_view = (
+        ctx.repo_root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "ObjectTableView.jsx"
+    )
+    table_text = (
+        table_view.read_text(encoding="utf-8", errors="ignore")
+        if table_view.is_file()
+        else ""
+    )
+
+    return (
+        "delete-preview" in router_text
+        and "delete_entity_with_scenario" in router_text
+        and "getRuntimeEntityDeletePreview" in api_text
+        and "deleteRuntimeEntityWithScenario" in api_text
+        and "beginDelete" in hook_text
+        and "onBeginDeleteEntity" in table_text
+        and "ObjectEntityDeleteScenarioModal" in table_text
+    )
+
+
+def _relation_field_object_table_tree_view_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    hook = (
+        frontend
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "hooks"
+        / "useObjectTableHierarchyRows.js"
+    )
+    display_builder = (
+        frontend
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "services"
+        / "buildObjectTableHierarchyDisplayRows.js"
+    )
+    relations_api = frontend / "api" / "runtimeRelationsApi.js"
+    chrome = frontend / "shared" / "viewEngine" / "ViewEngineHierarchyTitleChrome.jsx"
+    display_test = (
+        frontend
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "services"
+        / "buildObjectTableHierarchyDisplayRows.test.js"
+    )
+    table_view = frontend / "modules" / "objectViews" / "table" / "ObjectTableView.jsx"
+
+    if not all(
+        path.is_file()
+        for path in (
+            hook,
+            display_builder,
+            relations_api,
+            chrome,
+            display_test,
+            table_view,
+        )
+    ):
+        return False
+
+    hook_text = hook.read_text(encoding="utf-8", errors="ignore")
+    api_text = relations_api.read_text(encoding="utf-8", errors="ignore")
+    table_text = table_view.read_text(encoding="utf-8", errors="ignore")
+    cell_path = frontend / "shared" / "viewEngine" / "ViewEngineCell.jsx"
+    cell_text = (
+        cell_path.read_text(encoding="utf-8", errors="ignore")
+        if cell_path.is_file()
+        else ""
+    )
+
+    return (
+        "listRelationInstancesByKey" in hook_text
+        and "buildObjectTableHierarchyDisplayRows" in hook_text
+        and "listRelationInstancesByKey" in api_text
+        and "useObjectTableHierarchyRows" in table_text
+        and "hierarchyTree" in table_text
+        and "ViewEngineHierarchyTitleChrome" in cell_text
+        and "parent_row_id" not in hook_text
+        and "parent_row_id" not in display_builder.read_text(encoding="utf-8", errors="ignore")
+    )
 
 
 def _relation_field_task_subtask_spec_complete(ctx: ScanContext) -> bool:

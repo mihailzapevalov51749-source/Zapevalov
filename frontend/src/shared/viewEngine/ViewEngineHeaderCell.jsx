@@ -1,3 +1,5 @@
+import PlatformFieldVisibilityEyeIcon from "../fieldVisibility/PlatformFieldVisibilityEyeIcon";
+
 import {
   viewEngineHeaderCellStyle,
   viewEngineHeaderTitleStyle,
@@ -14,6 +16,11 @@ import TableSortToggleButton from "./TableSortToggleButton";
  *   onResizeMouseDown?: (event: import('react').MouseEvent) => void,
  *   isTitle?: boolean,
  *   enableResize?: boolean,
+ *   titleFieldVisibility?: {
+ *     isOpen?: boolean,
+ *     buttonRef?: import('react').RefObject<HTMLButtonElement | null>,
+ *     onToggle?: () => void,
+ *   } | null,
  * }} props
  */
 export default function ViewEngineHeaderCell({
@@ -25,6 +32,7 @@ export default function ViewEngineHeaderCell({
   onResizeMouseDown,
   isTitle = false,
   enableResize = true,
+  titleFieldVisibility = null,
 }) {
   const isSorted = sortDirection === "asc" || sortDirection === "desc";
 
@@ -41,6 +49,37 @@ export default function ViewEngineHeaderCell({
       >
         {label}
       </span>
+
+      {isTitle && titleFieldVisibility ? (
+        <button
+          ref={titleFieldVisibility.buttonRef}
+          type="button"
+          data-view-engine-table-action="true"
+          title="Показать/скрыть поля"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            titleFieldVisibility.onToggle?.();
+          }}
+          style={{
+            width: 24,
+            height: 24,
+            border: "none",
+            borderRadius: 6,
+            background: titleFieldVisibility.isOpen ? "#f1f5f9" : "transparent",
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 0,
+            margin: 0,
+            lineHeight: 1,
+            flex: "0 0 auto",
+          }}
+        >
+          <PlatformFieldVisibilityEyeIcon visible size={14} draggable={false} />
+        </button>
+      ) : null}
 
       {sortable ? (
         <TableSortToggleButton

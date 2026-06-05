@@ -4,6 +4,7 @@ import {
   OBJECT_VIEW_CONTRACT_SCHEMA_VERSION,
 } from "./objectViewContract";
 import { applyContractGuards, normalizePresentationTable } from "./contractGuards";
+import { mergeTablePresentationWithColumnsSettings } from "./columnVisibilitySettings";
 import { syncObjectViewContractWithCatalog } from "./syncProjectionWithCatalogFields";
 
 function withCatalogProjectionSync(contract, fallback = {}) {
@@ -279,9 +280,13 @@ export function normalizeObjectViewDefinition(rawView, fallback = {}) {
       },
       presentation: {
         table: normalizePresentationTable(
-          objectView?.presentation?.table,
+          mergeTablePresentationWithColumnsSettings(
+            objectView?.presentation?.table,
+            settings,
+          ),
           legacyProjection.fieldKeys,
           legacyProjection.titleFieldKey,
+          { preserveExactColumnOrder: true },
         ),
         card: objectView?.presentation?.card || null,
       },
@@ -300,6 +305,11 @@ export function normalizeObjectViewDefinition(rawView, fallback = {}) {
 }
 
 function mergeObjectViewContract(base, objectView, rawView, fallback = {}) {
+  const settings =
+    rawView?.settings_json && typeof rawView.settings_json === "object"
+      ? rawView.settings_json
+      : {};
+
   const projection = { ...(objectView.projection || {}) };
   const filters = readFiltersFromRaw(rawView, objectView);
 
@@ -355,12 +365,16 @@ function mergeObjectViewContract(base, objectView, rawView, fallback = {}) {
     },
     presentation: {
       table: normalizePresentationTable(
-        {
-          ...base.presentation.table,
-          ...(objectView.presentation?.table || {}),
-        },
+        mergeTablePresentationWithColumnsSettings(
+          {
+            ...base.presentation.table,
+            ...(objectView.presentation?.table || {}),
+          },
+          settings,
+        ),
         Array.isArray(projection.fieldKeys) ? projection.fieldKeys : [],
         projection.titleFieldKey,
+        { preserveExactColumnOrder: true },
       ),
       card: objectView.presentation?.card || base.presentation?.card || null,
     },

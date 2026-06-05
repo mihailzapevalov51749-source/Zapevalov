@@ -11,6 +11,7 @@ SYSTEM_FIELD_KEY_PREFIX = "__system_"
 
 SYSTEM_FIELD_KEYS = {
     "id": f"{SYSTEM_FIELD_KEY_PREFIX}id",
+    "record_number": f"{SYSTEM_FIELD_KEY_PREFIX}record_number",
     "created_by": f"{SYSTEM_FIELD_KEY_PREFIX}created_by",
     "created_at": f"{SYSTEM_FIELD_KEY_PREFIX}created_at",
     "updated_by": f"{SYSTEM_FIELD_KEY_PREFIX}updated_by",
@@ -21,6 +22,7 @@ SYSTEM_FIELD_KEYS = {
 RUNTIME_ENTITY_SORT_FIELDS = frozenset(
     {
         "id",
+        "record_number",
         "created_at",
         "updated_at",
         "created_by",
@@ -30,6 +32,7 @@ RUNTIME_ENTITY_SORT_FIELDS = frozenset(
 )
 
 SYSTEM_FIELD_ORDER_FOR_ALL_VIEW = (
+    SYSTEM_FIELD_KEYS["record_number"],
     SYSTEM_FIELD_KEYS["record_version"],
     SYSTEM_FIELD_KEYS["created_by"],
     SYSTEM_FIELD_KEYS["created_at"],
@@ -39,6 +42,15 @@ SYSTEM_FIELD_ORDER_FOR_ALL_VIEW = (
 )
 
 SYSTEM_FIELD_CATALOG_DEFINITIONS: tuple[dict[str, Any], ...] = (
+    {
+        "key": SYSTEM_FIELD_KEYS["record_number"],
+        "name": "№ записи",
+        "field_type": FieldType.NUMBER.value,
+        "is_system": True,
+        "is_required": True,
+        "is_readonly": True,
+        "sort_order": 1000,
+    },
     {
         "key": SYSTEM_FIELD_KEYS["created_by"],
         "name": "Создал",
@@ -98,6 +110,11 @@ _LEGACY_SYSTEM_VALUE_KEYS = frozenset(
         "updated_at",
         "version",
         "record_version",
+        "record_number",
+        "system_number",
+        "systemNumber",
+        "row_number",
+        "rowNumber",
         *SYSTEM_FIELD_KEYS.values(),
     },
 )
@@ -146,6 +163,7 @@ def merge_catalog_fields_with_system(fields: list[dict[str, Any]] | None) -> lis
 def system_values_from_entity(entity: RuntimeEntity) -> dict[str, Any]:
     return {
         SYSTEM_FIELD_KEYS["id"]: str(entity.id),
+        SYSTEM_FIELD_KEYS["record_number"]: entity.record_number,
         SYSTEM_FIELD_KEYS["created_by"]: entity.created_by,
         SYSTEM_FIELD_KEYS["created_at"]: entity.created_at.isoformat()
         if entity.created_at
@@ -163,6 +181,7 @@ def runtime_sort_field_for_column_key(column_key: str | None) -> str:
 
     mapping = {
         SYSTEM_FIELD_KEYS["id"]: "id",
+        SYSTEM_FIELD_KEYS["record_number"]: "record_number",
         SYSTEM_FIELD_KEYS["created_at"]: "created_at",
         SYSTEM_FIELD_KEYS["updated_at"]: "updated_at",
         SYSTEM_FIELD_KEYS["created_by"]: "created_by",

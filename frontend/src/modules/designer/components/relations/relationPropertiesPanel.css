@@ -1,0 +1,221 @@
+.designer-relation-properties-panel .designer-properties-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.designer-relation-properties-panel .designer-properties-panel__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--designer-text, #0f172a);
+}
+
+.designer-relation-properties-panel .designer-properties-panel__close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--designer-border, #e2e8f0);
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.designer-relation-properties-panel .designer-properties-panel__close:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.designer-relation-properties-panel .designer-properties-panel__body {
+  padding: 12px 16px 16px;
+}
+
+.designer-relation-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.designer-relation-form__identity {
+  padding: 10px 12px;
+  border: 1px solid var(--designer-border, #e2e8f0);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.designer-relation-form__name {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--designer-text, #0f172a);
+  box-shadow: none;
+}
+
+.designer-relation-form__name:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.designer-relation-form__key {
+  display: block;
+  margin-top: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.3;
+  color: #64748b;
+}
+
+.designer-relation-form__flags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+}
+
+.designer-relation-form__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  color: #334155;
+  cursor: pointer;
+  user-select: none;
+}
+
+.designer-relation-form__flag input {
+  margin: 0;
+}
+
+.designer-relation-form__group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.designer-relation-form__group .designer-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.designer-relation-form__group .designer-input,
+.designer-relation-form__group .designer-select,
+.designer-relation-form__group .designer-textarea {
+  font-size: 13px;
+}
+
+.designer-relation-form__group .designer-textarea {
+  min-height: 56px;
+  resize: vertical;
+}
+
+.designer-relation-hierarchy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.designer-relation-hierarchy__section-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.designer-relation-hierarchy__hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #64748b;
+  cursor: help;
+}
+
+.designer-relation-hierarchy__hint-icon {
+  margin-right: 4px;
+}
+
+.designer-relation-hierarchy__parent {
+  min-width: 0;
+}
+
+.designer-relation-hierarchy__child-terms {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 10px;
+}
+
+.designer-relation-hierarchy__inflections {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 10px;
+}
+
+.designer-relation-hierarchy__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.designer-relation-hierarchy__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  min-width: 0;
+}
+
+.designer-relation-hierarchy__label-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.designer-relation-hierarchy__badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 999px;
+  line-height: 1.2;
+}
+
+.designer-relation-hierarchy__badge--manual {
+  color: #64748b;
+  background: #f1f5f9;
+}
+
+.designer-relation-hierarchy__badge--auto {
+  color: #475569;
+  background: #eff6ff;
+}
+
+.designer-relation-hierarchy__field .designer-input {
+  font-size: 13px;
+  padding: 6px 8px;
+}
+
+@media (max-width: 420px) {
+  .designer-relation-hierarchy__child-terms,
+  .designer-relation-hierarchy__inflections {
+    grid-template-columns: 1fr;
+  }
+}

@@ -14,6 +14,10 @@ import {
   resolveObjectTabRouteKey,
 } from "./services/resolveObjectTabDisplayLabel";
 import { syncObjectViewContractWithCatalog } from "./services/syncProjectionWithCatalogFields";
+import {
+  resolveDesignerTableViewActions,
+  resolveOfficeTableViewActions,
+} from "./services/resolveOfficeTableViewActions";
 import { buildOfficeTableRepresentationsPrefsScopeKey } from "./table/representations/objectTableRepresentationsPrefs";
 import { getStoredCurrentUserId } from "./table/preferences/objectTableUserViewsStorage";
 import {
@@ -40,6 +44,11 @@ export default function ObjectViewHost({
   tenantId,
   objectTypeId = null,
   objectTypeKey,
+  /** Object tab key from Studio (e.g. default_table) — not user representation key */
+  objectTabKey = null,
+  /** Office: explicit user representation key from route/UI */
+  requestedRepresentationKey = null,
+  /** @deprecated Use objectTabKey — kept for Studio/runtime callers */
   viewKey = null,
   viewType = "table",
   mode = "data",
@@ -58,6 +67,7 @@ export default function ObjectViewHost({
   const [runtimeCatalog, setRuntimeCatalog] = useState(null);
 
   const isOfficeRuntime = source === "portal";
+  const resolvedObjectTabKey = objectTabKey ?? viewKey;
 
   const allowDesignerApi = useMemo(() => {
     if (isOfficeRuntime) {
@@ -83,7 +93,8 @@ export default function ObjectViewHost({
     tenantId,
     objectTypeId,
     objectTypeKey,
-    requestedViewKey: viewKey,
+    requestedRepresentationKey: isOfficeRuntime ? requestedRepresentationKey : null,
+    requestedViewKey: isOfficeRuntime ? null : resolvedObjectTabKey,
     pageSize,
     mode,
     source,
@@ -168,8 +179,27 @@ export default function ObjectViewHost({
     resolvedContract: resolvedContractForSession,
     activeViewKey: definitions.activeViewKey,
     presentationPrefsScope,
-    persistUserViewOnPresentationChange: isOfficeRuntime,
+    persistUserViewOnPresentationChange: false,
+    catalog: runtimeCatalog,
+    objectTypeKey,
   });
+
+  useEffect(() => {
+    if (!session.isDirty) {
+      return undefined;
+    }
+
+    function handleBeforeUnload(event) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [session.isDirty]);
 
   const query = useObjectViewQuery({
     tenantId,
@@ -211,10 +241,10 @@ export default function ObjectViewHost({
   const objectTabRouteKey = useMemo(
     () =>
       resolveObjectTabRouteKey({
-        routeViewKey: viewKey,
+        routeViewKey: resolvedObjectTabKey,
         publishedTableViewKey: definitions.publishedTableViewKey,
       }),
-    [viewKey, definitions.publishedTableViewKey],
+    [resolvedObjectTabKey, definitions.publishedTableViewKey],
   );
 
   const activeObjectTabLabel = useMemo(
@@ -278,28 +308,23 @@ export default function ObjectViewHost({
       Boolean(activeMeta?.viewId);
 
   const viewActions = useMemo(() => {
-    const viewId = definitions.resolvedContract?.meta?.viewId;
-    const userViewId = definitions.resolvedContract?.meta?.userViewId;
-    const isUserView = definitions.resolvedContract?.meta?.isUserView === true;
-    const isSystem = definitions.resolvedContract?.meta?.isSystem === true;
-    const isDefault = definitions.resolvedContract?.meta?.isDefault === true;
+    const contract = session.effectiveContract || definitions.resolvedContract;
 
     if (isOfficeRuntime) {
-      return {
-        canRename: isUserView && Boolean(userViewId),
-        canDuplicate: Boolean(tenantId && objectTypeKey),
-        canDelete: isUserView && Boolean(userViewId),
-        canSetDefault: !isDefault,
-      };
+      return resolveOfficeTableViewActions(contract, {
+        tenantId,
+        objectTypeKey,
+      });
     }
 
-    return {
-      canRename: allowDesignerApi && Boolean(viewId) && !isSystem,
-      canDuplicate: allowDesignerApi && Boolean(tenantId && objectTypeId),
-      canDelete: allowDesignerApi && Boolean(viewId) && !isSystem,
-      canSetDefault: allowDesignerApi && Boolean(viewId) && !isDefault && !isSystem,
-    };
+    return resolveDesignerTableViewActions(contract, {
+      allowDesignerApi,
+      tenantId,
+      objectTypeId,
+      objectTypeKey,
+    });
   }, [
+    session.effectiveContract,
     definitions.resolvedContract,
     tenantId,
     objectTypeId,
@@ -327,7 +352,10 @@ export default function ObjectViewHost({
     const savedQuickFilterId =
       session.effectiveContract.query?.filters?.defaultQuickFilterId ?? null;
 
-    const result = await persistence.saveView(session.effectiveContract);
+    const result = await persistence.saveView(session.effectiveContract, {
+      columnWidthsBaseline:
+        catalogSyncedResolvedContract?.presentation?.table?.columnWidths,
+    });
 
     if (!result.ok) {
       return false;
@@ -414,9 +442,13 @@ export default function ObjectViewHost({
     return result?.ok === true;
   }, [definitions, session, notifySchemaChanged, allowDesignerApi]);
 
-  const handleDelete = useCallback(async () => {
-    const userViewId = definitions.resolvedContract?.meta?.userViewId;
-    const viewId = definitions.resolvedContract?.meta?.viewId;
+  const handleDelete = useCallback(async (representationContract = null) => {
+    const actionContract =
+      representationContract ||
+      session.effectiveContract ||
+      definitions.resolvedContract;
+    const userViewId = actionContract?.meta?.userViewId;
+    const viewId = actionContract?.meta?.viewId;
 
     if (isOfficeRuntime) {
       if (!userViewId) {
@@ -426,7 +458,10 @@ export default function ObjectViewHost({
       return false;
     }
 
-    const deletedKey = definitions.activeViewKey;
+    const deletedKey = String(actionContract?.key || "").trim();
+    const isDeletingActiveView =
+      deletedKey === String(definitions.activeViewKey || "").trim();
+
     const result = isOfficeRuntime
       ? await persistence.deleteView(userViewId)
       : await persistence.deleteView(viewId);
@@ -436,10 +471,19 @@ export default function ObjectViewHost({
     }
 
     const refreshed = await definitions.refreshViews();
+
+    if (!isDeletingActiveView) {
+      if (allowDesignerApi) {
+        await notifySchemaChanged();
+      }
+
+      return true;
+    }
+
     session.markSaved();
 
     const remaining = (refreshed || []).filter(
-      (item) => String(item.contract?.key) !== String(deletedKey),
+      (item) => String(item.contract?.key) !== deletedKey,
     );
 
     const nextView =
@@ -465,37 +509,58 @@ export default function ObjectViewHost({
     isOfficeRuntime,
   ]);
 
-  const handleSetDefault = useCallback(async () => {
-    const result = await persistence.setDefaultView(definitions.resolvedContract);
+  const handleSetDefault = useCallback(
+    async (contract) => {
+      const target = contract || definitions.resolvedContract;
 
-    if (!result.ok) {
-      return false;
-    }
+      if (!target || target.meta?.isDefault === true) {
+        return true;
+      }
 
-    await definitions.refreshViews();
+      const result = await persistence.setDefaultView(target);
 
-    if (allowDesignerApi) {
-      await notifySchemaChanged();
-    }
+      if (!result.ok) {
+        return false;
+      }
 
-    return true;
-  }, [persistence, definitions, notifySchemaChanged, allowDesignerApi]);
+      await definitions.refreshViews();
+
+      if (target.key) {
+        definitions.selectView(target.key);
+      }
+
+      if (allowDesignerApi) {
+        await notifySchemaChanged();
+      }
+
+      return true;
+    },
+    [persistence, definitions, notifySchemaChanged, allowDesignerApi],
+  );
 
   const handleSelectQuickFilter = useCallback(
     (filterId) => {
-      session.setActiveQuickFilter(filterId);
+      const normalized =
+        filterId == null || filterId === "" ? null : String(filterId);
+      const current = session.activeQuickFilterId;
+
+      session.setActiveQuickFilter(
+        normalized && current === normalized ? null : normalized,
+      );
       query.resetOffset?.();
     },
     [session, query],
   );
 
   const handleSelectTableBaseState = useCallback(() => {
+    session.setActiveQuickFilter?.(null);
+
     if (isBaseStateActive) {
+      query.resetOffset?.();
       return;
     }
 
     definitions.selectView(TABLE_BASE_STATE_KEY);
-    session.setActiveQuickFilter?.(null);
     query.resetOffset?.();
   }, [definitions, isBaseStateActive, session, query]);
 

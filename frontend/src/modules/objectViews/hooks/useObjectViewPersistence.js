@@ -31,7 +31,7 @@ export default function useObjectViewPersistence({ tenantId }) {
   const [actionError, setActionError] = useState("");
 
   const saveView = useCallback(
-    async (contract) => {
+    async (contract, options = {}) => {
       const viewId = contract?.meta?.viewId;
 
       if (!tenantId || !viewId) {
@@ -42,7 +42,10 @@ export default function useObjectViewPersistence({ tenantId }) {
       setSaveError("");
 
       try {
-        const payload = buildObjectViewPayload(contract, { mode: "update" });
+        const payload = buildObjectViewPayload(contract, {
+          mode: "update",
+          columnWidthsBaseline: options.columnWidthsBaseline,
+        });
         const updated = await designerApi.updateView(tenantId, viewId, payload);
 
         return { ok: true, raw: updated };

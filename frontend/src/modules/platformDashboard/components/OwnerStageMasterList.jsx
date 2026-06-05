@@ -1,18 +1,6 @@
 import { useState } from "react";
 
-function formatReadinessMeta(readiness) {
-  if (readiness == null || Number.isNaN(readiness)) {
-    return "—";
-  }
-  return `${readiness}%`;
-}
-
-function formatStageListMeta(stage, preferOwnerStatus) {
-  if (preferOwnerStatus && stage.ownerStatus) {
-    return stage.ownerStatus;
-  }
-  return formatReadinessMeta(stage.readiness);
-}
+import { formatReadinessListMeta } from "../dashboard/resolveStageDashboardProgress";
 
 function StageRow({
   stage,
@@ -20,7 +8,6 @@ function StageRow({
   expandedDescription,
   onToggleDescription,
   onSelect,
-  preferOwnerStatus,
 }) {
   const isDescriptionOpen = expandedDescription === stage.id;
 
@@ -60,7 +47,7 @@ function StageRow({
             ) : null}
           </span>
           <span className="platform-dev__stage-readiness">
-            {formatStageListMeta(stage, preferOwnerStatus)}
+            {formatReadinessListMeta(stage.readiness)}
           </span>
         </button>
       </div>
@@ -76,7 +63,6 @@ export default function OwnerStageMasterList({
   selectedStageId,
   onSelectStage,
   emptyMessage = "Этапов пока нет.",
-  preferOwnerStatus = false,
 }) {
   const [expandedDescriptionId, setExpandedDescriptionId] = useState(null);
 
@@ -98,7 +84,6 @@ export default function OwnerStageMasterList({
           expandedDescription={expandedDescriptionId}
           onToggleDescription={handleToggleDescription}
           onSelect={onSelectStage}
-          preferOwnerStatus={preferOwnerStatus}
         />
       ))}
     </div>

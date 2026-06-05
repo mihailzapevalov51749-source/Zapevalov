@@ -34,7 +34,8 @@ def test_merge_catalog_fields_places_system_fields_at_end():
     keys = [field["key"] for field in merged]
 
     assert keys[:2] == ["title", "priority"]
-    assert keys[-6:] == [
+    assert keys[-7:] == [
+        SYSTEM_FIELD_KEYS["record_number"],
         SYSTEM_FIELD_KEYS["created_by"],
         SYSTEM_FIELD_KEYS["created_at"],
         SYSTEM_FIELD_KEYS["updated_by"],
@@ -58,10 +59,12 @@ def test_system_values_from_entity_maps_entity_columns():
         created_at=now,
         updated_at=now,
         record_version=3,
+        record_number=12,
     )
 
     values = system_values_from_entity(entity)
 
+    assert values[SYSTEM_FIELD_KEYS["record_number"]] == 12
     assert values[SYSTEM_FIELD_KEYS["id"]] == str(entity_id)
     assert values[SYSTEM_FIELD_KEYS["created_by"]] == 10
     assert values[SYSTEM_FIELD_KEYS["updated_by"]] == 11

@@ -4,6 +4,11 @@ from pathlib import Path
 from app.modules.platform_dashboard_analyzer.types import BackendScanResult
 
 SCANNED_BACKEND_EVIDENCE_FILES = (
+    "modules/pages/runtime_access.py",
+    "modules/navigation/page_status_filter.py",
+    "modules/navigation/service.py",
+    "modules/navigation/page_navigation_visibility.py",
+    "modules/platform/designer/pages/service.py",
     "modules/platform/runtime/relation_instances/router.py",
     "modules/platform/runtime/relation_instances/test_relation_instances.py",
     "modules/platform/runtime/search/service.py",

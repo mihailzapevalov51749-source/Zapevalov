@@ -5,8 +5,17 @@ from fastapi import APIRouter, Depends, Path, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.modules.auth.dependencies import get_current_user
 from app.modules.platform.runtime.entities import service
-from app.modules.platform.runtime.entities.schemas import EntityCreate, EntityRead, EntityUpdate
+from app.modules.users.models import User
+from app.modules.platform.runtime.entities.schemas import (
+    EntityCreate,
+    EntityDeletePreview,
+    EntityDeleteRequest,
+    EntityDeleteResult,
+    EntityRead,
+    EntityUpdate,
+)
 from app.modules.platform.shared.dependencies import require_tenant
 
 TenantIdPath = Annotated[
@@ -41,8 +50,15 @@ def create_entity(
     payload: EntityCreate,
     db: Session = Depends(get_db),
     _tenant: int = Depends(require_tenant),
+    current_user: User = Depends(get_current_user),
 ):
-    return service.create_entity(db, tenant_id, object_type_key, payload)
+    return service.create_entity(
+        db,
+        tenant_id,
+        object_type_key,
+        payload,
+        current_user=current_user,
+    )
 
 
 @entities_router.get(
@@ -87,6 +103,43 @@ def update_entity(
     return service.update_entity(db, tenant_id, object_type_key, entity_id, payload)
 
 
+@entities_router.get(
+    "/tenants/{tenant_id}/{object_type_key}/{entity_id}/delete-preview",
+    response_model=EntityDeletePreview,
+)
+def preview_entity_delete(
+    tenant_id: TenantIdPath,
+    object_type_key: ObjectTypeKeyPath,
+    entity_id: EntityIdPath,
+    db: Session = Depends(get_db),
+    _tenant: int = Depends(require_tenant),
+):
+    return service.preview_entity_delete(db, tenant_id, object_type_key, entity_id)
+
+
+@entities_router.post(
+    "/tenants/{tenant_id}/{object_type_key}/{entity_id}/delete",
+    response_model=EntityDeleteResult,
+)
+def delete_entity_with_scenario(
+    tenant_id: TenantIdPath,
+    object_type_key: ObjectTypeKeyPath,
+    entity_id: EntityIdPath,
+    payload: EntityDeleteRequest,
+    db: Session = Depends(get_db),
+    _tenant: int = Depends(require_tenant),
+    current_user: User = Depends(get_current_user),
+):
+    return service.delete_entity_with_scenario(
+        db,
+        tenant_id,
+        object_type_key,
+        entity_id,
+        payload,
+        current_user=current_user,
+    )
+
+
 @entities_router.delete(
     "/tenants/{tenant_id}/{object_type_key}/{entity_id}",
     response_model=EntityRead,
@@ -97,5 +150,12 @@ def delete_entity(
     entity_id: EntityIdPath,
     db: Session = Depends(get_db),
     _tenant: int = Depends(require_tenant),
+    current_user: User = Depends(get_current_user),
 ):
-    return service.delete_entity(db, tenant_id, object_type_key, entity_id)
+    return service.delete_entity(
+        db,
+        tenant_id,
+        object_type_key,
+        entity_id,
+        current_user=current_user,
+    )

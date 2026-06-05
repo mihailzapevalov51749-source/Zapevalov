@@ -68,6 +68,7 @@ class RuntimeEntity(Base):
         default=1,
         server_default="1",
     )
+    record_number = Column(Integer, nullable=False, index=True)
     deleted_at = Column(DateTime(timezone=True), nullable=True)
 
     values = relationship(
@@ -81,6 +82,12 @@ class RuntimeEntity(Base):
         Index("ix_runtime_entities_tenant_catalog_version", "tenant_id", "catalog_version"),
         Index("ix_runtime_entities_tenant_status", "tenant_id", "status"),
         Index("ix_runtime_entities_tenant_deleted_at", "tenant_id", "deleted_at"),
+        UniqueConstraint(
+            "tenant_id",
+            "object_type_key",
+            "record_number",
+            name="uq_runtime_entities_object_type_record_number",
+        ),
     )
 
 

@@ -1,11 +1,5 @@
-import { useMemo } from "react";
-
-import eyeOpenIcon from "../../../../assets/icons/eye-open.png";
-import eyeClosedIcon from "../../../../assets/icons/eye-closed.png";
-import {
-  findCatalogObjectType,
-  getObjectTypeFields,
-} from "../services/tableModelAdapter";
+import PlatformFieldVisibilityEyeIcon from "../../../../shared/fieldVisibility/PlatformFieldVisibilityEyeIcon";
+import { isTableRowNumberPresentationFieldKey } from "../../../../shared/runtime/systemEntityFields";import { resolveTableFieldLabels } from "../../services/columnPresentationUtils";
 
 export default function ObjectTableViewSettingsFieldsDetails({
   effectiveContract,
@@ -13,29 +7,7 @@ export default function ObjectTableViewSettingsFieldsDetails({
   objectTypeKey,
   sessionApi,
 }) {
-  const fieldLabels = useMemo(() => {
-    const objectType = findCatalogObjectType(catalog, objectTypeKey);
-    const fields = getObjectTypeFields(objectType);
-    const labels = new Map();
-
-    for (const field of fields) {
-      const key = String(field?.key || "").trim();
-
-      if (!key) {
-        continue;
-      }
-
-      labels.set(key, String(field?.name || field?.label || key));
-    }
-
-    for (const key of effectiveContract?.projection?.fieldKeys || []) {
-      if (!labels.has(key)) {
-        labels.set(key, String(key));
-      }
-    }
-
-    return labels;
-  }, [catalog, objectTypeKey, effectiveContract]);
+  const fieldLabels = resolveTableFieldLabels(catalog, objectTypeKey, effectiveContract);
 
   const columnOrder = sessionApi?.panelColumnOrder || [];
   const hiddenSet = new Set(sessionApi?.hiddenFieldKeys || []);
@@ -59,6 +31,8 @@ export default function ObjectTableViewSettingsFieldsDetails({
         const isHidden = hiddenSet.has(fieldKey);
         const label = fieldLabels.get(fieldKey) || fieldKey;
         const isTitle = titleFieldKey === fieldKey;
+        const isSystemPresentationField =
+          isTitle || isTableRowNumberPresentationFieldKey(fieldKey);
 
         return (
           <button
@@ -70,14 +44,8 @@ export default function ObjectTableViewSettingsFieldsDetails({
             title={isTitle ? "Заголовок нельзя скрыть" : isHidden ? "Показать" : "Скрыть"}
           >
             <span className="ot-view-settings-panel__field-left">
-              <img
-                src={isHidden ? eyeClosedIcon : eyeOpenIcon}
-                alt=""
-                width={16}
-                height={16}
-              />
-              {label}
-              {isTitle ? (
+              <PlatformFieldVisibilityEyeIcon visible={!isHidden} size={16} />              {label}
+              {isSystemPresentationField ? (
                 <span style={{ color: "#94a3b8", fontSize: 10 }}>системное</span>
               ) : null}
             </span>

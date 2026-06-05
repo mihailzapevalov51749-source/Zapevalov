@@ -1,9 +1,28 @@
 from datetime import datetime, timezone
 from uuid import UUID
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.modules.platform.runtime.entities.models import RuntimeEntity, RuntimeEntityValue
+
+
+def get_next_record_number(
+    db: Session,
+    tenant_id: int,
+    object_type_key: str,
+) -> int:
+    """Monotonic record number per object type (includes soft-deleted rows)."""
+    max_number = (
+        db.query(func.max(RuntimeEntity.record_number))
+        .filter(
+            RuntimeEntity.tenant_id == tenant_id,
+            RuntimeEntity.object_type_key == object_type_key,
+        )
+        .scalar()
+    )
+
+    return int(max_number or 0) + 1
 
 
 def create_entity(db: Session, entity: RuntimeEntity) -> RuntimeEntity:

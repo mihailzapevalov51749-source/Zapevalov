@@ -1,0 +1,61 @@
+[data-platform-modal-key="object_table_view_filters_panel"][data-platform-modal-overlay] {
+  background: rgba(15, 23, 42, 0.2);
+}
+
+[data-platform-modal-key="object_table_view_filters_panel"][data-platform-modal-panel] {
+  width: 760px;
+  max-width: calc(100vw - 32px);
+  min-width: 0;
+  max-height: calc(100vh - 32px);
+  min-height: 0;
+  height: auto !important;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 16px 50px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+  font-family: Inter, Manrope, Arial, sans-serif;
+}
+
+[data-platform-modal-key="object_table_view_filters_panel"][data-platform-modal-panel] > div:first-child {
+  min-height: 0 !important;
+  flex: 0 1 auto !important;
+  padding: 0 !important;
+}
+
+[data-platform-modal-key="object_table_view_filters_panel"][data-platform-modal-panel] > div:nth-child(2) {
+  padding: 0 !important;
+  border-top: 1px solid #e2e8f0 !important;
+  flex-shrink: 0;
+}
+
+.ot-filters-value-editor {
+  min-width: 0;
+  width: 100%;
+}
+
+.ot-filters-value-editor .field-editor-input,
+.ot-filters-value-editor input[type="date"],
+.ot-filters-value-editor input[type="datetime-local"] {
+  height: 38px;
+  min-height: 38px;
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #dbe3ef;
+  box-sizing: border-box;
+  font-family: Inter, Manrope, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 10px;
+}
+
+.ot-filters-value-editor--user button {
+  height: 38px;
+  min-height: 38px;
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #dbe3ef;
+  box-sizing: border-box;
+  font-family: Inter, Manrope, Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+}

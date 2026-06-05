@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { getPageFull, updatePage } from "../api/pagesApi";
+import {
+  resolveOfficePageLoadError,
+  shouldRequestOfficePageAccess,
+} from "./utils/officePageAccess";
 import { updateNavigationItem } from "../api/navigationApi";
 import { createSection } from "../api/sectionsApi";
 import { createBlock } from "../api/blocksApi";
@@ -445,8 +449,11 @@ export default function PortalPageView() {
   const pageSections = pageData?.sections;
   const sections = pageSections ?? EMPTY_SECTIONS;
 
-  const { navigation, navigationError, reloadNavigation } =
-    useNavigationTree(portalId);
+  const [navigationEditMode, setNavigationEditMode] = useState(false);
+  const { navigation, navigationError, reloadNavigation } = useNavigationTree(
+    portalId,
+    { forEditMode: navigationEditMode },
+  );
 
   useEffect(() => {
     const handlePortalNavigationReload = () => {
@@ -801,11 +808,13 @@ export default function PortalPageView() {
         setPageData(null);
       }
 
-      const result = await getPageFull(pageId);
+      const result = await getPageFull(pageId, {
+        officeAccess: shouldRequestOfficePageAccess(location.pathname),
+      });
       setPageData(result);
     } catch (e) {
       console.error(e);
-      setError("Ошибка загрузки страницы");
+      setError(resolveOfficePageLoadError(e));
     }
   };
 
@@ -1569,6 +1578,7 @@ export default function PortalPageView() {
       onNavigateToPath={(path) => navigate(path)}
       onSidebarItemAction={handleSidebarItemAction}
       reloadNavigation={reloadNavigation}
+      onNavigationEditModeChange={setNavigationEditMode}
       menuScale={menuScale}
       onChangeMenuScale={changeMenuScale}
       headerContract={runtimeHeaderModel?.contract}

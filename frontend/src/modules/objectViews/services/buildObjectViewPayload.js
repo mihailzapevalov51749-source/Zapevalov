@@ -1,7 +1,35 @@
 import { OBJECT_VIEW_CONTRACT_SCHEMA_VERSION } from "./objectViewContract";
 
+function buildViewColumnsSettings(contract) {
+  const table = contract.presentation?.table || {};
+  const projectionKeys = contract.projection?.fieldKeys || [];
+  const hidden = new Set(
+    Array.isArray(table.hiddenFieldKeys) ? table.hiddenFieldKeys : [],
+  );
+  const orderSource =
+    Array.isArray(table.columnOrder) && table.columnOrder.length
+      ? table.columnOrder
+      : contract.projection?.fieldOrder || projectionKeys;
+
+  return orderSource.map((fieldKey) => ({
+    fieldKey: String(fieldKey),
+    visible: !hidden.has(String(fieldKey)),
+    width:
+      table.columnWidths && table.columnWidths[fieldKey] != null
+        ? Number(table.columnWidths[fieldKey])
+        : null,
+  }));
+}
+
 function buildSettingsJson(contract) {
+  const table = contract.presentation?.table || {};
+  const columnOrder =
+    Array.isArray(table.columnOrder) && table.columnOrder.length
+      ? [...table.columnOrder]
+      : [...(contract.projection?.fieldOrder || contract.projection?.fieldKeys || [])];
+
   return {
+    columns: buildViewColumnsSettings(contract),
     objectView: {
       schemaVersion: OBJECT_VIEW_CONTRACT_SCHEMA_VERSION,
       viewType: contract.viewType,
@@ -18,7 +46,7 @@ function buildSettingsJson(contract) {
     },
     projection: {
       visible_fields: [...(contract.projection.fieldKeys || [])],
-      field_order: [...(contract.projection.fieldOrder || [])],
+      field_order: columnOrder,
       title_field: contract.projection.titleFieldKey,
       default_sort: contract.query.sort.rules[0]
         ? {
@@ -52,7 +80,12 @@ function buildFiltersJson(contract) {
  * }} [options]
  */
 export function buildObjectViewPayload(contract, options = {}) {
-  const { mode = "update", overrides = {} } = options;
+  const { mode = "update", overrides = {}, columnWidthsBaseline = undefined } = options;
+
+  const tableColumnOrder =
+    overrides.presentation?.table?.columnOrder ??
+    contract.presentation?.table?.columnOrder;
+  const hasColumnOrder = Array.isArray(tableColumnOrder) && tableColumnOrder.length > 0;
 
   const merged = {
     ...contract,
@@ -63,6 +96,11 @@ export function buildObjectViewPayload(contract, options = {}) {
     projection: {
       ...contract.projection,
       ...(overrides.projection || {}),
+      ...(hasColumnOrder
+        ? {
+            fieldOrder: [...tableColumnOrder],
+          }
+        : {}),
     },
     query: {
       ...contract.query,
@@ -90,6 +128,14 @@ export function buildObjectViewPayload(contract, options = {}) {
       ...(overrides.meta || {}),
     },
   };
+
+  if (columnWidthsBaseline !== undefined) {
+    merged.presentation.table.columnWidths = {
+      ...(columnWidthsBaseline && typeof columnWidthsBaseline === "object"
+        ? columnWidthsBaseline
+        : {}),
+    };
+  }
 
   const settings_json = buildSettingsJson(merged);
   const filters_json = buildFiltersJson(merged);

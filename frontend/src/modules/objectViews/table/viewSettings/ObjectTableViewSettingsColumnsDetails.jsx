@@ -1,10 +1,5 @@
-import { useMemo } from "react";
-
-import {
-  findCatalogObjectType,
-  getObjectTypeFields,
-} from "../services/tableModelAdapter";
 import { canMoveTableColumn } from "../../services/tableColumnOrder";
+import { resolveTableFieldLabels } from "../../services/columnPresentationUtils";
 
 export default function ObjectTableViewSettingsColumnsDetails({
   effectiveContract,
@@ -12,32 +7,11 @@ export default function ObjectTableViewSettingsColumnsDetails({
   objectTypeKey,
   sessionApi,
 }) {
-  const fieldLabels = useMemo(() => {
-    const objectType = findCatalogObjectType(catalog, objectTypeKey);
-    const fields = getObjectTypeFields(objectType);
-    const labels = new Map();
-
-    for (const field of fields) {
-      const key = String(field?.key || "").trim();
-
-      if (!key) {
-        continue;
-      }
-
-      labels.set(key, String(field?.name || field?.label || key));
-    }
-
-    for (const key of effectiveContract?.projection?.fieldKeys || []) {
-      if (!labels.has(key)) {
-        labels.set(key, String(key));
-      }
-    }
-
-    return labels;
-  }, [catalog, objectTypeKey, effectiveContract]);
+  const fieldLabels = resolveTableFieldLabels(catalog, objectTypeKey, effectiveContract);
 
   const columnOrder = sessionApi?.panelColumnOrder || [];
   const titleFieldKey = effectiveContract?.projection?.titleFieldKey || null;
+  const columnMoveOptions = sessionApi?.columnMoveOptions || {};
 
   if (columnOrder.length === 0) {
     return (
@@ -58,7 +32,13 @@ export default function ObjectTableViewSettingsColumnsDetails({
               className="ot-view-settings-panel__column-move"
               title="Выше"
               disabled={
-                !canMoveTableColumn(fieldKey, "up", columnOrder, titleFieldKey)
+                !canMoveTableColumn(
+                  fieldKey,
+                  "up",
+                  columnOrder,
+                  titleFieldKey,
+                  columnMoveOptions,
+                )
               }
               onClick={() => sessionApi?.moveColumn?.(fieldKey, "up")}
             >
@@ -74,6 +54,7 @@ export default function ObjectTableViewSettingsColumnsDetails({
                   "down",
                   columnOrder,
                   titleFieldKey,
+                  columnMoveOptions,
                 )
               }
               onClick={() => sessionApi?.moveColumn?.(fieldKey, "down")}

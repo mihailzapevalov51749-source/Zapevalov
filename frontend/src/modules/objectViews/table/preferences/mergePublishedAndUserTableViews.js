@@ -16,13 +16,11 @@ function applyUserDefaultFlags(views, defaultViewKey) {
   );
 
   return views.map((item) => {
-    const isUser = item.contract?.meta?.isUserView === true;
     const key = item.contract?.key;
-
     let isDefault = false;
 
-    if (defaultViewKey === key) {
-      isDefault = true;
+    if (defaultViewKey) {
+      isDefault = defaultViewKey === key;
     } else if (!hasUserDefault && item.contract?.meta?.isDefault === true) {
       isDefault = true;
     }

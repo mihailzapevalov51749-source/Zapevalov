@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
+from app.modules.platform.shared.default_value import validate_default_value_json
 from app.modules.platform.shared.enums import FieldType
 
 RELATION_FIELD_ROLES = frozenset({"source", "target"})
@@ -116,13 +117,20 @@ def validate_relation_field_for_publish(
     base_path = f"fields[{field_key}]"
 
     if default_value_json is not None:
-        issues.append(
-            RelationFieldPublishIssue(
-                code="relation_field_default_value_forbidden",
-                path=f"{base_path}.default_value_json",
-                message="relation field не использует default_value_json",
-            ),
-        )
+        try:
+            validate_default_value_json(
+                field_type=FieldType.RELATION,
+                default_value_json=default_value_json,
+                settings_json=settings_json or {},
+            )
+        except ValueError as exc:
+            issues.append(
+                RelationFieldPublishIssue(
+                    code="relation_field_invalid_default_value",
+                    path=f"{base_path}.default_value_json",
+                    message=str(exc),
+                ),
+            )
 
     try:
         normalized = validate_relation_field_settings(settings_json)
@@ -173,7 +181,9 @@ def validate_relation_field_type_payload(
     settings_json: dict[str, Any],
 ) -> None:
     """FieldDefinition create/update payload rules for relation type."""
-    if default_value_json is not None:
-        raise ValueError("default_value_json для relation field должен быть null")
-
     validate_relation_field_settings(settings_json)
+    validate_default_value_json(
+        field_type=FieldType.RELATION,
+        default_value_json=default_value_json,
+        settings_json=settings_json,
+    )

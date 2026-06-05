@@ -1,0 +1,342 @@
+[data-platform-modal-key="object-entity-delete-confirm-modal"][data-platform-modal-overlay],
+[data-platform-modal-key="object-entity-delete-scenario-modal"][data-platform-modal-overlay] {
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(4px);
+}
+
+[data-platform-modal-key="object-entity-delete-confirm-modal"][data-platform-modal-panel],
+[data-platform-modal-key="object-entity-delete-scenario-modal"][data-platform-modal-panel] {
+  border-radius: 18px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.22);
+  width: 480px;
+  min-width: 420px;
+  max-width: 620px;
+  min-height: 0;
+  max-height: 82vh;
+}
+
+[data-platform-modal-key="object-entity-delete-confirm-modal"][data-platform-modal-panel] > div:nth-child(2),
+[data-platform-modal-key="object-entity-delete-scenario-modal"][data-platform-modal-panel] > div:nth-child(2) {
+  padding: 10px 20px 16px !important;
+  border-top: none !important;
+}
+
+.ot-entity-delete-modal {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.ot-entity-delete-modal--unified {
+  height: auto;
+}
+
+.ot-entity-delete-modal__shell-header {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 32px;
+  gap: 12px;
+  align-items: start;
+  padding: 18px 20px 12px;
+  flex-shrink: 0;
+  user-select: none;
+  touch-action: none;
+}
+
+.ot-entity-delete-modal__icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ot-entity-delete-modal__header-text {
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.ot-entity-delete-modal__shell-title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #0f172a;
+}
+
+.ot-entity-delete-modal__subtitle {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+.ot-entity-delete-modal__close-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.ot-entity-delete-modal__close-btn:hover {
+  background: #f1f5f9;
+}
+
+.ot-entity-delete-modal__shell-body {
+  padding: 0 20px 14px;
+  display: grid;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.ot-entity-delete-modal__bulk-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.ot-entity-delete-modal__info-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 28px;
+  height: 30px;
+  margin: 0;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #475569;
+  font-weight: 600;
+}
+
+.ot-entity-delete-modal__info-badge strong {
+  color: #0f172a;
+  font-weight: 700;
+  margin-left: 2px;
+}
+
+.ot-entity-delete-modal__info-block {
+  display: grid;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.ot-entity-delete-modal__info-block-label {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #475569;
+  font-weight: 600;
+}
+
+.ot-entity-delete-modal__info-block-value {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #0f172a;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ot-entity-delete-modal__options {
+  display: grid;
+  gap: 8px;
+}
+
+.ot-entity-delete-modal__option {
+  position: relative;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  cursor: pointer;
+  transition:
+    border-color 0.14s ease,
+    background-color 0.14s ease,
+    box-shadow 0.14s ease;
+}
+
+.ot-entity-delete-modal__option:hover:not(:has(input:disabled)) {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.ot-entity-delete-modal__option.is-selected {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.12);
+}
+
+.ot-entity-delete-modal__radio-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.ot-entity-delete-modal__radio {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 2px solid #cbd5e1;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  transition:
+    border-color 0.14s ease,
+    background-color 0.14s ease;
+}
+
+.ot-entity-delete-modal__option.is-selected .ot-entity-delete-modal__radio {
+  border-color: #2563eb;
+  background: #2563eb;
+}
+
+.ot-entity-delete-modal__radio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: transparent;
+  transition: background-color 0.14s ease;
+}
+
+.ot-entity-delete-modal__option.is-selected .ot-entity-delete-modal__radio-dot {
+  background: #ffffff;
+}
+
+.ot-entity-delete-modal__option-copy {
+  min-width: 0;
+}
+
+.ot-entity-delete-modal__option-title {
+  margin: 0 0 3px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #0f172a;
+}
+
+.ot-entity-delete-modal__option-description {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #64748b;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ot-entity-delete-modal__footer-shell {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+
+.ot-entity-delete-modal__warning {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.ot-entity-delete-modal__warning-title {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #991b1b;
+}
+
+.ot-entity-delete-modal__warning-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #b91c1c;
+}
+
+.ot-entity-delete-modal__warning-list li + li {
+  margin-top: 2px;
+}
+
+.ot-entity-delete-modal__footer-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.ot-entity-delete-modal__btn {
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ot-entity-delete-modal__btn-cancel,
+.ot-entity-delete-modal__btn-delete {
+  height: 40px;
+  min-width: 120px;
+  padding: 0 16px;
+  box-sizing: border-box;
+}
+
+.ot-entity-delete-modal__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ot-entity-delete-modal__btn--secondary {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+}
+
+.ot-entity-delete-modal__btn--danger {
+  border: 1px solid #dc2626;
+  background: #dc2626;
+  color: #fff;
+}
+
+.ot-entity-delete-modal__error {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #b91c1c;
+}

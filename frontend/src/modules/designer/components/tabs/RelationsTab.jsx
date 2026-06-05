@@ -3,9 +3,21 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { getApiErrorMessage } from "../../api/platformApiClient";
 import * as designerApi from "../../api/designerApi";
 import CreateRelationDefinitionModal from "../relations/CreateRelationDefinitionModal";
+import RelationHierarchyLabelsEditor from "../relations/RelationHierarchyLabelsEditor";
 import PropertiesPanel from "../common/PropertiesPanel";
+import "../relations/relationPropertiesPanel.css";
+import { isHierarchyRelationDefinition } from "../../../../shared/relation/hierarchyRelationProfile.js";
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  suggestRussianHierarchyInflection,
+} from "../../../../shared/relation/hierarchyLabels.js";
 
-export default function RelationsTab({ tenantId, objectTypeId, objectType }) {
+export default function RelationsTab({
+  tenantId,
+  objectTypeId,
+  objectType,
+  onSchemaChanged = null,
+}) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -50,17 +62,35 @@ export default function RelationsTab({ tenantId, objectTypeId, objectType }) {
       return;
     }
 
+    const settings =
+      selected.settings_json && typeof selected.settings_json === "object"
+        ? selected.settings_json
+        : {};
+    const storedLabels =
+      settings.hierarchy_labels && typeof settings.hierarchy_labels === "object"
+        ? settings.hierarchy_labels
+        : {};
+    const isHierarchy =
+      settings.is_hierarchy === true ||
+      isHierarchyRelationDefinition(selected, objectType?.key);
+
     setDraft({
       name: selected.name,
       key: selected.key,
       relation_type: selected.relation_type,
       is_active: selected.is_active,
       description: selected.description || "",
+      is_hierarchy: isHierarchy,
+      hierarchy_labels: {
+        ...DEFAULT_HIERARCHY_LABELS,
+        ...storedLabels,
+      },
     });
-  }, [selected]);
+  }, [selected, objectType?.key]);
 
   const handleRelationCreated = async (created) => {
     await loadItems();
+    await onSchemaChanged?.();
 
     if (created?.id) {
       setSelectedId(created.id);
@@ -73,13 +103,24 @@ export default function RelationsTab({ tenantId, objectTypeId, objectType }) {
     setSaving(true);
 
     try {
+      const previousSettings =
+        selected.settings_json && typeof selected.settings_json === "object"
+          ? selected.settings_json
+          : {};
+
       await designerApi.updateRelation(tenantId, selected.id, {
         name: draft.name,
         relation_type: draft.relation_type,
         is_active: draft.is_active,
         description: draft.description,
+        settings_json: {
+          ...previousSettings,
+          is_hierarchy: Boolean(draft.is_hierarchy),
+          ...(draft.is_hierarchy ? { hierarchy_labels: draft.hierarchy_labels } : {}),
+        },
       });
       await loadItems();
+      await onSchemaChanged?.();
     } catch (err) {
       window.alert(getApiErrorMessage(err, "Не удалось сохранить связь"));
     } finally {
@@ -95,6 +136,7 @@ export default function RelationsTab({ tenantId, objectTypeId, objectType }) {
       await designerApi.deleteRelation(tenantId, selected.id);
       setSelectedId(null);
       await loadItems();
+      await onSchemaChanged?.();
     } catch (err) {
       window.alert(getApiErrorMessage(err, "Не удалось удалить связь"));
     }
@@ -165,7 +207,9 @@ export default function RelationsTab({ tenantId, objectTypeId, objectType }) {
 
       {selected && draft ? (
         <PropertiesPanel
+          className="designer-relation-properties-panel"
           title="Свойства связи"
+          closeVariant="icon"
           onClose={() => setSelectedId(null)}
           footer={
             <>
@@ -187,48 +231,106 @@ export default function RelationsTab({ tenantId, objectTypeId, objectType }) {
             </>
           }
         >
-          <label className="designer-label">Название</label>
-          <input
-            className="designer-input"
-            value={draft.name}
-            onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-          />
-          <div style={{ height: 10 }} />
-          <label className="designer-label">Key</label>
-          <input className="designer-input" value={draft.key} disabled />
-          <div style={{ height: 10 }} />
-          <label className="designer-label">Тип связи</label>
-          <select
-            className="designer-select"
-            value={draft.relation_type}
-            onChange={(e) =>
-              setDraft({ ...draft, relation_type: e.target.value })
-            }
-          >
-            <option value="one_to_one">one_to_one</option>
-            <option value="one_to_many">one_to_many</option>
-            <option value="many_to_many">many_to_many</option>
-          </select>
-          <div style={{ height: 10 }} />
-          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input
-              type="checkbox"
-              checked={draft.is_active}
-              onChange={(e) =>
-                setDraft({ ...draft, is_active: e.target.checked })
+          <div className="designer-relation-form">
+            <div className="designer-relation-form__identity">
+              <input
+                className="designer-relation-form__name"
+                value={draft.name}
+                aria-label="Название связи"
+                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+              />
+              <code className="designer-relation-form__key">{draft.key}</code>
+            </div>
+
+            <div className="designer-relation-form__flags">
+              <label className="designer-relation-form__flag">
+                <input
+                  type="checkbox"
+                  checked={draft.is_active}
+                  onChange={(e) =>
+                    setDraft({ ...draft, is_active: e.target.checked })
+                  }
+                />
+                Активная связь
+              </label>
+              <label className="designer-relation-form__flag">
+                <input
+                  type="checkbox"
+                  checked={draft.is_hierarchy}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+
+                    setDraft((current) => {
+                      if (!current) {
+                        return current;
+                      }
+
+                      const next = {
+                        ...current,
+                        is_hierarchy: checked,
+                      };
+
+                      if (
+                        checked &&
+                        !current.hierarchy_labels?.child &&
+                        current.name
+                      ) {
+                        next.hierarchy_labels = suggestRussianHierarchyInflection(
+                          current.name,
+                          objectTypeLabel,
+                        );
+                      }
+
+                      return next;
+                    });
+                  }}
+                />
+                Иерархическая связь
+              </label>
+            </div>
+
+            <div className="designer-relation-form__group">
+              <label className="designer-label">Тип связи</label>
+              <select
+                className="designer-select"
+                value={draft.relation_type}
+                onChange={(e) =>
+                  setDraft({ ...draft, relation_type: e.target.value })
+                }
+              >
+                <option value="one_to_one">one_to_one</option>
+                <option value="one_to_many">one_to_many</option>
+                <option value="many_to_many">many_to_many</option>
+              </select>
+            </div>
+
+            <RelationHierarchyLabelsEditor
+              isHierarchy={draft.is_hierarchy}
+              hierarchyLabels={draft.hierarchy_labels}
+              onHierarchyLabelsChange={(hierarchyLabels) =>
+                setDraft((current) =>
+                  current
+                    ? {
+                        ...current,
+                        hierarchy_labels: hierarchyLabels,
+                      }
+                    : current,
+                )
               }
             />
-            Активная связь
-          </label>
-          <div style={{ height: 10 }} />
-          <label className="designer-label">Описание</label>
-          <textarea
-            className="designer-textarea"
-            value={draft.description}
-            onChange={(e) =>
-              setDraft({ ...draft, description: e.target.value })
-            }
-          />
+
+            <div className="designer-relation-form__group">
+              <label className="designer-label">Описание</label>
+              <textarea
+                className="designer-textarea"
+                rows={2}
+                value={draft.description}
+                onChange={(e) =>
+                  setDraft({ ...draft, description: e.target.value })
+                }
+              />
+            </div>
+          </div>
         </PropertiesPanel>
       ) : null}
 

@@ -190,13 +190,38 @@ def _component_checks(ctx: ScanContext, slug: str) -> list[EvidenceItem]:
             ("tests", "Tests", 10, backend_has_tests(backend, "publish")),
         ]
     elif slug == "runtime-entity":
+        office_user_views_ready = (
+            backend_has_module(backend, "modules/platform/runtime/office_user_views")
+            and backend_has_table(backend, "runtime_office_user_table_views")
+            and frontend_has_marker(frontend, "officeUserTableViewsApi")
+            and frontend_has_marker(frontend, "objectTableUserViewsRemote")
+        )
         checks = [
             ("backend_model", "Backend", 20, backend_has_module(backend, "modules/platform/runtime/entities")),
             ("api_endpoint", "API", 20, backend_has_router_marker(backend, "platform_runtime_router")),
-            ("frontend_api", "Frontend API", 15, frontend_has_marker(frontend, "runtimeReadGateway")),
+            (
+                "frontend_api",
+                "Frontend API",
+                15,
+                frontend_has_marker(frontend, "runtimeReadGateway")
+                and frontend_has_marker(frontend, "officeUserTableViewsApi"),
+            ),
             ("ui_integration", "UI", 20, frontend_has_marker(frontend, "ObjectViewHost")),
-            ("persistence", "Persistence", 15, backend_has_table(backend, "runtime_entities")),
-            ("tests", "Tests", 10, backend_has_tests(backend, "runtime")),
+            (
+                "persistence",
+                "Persistence",
+                15,
+                backend_has_table(backend, "runtime_entities")
+                and backend_has_table(backend, "runtime_office_user_table_views"),
+            ),
+            (
+                "tests",
+                "Tests",
+                10,
+                backend_has_tests(backend, "runtime")
+                and backend_has_tests(backend, "office_user_table_views"),
+            ),
+            ("office_user_views", "Office User Views", 0, office_user_views_ready),
         ]
     elif slug == "object-card":
         checks = [

@@ -4,7 +4,14 @@
  */
 
 const FORBIDDEN_UI_PATTERN =
-  /(?:modules\/|\.md\b|\.py\b|\.jsx\b|universalTable|P\d+-W\d+|\bACE\b|raw_items|implementation_stage_slugs|source_event_ids)/i;
+  /(?:modules\/|\.md\b|\.py\b|\.jsx\b|universalTable|P\d+-W\d+|\bACE\b|raw_items|source_event_ids)/i;
+
+const OWNER_STAGE_META_UI_KEYS = new Set([
+  "implementation_stage_slugs",
+  "displayTitle",
+  "workspaceTitle",
+  "tenantId",
+]);
 
 export function isOwnerDashboardViewPayload(payload) {
   return Boolean(
@@ -36,6 +43,17 @@ function sanitizeOwnerVisibleText(text) {
   return value;
 }
 
+function pickOwnerStageMetaForUi(meta = {}) {
+  const result = {};
+  for (const key of OWNER_STAGE_META_UI_KEYS) {
+    if (meta[key] == null) {
+      continue;
+    }
+    result[key] = meta[key];
+  }
+  return result;
+}
+
 function pickCompanyStageTitle(stage) {
   const meta = stage?.meta || {};
   const workspaceTitle = sanitizeOwnerVisibleText(
@@ -65,8 +83,7 @@ export function mapOwnerStageToUi(stage, { sectionKey } = {}) {
     return null;
   }
 
-  const meta = stage.meta || {};
-  const ownerStatus = meta.owner_status || null;
+  const meta = pickOwnerStageMetaForUi(stage.meta || {});
   const isCompanySection = sectionKey === "companies";
 
   const title = isCompanySection ? pickCompanyStageTitle(stage) : sanitizeOwnerVisibleText(stage.title) || "—";
@@ -81,7 +98,7 @@ export function mapOwnerStageToUi(stage, { sectionKey } = {}) {
       stage.readiness == null || Number.isNaN(Number(stage.readiness))
         ? null
         : Number(stage.readiness),
-    ownerStatus,
+    meta,
     done: (stage.done || []).map(sanitizeOwnerVisibleText).filter(Boolean),
     inWork: (stage.inWork || []).map(sanitizeOwnerVisibleText).filter(Boolean),
     remaining: (stage.remaining || []).map(sanitizeOwnerVisibleText).filter(Boolean),

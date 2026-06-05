@@ -303,6 +303,7 @@ export default function ObjectTypeWorkspacePage() {
         tenantId={tenantId}
         objectTypeId={objectTypeId}
         objectType={objectType}
+        onSchemaChanged={handleSchemaChanged}
       />
     );
   } else if (tab === "views") {

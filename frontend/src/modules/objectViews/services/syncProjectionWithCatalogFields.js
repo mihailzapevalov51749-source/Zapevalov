@@ -1,7 +1,12 @@
+import { isHierarchyRelationField } from "../../../shared/relation/hierarchyRelationProfile";
 import {
   OBJECT_VIEW_SYSTEM_FIELD_KEYS,
   normalizePresentationTable,
 } from "./contractGuards";
+import {
+  excludeHierarchyRelationFieldKeys,
+  excludeHierarchyRelationFields,
+} from "./excludeHierarchyTableFields";
 import {
   findCatalogObjectType,
   getObjectTypeFields,
@@ -11,6 +16,15 @@ import {
   orderAllModeTableFieldKeys,
   resolveObjectTypeTitleFieldKey,
 } from "./tableColumnOrder";
+import {
+  listCatalogSystemFieldKeysForTable,
+  mergeTableProjectionWithSystemFields,
+} from "./tableSystemProjectionFields";
+import {
+  ensureTableRowNumberPresentationFieldKey,
+  excludeTableDedicatedRecordNumberFieldKeys,
+  isRuntimeSystemFieldKey,
+} from "../../../shared/runtime/systemEntityFields";
 
 /**
  * @param {string[]} keys
@@ -36,8 +50,14 @@ function dedupeFieldKeys(keys) {
 
 /**
  * @param {Record<string, unknown> | null | undefined} field
+ * @param {Record<string, unknown> | null | undefined} [catalog]
+ * @param {string | null | undefined} [objectTypeKey]
  */
-export function isCatalogFieldEligibleForProjection(field) {
+export function isCatalogFieldEligibleForProjection(
+  field,
+  catalog = null,
+  objectTypeKey = null,
+) {
   if (!field || typeof field !== "object") {
     return false;
   }
@@ -83,6 +103,10 @@ export function isCatalogFieldEligibleForProjection(field) {
     return false;
   }
 
+  if (catalog && objectTypeKey && isHierarchyRelationField(field, catalog, objectTypeKey)) {
+    return false;
+  }
+
   return true;
 }
 
@@ -109,18 +133,24 @@ export function getCatalogFieldsForProjection(catalog, objectTypeKey) {
  */
 export function mergeProjectionWithCatalogFields(projection, catalogFields, options = {}) {
   const source = projection && typeof projection === "object" ? projection : {};
+  const catalog = options.catalog ?? null;
+  const objectTypeKey = options.objectTypeKey ?? null;
 
-  const existingOrder = dedupeFieldKeys([
-    ...(Array.isArray(source.fieldOrder) ? source.fieldOrder : []),
-    ...(Array.isArray(source.fieldKeys) ? source.fieldKeys : []),
-  ]);
+  const existingOrder = excludeHierarchyRelationFieldKeys(
+    dedupeFieldKeys([
+      ...(Array.isArray(source.fieldOrder) ? source.fieldOrder : []),
+      ...(Array.isArray(source.fieldKeys) ? source.fieldKeys : []),
+    ]),
+    catalog,
+    objectTypeKey,
+  );
 
   const existingSet = new Set(existingOrder);
 
   const catalogKeysInOrder = [];
 
   for (const field of catalogFields) {
-    if (!isCatalogFieldEligibleForProjection(field)) {
+    if (!isCatalogFieldEligibleForProjection(field, catalog, objectTypeKey)) {
       continue;
     }
 
@@ -129,7 +159,14 @@ export function mergeProjectionWithCatalogFields(projection, catalogFields, opti
   }
 
   const newKeys = catalogKeysInOrder.filter((key) => !existingSet.has(key));
-  const fieldKeys = dedupeFieldKeys([...existingOrder, ...newKeys]);
+  const userFieldKeys = dedupeFieldKeys([...existingOrder, ...newKeys]);
+  const systemFieldKeys =
+    catalog && objectTypeKey
+      ? listCatalogSystemFieldKeysForTable(catalog, objectTypeKey)
+      : [];
+  const fieldKeys = excludeTableDedicatedRecordNumberFieldKeys(
+    mergeTableProjectionWithSystemFields(userFieldKeys, systemFieldKeys),
+  );
   const fieldOrder = [...fieldKeys];
 
   const forcedTitle = String(options.forceTitleFieldKey || "").trim();
@@ -143,7 +180,7 @@ export function mergeProjectionWithCatalogFields(projection, catalogFields, opti
 
   if (!titleFieldKey || !fieldKeys.includes(titleFieldKey)) {
     titleFieldKey =
-      fieldKeys.find((key) => !OBJECT_VIEW_SYSTEM_FIELD_KEYS.has(key)) ||
+      fieldKeys.find((key) => !isRuntimeSystemFieldKey(key)) ||
       fieldKeys[0] ||
       null;
   }
@@ -199,12 +236,20 @@ export function syncObjectViewContractWithCatalog(
   const publishedViewKey = options.publishedViewKey || "default_table";
 
   if (isTableBaseStateKey(contract.key)) {
-    const fields = getObjectTypeFields(objectType);
-    const fieldKeys = orderAllModeTableFieldKeys(fields, {
-      objectType,
-      publishedViewKey,
-      runtimeProjection,
-    });
+    const fields = excludeHierarchyRelationFields(
+      getObjectTypeFields(objectType),
+      catalog,
+      objectTypeKey,
+    );
+    const fieldKeys = excludeTableDedicatedRecordNumberFieldKeys(
+      orderAllModeTableFieldKeys(fields, {
+        objectType,
+        catalog,
+        objectTypeKey,
+        publishedViewKey,
+        runtimeProjection,
+      }),
+    );
     const titleFieldKey = resolveObjectTypeTitleFieldKey(objectType, fieldKeys, {
       publishedViewKey,
       runtimeProjection,
@@ -222,7 +267,7 @@ export function syncObjectViewContractWithCatalog(
         table: {
           ...(contract.presentation?.table || {}),
           hiddenFieldKeys: contract.presentation?.table?.hiddenFieldKeys || [],
-          columnOrder: [...fieldKeys],
+          columnOrder: ensureTableRowNumberPresentationFieldKey([...fieldKeys]),
         },
         card: contract.presentation?.card ?? null,
       },
@@ -248,7 +293,11 @@ export function syncObjectViewContractWithCatalog(
   const syncedProjection = mergeProjectionWithCatalogFields(
     contract.projection,
     catalogFields,
-    { forceTitleFieldKey: canonicalTitle },
+    {
+      catalog,
+      objectTypeKey,
+      forceTitleFieldKey: canonicalTitle,
+    },
   );
 
   const previousKeys = contract.projection?.fieldKeys || [];
@@ -270,13 +319,16 @@ export function syncObjectViewContractWithCatalog(
   const presentationTable = normalizePresentationTable(
     {
       ...table,
-      columnOrder: mergeColumnOrderWithNewKeys(
-        table.columnOrder,
-        syncedProjection.fieldKeys,
+      columnOrder: ensureTableRowNumberPresentationFieldKey(
+        mergeColumnOrderWithNewKeys(table.columnOrder, syncedProjection.fieldKeys),
       ),
     },
-    syncedProjection.fieldKeys,
+    ensureTableRowNumberPresentationFieldKey(syncedProjection.fieldKeys),
     syncedProjection.titleFieldKey,
+    {
+      preserveExactColumnOrder: contract.meta?.isUserView === true,
+      isAllMode: false,
+    },
   );
 
   return {

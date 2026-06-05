@@ -61,3 +61,7 @@ export function canAccessDesigner(user) {
 
   return collectUserRoleNames(user).some((roleName) => DESIGNER_ROLES.has(roleName));
 }
+
+export function canManageNavigationMenu(user) {
+  return canAccessDesigner(user);
+}

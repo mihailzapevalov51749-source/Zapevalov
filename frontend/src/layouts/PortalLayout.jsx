@@ -3,6 +3,8 @@ import { cloneElement, useMemo } from "react";
 import NotificationOverlayHost from "../modules/notifications/components/NotificationOverlayHost";
 import FileViewerOverlayHost from "../shared/files/components/FileViewerOverlayHost";
 import CreateMenuItemModal from "../modules/navigation/components/CreateMenuItemModal";
+import NavigationDeleteDialogs from "../modules/navigation/components/NavigationDeleteDialogs";
+import { canManageNavigationMenu, getStoredCurrentUser } from "../modules/designer/constants/designerRoles";
 import useNotificationNavigationOrchestrator from "../modules/notifications/hooks/useNotificationNavigationOrchestrator";
 import { TRANSITION_TOKENS } from "../shared/layout/transitionTokens";
 import AppShellFrame from "../shared/shell/AppShellFrame";
@@ -28,14 +30,21 @@ export default function PortalLayout({
   headerContract,
   onHeaderAction,
   searchOverlay = null,
+  onNavigationEditModeChange,
   children,
 }) {
   const { sidebarCollapsed, toggleSidebarCollapsed } = useShellSidebarState();
+  const canEditNavigationMenu = canManageNavigationMenu(getStoredCurrentUser());
   const sidebarControls = usePlatformSidebarControls({
     portalId,
     reloadNavigation,
+    navigationItems: navigation,
     menuScale,
     onChangeMenuScale,
+    onEditModeChange: onNavigationEditModeChange,
+    canEditMenu: canEditNavigationMenu,
+    canCreateItem: canEditNavigationMenu,
+    canDragItems: canEditNavigationMenu,
   });
 
   const pathname = window.location.pathname;
@@ -195,6 +204,16 @@ export default function PortalLayout({
           />
         </div>
       ) : null}
+      <NavigationDeleteDialogs
+        pendingDeleteId={sidebarControls.pendingDeleteId}
+        pendingDeleteItem={sidebarControls.pendingDeleteItem}
+        deleteError={sidebarControls.deleteError}
+        deleteNotice={sidebarControls.deleteNotice}
+        isSubmitting={sidebarControls.isSaving}
+        onCancelDelete={sidebarControls.cancelDeleteItem}
+        onConfirmDelete={sidebarControls.confirmDeleteItem}
+        onCloseNotice={sidebarControls.clearDeleteNotice}
+      />
     </>
   );
 }

@@ -17,6 +17,11 @@ import {
   resolveChoiceFieldTypeForSave,
 } from "../fields/fieldFormUtils";
 import {
+  buildDefaultValuePayload,
+  normalizeDefaultValueFromField,
+  validateDefaultValueDraft,
+} from "../fields/defaultValue/defaultValueFormUtils";
+import {
   buildRelationSettingsPayload,
   isRelationFieldType,
   normalizeRelationSettingsFromField,
@@ -135,6 +140,11 @@ export default function FieldsTab({
       relation_key_error: "",
       relation_role_error: "",
       relation_cardinality_error: "",
+      default_value: normalizeDefaultValueFromField(
+        selected.default_value_json,
+        selected.field_type,
+      ),
+      default_value_error: "",
     });
     setSaveError("");
   }, [selected]);
@@ -232,6 +242,32 @@ export default function FieldsTab({
         role: draft.relation_role,
         cardinality: draft.relation_cardinality,
       });
+    }
+
+    const defaultValueError = validateDefaultValueDraft(draft.default_value, draft.field_type, {
+      choiceOptions: draft.choice_options,
+    });
+
+    if (defaultValueError) {
+      setDraft((current) =>
+        current ? { ...current, default_value_error: defaultValueError } : current,
+      );
+      setSaveError(defaultValueError);
+      return;
+    }
+
+    const builtDefaultValue = buildDefaultValuePayload(
+      draft.default_value,
+      draft.field_type,
+    );
+
+    if (builtDefaultValue.error) {
+      setSaveError(builtDefaultValue.error);
+      return;
+    }
+
+    if (builtDefaultValue.payload) {
+      payload.default_value_json = builtDefaultValue.payload;
     }
 
     setSaving(true);

@@ -1,0 +1,30 @@
+.platform-notification-stack {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 12050;
+  display: grid;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.platform-notification {
+  pointer-events: auto;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
+  color: #0f172a;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-line;
+}
+
+.platform-notification--warning {
+  border-color: #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+}

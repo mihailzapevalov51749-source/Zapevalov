@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import {
   ViewEngineHeaderRowNumberCell,
@@ -20,6 +20,7 @@ import {
   viewEngineTableRootStyle,
 } from "./viewEngineStyles";
 
+import { formatSystemRowNumber } from "../entity-ui/entityValueUtils";
 import { columnMatchesSortField } from "./systemColumnKeys";
 
 import "./viewEngineTable.css";
@@ -38,14 +39,17 @@ export default function ViewEngineTable({
   enableColumnResize = true,
   minHeight = 280,
   showSelectionColumn = true,
+  rowSelection = null,
   showRowNumberColumn = false,
   rowNumberOffset = 0,
+  hierarchyRowNumbers = false,
   className = "",
   columnWidths = null,
   onColumnResize = null,
   onColumnResizeEnd = null,
   isInlineEditMode = false,
   onCellChange = null,
+  titleFieldVisibility = null,
 }) {
   const { getColumnWidth, handleResizeMouseDown } = useViewEngineColumnResize(
     columns,
@@ -63,12 +67,14 @@ export default function ViewEngineTable({
   );
 
   const activeSortField = sort?.field || null;
+  const [hoveredRowId, setHoveredRowId] = useState(null);
 
   const rowsById = useMemo(() => {
     return new Map(rows.map((row) => [row.id, row]));
   }, [rows]);
 
   const showGrid = !loading && !error && rows.length > 0;
+  const selectionEnabled = Boolean(showSelectionColumn && rowSelection);
 
   const tableWidthStyle = {
     width: fullTableMinWidth,
@@ -121,7 +127,18 @@ export default function ViewEngineTable({
                   ...tableWidthStyle,
                 }}
               >
-                {showSelectionColumn ? <ViewEngineHeaderSelectionCell /> : null}
+                {showSelectionColumn ? (
+                  <ViewEngineHeaderSelectionCell
+                    checked={selectionEnabled ? Boolean(rowSelection.headerChecked) : false}
+                    indeterminate={
+                      selectionEnabled ? Boolean(rowSelection.headerIndeterminate) : false
+                    }
+                    disabled={!selectionEnabled || rows.length === 0}
+                    onChange={
+                      selectionEnabled ? () => rowSelection.onToggleAllVisible?.() : undefined
+                    }
+                  />
+                ) : null}
 
                 {showRowNumberColumn ? <ViewEngineHeaderRowNumberCell /> : null}
 
@@ -140,6 +157,9 @@ export default function ViewEngineTable({
                       sortable={column.sortable}
                       sortDirection={sortDirection}
                       isTitle={column.isTitle}
+                      titleFieldVisibility={
+                        column.isTitle ? titleFieldVisibility : null
+                      }
                       enableResize={
                         enableColumnResize &&
                         (column.source === "field" || column.source === "system")
@@ -166,6 +186,8 @@ export default function ViewEngineTable({
                   <div
                     key={row.id}
                     className="view-engine-table-row view-engine-table-grid-row"
+                    onMouseEnter={() => setHoveredRowId(row.id)}
+                    onMouseLeave={() => setHoveredRowId(null)}
                     style={{
                       ...viewEngineRowGridStyle,
                       gridTemplateColumns,
@@ -173,12 +195,26 @@ export default function ViewEngineTable({
                     }}
                   >
                     {showSelectionColumn ? (
-                      <ViewEngineRowSelectionCell />
+                      <ViewEngineRowSelectionCell
+                        checked={
+                          selectionEnabled ? Boolean(rowSelection.isSelected?.(row.id)) : false
+                        }
+                        disabled={!selectionEnabled}
+                        onChange={
+                          selectionEnabled
+                            ? () => rowSelection.onToggleRow?.(row.id)
+                            : undefined
+                        }
+                      />
                     ) : null}
 
                     {showRowNumberColumn ? (
                       <ViewEngineRowNumberCell
-                        value={rowNumberOffset + rowIndex + 1}
+                        value={
+                          row.recordNumber != null && row.recordNumber !== ""
+                            ? formatSystemRowNumber(row.recordNumber)
+                            : formatSystemRowNumber(rowNumberOffset + rowIndex + 1)
+                        }
                       />
                     ) : null}
 
@@ -195,6 +231,7 @@ export default function ViewEngineTable({
                           column={column}
                           row={rowsById.get(row.id) || row}
                           rendererContext={rendererContext}
+                          isRowHovered={hoveredRowId === row.id}
                           compact
                           isTitle={column?.isTitle}
                           readOnly={!isInlineEditMode}

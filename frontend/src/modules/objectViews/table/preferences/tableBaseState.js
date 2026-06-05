@@ -3,6 +3,7 @@ import {
   DEFAULT_OBJECT_VIEW_QUERY,
   DEFAULT_TABLE_PRESENTATION,
 } from "../../services/objectViewContract";
+import { ensureTableRowNumberPresentationFieldKey } from "../../../../shared/runtime/systemEntityFields";
 import {
   orderAllModeTableFieldKeys,
   resolveObjectTypeTitleFieldKey,
@@ -80,7 +81,7 @@ export function buildTableBaseStateContract(
       table: {
         ...DEFAULT_TABLE_PRESENTATION,
         hiddenFieldKeys: [],
-        columnOrder: [...fieldKeys],
+        columnOrder: ensureTableRowNumberPresentationFieldKey([...fieldKeys]),
       },
       card: null,
     },

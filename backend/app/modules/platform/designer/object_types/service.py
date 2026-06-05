@@ -313,11 +313,21 @@ def delete_object_type(
             detail="Системный ObjectType нельзя удалить",
         )
 
-    db.query(NavigationItem).filter(
-        NavigationItem.object_type_id == object_type_id,
-    ).delete(synchronize_session=False)
+    from app.modules.platform.designer.shared.soft_delete import apply_soft_delete
 
-    entity.updated_by = _actor_user_id(current_user)
+    actor_id = _actor_user_id(current_user)
+    for nav_item in (
+        db.query(NavigationItem)
+        .filter(
+            NavigationItem.object_type_id == object_type_id,
+            NavigationItem.deleted_at.is_(None),
+        )
+        .all()
+    ):
+        apply_soft_delete(nav_item, deleted_by=actor_id)
+
+    entity.updated_by = actor_id
+    entity.deleted_by = actor_id
     entity = repository.soft_delete_object_type(db, entity)
     db.commit()
     return _to_read(entity, db)

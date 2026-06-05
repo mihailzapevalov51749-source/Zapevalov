@@ -1,12 +1,8 @@
-import { useMemo } from "react";
-
 import eyeOpenIcon from "../../../../assets/icons/eye-open.png";
 import eyeClosedIcon from "../../../../assets/icons/eye-closed.png";
+import { isTableRowNumberPresentationFieldKey } from "../../../../shared/runtime/systemEntityFields";
 import { PlatformModal } from "../../../../shared/platformModal";
-import {
-  findCatalogObjectType,
-  getObjectTypeFields,
-} from "../services/tableModelAdapter";
+import { resolveTableFieldLabels } from "../../services/columnPresentationUtils";
 import {
   OBJECT_TABLE_VIEW_CHILD_MODAL_DEFAULT_BOUNDS,
   OBJECT_TABLE_VIEW_FIELDS_PANEL_KEY,
@@ -23,29 +19,7 @@ export default function ObjectTableViewSettingsFieldsModal({
   objectTypeKey,
   sessionApi,
 }) {
-  const fieldLabels = useMemo(() => {
-    const objectType = findCatalogObjectType(catalog, objectTypeKey);
-    const fields = getObjectTypeFields(objectType);
-    const labels = new Map();
-
-    for (const field of fields) {
-      const key = String(field?.key || "").trim();
-
-      if (!key) {
-        continue;
-      }
-
-      labels.set(key, String(field?.name || field?.label || key));
-    }
-
-    for (const key of effectiveContract?.projection?.fieldKeys || []) {
-      if (!labels.has(key)) {
-        labels.set(key, String(key));
-      }
-    }
-
-    return labels;
-  }, [catalog, objectTypeKey, effectiveContract]);
+  const fieldLabels = resolveTableFieldLabels(catalog, objectTypeKey, effectiveContract);
 
   const columnOrder = sessionApi?.panelColumnOrder || [];
   const hiddenSet = new Set(sessionApi?.hiddenFieldKeys || []);
@@ -83,6 +57,8 @@ export default function ObjectTableViewSettingsFieldsModal({
             const isHidden = hiddenSet.has(fieldKey);
             const label = fieldLabels.get(fieldKey) || fieldKey;
             const isTitle = titleFieldKey === fieldKey;
+            const isSystemPresentationField =
+              isTitle || isTableRowNumberPresentationFieldKey(fieldKey);
 
             return (
               <li key={fieldKey} className="object-table-view-settings__list-item">
@@ -110,6 +86,9 @@ export default function ObjectTableViewSettingsFieldsModal({
                     <span style={{ color: "#94a3b8", marginLeft: 6 }}>
                       (заголовок)
                     </span>
+                  ) : null}
+                  {isSystemPresentationField && !isTitle ? (
+                    <span style={{ color: "#94a3b8", marginLeft: 6 }}>системное</span>
                   ) : null}
                 </span>
               </li>

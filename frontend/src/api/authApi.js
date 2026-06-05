@@ -1,17 +1,27 @@
 const API_BASE_URL = "http://127.0.0.1:8010";
 
 const TOKEN_KEY = "token";
+const LEGACY_TOKEN_KEY = "access_token";
 
 export function getToken() {
-  return localStorage.getItem(TOKEN_KEY);
+  return (
+    localStorage.getItem(TOKEN_KEY) ||
+    localStorage.getItem(LEGACY_TOKEN_KEY) ||
+    null
+  );
 }
 
 export function setToken(token) {
   localStorage.setItem(TOKEN_KEY, token);
+
+  if (token) {
+    localStorage.setItem(LEGACY_TOKEN_KEY, token);
+  }
 }
 
 export function logout() {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(LEGACY_TOKEN_KEY);
 }
 
 function getAuthHeaders() {

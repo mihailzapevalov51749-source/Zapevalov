@@ -3,15 +3,31 @@ export default function PropertiesPanel({
   children,
   footer,
   onClose,
+  className = "",
+  closeVariant = "text",
 }) {
+  const panelClassName = ["designer-properties-panel", className].filter(Boolean).join(" ");
+
   return (
-    <aside className="designer-properties-panel">
+    <aside className={panelClassName}>
       <div className="designer-properties-panel__header">
-        <span>{title}</span>
+        <span className="designer-properties-panel__title">{title}</span>
         {onClose ? (
-          <button type="button" className="designer-btn" onClick={onClose}>
-            Закрыть
-          </button>
+          closeVariant === "icon" ? (
+            <button
+              type="button"
+              className="designer-properties-panel__close"
+              onClick={onClose}
+              aria-label="Закрыть"
+              title="Закрыть"
+            >
+              ×
+            </button>
+          ) : (
+            <button type="button" className="designer-btn" onClick={onClose}>
+              Закрыть
+            </button>
+          )
         ) : null}
       </div>
       <div className="designer-properties-panel__body">{children}</div>

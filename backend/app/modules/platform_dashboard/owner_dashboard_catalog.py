@@ -287,8 +287,15 @@ def _platform_stages() -> tuple[OwnerStageDefinition, ...]:
                     kind=OwnerSourceKind.PLATFORM_COMPONENT,
                     source_key="object-card",
                 ),
+                _step(
+                    "ve-office-user-table-views",
+                    "Пользовательские табличные представления Office",
+                    data_kind=StepDataKind.REAL_DATA,
+                    kind=OwnerSourceKind.PLATFORM_COMPONENT,
+                    source_key="runtime-entity",
+                ),
             ),
-            meta={"primary_components": ("object-card",)},
+            meta={"primary_components": ("object-card", "runtime-entity")},
         ),
         OwnerStageDefinition(
             key="permission-engine",

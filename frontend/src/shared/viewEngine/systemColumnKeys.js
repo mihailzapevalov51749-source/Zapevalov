@@ -9,6 +9,7 @@ export const SYSTEM_COLUMN_KEY_PREFIX = "__system_";
 
 export const SYSTEM_COLUMN_KEYS = {
   id: SYSTEM_ENTITY_FIELD_KEYS.id,
+  recordNumber: SYSTEM_ENTITY_FIELD_KEYS.recordNumber,
   status: `${SYSTEM_COLUMN_KEY_PREFIX}status`,
   createdBy: SYSTEM_ENTITY_FIELD_KEYS.createdBy,
   createdAt: SYSTEM_ENTITY_FIELD_KEYS.createdAt,
@@ -36,6 +37,7 @@ const LEGACY_SYSTEM_KEY_TO_NAMESPACED = {
   updated_at: SYSTEM_COLUMN_KEYS.updatedAt,
   version: SYSTEM_COLUMN_KEYS.recordVersion,
   record_version: SYSTEM_COLUMN_KEYS.recordVersion,
+  record_number: SYSTEM_COLUMN_KEYS.recordNumber,
 };
 
 /**
@@ -102,6 +104,8 @@ export function systemColumnKeyToRuntimeSortField(columnOrSortField) {
       return "updated_by";
     case SYSTEM_COLUMN_KEYS.recordVersion:
       return "record_version";
+    case SYSTEM_COLUMN_KEYS.recordNumber:
+      return "record_number";
     case SYSTEM_COLUMN_KEYS.id:
       return "id";
     default:
@@ -153,6 +157,10 @@ export function normalizeSortFieldForTableColumns(sortField, columns = []) {
 
   if (raw === "record_version" && hasColumn(SYSTEM_COLUMN_KEYS.recordVersion)) {
     return SYSTEM_COLUMN_KEYS.recordVersion;
+  }
+
+  if (raw === "record_number" && hasColumn(SYSTEM_COLUMN_KEYS.recordNumber)) {
+    return SYSTEM_COLUMN_KEYS.recordNumber;
   }
 
   return raw;

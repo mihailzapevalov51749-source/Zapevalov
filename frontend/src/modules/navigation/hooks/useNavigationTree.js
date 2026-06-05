@@ -68,6 +68,7 @@ export default function useNavigationTree(portalId, options = {}) {
   const scope = options?.scope ?? "runtime";
   const mode = options?.mode;
   const context = options?.context;
+  const forEditMode = Boolean(options?.forEditMode);
   const [navigation, setNavigation] = useState([]);
   const [isLoadingNavigation, setIsLoadingNavigation] = useState(false);
   const [navigationError, setNavigationError] = useState("");
@@ -82,6 +83,7 @@ export default function useNavigationTree(portalId, options = {}) {
         scope,
         mode,
         context,
+        forEditMode,
       });
       let scopedNavigation =
         scope === "designer" || scope === "runtime"
@@ -117,7 +119,7 @@ export default function useNavigationTree(portalId, options = {}) {
     } finally {
       setIsLoadingNavigation(false);
     }
-  }, [portalId, scope, mode, context]);
+  }, [portalId, scope, mode, context, forEditMode]);
 
   useEffect(() => {
     reloadNavigation();

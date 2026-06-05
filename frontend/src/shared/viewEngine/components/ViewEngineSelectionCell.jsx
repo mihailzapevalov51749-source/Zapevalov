@@ -1,34 +1,60 @@
+function stopSelectionPointerEvent(event) {
+  event.stopPropagation();
+}
+
 export function ViewEngineHeaderSelectionCell({
   checked = false,
   indeterminate = false,
-  disabled = true,
+  disabled = false,
+  onChange,
 }) {
   return (
-    <div className="view-engine-table-selection-cell view-engine-table-selection-cell--header">
+    <div
+      className="view-engine-table-selection-cell view-engine-table-selection-cell--header"
+      onClick={stopSelectionPointerEvent}
+      onMouseDown={stopSelectionPointerEvent}
+    >
       <input
         type="checkbox"
         checked={checked}
         disabled={disabled}
-        readOnly
+        onChange={(event) => {
+          stopSelectionPointerEvent(event);
+          onChange?.(event);
+        }}
+        onClick={stopSelectionPointerEvent}
         ref={(element) => {
           if (element) {
             element.indeterminate = indeterminate;
           }
         }}
         className="view-engine-table-checkbox"
-        aria-label="Выбрать все строки"
+        aria-label="Выбрать все видимые строки"
       />
     </div>
   );
 }
 
-export function ViewEngineRowSelectionCell({ disabled = true }) {
+export function ViewEngineRowSelectionCell({
+  checked = false,
+  disabled = false,
+  onChange,
+}) {
   return (
-    <div className="view-engine-table-selection-cell">
+    <div
+      className="view-engine-table-selection-cell"
+      onClick={stopSelectionPointerEvent}
+      onMouseDown={stopSelectionPointerEvent}
+    >
       <input
         type="checkbox"
+        checked={checked}
         disabled={disabled}
-        readOnly
+        onChange={(event) => {
+          stopSelectionPointerEvent(event);
+          onChange?.(event);
+        }}
+        onClick={stopSelectionPointerEvent}
         className="view-engine-table-checkbox"
         aria-label="Выбрать строку"
       />

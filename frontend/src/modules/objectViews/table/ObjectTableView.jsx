@@ -33,21 +33,47 @@ import {
 } from "../../../shared/viewEngine/table";
 
 import useObjectViewDirtyGuard from "../hooks/useObjectViewDirtyGuard";
-import ObjectTableCreateQuickFilterDialog from "./components/ObjectTableCreateQuickFilterDialog";
+import ObjectTableCreateViewDialog from "./components/ObjectTableCreateViewDialog";
 import ObjectTableViewsBar from "./components/ObjectTableViewsBar";
 import ObjectTableViewSettingsPanel from "./viewSettings/ObjectTableViewSettingsPanel";
 import useObjectTableInlineEdit from "./hooks/useObjectTableInlineEdit";
 import { resolveTableRepresentationContract } from "./viewSettings/resolveTableRepresentationContract";
+import { resolveOfficeTableViewActions } from "../services/resolveOfficeTableViewActions";
 import ObjectTableViewSettingsFiltersModal from "./viewSettings/ObjectTableViewSettingsFiltersModal";
+import { countActiveFilterConditions } from "../services/savedFilterUtils";
 import {
   readHiddenViewKeys,
   writeHiddenViewKeys,
 } from "./representations/objectTableRepresentationsPrefs";
 import useObjectTableColumns from "./hooks/useObjectTableColumns";
 import useRelationTableEnrichment from "./hooks/useRelationTableEnrichment";
+import useObjectTableHierarchyRows from "./hooks/useObjectTableHierarchyRows";
+import useObjectTableSelection from "./hooks/useObjectTableSelection";
+import ObjectTableBulkActionsBar from "./components/ObjectTableBulkActionsBar";
+import ObjectTableFieldsVisibilityPanel from "./components/ObjectTableFieldsVisibilityPanel";
+import useObjectEntityDelete from "./hooks/useObjectEntityDelete";
+import useObjectEntitiesBulkDelete from "./hooks/useObjectEntitiesBulkDelete";
+import ObjectEntityDeleteConfirmModal from "./components/ObjectEntityDeleteConfirmModal";
+import ObjectEntityDeleteScenarioModal from "./components/ObjectEntityDeleteScenarioModal";
+import { applyObjectTableDisplayPositions } from "./services/applyObjectTableDisplayPositions";
+import {
+  hasHierarchySubtasksFeature,
+  resolvePrimaryHierarchySubtaskRelationKey,
+} from "../../../shared/relation/hierarchyRelationProfile.js";
+import {
+  formatCreateChildMenuLabel,
+  resolveHierarchyLabelsFromCatalog,
+} from "../../../shared/relation/hierarchyLabels.js";
 import useObjectTableSort from "./hooks/useObjectTableSort";
 import { resolveRelationTableColumns } from "../services/resolveRelationTableColumns";
 import { resolveRelatedEntityCardOpenArgs } from "./openRelatedEntityFromTable";
+import { getStoredCurrentUserId } from "./preferences/objectTableUserViewsStorage";
+import {
+  loadColumnWidths,
+  resolveColumnWidthsViewKey,
+  saveColumnWidth,
+} from "./services/objectTableColumnWidthsStorage";
+import { mapColumnWidthsToTableKeys } from "./services/mapColumnWidthsToTableKeys";
 
 import "../../../shared/viewEngine/viewEngineTable.css";
 
@@ -206,6 +232,23 @@ export default function ObjectTableView({
     ],
   );
 
+  const hierarchyTableActionsRef = useRef({
+    expandRow: () => {},
+    reloadEdges: async () => {},
+  });
+
+  const handleEntityDeleted = useCallback(async () => {
+    query.resetOffset?.();
+    await query.reload?.();
+    await hierarchyTableActionsRef.current.reloadEdges();
+  }, [query]);
+
+  const entityDelete = useObjectEntityDelete({
+    tenantId,
+    objectTypeKey,
+    onDeleted: handleEntityDeleted,
+  });
+
   const entityCard = useObjectEntityCard({
     tenantId,
     objectTypeKey,
@@ -215,11 +258,17 @@ export default function ObjectTableView({
     enabled: entityCardEnabled,
     onSaved: async (entity, meta) => {
       if (meta?.created) {
+        if (meta?.subtaskLinked && meta?.parentEntityId) {
+          hierarchyTableActionsRef.current.expandRow(meta.parentEntityId);
+        }
+
         await handleEntityCreated();
+        await hierarchyTableActionsRef.current.reloadEdges();
         return;
       }
 
       await handleEntitySaved();
+      await hierarchyTableActionsRef.current.reloadEdges();
     },
   });
 
@@ -265,12 +314,16 @@ export default function ObjectTableView({
   const [settingsViewKey, setSettingsViewKey] = useState(null);
   const [settingsExpandedKey, setSettingsExpandedKey] = useState(null);
   const [isFiltersEditorOpen, setIsFiltersEditorOpen] = useState(false);
+  const [filtersEditorSavedFilterId, setFiltersEditorSavedFilterId] = useState(null);
+  const [isFieldsVisibilityPanelOpen, setIsFieldsVisibilityPanelOpen] = useState(false);
+  const [fieldsVisibilityAnchorRect, setFieldsVisibilityAnchorRect] = useState(null);
+  const fieldsVisibilityButtonRef = useRef(null);
   const [visibilityRevision, setVisibilityRevision] = useState(0);
   /** Optimistic widths until session/effectiveContract catches up (Universal Table override pattern). */
   const [committedColumnWidths, setCommittedColumnWidths] = useState({});
+  const [storedColumnWidths, setStoredColumnWidths] = useState({});
   const settingsPanelAnchorRef = useRef(null);
   const [settingsPanelAnchor, setSettingsPanelAnchor] = useState(null);
-  const [isQuickFilterDialogOpen, setIsQuickFilterDialogOpen] = useState(false);
   const [cardSettingsSaving, setCardSettingsSaving] = useState(false);
 
   const objectCardSurfaceContext = useMemo(() => {
@@ -370,12 +423,30 @@ export default function ObjectTableView({
     ],
   );
 
+  const [isGuardSaveAsOpen, setIsGuardSaveAsOpen] = useState(false);
+
+  const activeViewDisplayName = useMemo(() => {
+    return (
+      String(effectiveContract?.name || resolvedContract?.name || "").trim() ||
+      "Представление"
+    );
+  }, [effectiveContract?.name, resolvedContract?.name]);
+
   const dirtyGuard = useObjectViewDirtyGuard({
     isDirty: sessionApi?.isDirty,
+    isBaseStateActive: isTableBaseStateActive,
+    viewName: activeViewDisplayName,
     onSave,
     onReset: sessionApi?.resetSession,
+    onRequestSaveAsNew: () => setIsGuardSaveAsOpen(true),
     saving: persistenceApi?.saving,
   });
+
+  const handleGuardedSelectTableBaseState = useCallback(() => {
+    dirtyGuard.runGuarded(() => {
+      onSelectTableBaseState?.();
+    });
+  }, [dirtyGuard, onSelectTableBaseState]);
 
   const contractForColumns = effectiveContract || resolvedContract;
 
@@ -410,7 +481,88 @@ export default function ObjectTableView({
       tableData.rows.length > 0,
   });
 
-  const displayRows = relationTable.enrichedRows;
+  const hierarchyViewKey = isTableBaseStateActive
+    ? String(publishedTableViewKey || "default_table").trim()
+    : String(activeViewKey || publishedTableViewKey || "default_table").trim();
+
+  const hierarchyTable = useObjectTableHierarchyRows({
+    tenantId,
+    objectTypeKey,
+    viewKey: hierarchyViewKey,
+    catalog: query.catalog,
+    flatRows: relationTable.enrichedRows,
+    enabled: mode !== "studio-preview",
+  });
+
+  useEffect(() => {
+    hierarchyTableActionsRef.current = {
+      expandRow: hierarchyTable.expandRow,
+      reloadEdges: hierarchyTable.reloadEdges,
+    };
+  }, [hierarchyTable.expandRow, hierarchyTable.reloadEdges]);
+
+  const displayRows = useMemo(
+    () =>
+      applyObjectTableDisplayPositions({
+        rows: hierarchyTable.displayRows,
+        sourceRows: relationTable.enrichedRows,
+        treeEnabled: hierarchyTable.treeEnabled,
+        parentByChild: hierarchyTable.parentByChild,
+      }),
+    [
+      hierarchyTable.displayRows,
+      hierarchyTable.treeEnabled,
+      hierarchyTable.parentByChild,
+      relationTable.enrichedRows,
+    ],
+  );
+
+  const visibleRowIds = useMemo(
+    () => displayRows.map((row) => row?.id).filter(Boolean),
+    [displayRows],
+  );
+
+  const tableSelection = useObjectTableSelection(visibleRowIds);
+
+  const bulkEntityDelete = useObjectEntitiesBulkDelete({
+    tenantId,
+    objectTypeKey,
+    onDeleted: handleEntityDeleted,
+    onClearSelection: tableSelection.clearSelection,
+  });
+
+  const handleBulkDeleteClick = useCallback(() => {
+    void bulkEntityDelete.beginBulkDelete(tableSelection.selectedIds);
+  }, [bulkEntityDelete.beginBulkDelete, tableSelection.selectedIds]);
+
+  const deleteConfirmOpen =
+    entityDelete.confirmOpen || bulkEntityDelete.confirmOpen;
+  const deleteScenarioOpen =
+    entityDelete.scenarioOpen || bulkEntityDelete.scenarioOpen;
+  const isBulkDeleteFlowActive =
+    bulkEntityDelete.confirmOpen || bulkEntityDelete.scenarioOpen;
+
+  const rowSelection = useMemo(
+    () =>
+      showSelectionColumn && mode !== "studio-preview"
+        ? {
+            isSelected: tableSelection.isSelected,
+            onToggleRow: tableSelection.toggleSelection,
+            headerChecked: tableSelection.headerChecked,
+            headerIndeterminate: tableSelection.headerIndeterminate,
+            onToggleAllVisible: tableSelection.toggleAllVisible,
+          }
+        : null,
+    [
+      mode,
+      showSelectionColumn,
+      tableSelection.headerChecked,
+      tableSelection.headerIndeterminate,
+      tableSelection.isSelected,
+      tableSelection.toggleAllVisible,
+      tableSelection.toggleSelection,
+    ],
+  );
 
   const handleOpenRelatedEntityFromTable = useCallback(
     ({ entityId, objectTypeKey: relatedObjectTypeKey }) => {
@@ -543,9 +695,82 @@ export default function ObjectTableView({
 
   const rowNumberOffset = tableData.pagination?.offset ?? 0;
 
+  const handleBeginDeleteEntity = useCallback(
+    ({ entityId, entityTitle = "" } = {}) => {
+      void entityDelete.beginDelete({ entityId, entityTitle });
+    },
+    [entityDelete.beginDelete],
+  );
+
+  const hierarchyRelationKey = useMemo(
+    () => resolvePrimaryHierarchySubtaskRelationKey(query.catalog, objectTypeKey),
+    [query.catalog, objectTypeKey],
+  );
+
+  const hierarchyLabels = useMemo(
+    () =>
+      resolveHierarchyLabelsFromCatalog(
+        query.catalog,
+        objectTypeKey,
+        hierarchyRelationKey,
+      ),
+    [query.catalog, objectTypeKey, hierarchyRelationKey],
+  );
+
+  const createChildMenuLabel = useMemo(
+    () => formatCreateChildMenuLabel(hierarchyLabels.child),
+    [hierarchyLabels.child],
+  );
+
+  const canCreateSubtaskFromRow = useMemo(
+    () =>
+      createEntityEnabled &&
+      hasHierarchySubtasksFeature(query.catalog, objectTypeKey) &&
+      Boolean(hierarchyRelationKey),
+    [createEntityEnabled, query.catalog, objectTypeKey, hierarchyRelationKey],
+  );
+
+  const handleCreateSubtaskFromRow = useCallback(
+    ({ entityId } = {}) => {
+      const parentEntityId = String(entityId || "").trim();
+
+      if (!parentEntityId || !hierarchyRelationKey) {
+        return;
+      }
+
+      entityCard.beginCreateSubtask(hierarchyRelationKey, {
+        parentEntityId,
+      });
+    },
+    [entityCard.beginCreateSubtask, hierarchyRelationKey],
+  );
+
+  const rowActionsEnabled =
+    createEntityEnabled &&
+    mode !== "studio-preview" &&
+    !inlineEdit.isInlineEditMode;
+
   const tableRendererContext = useMemo(
     () => ({
       onOpenRelatedEntity: handleOpenRelatedEntityFromTable,
+      onBeginDeleteEntity: handleBeginDeleteEntity,
+      rowActions: rowActionsEnabled
+        ? {
+            enabled: true,
+            canCreateSubtask: canCreateSubtaskFromRow,
+            canDelete: true,
+            titleFieldKey,
+            createChildMenuLabel,
+            onCreateSubtask: handleCreateSubtaskFromRow,
+            onBeginDeleteEntity: handleBeginDeleteEntity,
+          }
+        : null,
+      hierarchyTree: hierarchyTable.treeEnabled
+        ? {
+            enabled: true,
+            onToggleRowExpanded: hierarchyTable.toggleRowExpanded,
+          }
+        : null,
       onOpenFile: (file, meta = {}) => {
         const fileUrl = getFileUrl(file);
         const fileId = getTableFileId(file);
@@ -581,40 +806,74 @@ export default function ObjectTableView({
         });
       },
     }),
-    [handleOpenRelatedEntityFromTable, objectTypeKey, tenantId],
+    [
+      handleOpenRelatedEntityFromTable,
+      handleBeginDeleteEntity,
+      handleCreateSubtaskFromRow,
+      canCreateSubtaskFromRow,
+      createChildMenuLabel,
+      rowActionsEnabled,
+      titleFieldKey,
+      hierarchyTable.treeEnabled,
+      hierarchyTable.toggleRowExpanded,
+      inlineEdit.isInlineEditMode,
+      objectTypeKey,
+      tenantId,
+    ],
   );
 
   const activeFilterCount = useMemo(() => {
-    return effectiveContract?.query?.filters?.conditions?.length || 0;
-  }, [effectiveContract]);
-
-  const canCreateQuickFilter = useMemo(() => {
-    return (sessionApi?.currentFilterConditions || []).length > 0;
-  }, [sessionApi?.currentFilterConditions]);
+    return countActiveFilterConditions(
+      effectiveContract,
+      sessionApi?.activeQuickFilterId,
+    );
+  }, [effectiveContract, sessionApi?.activeQuickFilterId]);
 
   const handleCreateView = async (payload) => {
     const result = await onCreateView?.(payload);
 
     if (result?.ok) {
       sessionApi?.markSaved?.();
+      dirtyGuard.completeSaveAsNew?.();
+      setIsGuardSaveAsOpen(false);
     }
 
     return result;
   };
 
-  const handleCreateQuickFilter = ({ label }) => {
-    const result = sessionApi?.createQuickFilterFromCurrent?.({ label });
-
-    if (result?.ok !== false) {
-      setIsQuickFilterDialogOpen(false);
-    }
-
-    return result;
-  };
+  const handleCloseGuardSaveAs = useCallback(() => {
+    setIsGuardSaveAsOpen(false);
+    dirtyGuard.cancelPendingNavigation?.();
+  }, [dirtyGuard]);
 
   const handleApplyFilters = () => {
     query.resetOffset?.();
   };
+
+  const handleOpenFiltersEditor = useCallback((savedFilterId = null) => {
+    setFiltersEditorSavedFilterId(savedFilterId);
+    setIsFiltersEditorOpen(true);
+  }, []);
+
+  const handleDeleteSavedFilterFromSettings = useCallback(
+    (filterId) => {
+      sessionApi?.deleteSavedFilter?.(filterId);
+      query.resetOffset?.();
+    },
+    [sessionApi, query],
+  );
+
+  const handleEditSavedFilterFromSettings = useCallback(
+    (filterId) => {
+      handleOpenFiltersEditor(filterId);
+    },
+    [handleOpenFiltersEditor],
+  );
+
+  const handleCloseFiltersEditor = useCallback(() => {
+    setIsFiltersEditorOpen(false);
+    setFiltersEditorSavedFilterId(null);
+  }, []);
 
   const isActiveViewHidden = useMemo(() => {
     const hidden = readHiddenViewKeys(objectTypeKey, representationsPrefsScopeKey);
@@ -696,6 +955,44 @@ export default function ObjectTableView({
     activeViewContract,
   ]);
 
+  const settingsPanelActionContract = useMemo(
+    () =>
+      settingsRepresentationContract ||
+      effectiveContract ||
+      resolvedContract ||
+      null,
+    [
+      settingsRepresentationContract,
+      effectiveContract,
+      resolvedContract,
+    ],
+  );
+
+  const settingsPanelViewActions = useMemo(() => {
+    if (!allowOfficeUserPersistence) {
+      return viewActions;
+    }
+
+    return resolveOfficeTableViewActions(settingsPanelActionContract, {
+      tenantId,
+      objectTypeKey,
+    });
+  }, [
+    allowOfficeUserPersistence,
+    viewActions,
+    settingsPanelActionContract,
+    tenantId,
+    objectTypeKey,
+  ]);
+
+  const settingsPanelCanSave = useMemo(() => {
+    if (!allowOfficeUserPersistence) {
+      return canSave;
+    }
+
+    return settingsPanelActionContract?.meta?.isUserView === true;
+  }, [allowOfficeUserPersistence, canSave, settingsPanelActionContract]);
+
   const handleOpenViewSettingsForKey = useCallback(
     (viewKey, anchorEl = null) => {
       const normalized =
@@ -709,55 +1006,121 @@ export default function ObjectTableView({
         return;
       }
 
-      if (normalized && normalized !== String(activeViewKey)) {
-        dirtyGuard.runGuarded(() => {
-          onSelectView?.(normalized);
-          openViewSettings(null, anchorEl, normalized);
-        });
-        return;
-      }
-
+      // Opening settings must not switch active view or trigger dirty-guard.
       openViewSettings(null, anchorEl, normalized);
     },
     [
       activeViewKey,
       closeViewSettings,
-      dirtyGuard,
       isViewSettingsPanelOpen,
-      onSelectView,
       openViewSettings,
       settingsViewKey,
     ],
   );
 
+  const isSettingsPanelForActiveView = useMemo(() => {
+    const settingsKey = String(settingsViewKey || activeViewKey || "").trim();
+    const currentKey = String(activeViewKey || "").trim();
+
+    return Boolean(settingsKey) && settingsKey === currentKey;
+  }, [settingsViewKey, activeViewKey]);
+
+  const settingsPanelEffectiveContract = useMemo(() => {
+    if (isSettingsPanelForActiveView) {
+      return effectiveContract;
+    }
+
+    return settingsRepresentationContract || effectiveContract;
+  }, [
+    isSettingsPanelForActiveView,
+    effectiveContract,
+    settingsRepresentationContract,
+  ]);
+
+  const settingsPanelIsDirty = useMemo(
+    () => isSettingsPanelForActiveView && Boolean(sessionApi?.isDirty),
+    [isSettingsPanelForActiveView, sessionApi?.isDirty],
+  );
+
+  const handleDeleteRepresentation = useCallback(async () => {
+    const target =
+      settingsRepresentationContract ||
+      settingsPanelActionContract ||
+      effectiveContract;
+
+    return onDelete?.(target);
+  }, [
+    onDelete,
+    settingsRepresentationContract,
+    settingsPanelActionContract,
+    effectiveContract,
+  ]);
+
+  const handleSetDefaultForView = useCallback(
+    (view) => {
+      onSetDefault?.(view?.contract);
+    },
+    [onSetDefault],
+  );
+
+  const columnWidthsScope = useMemo(
+    () => ({
+      tenantId,
+      objectTypeKey,
+      viewKey: resolveColumnWidthsViewKey(
+        activeViewKey,
+        effectiveContract?.key,
+      ),
+      userId: getStoredCurrentUserId(),
+      contract: effectiveContract,
+    }),
+    [
+      tenantId,
+      objectTypeKey,
+      activeViewKey,
+      effectiveContract?.key,
+      effectiveContract,
+    ],
+  );
+
+  const columnWidthsStorageToken = useMemo(
+    () =>
+      [
+        columnWidthsScope.tenantId,
+        columnWidthsScope.objectTypeKey,
+        columnWidthsScope.viewKey,
+        columnWidthsScope.userId,
+      ].join(":"),
+    [columnWidthsScope],
+  );
+
+  useEffect(() => {
+    setStoredColumnWidths(loadColumnWidths(columnWidthsScope));
+    setCommittedColumnWidths({});
+  }, [columnWidthsStorageToken, columnWidthsScope]);
+
   const columnWidths = useMemo(() => {
     const contractWidths = effectiveContract?.presentation?.table?.columnWidths;
 
     if (!contractWidths || typeof contractWidths !== "object") {
-      return {};
+      return mapColumnWidthsToTableKeys(tableData.columns, {
+        ...storedColumnWidths,
+        ...committedColumnWidths,
+      });
     }
 
-    const byColumnKey = { ...contractWidths };
-
-    for (const column of tableData.columns) {
-      const presentationKey = getColumnPresentationKey(column);
-      const columnKey = String(column?.key || "").trim();
-
-      if (
-        presentationKey &&
-        columnKey &&
-        contractWidths[presentationKey] != null
-      ) {
-        byColumnKey[columnKey] = contractWidths[presentationKey];
-      }
-    }
+    const mergedByFieldKey = {
+      ...contractWidths,
+      ...storedColumnWidths,
+    };
 
     return {
-      ...byColumnKey,
+      ...mapColumnWidthsToTableKeys(tableData.columns, mergedByFieldKey),
       ...committedColumnWidths,
     };
   }, [
     effectiveContract?.presentation?.table?.columnWidths,
+    storedColumnWidths,
     tableData.columns,
     committedColumnWidths,
   ]);
@@ -785,13 +1148,15 @@ export default function ObjectTableView({
           continue;
         }
 
-        const contractWidth = Number(contractWidths[presentationKey]);
+        const persistedWidth = Number(
+          storedColumnWidths[presentationKey] ?? contractWidths[presentationKey],
+        );
         const committedWidth = Number(next[columnKey]);
 
         if (
-          Number.isFinite(contractWidth) &&
+          Number.isFinite(persistedWidth) &&
           Number.isFinite(committedWidth) &&
-          Math.abs(contractWidth - committedWidth) < 0.5
+          Math.abs(persistedWidth - committedWidth) < 0.5
         ) {
           delete next[columnKey];
           changed = true;
@@ -800,7 +1165,31 @@ export default function ObjectTableView({
 
       return changed ? next : prev;
     });
-  }, [effectiveContract?.presentation?.table?.columnWidths, tableData.columns]);
+  }, [
+    effectiveContract?.presentation?.table?.columnWidths,
+    storedColumnWidths,
+    tableData.columns,
+  ]);
+
+  const handleToggleFieldsVisibilityPanel = useCallback(() => {
+    setIsFieldsVisibilityPanelOpen((open) => {
+      if (open) {
+        return false;
+      }
+
+      const button = fieldsVisibilityButtonRef.current;
+
+      if (button) {
+        setFieldsVisibilityAnchorRect(button.getBoundingClientRect());
+      }
+
+      return true;
+    });
+  }, []);
+
+  const handleCloseFieldsVisibilityPanel = useCallback(() => {
+    setIsFieldsVisibilityPanelOpen(false);
+  }, []);
 
   const handleTableSurfaceClick = useCallback(
     (event) => {
@@ -819,6 +1208,9 @@ export default function ObjectTableView({
         target.closest(".view-engine-table-checkbox") ||
         target.closest(".view-engine-table-resize-handle") ||
         target.closest(".view-engine-table-sort-btn") ||
+        target.closest("[data-view-engine-row-menu]") ||
+        target.closest("[data-view-engine-row-menu-button]") ||
+        target.closest("[data-view-engine-table-action]") ||
         target.closest("button") ||
         target.closest("a") ||
         target.closest("input") ||
@@ -843,7 +1235,7 @@ export default function ObjectTableView({
         return;
       }
 
-      const rowId = tableData.rows[rowIndex]?.id;
+      const rowId = displayRows[rowIndex]?.id;
 
       if (!rowId) {
         return;
@@ -851,7 +1243,7 @@ export default function ObjectTableView({
 
       entityCard.openCard(rowId);
     },
-    [entityCard, entityCardEnabled, inlineEdit.isInlineEditMode, tableData.rows],
+    [displayRows, entityCard, entityCardEnabled, inlineEdit.isInlineEditMode],
   );
 
   const resolveColumnResizeFieldKey = useCallback(
@@ -905,8 +1297,6 @@ export default function ObjectTableView({
       const normalizedColumnKey = String(columnKey || "").trim();
       const fieldKey = resolveColumnResizeFieldKey(normalizedColumnKey);
       const numericWidth = Number(width);
-      const contractWidths =
-        effectiveContract?.presentation?.table?.columnWidths || {};
 
       if (
         normalizedColumnKey &&
@@ -931,17 +1321,18 @@ export default function ObjectTableView({
         });
 
         sessionApi?.setColumnWidth?.(fieldKey, numericWidth);
-
-        sessionApi?.flushPresentationColumnWidths?.({
-          ...contractWidths,
+        saveColumnWidth(columnWidthsScope, fieldKey, numericWidth);
+        setStoredColumnWidths((prev) => ({
+          ...prev,
           [fieldKey]: numericWidth,
-        });
+        }));
+        sessionApi?.flushPresentationColumnWidths?.();
         return;
       }
 
       sessionApi?.flushPresentationColumnWidths?.();
     },
-    [effectiveContract, resolveColumnResizeFieldKey, sessionApi],
+    [columnWidthsScope, resolveColumnResizeFieldKey, sessionApi],
   );
 
   return (
@@ -985,15 +1376,16 @@ export default function ObjectTableView({
             representationsPrefsScopeKey={representationsPrefsScopeKey}
             catalog={query.catalog}
             onSelectView={onSelectView}
-            onOpenFilters={() => openViewSettings("filters")}
+            onOpenFilters={() => handleOpenFiltersEditor(null)}
             onToggleInlineEdit={inlineEdit.toggleInlineEditMode}
             isInlineEditMode={inlineEdit.isInlineEditMode}
             onOpenViewSettingsForKey={handleOpenViewSettingsForKey}
+            onSetDefaultView={handleSetDefaultForView}
             isViewSettingsOpen={isViewSettingsPanelOpen}
             settingsPanelAnchorRef={settingsPanelAnchorRef}
             visibilityRevision={visibilityRevision}
             isTableBaseStateActive={isTableBaseStateActive}
-            onSelectTableBaseState={onSelectTableBaseState}
+            onSelectTableBaseState={handleGuardedSelectTableBaseState}
             activeFilterCount={activeFilterCount}
             canCreateEntity={entityCard.canCreate && createEntityEnabled}
             onCreateEntity={entityCard.openCreateCard}
@@ -1014,15 +1406,15 @@ export default function ObjectTableView({
             defaultQuickFilterId={
               effectiveContract?.query?.filters?.defaultQuickFilterId
             }
-            canCreateQuickFilter={canCreateQuickFilter}
             onSelectQuickFilter={onSelectQuickFilter}
-            onOpenCreateQuickFilter={() => setIsQuickFilterDialogOpen(true)}
           />
 
-          <ObjectTableCreateQuickFilterDialog
-            open={isQuickFilterDialogOpen}
-            onClose={() => setIsQuickFilterDialogOpen(false)}
-            onCreate={handleCreateQuickFilter}
+          <ObjectTableCreateViewDialog
+            open={isGuardSaveAsOpen}
+            onClose={handleCloseGuardSaveAs}
+            onCreate={handleCreateView}
+            creating={creating}
+            createError={createError}
           />
         </div>
       ) : null}
@@ -1035,7 +1427,7 @@ export default function ObjectTableView({
         activeViewContract={activeViewContract}
         representationContract={settingsRepresentationContract}
         activeViewKey={settingsViewKey || activeViewKey}
-        effectiveContract={effectiveContract}
+        effectiveContract={settingsPanelEffectiveContract}
         catalog={query.catalog}
         objectTypeKey={objectTypeKey}
         sessionApi={sessionApi}
@@ -1043,39 +1435,68 @@ export default function ObjectTableView({
         onCreateView={handleCreateView}
         creating={creating}
         createError={createError}
-        canSave={canSave}
+        canSave={settingsPanelCanSave && isSettingsPanelForActiveView}
         canCustomizeLayout={Boolean(
-          canSave || allowDesignerPersistence || allowOfficeUserPersistence,
+          settingsPanelCanSave ||
+            allowDesignerPersistence ||
+            allowOfficeUserPersistence,
         )}
-        isDirty={sessionApi?.isDirty}
+        isDirty={settingsPanelIsDirty}
         saving={persistenceApi?.saving}
         saveError={persistenceApi?.saveError}
-        canRename={viewActions.canRename}
-        canDuplicate={viewActions.canDuplicate}
-        canDelete={viewActions.canDelete}
-        canSetDefault={viewActions.canSetDefault}
+        canRename={settingsPanelViewActions.canRename}
+        canDuplicate={settingsPanelViewActions.canDuplicate}
+        canDelete={settingsPanelViewActions.canDelete}
+        canSetDefault={settingsPanelViewActions.canSetDefault}
         onRename={(newName) =>
           onRename?.(newName, settingsRepresentationContract)
         }
         onDuplicate={onDuplicate}
-        onDelete={onDelete}
-        onSetDefault={onSetDefault}
+        onDelete={handleDeleteRepresentation}
+        onSetDefault={() => onSetDefault?.(settingsRepresentationContract)}
         isViewHidden={isActiveViewHidden}
         onToggleViewVisibility={handleToggleActiveViewVisibility}
         actionLoading={persistenceApi?.actionLoading}
         actionError={persistenceApi?.actionError}
-        onOpenFiltersEditor={() => setIsFiltersEditorOpen(true)}
+        onOpenFiltersEditor={handleOpenFiltersEditor}
+        onEditSavedFilter={handleEditSavedFilterFromSettings}
+        onDeleteSavedFilter={handleDeleteSavedFilterFromSettings}
       />
 
       <ObjectTableViewSettingsFiltersModal
         open={isFiltersEditorOpen}
-        onClose={() => setIsFiltersEditorOpen(false)}
-        canCustomizeLayout={canSave}
+        onClose={handleCloseFiltersEditor}
+        canCustomizeLayout={Boolean(
+          canSave || allowDesignerPersistence || allowOfficeUserPersistence,
+        )}
         effectiveContract={effectiveContract}
         catalog={query.catalog}
         objectTypeKey={objectTypeKey}
         sessionApi={sessionApi}
         onApplied={handleApplyFilters}
+        savedFilters={effectiveContract?.query?.filters?.savedFilters || []}
+        initialSavedFilterId={filtersEditorSavedFilterId}
+      />
+
+      <ObjectTableFieldsVisibilityPanel
+        open={isFieldsVisibilityPanelOpen}
+        anchorRect={fieldsVisibilityAnchorRect}
+        anchorRef={fieldsVisibilityButtonRef}
+        onClose={handleCloseFieldsVisibilityPanel}
+        canCustomizeLayout={Boolean(
+          canSave || allowDesignerPersistence || allowOfficeUserPersistence,
+        )}
+        effectiveContract={effectiveContract}
+        catalog={query.catalog}
+        objectTypeKey={objectTypeKey}
+        sessionApi={sessionApi}
+      />
+
+      <ObjectTableBulkActionsBar
+        selectedCount={tableSelection.selectedCount}
+        onClearSelection={tableSelection.clearSelection}
+        onDelete={handleBulkDeleteClick}
+        deleting={bulkEntityDelete.isBusy}
       />
 
       <div
@@ -1102,11 +1523,17 @@ export default function ObjectTableView({
           onColumnResize={handleColumnResize}
           onColumnResizeEnd={handleColumnResizeEnd}
           showSelectionColumn={showSelectionColumn}
-          showRowNumberColumn={showRowNumberColumn}
+          rowSelection={rowSelection}
+          showRowNumberColumn={false}
           rowNumberOffset={rowNumberOffset}
           isInlineEditMode={inlineEdit.isInlineEditMode}
           onCellChange={inlineEdit.handleCellChange}
           className="view-engine-table-root--hosted"
+          titleFieldVisibility={{
+            isOpen: isFieldsVisibilityPanelOpen,
+            buttonRef: fieldsVisibilityButtonRef,
+            onToggle: handleToggleFieldsVisibilityPanel,
+          }}
         />
       </div>
 
@@ -1134,6 +1561,57 @@ export default function ObjectTableView({
           submitting={entityCard.quickCreate?.submitting}
           submitError={entityCard.quickCreate?.submitError}
           submitLabel={entityCard.quickCreate?.submitLabel}
+        />
+
+        <ObjectEntityDeleteConfirmModal
+          open={deleteConfirmOpen}
+          mode={isBulkDeleteFlowActive ? "bulk" : "single"}
+          entityTitle={entityDelete.target?.entityTitle}
+          bulkCount={bulkEntityDelete.aggregate?.selectedCount ?? 0}
+          deleting={entityDelete.deleting || bulkEntityDelete.deleting}
+          error={
+            isBulkDeleteFlowActive ? bulkEntityDelete.error : entityDelete.error
+          }
+          onCancel={
+            isBulkDeleteFlowActive
+              ? bulkEntityDelete.cancelDelete
+              : entityDelete.cancelDelete
+          }
+          onConfirm={
+            isBulkDeleteFlowActive
+              ? bulkEntityDelete.confirmSimpleDelete
+              : entityDelete.confirmSimpleDelete
+          }
+        />
+
+        <ObjectEntityDeleteScenarioModal
+          open={deleteScenarioOpen}
+          mode={isBulkDeleteFlowActive ? "bulk" : "single"}
+          aggregate={bulkEntityDelete.aggregate}
+          descendantCount={
+            entityDelete.preview?.descendant_count ??
+            entityDelete.preview?.descendantCount ??
+            0
+          }
+          hierarchyLabels={
+            entityDelete.preview?.hierarchy_labels ??
+            entityDelete.preview?.hierarchyLabels ??
+            hierarchyLabels
+          }
+          deleting={entityDelete.deleting || bulkEntityDelete.deleting}
+          error={
+            isBulkDeleteFlowActive ? bulkEntityDelete.error : entityDelete.error
+          }
+          onCancel={
+            isBulkDeleteFlowActive
+              ? bulkEntityDelete.cancelDelete
+              : entityDelete.cancelDelete
+          }
+          onConfirm={
+            isBulkDeleteFlowActive
+              ? bulkEntityDelete.confirmScenarioDelete
+              : entityDelete.confirmScenarioDelete
+          }
         />
 
         <ObjectEntityCardModal

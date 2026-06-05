@@ -1,4 +1,10 @@
 import {
+  isTableDedicatedRecordNumberFieldKey,
+  isTableRowNumberPresentationFieldKey,
+  TABLE_ROW_NUMBER_PRESENTATION_FIELD_KEY,
+  TABLE_ROW_NUMBER_PRESENTATION_LABEL,
+} from "../../../../../shared/runtime/systemEntityFields";
+import {
   SYSTEM_COLUMN_KEYS,
   VIEW_ENGINE_SYSTEM_COLUMN_KEYS,
 } from "../../../../../shared/viewEngine/systemColumnKeys";
@@ -6,6 +12,7 @@ import {
 import { normalizeTableDisplayFieldKeys } from "../../../services/tableColumnOrder";
 
 import { isRelationFieldType } from "../../../../designer/components/fields/relationFieldFormUtils";
+import { isHierarchyRelationFieldForTable } from "../../../../../shared/relation/hierarchyRelationProfile";
 
 import { catalogFieldToFieldDef } from "./catalogFieldToFieldDef";
 
@@ -100,6 +107,8 @@ function dedupeFieldKeys(keys) {
  *     systemColumnKeys?: string[],
  *     titleFieldKey?: string | null,
  *     isAllMode?: boolean,
+ *     catalog?: Record<string, unknown> | null,
+ *     objectTypeKey?: string | null,
  *   },
  * }} params
  */
@@ -113,6 +122,8 @@ export function projectionToColumns({
     systemColumnKeys = VIEW_ENGINE_SYSTEM_COLUMN_KEYS,
     titleFieldKey: titleFieldOverride = undefined,
     isAllMode = false,
+    catalog = null,
+    objectTypeKey = null,
   } = options;
 
   const fieldList = Array.isArray(fields) ? fields : [];
@@ -168,7 +179,40 @@ export function projectionToColumns({
   }
 
   for (const fieldKey of orderedKeys) {
+    if (isTableDedicatedRecordNumberFieldKey(fieldKey)) {
+      continue;
+    }
+
+    if (isTableRowNumberPresentationFieldKey(fieldKey)) {
+      columns.push({
+        key: TABLE_ROW_NUMBER_PRESENTATION_FIELD_KEY,
+        label: TABLE_ROW_NUMBER_PRESENTATION_LABEL,
+        type: "number",
+        fieldDef: {
+          key: TABLE_ROW_NUMBER_PRESENTATION_FIELD_KEY,
+          label: TABLE_ROW_NUMBER_PRESENTATION_LABEL,
+          type: "number",
+          isSystem: true,
+        },
+        source: "system",
+        visible: true,
+        sortable: false,
+        isSystem: true,
+        isTitle: false,
+        width: 48,
+      });
+      continue;
+    }
+
     const catalogField = fieldByKey.get(fieldKey);
+
+    if (
+      catalogField &&
+      isHierarchyRelationFieldForTable(catalogField, catalog, objectTypeKey)
+    ) {
+      continue;
+    }
+
     const fieldDef = catalogFieldToFieldDef(catalogField);
 
     if (!fieldDef) {

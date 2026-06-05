@@ -3,6 +3,8 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { getMe } from "../../../../api/authApi";
 import CreateMenuItemModal from "../../../../modules/navigation/components/CreateMenuItemModal";
+import NavigationDeleteDialogs from "../../../../modules/navigation/components/NavigationDeleteDialogs";
+import { canManageNavigationMenu } from "../../constants/designerRoles";
 import ProfileSidePanel from "../../../../profile/components/ProfileSidePanel";
 import useNotifications from "../../../../modules/notifications/hooks/useNotifications";
 import useNotificationNavigationOrchestrator from "../../../../modules/notifications/hooks/useNotificationNavigationOrchestrator";
@@ -197,6 +199,21 @@ function buildDesignerMetaNavigation(tenantId, isSuperadmin) {
       sort_order: 50,
     },
     {
+      id: "system-designer-trash",
+      title: "Корзина",
+      type: "system_page",
+      route: `${base}/trash`,
+      path: `${base}/trash`,
+      icon: "trash",
+      icon_type: "trash",
+      menu_scope: "designer",
+      scope: "designer",
+      mode: "designer",
+      is_system: true,
+      is_protected: true,
+      sort_order: 55,
+    },
+    {
       id: "system-designer-processes",
       title: "Бизнес-процессы",
       type: "system_page",
@@ -279,9 +296,14 @@ export default function DesignerShell() {
     location.pathname
   );
 
+  const [navigationEditMode, setNavigationEditMode] = useState(false);
   const navigationQuery = useMemo(
-    () => ({ scope: "designer", mode: "designer" }),
-    []
+    () => ({
+      scope: "designer",
+      mode: "designer",
+      forEditMode: navigationEditMode,
+    }),
+    [navigationEditMode],
   );
   const { navigation, reloadNavigation, sourceMode } = useNavigationTree(
     resolvedPortalId,
@@ -315,11 +337,13 @@ export default function DesignerShell() {
     portalId: resolvedPortalId,
     mode: "designer",
     reloadNavigation,
+    navigationItems: navigation,
     menuScale,
     onChangeMenuScale: handleMenuScaleChange,
-    canEditMenu: true,
-    canCreateItem: true,
-    canDragItems: hasPersistedDesignerNavigation,
+    onEditModeChange: setNavigationEditMode,
+    canEditMenu: canManageNavigationMenu(user),
+    canCreateItem: canManageNavigationMenu(user),
+    canDragItems: hasPersistedDesignerNavigation && canManageNavigationMenu(user),
     createPayloadDefaults: {
       scope: "designer",
       mode: "designer",
@@ -970,6 +994,16 @@ export default function DesignerShell() {
           />
         </div>
       ) : null}
+      <NavigationDeleteDialogs
+        pendingDeleteId={sidebarControls.pendingDeleteId}
+        pendingDeleteItem={sidebarControls.pendingDeleteItem}
+        deleteError={sidebarControls.deleteError}
+        deleteNotice={sidebarControls.deleteNotice}
+        isSubmitting={sidebarControls.isSaving}
+        onCancelDelete={sidebarControls.cancelDeleteItem}
+        onConfirmDelete={sidebarControls.confirmDeleteItem}
+        onCloseNotice={sidebarControls.clearDeleteNotice}
+      />
       <NotificationOverlayHost />
       <ProfileSidePanel
         isOpen={isProfileOpen}

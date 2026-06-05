@@ -26,6 +26,7 @@ const MENU_ICON_SYMBOLS = {
   views: "▦",
   users: "□",
   settings: "⚙",
+  trash: "⌫",
 };
 
 function isIconAssetUrl(value) {

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy import Column, DateTime, Integer, String, Boolean, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -40,6 +40,9 @@ class NavigationItem(Base):
     system_key = Column(String(100), nullable=True)
     is_system = Column(Boolean, nullable=False, default=False)
     is_protected = Column(Boolean, nullable=False, default=False)
+
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    deleted_by = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     parent = relationship(
         "NavigationItem",

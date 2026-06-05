@@ -11,7 +11,7 @@ const source = readFileSync(
 
 describe("getEntityCardLayoutFields", () => {
   it("filters hierarchy relation fields from card layout", () => {
-    assert.match(source, /isHierarchyRelationFieldForCard/);
+    assert.match(source, /isHierarchyRelationField/);
     assert.match(source, /hierarchyRelationProfile/);
   });
 

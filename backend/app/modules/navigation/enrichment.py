@@ -4,6 +4,11 @@ from sqlalchemy.orm import Session
 
 from app.modules.platform.designer.object_types.models import DesignerObjectType
 from app.modules.navigation.models import NavigationItem
+from app.modules.navigation.page_navigation_visibility import (
+    effective_navigation_is_visible,
+    load_page_status_map_for_items,
+    page_status_for_navigation_item,
+)
 from app.modules.navigation.schemas import NavigationItemResponse, NavigationTreeItem
 
 OBJECT_TYPE_NAV_TYPE = "object_type"
@@ -45,8 +50,16 @@ def load_object_types_map(
 def enrich_navigation_item(
     item: NavigationItem,
     object_types_by_id: dict[UUID, DesignerObjectType],
+    *,
+    page_status_map: dict[int, str] | None = None,
 ) -> NavigationItemResponse:
     payload = NavigationItemResponse.model_validate(item)
+    status_map = page_status_map or {}
+
+    page_status = page_status_for_navigation_item(item, status_map)
+    if page_status is not None:
+        payload.page_status = page_status
+        payload.is_visible = effective_navigation_is_visible(item, status_map)
 
     if item.object_type_id and item.object_type_id in object_types_by_id:
         object_type = object_types_by_id[item.object_type_id]
@@ -71,7 +84,11 @@ def enrich_navigation_list(
     items: list[NavigationItem],
 ) -> list[NavigationItemResponse]:
     object_types_by_id = load_object_types_map(db, collect_object_type_ids(items))
-    return [enrich_navigation_item(item, object_types_by_id) for item in items]
+    page_status_map = load_page_status_map_for_items(db, items)
+    return [
+        enrich_navigation_item(item, object_types_by_id, page_status_map=page_status_map)
+        for item in items
+    ]
 
 
 def enrich_navigation_tree(
@@ -88,9 +105,14 @@ def enrich_navigation_tree(
 
     walk(tree)
     object_types_by_id = load_object_types_map(db, collect_object_type_ids(flat_items))
+    page_status_map = load_page_status_map_for_items(db, flat_items)
 
     def map_node(node: NavigationItem) -> NavigationTreeItem:
-        enriched = enrich_navigation_item(node, object_types_by_id)
+        enriched = enrich_navigation_item(
+            node,
+            object_types_by_id,
+            page_status_map=page_status_map,
+        )
         children = getattr(node, "children", None) or []
         return NavigationTreeItem(
             **enriched.model_dump(),

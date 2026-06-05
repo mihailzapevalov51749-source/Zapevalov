@@ -19,6 +19,8 @@ def serialize_entity(
     merged_values = values_dict(value_rows)
     merged_values.update(system_values_from_entity(entity))
 
+    record_number = int(getattr(entity, "record_number", 0) or 0)
+
     return EntityRead(
         id=entity.id,
         tenant_id=entity.tenant_id,
@@ -30,6 +32,9 @@ def serialize_entity(
         created_by=entity.created_by,
         updated_by=entity.updated_by,
         record_version=int(entity.record_version or 1),
+        record_number=record_number,
+        recordNumber=record_number,
+        system_number=record_number,
         created_at=entity.created_at,
         updated_at=entity.updated_at,
         deleted_at=entity.deleted_at,

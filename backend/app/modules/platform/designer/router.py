@@ -19,6 +19,10 @@ from app.modules.platform.designer.publish.router import publish_router
 from app.modules.platform.designer.workspaces.router import (
     router as workspaces_router,
 )
+from app.modules.platform.designer.pages.router import (
+    router as pages_registry_router,
+)
+from app.modules.platform.designer.trash.router import router as trash_router
 from app.modules.platform.shared.dependencies import (
     require_designer_user,
     require_tenant,
@@ -72,5 +76,7 @@ tenant_router.include_router(
 
 tenant_router.include_router(publish_router)
 tenant_router.include_router(workspaces_router)
+tenant_router.include_router(pages_registry_router)
+tenant_router.include_router(trash_router)
 
 router.include_router(tenant_router)

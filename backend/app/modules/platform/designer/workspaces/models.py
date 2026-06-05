@@ -27,6 +27,9 @@ class DesignerWorkspace(Base):
         nullable=False,
     )
 
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    deleted_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+
     __table_args__ = (
         UniqueConstraint("tenant_id", "slug", name="uq_designer_workspace_tenant_slug"),
     )
@@ -68,6 +71,9 @@ class DesignerWorkspaceTab(Base):
         onupdate=func.now(),
         nullable=False,
     )
+
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    deleted_by = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     __table_args__ = (
         UniqueConstraint("workspace_id", "slug", name="uq_designer_workspace_tab_slug"),

@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { PlatformModal } from "../../../../shared/platformModal";
 import { getNextSortRules } from "../../services/sortRulesUtils";
 import { buildTableQueryFieldOptions } from "../../services/catalogFieldsForTableQueryUi";
+import { getTablePresentationFieldKeys } from "../../services/columnPresentationUtils";
 import {
   findCatalogObjectType,
   getObjectTypeFields,
@@ -46,7 +47,7 @@ export default function ObjectTableViewSettingsSortModal({
       buildTableQueryFieldOptions({
         catalog,
         objectTypeKey,
-        projectionFieldKeys: effectiveContract?.projection?.fieldKeys || [],
+        projectionFieldKeys: getTablePresentationFieldKeys(effectiveContract),
         findObjectType: findCatalogObjectType,
         getFields: getObjectTypeFields,
       }),

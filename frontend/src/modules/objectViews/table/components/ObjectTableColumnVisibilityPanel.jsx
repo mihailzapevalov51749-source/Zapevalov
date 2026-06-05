@@ -53,6 +53,7 @@ export default function ObjectTableColumnVisibilityPanel({
   const columnOrder = sessionApi?.panelColumnOrder || [];
   const hiddenSet = new Set(sessionApi?.hiddenFieldKeys || []);
   const titleFieldKey = effectiveContract?.projection?.titleFieldKey;
+  const columnMoveOptions = sessionApi?.columnMoveOptions || {};
 
   const handleToggle = (fieldKey) => {
     const result = sessionApi?.toggleFieldVisibility?.(fieldKey);
@@ -191,6 +192,7 @@ export default function ObjectTableColumnVisibilityPanel({
                         "up",
                         columnOrder,
                         titleFieldKey,
+                        columnMoveOptions,
                       )
                     }
                     onClick={() => sessionApi?.moveColumn?.(fieldKey, "up")}
@@ -207,6 +209,7 @@ export default function ObjectTableColumnVisibilityPanel({
                         "down",
                         columnOrder,
                         titleFieldKey,
+                        columnMoveOptions,
                       )
                     }
                     onClick={() => sessionApi?.moveColumn?.(fieldKey, "down")}

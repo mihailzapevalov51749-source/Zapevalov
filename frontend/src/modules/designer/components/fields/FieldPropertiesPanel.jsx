@@ -1,4 +1,5 @@
 import ChoiceOptionsEditor from "./ChoiceOptionsEditor";
+import DefaultValueEditor from "./defaultValue/DefaultValueEditor";
 import RelationFieldSettings from "./RelationFieldSettings";
 import { FIELD_TYPE_OPTIONS } from "./CreateFieldModal";
 import {
@@ -168,6 +169,22 @@ export default function FieldPropertiesPanel({
                 Несколько файлов
               </label>
             </div>
+          ) : null}
+
+          <DefaultValueEditor
+            fieldType={draft.field_type}
+            value={draft.default_value}
+            onChange={(default_value) => onDraftChange?.({ ...draft, default_value })}
+            choiceOptions={draft.choice_options || []}
+            tenantId={tenantId}
+            objectTypeId={objectTypeId}
+            relationDefinitions={relationDefinitions}
+            relationKey={draft.relation_key}
+            relationRole={draft.relation_role}
+          />
+
+          {draft.default_value_error ? (
+            <p className="designer-field-form__error">{draft.default_value_error}</p>
           ) : null}
 
           {showRelationOptions ? (

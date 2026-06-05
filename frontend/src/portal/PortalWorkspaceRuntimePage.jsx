@@ -126,7 +126,9 @@ export default function PortalWorkspaceRuntimePage() {
           return;
         }
 
-        const tabsResponse = await listDesignerWorkspaceTabs(portalId, workspaceData.id);
+        const tabsResponse = await listDesignerWorkspaceTabs(portalId, workspaceData.id, {
+          forUserMenu: true,
+        });
         if (loadRequestRef.current !== requestId || cancelled) {
           return;
         }
@@ -216,7 +218,7 @@ export default function PortalWorkspaceRuntimePage() {
       }
 
       try {
-        await getPageFull(activePageId);
+        await getPageFull(activePageId, { officeAccess: true });
         if (!cancelled) {
           setPageExists(true);
         }

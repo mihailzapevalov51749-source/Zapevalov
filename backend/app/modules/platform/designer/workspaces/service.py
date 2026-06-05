@@ -209,7 +209,10 @@ def _list_workspace_tabs_with_objects(db: Session, *, workspace_id: int) -> list
             DesignerObjectType,
             cast(DesignerObjectType.id, String) == cast(DesignerWorkspaceTab.object_type_id, String),
         )
-        .filter(DesignerWorkspaceTab.workspace_id == workspace_id)
+        .filter(
+            DesignerWorkspaceTab.workspace_id == workspace_id,
+            DesignerWorkspaceTab.deleted_at.is_(None),
+        )
         .order_by(DesignerWorkspaceTab.sort_order.asc(), DesignerWorkspaceTab.id.asc())
         .all()
     )
@@ -455,7 +458,10 @@ def ensure_workspace_home_page(
 def list_workspaces(db: Session, *, tenant_id: int) -> list[DesignerWorkspace]:
     return (
         db.query(DesignerWorkspace)
-        .filter(DesignerWorkspace.tenant_id == tenant_id)
+        .filter(
+            DesignerWorkspace.tenant_id == tenant_id,
+            DesignerWorkspace.deleted_at.is_(None),
+        )
         .order_by(DesignerWorkspace.sort_order.asc(), DesignerWorkspace.id.asc())
         .all()
     )
@@ -773,15 +779,68 @@ def delete_workspace(
     *,
     tenant_id: int,
     workspace_id: int,
+    deleted_by: int | None = None,
 ) -> None:
+    from app.modules.platform.designer.shared.soft_delete import apply_soft_delete
+
     workspace = _get_workspace_or_404(db, tenant_id=tenant_id, workspace_id=workspace_id)
     for nav_item in list_workspace_placements(db, tenant_id=tenant_id, workspace_id=workspace_id):
-        db.delete(nav_item)
-    tabs = db.query(DesignerWorkspaceTab).filter(DesignerWorkspaceTab.workspace_id == workspace_id).all()
+        if nav_item.deleted_at is None:
+            apply_soft_delete(nav_item, deleted_by=deleted_by)
+    tabs = (
+        db.query(DesignerWorkspaceTab)
+        .filter(
+            DesignerWorkspaceTab.workspace_id == workspace_id,
+            DesignerWorkspaceTab.deleted_at.is_(None),
+        )
+        .all()
+    )
     for tab in tabs:
-        db.delete(tab)
-    db.delete(workspace)
+        apply_soft_delete(tab, deleted_by=deleted_by)
+    apply_soft_delete(workspace, deleted_by=deleted_by)
     db.commit()
+
+
+def _filter_workspace_tabs_for_user_menu(
+    db: Session,
+    tabs: list[WorkspaceTabRead],
+) -> list[WorkspaceTabRead]:
+    from app.modules.pages.models import Page
+    from app.modules.pages.runtime_access import is_page_visible_in_office_navigation, normalize_page_status
+
+    page_ids: set[int] = set()
+    for tab in tabs:
+        if str(tab.tab_type or "") != "page":
+            continue
+        target_id = str(tab.target_id or "").strip()
+        if target_id.isdigit():
+            page_ids.add(int(target_id))
+
+    page_status_map: dict[int, str] = {}
+    if page_ids:
+        rows = (
+            db.query(Page.id, Page.status)
+            .filter(Page.id.in_(page_ids), Page.deleted_at.is_(None))
+            .all()
+        )
+        page_status_map = {
+            int(page_id): normalize_page_status(status) for page_id, status in rows
+        }
+
+    filtered: list[WorkspaceTabRead] = []
+    for tab in tabs:
+        if tab.is_visible is False:
+            continue
+        if str(tab.tab_type or "") != "page":
+            filtered.append(tab)
+            continue
+        target_id = str(tab.target_id or "").strip()
+        if not target_id.isdigit():
+            continue
+        page_status = page_status_map.get(int(target_id), "draft")
+        if is_page_visible_in_office_navigation(page_status):
+            filtered.append(tab)
+    return filtered
 
 
 def list_workspace_tabs(
@@ -789,9 +848,13 @@ def list_workspace_tabs(
     *,
     tenant_id: int,
     workspace_id: int,
+    for_user_menu: bool = False,
 ) -> list[WorkspaceTabRead]:
     ensure_workspace_tabs(db, tenant_id=tenant_id, workspace_id=workspace_id)
-    return _build_workspace_tab_reads(db, workspace_id=workspace_id)
+    tabs = _build_workspace_tab_reads(db, workspace_id=workspace_id)
+    if for_user_menu:
+        return _filter_workspace_tabs_for_user_menu(db, tabs)
+    return tabs
 
 
 def create_workspace_tab(
@@ -1018,7 +1081,10 @@ def delete_workspace_tab(
     tenant_id: int,
     workspace_id: int,
     tab_id: int,
+    deleted_by: int | None = None,
 ) -> None:
+    from app.modules.platform.designer.shared.soft_delete import apply_soft_delete
+
     _get_workspace_or_404(db, tenant_id=tenant_id, workspace_id=workspace_id)
     tab = _get_tab_or_404(db, workspace_id=workspace_id, tab_id=tab_id)
     if tab.is_system:
@@ -1026,6 +1092,6 @@ def delete_workspace_tab(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Системную вкладку удалить нельзя",
         )
-    db.delete(tab)
+    apply_soft_delete(tab, deleted_by=deleted_by)
     db.commit()
 

@@ -251,7 +251,7 @@ export default function PortalObjectDataPage({
             tenantId={tenantId}
             objectTypeId={objectTypeId}
             objectTypeKey={objectTypeKey}
-            viewKey={resolvedObjectTabKey}
+            objectTabKey={resolvedObjectTabKey}
             viewType={activeViewType}
             mode="data"
             viewLabel={activeViewLabel}

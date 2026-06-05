@@ -16,7 +16,10 @@ export {
   syncObjectViewContractWithCatalog,
 } from "./services/syncProjectionWithCatalogFields";
 export { buildObjectViewPayload } from "./services/buildObjectViewPayload";
-export { mapObjectViewQueryToRuntimeParams } from "./services/mapObjectViewQueryToRuntimeParams";
+export {
+  buildRuntimeFilterParams,
+  mapObjectViewQueryToRuntimeParams,
+} from "./services/mapObjectViewQueryToRuntimeParams";
 export { mergeEffectiveContract } from "./services/mergeEffectiveContract";
 
 export { default as ObjectTableView } from "./table/ObjectTableView";

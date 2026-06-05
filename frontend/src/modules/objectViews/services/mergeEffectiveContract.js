@@ -2,6 +2,7 @@ import {
   normalizePresentationCard,
   normalizePresentationTable,
 } from "./contractGuards";
+import { isTableBaseStateKey } from "../table/preferences/tableBaseState";
 
 /**
  * Merges persisted contract (baseline) with session deltas.
@@ -45,6 +46,7 @@ export function mergeEffectiveContract(baseline, sessionDelta = {}) {
 
   const projectionFieldKeys = baseline.projection?.fieldKeys || [];
   const baselineTable = baseline.presentation?.table || {};
+  const isUserView = baseline.meta?.isUserView === true;
   const mergedPresentation = normalizePresentationTable(
     {
       hiddenFieldKeys:
@@ -66,6 +68,10 @@ export function mergeEffectiveContract(baseline, sessionDelta = {}) {
     },
     projectionFieldKeys,
     baseline.projection?.titleFieldKey,
+    {
+      preserveExactColumnOrder: isUserView,
+      isAllMode: isTableBaseStateKey(baseline.key),
+    },
   );
 
   const mergedCard =
@@ -73,12 +79,17 @@ export function mergeEffectiveContract(baseline, sessionDelta = {}) {
       ? normalizePresentationCard(sessionDelta.cardLayout)
       : normalizePresentationCard(baseline.presentation?.card);
 
+  const mergedFieldOrder =
+    sessionDelta.columnOrder != null
+      ? [...sessionDelta.columnOrder]
+      : [...(baseline.projection.fieldOrder || baseline.projection.fieldKeys || [])];
+
   return {
     ...baseline,
     projection: {
       ...baseline.projection,
       fieldKeys: [...(baseline.projection.fieldKeys || [])],
-      fieldOrder: [...(baseline.projection.fieldOrder || [])],
+      fieldOrder: mergedFieldOrder,
     },
     query: {
       ...baseline.query,
@@ -114,12 +125,87 @@ function isPresentationDirty(baseline, effective) {
       JSON.stringify(effectiveTable.hiddenFieldKeys || []) ||
     JSON.stringify(baselineTable.columnOrder || []) !==
       JSON.stringify(effectiveTable.columnOrder || []) ||
-    JSON.stringify(baselineTable.columnWidths || {}) !==
-      JSON.stringify(effectiveTable.columnWidths || {}) ||
     (baselineTable.density || "compact") !== (effectiveTable.density || "compact") ||
     JSON.stringify(baseline.presentation?.card || null) !==
       JSON.stringify(effective.presentation?.card || null)
   );
+}
+
+/**
+ * Stable fingerprint of resolved contract after catalog/runtime normalization.
+ * Used to re-align session baseline when catalog loads (not a user edit).
+ */
+export function buildObjectViewResolvedFingerprint(contract) {
+  if (!contract) {
+    return "";
+  }
+
+  const table = contract.presentation?.table || {};
+
+  return [
+    String(contract.key || ""),
+    (contract.projection?.fieldKeys || []).join("\u001f"),
+    (table.columnOrder || []).join("\u001f"),
+    JSON.stringify(contract.query?.sort?.rules || []),
+    JSON.stringify(table.hiddenFieldKeys || []),
+    JSON.stringify(table.columnWidths || {}),
+  ].join("\u001e");
+}
+
+/**
+ * Dev/test helper: list contract paths that differ for dirty comparison.
+ *
+ * @returns {Array<{ path: string, baseline: unknown, current: unknown }>}
+ */
+export function diffObjectViewDirtyPaths(baseline, effective) {
+  if (!baseline || !effective) {
+    return [];
+  }
+
+  const diffs = [];
+
+  const pushIfDiff = (path, baselineValue, currentValue) => {
+    if (JSON.stringify(baselineValue) !== JSON.stringify(currentValue)) {
+      diffs.push({ path, baseline: baselineValue, current: currentValue });
+    }
+  };
+
+  pushIfDiff(
+    "query.filters.conditions",
+    baseline.query?.filters?.conditions || [],
+    effective.query?.filters?.conditions || [],
+  );
+  pushIfDiff(
+    "query.sort.rules",
+    baseline.query?.sort?.rules || [],
+    effective.query?.sort?.rules || [],
+  );
+
+  const baselineTable = baseline.presentation?.table || {};
+  const effectiveTable = effective.presentation?.table || {};
+
+  pushIfDiff(
+    "presentation.table.hiddenFieldKeys",
+    baselineTable.hiddenFieldKeys || [],
+    effectiveTable.hiddenFieldKeys || [],
+  );
+  pushIfDiff(
+    "presentation.table.columnOrder",
+    baselineTable.columnOrder || [],
+    effectiveTable.columnOrder || [],
+  );
+  pushIfDiff(
+    "presentation.table.density",
+    baselineTable.density || "compact",
+    effectiveTable.density || "compact",
+  );
+  pushIfDiff(
+    "projection.fieldKeys",
+    baseline.projection?.fieldKeys || [],
+    effective.projection?.fieldKeys || [],
+  );
+
+  return diffs;
 }
 
 /**
@@ -132,10 +218,6 @@ export function isObjectViewQueryDirty(baseline, effective) {
       JSON.stringify(effective.query.filters.conditions || []) ||
     JSON.stringify(baseline.query.sort.rules || []) !==
       JSON.stringify(effective.query.sort.rules || []) ||
-    JSON.stringify(baseline.query.filters.savedFilters || []) !==
-      JSON.stringify(effective.query.filters.savedFilters || []) ||
-    JSON.stringify(baseline.query.filters.defaultQuickFilterId ?? null) !==
-      JSON.stringify(effective.query.filters.defaultQuickFilterId ?? null) ||
     isPresentationDirty(baseline, effective)
   );
 }
