@@ -1,6 +1,7 @@
 import DateFieldEditor from "../../../../shared/fieldEditors/editors/DateFieldEditor";
 import UserFieldEditor from "../../../../shared/fieldEditors/editors/UserFieldEditor";
 import { normalizeUserFieldId } from "../../../../shared/fieldEditors/userFieldValueUtils";
+import RelationFilterPeerSelect from "./RelationFilterPeerSelect";
 
 /**
  * @typedef {Object} TableFilterFieldOption
@@ -76,6 +77,9 @@ export default function ObjectTableFilterValueEditor({
   className = "designer-input",
   style = null,
   disabled = false,
+  tenantId = null,
+  catalog = null,
+  objectTypeKey = "",
 }) {
   const controlStyle = style || undefined;
   const controlClassName = style ? undefined : className;
@@ -137,6 +141,22 @@ export default function ObjectTableFilterValueEditor({
           onChange={onChange}
         />
       </div>
+    );
+  }
+
+  if (fieldType === "relation") {
+    return (
+      <RelationFilterPeerSelect
+        tenantId={tenantId}
+        catalog={catalog}
+        anchorObjectTypeKey={objectTypeKey}
+        fieldOption={fieldOption}
+        value={value}
+        onChange={onChange}
+        className={controlClassName}
+        style={controlStyle}
+        disabled={disabled}
+      />
     );
   }
 

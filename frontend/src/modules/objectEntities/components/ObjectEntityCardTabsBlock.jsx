@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import notebookIcon from "../../../assets/icons/NotebookPen.svg";
+import checklistIcon from "../../../assets/icons/ListChecks.svg";
 import subtasksIcon from "../../../assets/icons/list-bullets.svg";
 
 import {
@@ -19,11 +20,15 @@ import {
 import { shouldExpandObjectEntityInnerTabs } from "../services/buildObjectEntityNotificationContext";
 import { getInnerTabLabel } from "../services/objectEntityCardSectionsLayout";
 import { resolveActiveCardTab } from "../services/objectEntityCardLayout";
+import { getChecklist } from "../../../shared/checklists/checklistApi";
+import { resolveRuntimeEntityCommunicationIdentity } from "../../../shared/entityIdentity";
 import EntityCardPendingSection from "./EntityCardPendingSection";
+import ObjectEntityChecklist from "./ObjectEntityChecklist";
 import ObjectEntityNotes from "./ObjectEntityNotes";
 import ObjectEntityRelatedEntities from "./ObjectEntityRelatedEntities";
 
 const TAB_ICONS = {
+  checklist: checklistIcon,
   notes: notebookIcon,
   relations: subtasksIcon,
 };
@@ -56,6 +61,52 @@ export default function ObjectEntityCardTabsBlock({
     shouldExpandObjectEntityInnerTabs(initialContext),
   );
   const [notesCount, setNotesCount] = useState(null);
+  const [checklistCount, setChecklistCount] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function preloadChecklistCount() {
+      if (isCreate || !cardModel?.entityId) {
+        if (isMounted) {
+          setChecklistCount(null);
+        }
+        return;
+      }
+
+      const identity = resolveRuntimeEntityCommunicationIdentity(cardModel.entityId);
+
+      if (!identity) {
+        if (isMounted) {
+          setChecklistCount(0);
+        }
+        return;
+      }
+
+      try {
+        const data = await getChecklist({
+          entityType: identity.entityType,
+          entityId: identity.entityId,
+        });
+
+        if (isMounted) {
+          setChecklistCount(Array.isArray(data?.items) ? data.items.length : 0);
+        }
+      } catch (error) {
+        console.error("Ошибка загрузки счётчика чек-листа:", error);
+
+        if (isMounted) {
+          setChecklistCount(0);
+        }
+      }
+    }
+
+    void preloadChecklistCount();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [cardModel?.entityId, isCreate]);
 
   useEffect(() => {
     const targetTab = String(initialContext?.tab || "").trim();
@@ -87,6 +138,10 @@ export default function ObjectEntityCardTabsBlock({
   const activeTabConfig = tabs.find((tab) => tab.id === activeTab) || tabs[0];
 
   function resolveTabCount(tabId) {
+    if (tabId === "checklist") {
+      return typeof checklistCount === "number" ? checklistCount : 0;
+    }
+
     if (tabId === "notes") {
       return typeof notesCount === "number" ? notesCount : 0;
     }
@@ -101,6 +156,15 @@ export default function ObjectEntityCardTabsBlock({
   function renderTabContent(tabId) {
     if (isCreate || !cardModel?.entityId) {
       return <EntityCardPendingSection message={createPendingMessage} />;
+    }
+
+    if (tabId === "checklist") {
+      return (
+        <ObjectEntityChecklist
+          runtimeEntityId={cardModel.entityId}
+          onCountChange={setChecklistCount}
+        />
+      );
     }
 
     if (tabId === "notes") {

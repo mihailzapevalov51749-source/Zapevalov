@@ -67,7 +67,8 @@ export function normalizeDefaultValueFromField(raw, fieldType) {
   if (
     (normalizedType === "text" ||
       normalizedType === "textarea" ||
-      normalizedType === "uuid") &&
+      normalizedType === "uuid" ||
+      normalizedType === "link") &&
     typeof raw === "string"
   ) {
     return { type: DEFAULT_VALUE_CONSTANT, value: raw };
@@ -136,7 +137,9 @@ export function buildDefaultValuePayload(draftDefaultValue, fieldType) {
   }
 
   if (
-    (normalizedType === "text" || normalizedType === "textarea") &&
+    (normalizedType === "text" ||
+      normalizedType === "textarea" ||
+      normalizedType === "link") &&
     type === DEFAULT_VALUE_CONSTANT
   ) {
     if (typeof value !== "string") {

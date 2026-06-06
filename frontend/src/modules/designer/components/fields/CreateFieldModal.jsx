@@ -35,6 +35,7 @@ export const FIELD_TYPE_OPTIONS = [
   { value: "user", label: "Пользователь" },
   { value: "file", label: "Вложения" },
   { value: "relation", label: "Связи" },
+  { value: "link", label: "Ссылка" },
 ];
 
 const INITIAL_FORM = {

@@ -13,9 +13,12 @@ import RelationsTab from "../components/tabs/RelationsTab";
 import RuntimePreviewTab from "../components/tabs/RuntimePreviewTab";
 import ViewsTab from "../components/tabs/ViewsTab";
 import { DEFAULT_DESIGNER_TAB, isValidDesignerTab } from "../constants/tabs";
+import { ObjectTypePreviewTabProvider } from "../context/ObjectTypePreviewTabContext";
 import { useDesignerShell } from "../context/DesignerShellContext";
-import { getObjectTypeAppearanceFields } from "../../../shared/icons/iconFileUtils";
+import { mergeObjectTypeAppearance } from "../../../shared/icons/iconFileUtils";
+import { navigationService } from "../../navigation/services/navigationService";
 import { detectObjectTypeMenuPlacement } from "../utils/detectObjectTypeMenuPlacement";
+import { findObjectTypeNavigationItem } from "../utils/objectTypePublishState";
 import {
   dispatchDesignerNavigationReload,
   dispatchPortalNavigationReload,
@@ -46,6 +49,25 @@ export default function ObjectTypeWorkspacePage() {
   const [menuDialogOpen, setMenuDialogOpen] = useState(false);
   const [menuPublishMessage, setMenuPublishMessage] = useState("");
 
+  const resolveAppearanceDraft = useCallback(
+    async (objectTypeData) => {
+      let navigationItem = null;
+
+      try {
+        const runtimeTree = await navigationService.getTree(tenantId, {
+          scope: "runtime",
+          mode: "runtime",
+        });
+        navigationItem = findObjectTypeNavigationItem(runtimeTree, objectTypeId);
+      } catch {
+        navigationItem = null;
+      }
+
+      return mergeObjectTypeAppearance(objectTypeData, navigationItem);
+    },
+    [tenantId, objectTypeId],
+  );
+
   const loadWorkspace = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -60,7 +82,7 @@ export default function ObjectTypeWorkspacePage() {
       const menuPlaced = await detectObjectTypeMenuPlacement(tenantId, objectTypeId);
 
       setObjectType(objectTypeData);
-      setAppearanceDraft(getObjectTypeAppearanceFields(objectTypeData));
+      setAppearanceDraft(await resolveAppearanceDraft(objectTypeData));
       setCatalogVersion(nextCatalogVersion);
       setHasMenuPlacement(menuPlaced);
       setIsDraftDirty(false);
@@ -69,17 +91,20 @@ export default function ObjectTypeWorkspacePage() {
     } finally {
       setLoading(false);
     }
-  }, [tenantId, objectTypeId]);
+  }, [resolveAppearanceDraft, tenantId, objectTypeId]);
 
   useEffect(() => {
     loadWorkspace();
   }, [loadWorkspace]);
 
-  const handleObjectTypeSaved = useCallback((updated) => {
-    setObjectType(updated);
-    setAppearanceDraft(getObjectTypeAppearanceFields(updated));
-    dispatchDesignerNavigationReload();
-  }, []);
+  const handleObjectTypeSaved = useCallback(
+    async (updated) => {
+      setObjectType(updated);
+      setAppearanceDraft(await resolveAppearanceDraft(updated));
+      dispatchDesignerNavigationReload();
+    },
+    [resolveAppearanceDraft],
+  );
 
   const handleSchemaChanged = useCallback(async () => {
     try {
@@ -116,7 +141,7 @@ export default function ObjectTypeWorkspacePage() {
 
       const objectTypeData = await designerApi.getObjectType(tenantId, objectTypeId);
       setObjectType(objectTypeData);
-      setAppearanceDraft(getObjectTypeAppearanceFields(objectTypeData));
+      setAppearanceDraft(await resolveAppearanceDraft(objectTypeData));
 
       dispatchDesignerNavigationReload();
       dispatchPortalNavigationReload();
@@ -129,7 +154,7 @@ export default function ObjectTypeWorkspacePage() {
     } finally {
       setPublishing(false);
     }
-  }, [isDraftDirty, objectTypeId, tenantId]);
+  }, [isDraftDirty, objectTypeId, resolveAppearanceDraft, tenantId]);
 
   const handlePublish = useCallback(() => {
     if (lifecycle.publishAction === "update-catalog") {
@@ -170,7 +195,7 @@ export default function ObjectTypeWorkspacePage() {
 
       setHasMenuPlacement(true);
       setMenuPublishMessage(
-        "Каталог опубликован. Объект доступен в Runtime Preview и размещён в меню.",
+        "Каталог опубликован. Объект доступен в предпросмотре и размещён в меню.",
       );
 
       try {
@@ -179,13 +204,13 @@ export default function ObjectTypeWorkspacePage() {
           detectObjectTypeMenuPlacement(tenantId, objectTypeId),
         ]);
         setObjectType(objectTypeData);
-        setAppearanceDraft(getObjectTypeAppearanceFields(objectTypeData));
+        setAppearanceDraft(await resolveAppearanceDraft(objectTypeData));
         setHasMenuPlacement(menuPlaced);
       } catch {
         setHasMenuPlacement(true);
       }
     },
-    [tenantId, objectTypeId],
+    [objectTypeId, resolveAppearanceDraft, tenantId],
   );
 
   const handleDeleteObject = async () => {
@@ -319,7 +344,12 @@ export default function ObjectTypeWorkspacePage() {
       <RuntimePreviewTab
         key={`runtime-preview-${objectType.key}-${catalogVersion ?? "none"}`}
         tenantId={tenantId}
+        objectTypeId={objectTypeId}
+        objectType={objectType}
         objectTypeKey={objectType.key}
+        catalogVersion={catalogVersion}
+        hasMenuPlacement={hasMenuPlacement}
+        isDraftDirty={isDraftDirty}
         onSchemaChanged={handleSchemaChanged}
       />
     );
@@ -341,26 +371,28 @@ export default function ObjectTypeWorkspacePage() {
           {menuPublishMessage}
         </div>
       ) : null}
-      <ObjectTypeWorkspace
-      header={
-        <ObjectTypeWorkspaceHeader
-          objectType={headerObjectType}
-          lifecycle={lifecycle}
-          saving={saving}
-          publishing={publishing}
-          saveAvailable={tab === "general" && generalSaveReady}
-          saveDisabled={!isDraftDirty && lifecycle.saveVariant === "neutral"}
-          deleting={deleting}
-          onSave={handleHeaderSave}
-          onPublish={handlePublish}
-          onManagePublication={handleManagePublication}
-          showManagePublication={Boolean(hasMenuPlacement)}
-          onDeleteObject={handleDeleteObject}
-        />
-      }
-    >
-      {tabContent}
-    </ObjectTypeWorkspace>
+      <ObjectTypePreviewTabProvider tenantId={tenantId} objectTypeId={objectTypeId}>
+        <ObjectTypeWorkspace
+          header={
+            <ObjectTypeWorkspaceHeader
+              objectType={headerObjectType}
+              lifecycle={lifecycle}
+              saving={saving}
+              publishing={publishing}
+              saveAvailable={tab === "general" && generalSaveReady}
+              saveDisabled={!isDraftDirty && lifecycle.saveVariant === "neutral"}
+              deleting={deleting}
+              onSave={handleHeaderSave}
+              onPublish={handlePublish}
+              onManagePublication={handleManagePublication}
+              showManagePublication={Boolean(hasMenuPlacement)}
+              onDeleteObject={handleDeleteObject}
+            />
+          }
+        >
+          {tabContent}
+        </ObjectTypeWorkspace>
+      </ObjectTypePreviewTabProvider>
     </>
   );
 }

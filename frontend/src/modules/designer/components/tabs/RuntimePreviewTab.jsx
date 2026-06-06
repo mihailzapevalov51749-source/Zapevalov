@@ -1,66 +1,135 @@
-import { useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
 
 import { ObjectViewHost } from "../../../objectViews";
+import { useObjectTypePreviewTab } from "../../context/ObjectTypePreviewTabContext";
+import StudioPreviewContextBlock from "../preview/StudioPreviewContextBlock";
+import { resolveObjectViewTabStatusPresentation } from "../../utils/resolveObjectViewTabStatusPresentation";
+import { resolveObjectViewTypeLabel } from "../../utils/resolveObjectViewTypeLabel";
+import { resolveObjectViewUsagePaths } from "../../utils/resolveObjectViewUsagePaths";
+
+import "../../styles/designerPagesRegistry.css";
+import "../../styles/designerPreviewContext.css";
 
 export default function RuntimePreviewTab({
   tenantId,
+  objectTypeId,
+  objectType = null,
   objectTypeKey,
+  catalogVersion = null,
+  hasMenuPlacement = false,
   onSchemaChanged = null,
 }) {
-  const { objectTypeId } = useParams();
-  const [searchParams] = useSearchParams();
-  const explicitViewKey = searchParams.get("viewKey");
-  const viewKey = explicitViewKey || null;
+  const { objectTypeId: routeObjectTypeId } = useParams();
+  const resolvedObjectTypeId = objectTypeId || routeObjectTypeId;
+
+  const {
+    selectedView,
+    selectedViewKey,
+    loading: viewsLoading,
+    error: viewsError,
+    reloadViews,
+  } = useObjectTypePreviewTab() || {};
+
+  const [usagePaths, setUsagePaths] = useState([]);
+
+  const typeLabel = useMemo(
+    () => resolveObjectViewTypeLabel(selectedView?.view_type),
+    [selectedView?.view_type],
+  );
+
+  const statusPresentation = useMemo(
+    () =>
+      resolveObjectViewTabStatusPresentation({
+        view: selectedView,
+        objectType,
+        catalogVersion,
+        hasMenuPlacement,
+      }),
+    [selectedView, objectType, catalogVersion, hasMenuPlacement],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadUsagePaths = async () => {
+      if (!selectedView) {
+        if (!cancelled) {
+          setUsagePaths([]);
+        }
+        return;
+      }
+
+      const paths = await resolveObjectViewUsagePaths(
+        tenantId,
+        resolvedObjectTypeId,
+      );
+
+      if (!cancelled) {
+        setUsagePaths(paths);
+      }
+    };
+
+    void loadUsagePaths();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    tenantId,
+    resolvedObjectTypeId,
+    selectedView?.id,
+    catalogVersion,
+    hasMenuPlacement,
+  ]);
 
   return (
-    <div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          marginBottom: 12,
-          gap: 12,
-        }}
-      >
-        <div>
-          <h3 style={{ margin: 0 }}>Runtime Preview</h3>
-          <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: 13 }}>
-            Источник:{" "}
-            <code>
-              GET /runtime/query/tenants/{tenantId}/{objectTypeKey}
-            </code>
-          </p>
-          <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 12 }}>
-            View:{" "}
-            {viewKey ? <code>{viewKey}</code> : "default system table view"}
-          </p>
-          <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: 12 }}>
-            Definitions: draft (designer). Entities: runtime published catalog.
-          </p>
-        </div>
-      </div>
+    <div className="designer-preview-tab">
+      {selectedView ? (
+        <div className="designer-preview-tab__header">
+          <div className="designer-preview-tab__view-meta">
+            <span className="designer-preview-tab__view-name">{selectedView.name}</span>
+            <span className="designer-badge">{typeLabel}</span>
+            {statusPresentation.label ? (
+              <span className={statusPresentation.className}>
+                {statusPresentation.label}
+              </span>
+            ) : null}
+          </div>
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          flex: 1,
-          minHeight: 280,
-          minWidth: 0,
-        }}
-      >
-        <ObjectViewHost
-        tenantId={tenantId}
-        objectTypeId={objectTypeId}
-        objectTypeKey={objectTypeKey}
-        viewKey={viewKey}
-        pageSize={20}
-        mode="studio-preview"
-        minHeight={280}
-        showToolbar
-        onSchemaChanged={onSchemaChanged}
-      />
+          {viewsError ? (
+            <p className="designer-preview-tab__error">{viewsError}</p>
+          ) : null}
+
+          <StudioPreviewContextBlock usagePaths={usagePaths} />
+        </div>
+      ) : viewsError ? (
+        <p className="designer-preview-tab__error">{viewsError}</p>
+      ) : null}
+
+      <div className="designer-preview-tab__surface">
+        {selectedViewKey ? (
+          <ObjectViewHost
+            tenantId={tenantId}
+            objectTypeId={resolvedObjectTypeId}
+            objectTypeKey={objectTypeKey}
+            viewKey={selectedViewKey}
+            pageSize={20}
+            mode="studio-preview"
+            minHeight={280}
+            showToolbar
+            onSchemaChanged={async () => {
+              await onSchemaChanged?.();
+              await reloadViews?.();
+            }}
+          />
+        ) : (
+          <div className="designer-preview-tab__empty">
+            {viewsLoading
+              ? "Загрузка вкладок…"
+              : "Добавьте вкладку в разделе «Вкладки», чтобы открыть предпросмотр."}
+          </div>
+        )}
       </div>
     </div>
   );

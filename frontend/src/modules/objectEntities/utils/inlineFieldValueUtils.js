@@ -92,6 +92,12 @@ export function isSameFieldValue(current, next, editorType) {
     return Boolean(current) === Boolean(next);
   }
 
+  if (type === "link") {
+    const left = isEmptyValue(current) ? "" : String(current).trim();
+    const right = isEmptyValue(next) ? "" : String(next).trim();
+    return left === right;
+  }
+
   if (isEmptyValue(current) && isEmptyValue(next)) {
     return true;
   }

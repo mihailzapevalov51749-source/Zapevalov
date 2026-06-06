@@ -8,7 +8,7 @@ const DESIGNER_TAB_LABELS = {
   fields: "Поля",
   relations: "Связи",
   views: "Вкладки",
-  "runtime-preview": "Runtime Preview",
+  "runtime-preview": "Предпросмотр",
   data: "Данные",
 };
 

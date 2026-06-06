@@ -9,6 +9,7 @@ from app.modules.platform.runtime.query.filter_operators import (
     FILTER_OP_IS_EMPTY,
     FILTER_OP_IS_NOT_EMPTY,
     FILTER_OP_NEQ,
+    allowed_operators_for_field_type,
 )
 from app.modules.platform.runtime.query.validators import (
     coerce_filter_conditions,
@@ -16,6 +17,9 @@ from app.modules.platform.runtime.query.validators import (
     validate_filter_conditions,
 )
 from app.modules.platform.shared.enums import FieldType
+
+
+PROJECT_PEER_ID = "11111111-1111-4111-8111-111111111111"
 
 
 def _field_map():
@@ -26,6 +30,15 @@ def _field_map():
         "assignee": {"key": "assignee", "field_type": FieldType.USER.value},
         "starts_at": {"key": "starts_at", "field_type": FieldType.DATE.value},
         "active": {"key": "active", "field_type": FieldType.BOOLEAN.value},
+        "project": {
+            "key": "project",
+            "field_type": FieldType.RELATION.value,
+            "settings_json": {
+                "relation_key": "task_project",
+                "role": "source",
+                "cardinality": "one",
+            },
+        },
     }
 
 
@@ -118,3 +131,50 @@ def test_allowed_empty_operators_do_not_require_value():
 
     assert coerced[0].value is None
     assert coerced[1].value is None
+
+
+def test_relation_field_allows_mvp_operators_only():
+    allowed = allowed_operators_for_field_type(FieldType.RELATION.value)
+
+    assert allowed == {
+        FILTER_OP_EQ,
+        FILTER_OP_NEQ,
+        FILTER_OP_IS_EMPTY,
+        FILTER_OP_IS_NOT_EMPTY,
+    }
+
+
+def test_validate_and_coerce_relation_filter_uuid_value():
+    conditions = parse_filter_conditions(
+        {
+            "filters": json.dumps(
+                [
+                    {
+                        "field": "project",
+                        "op": FILTER_OP_EQ,
+                        "value": PROJECT_PEER_ID,
+                    },
+                    {"field": "project", "op": FILTER_OP_IS_EMPTY},
+                ],
+            ),
+        },
+    )
+
+    validate_filter_conditions(conditions, _field_map())
+    coerced = coerce_filter_conditions(conditions, _field_map())
+
+    assert coerced[0].value == PROJECT_PEER_ID
+    assert coerced[1].value is None
+
+
+def test_validate_relation_filter_rejects_text_operator():
+    conditions = parse_filter_conditions(
+        {
+            "filters": json.dumps(
+                [{"field": "project", "op": FILTER_OP_CONTAINS, "value": "demo"}],
+            ),
+        },
+    )
+
+    with pytest.raises(ValueError, match="не поддерживается"):
+        validate_filter_conditions(conditions, _field_map())

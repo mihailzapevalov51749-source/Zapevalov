@@ -1,5 +1,5 @@
 export const platformDevelopmentManifest = {
-  updatedAt: "2026-06-05T22:00:00",
+  updatedAt: "2026-06-06T22:00:00",
 
   title: "Развитие платформы ЯсноПро",
 
@@ -136,6 +136,86 @@ export const platformDevelopmentManifest = {
 
   achievements: [
     {
+      date: "2026-06-06",
+      text: "Excel Import Default Values: обязательные поля на шаге «Колонки» — источник «Колонка Excel» или «Значение по умолчанию» (пользователь, статус, список, текст, число, дата); Office → Object → Импорт Excel.",
+    },
+    {
+      date: "2026-06-06",
+      text: "Excel Import Value Mapping: шаг «Сопоставление значений» для статусов, списков и пользователей; автопропуск при точном match, ручное сопоставление нераспознанных значений; Office → Object → Импорт Excel.",
+    },
+    {
+      date: "2026-06-06",
+      text: "Excel Import Wizard UX (clean): шапка «Импорт Excel / объект», stepper ①–④, компактная dropzone, [Отмена][Далее →] справа; .xlsx только в notification при неверном файле.",
+    },
+    {
+      date: "2026-06-06",
+      text: "Excel Import Wizard UX (compact): компактная модалка и dropzone, иконка Excel, платформенные кнопки, «Далее →»; Office → Object Menu → Импорт Excel.",
+    },
+    {
+      date: "2026-06-06",
+      text: "Excel Import Wizard UX: шаг «Файл» — stepper 4 этапов, drag-and-drop, карточка файла, статистика листа, badge-колонки, «Далее →»; Office → Object Menu → Импорт Excel.",
+    },
+    {
+      date: "2026-06-06",
+      text: "Excel Import (MVP): Office → «Название объекта ▾ → Импорт Excel» — мастер из 4 шагов, создание новых записей через runtime_entity (chunk 50), без Universal Tables; недоступен в Studio Preview.",
+    },
+    {
+      date: "2026-06-06",
+      text: "Excel Export UX: колонка «Иерархия» после «№» вместо «Иерархический №»; расчёт hierarchyNumber без изменений.",
+    },
+    {
+      date: "2026-06-06",
+      text: "Excel Export: иерархия (tree order, все узлы) и человекочитаемые списки/статусы (key → label из settings_json.options).",
+    },
+    {
+      date: "2026-06-06",
+      text: "Studio Preview: badge «Демо-данные» в toolbar таблицы — компактное warning-уведомление вместо строки над таблицей; только studio-preview.",
+    },
+    {
+      date: "2026-06-06",
+      text: "Studio Object Type Header: иконка объекта совпадает с Office — единый ObjectTypeIcon и mergeObjectTypeAppearance с navigation fallback.",
+    },
+    {
+      date: "2026-06-06",
+      text: "Studio Preview: демонстрационные строки вместо runtime records — mock data по схеме объекта, без загрузки реальных записей в Studio.",
+    },
+    {
+      date: "2026-06-06",
+      text: "Studio Preview UX: dropdown «Предпросмотр ▾» в tab-bar; на странице — имя вкладки, тип, платформенный статус и «Используется» только в Офис.",
+    },
+    {
+      date: "2026-06-06",
+      text: "Studio: вкладка «Предпросмотр» — dropdown выбора вкладки объекта, статус вкладки и блок «Используется»; preview-only через ObjectViewHost.",
+    },
+    {
+      date: "2026-06-06",
+      text: "Studio: вкладка «Предпросмотр» — бизнес-контекст (используется, статус, отображается) вместо технических runtime-строк.",
+    },
+    {
+      date: "2026-06-06",
+      text: "Object Table Studio Preview: визуальный паритет с Office — иерархия, tree toggle, нумерация; режим «Предпросмотр» без изменения данных.",
+    },
+    {
+      date: "2026-06-06",
+      text: "Object Table: раскрытие дерева перенесено в колонку чекбокса — [checkbox][tree toggle] в шапке и строках; глобальное раскрытие/сворачивание через expandedRowIds.",
+    },
+    {
+      date: "2026-06-06",
+      text: "Object Table: иерархический номер в Title Field — зоны меню/раскрытия/номера/названия, приоритет hierarchyNumber, hover-меню без сдвига строки.",
+    },
+    {
+      date: "2026-06-06",
+      text: "Object Platform: MVP-экспорт Excel из контекстного меню объекта — текущее табличное представление (колонки, фильтры, сортировка), читаемые значения полей, до 10 000 записей.",
+    },
+    {
+      date: "2026-06-06",
+      text: "Object Platform: контекстное меню объекта в шапке (Название ▾) — единая точка управления объектом; MVP-пункты Импорт/Экспорт Excel с расширяемым registry действий.",
+    },
+    {
+      date: "2026-06-06",
+      text: "Object Table: MVP-фильтрация по полям типа «Связь» — выбор связанной записи в модалке фильтров, операторы eq/neq/is_empty/is_not_empty, backend через runtime_relation_instances.",
+    },
+    {
       date: "2026-06-05",
       text: "Object Table: многоколоночная сортировка — несколько уровней ORDER BY, панель «Сортировки», Shift+клик, сохранение в Object View.",
     },
@@ -206,6 +286,150 @@ export const platformDevelopmentManifest = {
   ],
 
   platformChangelog: [
+    {
+      date: "2026-06-06",
+      version: null,
+      title: "Excel Export: колонка «Иерархия» после «№»",
+      summary:
+        "Заголовок «Иерархический №» заменён на «Иерархия»; порядок системных колонок: № → Иерархия → название; логика hierarchyNumber и tree order без изменений.",
+      nextStage: "Реализовать импорт Excel",
+    },
+    {
+      date: "2026-06-06",
+      version: null,
+      title: "Excel Export: иерархия и человекочитаемые списки",
+      summary:
+        "Экспорт сохраняет tree order и колонку «Иерархический №» (все узлы, включая свёрнутые); списки и статусы экспортируются как label из fieldDef.settings.options, не key.",
+      nextStage: "Реализовать импорт Excel",
+    },
+    {
+      date: "2026-06-06",
+      version: null,
+      title: "Studio Preview: badge демо-данных в toolbar",
+      summary:
+        "Строка «Показаны демонстрационные данные» убрана; компактный warning-badge «Демо-данные» по центру панели таблицы с tooltip; только mode=studio-preview.",
+      nextStage: "Реализовать импорт Excel",
+    },
+    {
+      date: "2026-06-06",
+      version: null,
+      title: "Studio: иконка объекта в шапке workspace",
+      summary:
+        "Шапка Object Type в Studio использует тот же резолв иконки, что Office: icon_type/icon_file_url из object type + display_* из меню через mergeObjectTypeAppearance; ObjectTypeIcon без дефолтной папки при настроенной иконке.",
+      nextStage: "Реализовать импорт Excel",
+    },
+    {
+      date: "2026-06-06",
+      version: null,
+      title: "Studio Preview: демонстрационные данные",
+      summary:
+        "Предпросмотр в Studio показывает 7 mock-строк по типам полей и mock-иерархию; runtime/query для строк не вызывается; Office без изменений.",
+      nextStage: "Реализовать импорт Excel",
+    },
+    {
+      date: "2026-06-06",
+      version: null,
+      title: "Studio Preview: dropdown в tab-bar и office-only usage",
+      summary:
+        "«Предпросмотр ▾» перенесён в tab-bar объекта; страница показывает компактное имя вкладки, тип, designer-pages-badge статус и маршруты только Офис.",
+      nextStage: "Реализовать импорт Excel",
+    },
+    {
+      date: "2026-06-06",
+      version: null,
+      title: "Studio: предпросмотр выбранной вкладки объекта",
+      summary:
+        "Вкладка «Предпросмотр ▾» переключает вкладки из раздела «Вкладки»; показываются название, компактный статус и «Используется»; поле «Отображается» убрано.",
+      nextStage: "Реализовать импорт Excel",
+    },
+    {
+      date: "2026-06-06",
+      version: null,
+      title: "Studio: бизнес-контекст вкладки «Предпросмотр»",
+      summary:
+        "Runtime Preview переименован в «Предпросмотр»; технические endpoint-строки заменены блоком: используется, статус, отображается.",
+      nextStage: "Реализовать импорт Excel",
+    },
+    {
+      date: "2026-06-06",
+      version: null,
+      title: "Object Table: Studio Preview parity с Office",
+      summary:
+        "Studio Runtime Preview использует тот же ViewEngine render path: иерархия, tree toggle, hierarchyNumber; чекбоксы и меню строки видны, но изменение данных заблокировано; метка «Предпросмотр».",
+      nextStage: "Реализовать импорт Excel",
+    },
+    {
+      date: "2026-06-06",
+      version: null,
+      title: "Bugfix: Object Table — глобальное раскрытие дерева",
+      summary:
+        "Tree toggle в шапке раскрывает всё дерево из полностью свернутого состояния: expandableRowIds строится по childrenByParent и полному flatRows, а не по видимым displayRows.",
+      nextStage: "Реализовать импорт Excel",
+    },
+    {
+      date: "2026-06-06",
+      version: null,
+      title: "Object Table: раскрытие дерева в колонке чекбокса",
+      summary:
+        "Первая служебная колонка объединяет выбор строки и раскрытие дерева; в шапке — глобальный tree toggle (expandAll/collapseAll через expandedRowIds); Title Field без отдельной зоны раскрытия.",
+      nextStage: "Реализовать импорт Excel",
+    },
+    {
+      date: "2026-06-06",
+      version: null,
+      title: "Object Table: иерархический номер в Title Field",
+      summary:
+        "Title Field выровнен по зонам: hover-меню ⋮ (24px), раскрытие дерева (20px), иерархический номер (hierarchyNumber с fallback), название; колонка № (record_number) без изменений.",
+      nextStage: "Реализовать импорт Excel",
+    },
+    {
+      date: "2026-06-06",
+      version: null,
+      title: "Bugfix: Excel Export — Runtime query 422",
+      summary:
+        "Экспорт больше не отправляет limit=500 (Runtime API допускает до 200); сортировка использует тот же mapper, что Object Table; при отклонении sort — fallback без сортировки.",
+      nextStage: "Реализовать импорт Excel",
+    },
+    {
+      date: "2026-06-06",
+      version: null,
+      title: "Object Platform: экспорт Excel (MVP)",
+      summary:
+        "Пункт «Экспорт Excel» в контекстном меню объекта выгружает текущее табличное представление: видимые колонки и порядок, фильтры, сортировка, читаемые значения пользователей/статусов/связей/дат/ссылок; источник — Object Platform runtime.",
+      nextStage: "Реализовать импорт Excel",
+    },
+    {
+      date: "2026-06-06",
+      version: null,
+      title: "Object Platform: контекстное меню объекта",
+      summary:
+        "В шапке runtime-объекта добавлено меню «Название ▾» между иконкой и вкладками: архитектура Object Context Menu, пункты Импорт/Экспорт Excel (заглушки до реализации обмена).",
+      nextStage: "Реализовать экспорт Excel",
+    },
+    {
+      date: "2026-06-06",
+      version: null,
+      title: "Object Table: фильтрация по связям (MVP)",
+      summary:
+        "В фильтрах Object Table доступны поля типа «Связь»: операторы равно / не равно / заполнено / не заполнено, выбор связанной записи по названию; backend фильтрует через runtime_relation_instances.",
+      nextStage: "Реализовать перетаскивание строк",
+    },
+    {
+      date: "2026-06-05",
+      version: null,
+      title: "Object Platform: тип поля «Ссылка»",
+      summary:
+        "Добавлен field_type=link: создание в Studio, URL в карточке и таблице, безопасное открытие http/https, фильтрация и сортировка как у текста.",
+      nextStage: "Реализовать фильтрацию по связям",
+    },
+    {
+      date: "2026-06-05",
+      version: null,
+      title: "Object Platform: чек-лист в карточке объекта",
+      summary:
+        "В карточке runtime-объекта добавлена вкладка «Чек-лист» (добавление через Enter, checkbox, редактирование, удаление, прогресс, бейдж); привязка entity_type=runtime_entity.",
+      nextStage: "Реализовать фильтрацию по связям",
+    },
     {
       date: "2026-06-05",
       version: null,
@@ -410,7 +634,7 @@ export const platformDevelopmentManifest = {
       description:
         "Центральный контур управления объектной моделью платформы: от описания типов до работы с записями.",
       status: "in_progress",
-      readiness: 62,
+      readiness: 73,
       dependencies: ["Object Type", "Publish", "Runtime Entity"],
       risks: ["Legacy-зависимости", "Разрыв между Studio и Runtime"],
     },
@@ -420,7 +644,7 @@ export const platformDevelopmentManifest = {
       description:
         "Конструктор типов объектов в Studio: поля, связи, представления и жизненный цикл типа.",
       status: "review",
-      readiness: 85,
+      readiness: 86,
       dependencies: ["Object Platform"],
       risks: ["Сложность для новых пользователей Studio"],
     },
@@ -778,19 +1002,19 @@ export const platformDevelopmentManifest = {
       title: "Object Table vs Universal Tables",
       description:
         "Остаточные работы по аудиту функционального соответствия перед полным отказом от Universal Tables.",
-      status: "planned",
-      readiness: 0,
+      status: "in_progress",
+      readiness: 32,
       ownerFocus:
         "Закрыть пользовательские пробелы Object Table, выявленные аудитом UT vs OT.",
       result:
         "Object Table покрывает ключевой функционал Universal Tables; legacy можно отключить.",
-      nextMilestone: "Реализовать чек-листы в карточке.",
+      nextMilestone: "Реализовать перетаскивание строк.",
       linkedContours: ["Object Platform", "Object Card", "Views Engine"],
       linkedDebt: ["Universal Table Retirement"],
       keyWorks: [
         "Реализовать чек-листы в карточке",
         "Реализовать многоколоночную сортировку (после MVP)",
-        "Реализовать фильтрацию по связям",
+        "Реализовать фильтрацию по связям (MVP)",
         "Реализовать перетаскивание строк",
         "Реализовать режим дерева",
         "Реализовать поиск по таблице",
@@ -1155,6 +1379,373 @@ export const platformDevelopmentManifest = {
         "Studio → Корзина: пользователь не теряет контекст модалки при проверке зависимостей; выбранный сценарий clear/cascade сохраняется в URL.",
       relatedContours: ["Designer Foundation", "PlatformModal", "Object Platform"],
       relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "studio-preview-demo-data-toolbar-badge",
+      date: "2026-06-06",
+      title: "Studio Preview: badge демо-данных в toolbar",
+      type: "ux",
+      description:
+        "Уведомление о mock-данных перенесено из строки над таблицей в компактный warning-badge «Демо-данные» по центру Object Table toolbar; tooltip поясняет отсутствие реальных записей Office.",
+      impact:
+        "Studio → Объект → Предпросмотр → Table Toolbar: [Фильтры] [Все] [Демо-данные] [...] [+ Представление]; Office без badge.",
+      relatedContours: ["Studio", "Preview UX", "Object Platform"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "studio-object-type-header-icon",
+      date: "2026-06-06",
+      title: "Studio: иконка объекта в шапке workspace",
+      type: "fix",
+      description:
+        "getObjectTypeAppearanceFields больше не затирает icon_type/icon_file_url пустыми display_*; Studio workspace резолвит иконку через mergeObjectTypeAppearance с navigation fallback — тот же контракт, что PortalObjectDataPage.",
+      impact:
+        "Studio → Object Type Header: настроенная иконка объекта вместо дефолтной папки; визуальный паритет с Office.",
+      relatedContours: ["Studio", "Object Platform", "Object Header", "Icon UX"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "studio-preview-mock-data",
+      date: "2026-06-06",
+      title: "Studio Preview: демонстрационные данные",
+      type: "feature",
+      description:
+        "Studio Preview генерирует 7 demo-строк из схемы объекта; runtime/query для строк и relation instances не вызывается; единый ViewEngine render path сохранён.",
+      impact:
+        "Studio → Объект → Предпросмотр: «Показаны демонстрационные данные»; реальные записи, пользователи и связи скрыты.",
+      relatedContours: ["Studio", "Object Platform", "Preview UX", "Security", "Data Privacy"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "studio-preview-tab-bar-ux",
+      date: "2026-06-06",
+      title: "Studio Preview: dropdown в tab-bar и office-only usage",
+      type: "feature",
+      description:
+        "Dropdown «Предпросмотр ▾» перенесён из содержимого страницы в tab-bar; мета-строка вкладки использует платформенные designer-pages-badge; «Используется» показывает только маршруты Офис.",
+      impact:
+        "Studio → Объект → Предпросмотр: единый UX с tab-bar dropdown, компактная шапка вкладки и реальные места использования без Studio-маршрутов.",
+      relatedContours: ["Studio", "Object Platform", "Preview UX", "Object Tabs"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "studio-preview-tab-selector-ux",
+      date: "2026-06-06",
+      title: "Studio: предпросмотр выбранной вкладки объекта",
+      type: "feature",
+      description:
+        "Вкладка Studio «Предпросмотр ▾» выбирает одну из вкладок объекта (listViews); ниже — название, badge статуса и «Используется»; ObjectViewHost в режиме studio-preview.",
+      impact:
+        "Studio → Object Type → Предпросмотр: dropdown вкладок, статус вкладки, маршруты Офис/Студия; без «Отображается» и технических runtime-строк.",
+      relatedContours: ["Studio", "Object Platform", "Object Tabs", "Preview UX"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "studio-preview-business-context-ux",
+      date: "2026-06-06",
+      title: "Studio: бизнес-контекст вкладки «Предпросмотр»",
+      type: "feature",
+      description:
+        "Вкладка переименована в «Предпросмотр»; вместо GET /runtime/query показываются использование в меню, статус публикации и текущее представление.",
+      impact:
+        "Studio → Объект → Предпросмотр: компактный блок «Используется / Статус / Отображается» перед таблицей.",
+      relatedContours: ["Studio", "Object Platform", "Preview UX"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "object-table-studio-preview-parity",
+      date: "2026-06-06",
+      title: "Object Table: Studio Preview parity с Office",
+      type: "feature",
+      description:
+        "Studio Preview больше не отключает иерархию и selection column; единый ObjectTableView + ViewEngineTable с режимом studio-preview (readOnly rowActions, disabled checkboxes, без inline edit/карточки/массовых действий).",
+      impact:
+        "Studio → Runtime Preview: таблица выглядит как Office Object Table; метка «Предпросмотр»; данные не изменяются.",
+      relatedContours: [
+        "Object Platform",
+        "View Engine",
+        "Studio Preview",
+        "Office Parity",
+      ],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "object-table-selection-tree-expand-all-fix",
+      date: "2026-06-06",
+      title: "Bugfix: Object Table — глобальное раскрытие дерева",
+      type: "quality",
+      description:
+        "expandableRowIds для expandAll строился через Object.values(parentByChild), хотя parentByChild — Map; из свернутого дерева список был пустым.",
+      impact:
+        "Office → Object Table: tree toggle в шапке раскрывает все узлы даже когда видны только корневые строки.",
+      relatedContours: ["Object Platform", "Object Table", "Hierarchy UX"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "object-table-selection-tree-toggle-ux",
+      date: "2026-06-06",
+      title: "Object Table: раскрытие дерева в колонке чекбокса",
+      type: "feature",
+      description:
+        "Чекбокс и стрелка раскрытия объединены в первой колонке; шапка получила глобальный tree toggle на базе expandedRowIds (expandAll/collapseAll).",
+      impact:
+        "Office → Object Table: первая колонка [✓][›/v] — выбор строк и управление деревом; строки без детей показывают только чекбокс.",
+      relatedContours: ["Object Platform", "Object Table", "Hierarchy UX"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "object-table-title-hierarchy-number-ux",
+      date: "2026-06-06",
+      title: "Object Table: иерархический номер в Title Field",
+      type: "feature",
+      description:
+        "Единая разметка Title Field: фиксированные зоны меню, раскрытия, hierarchyNumber и названия; приоритет row.hierarchy.hierarchyNumber над positionNumber.",
+      impact:
+        "Office → Object Table: номера 1 / 2.1 / 3.1.1 в Title Field; меню ⋮ по hover без сдвига; колонка № показывает record_number.",
+      relatedContours: ["Object Platform", "Object Table", "Hierarchy UX"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "object-table-excel-export-runtime-422-fix",
+      date: "2026-06-06",
+      title: "Bugfix: Excel Export — Runtime query 422",
+      type: "quality",
+      description:
+        "Экспорт отправлял limit=500 при допустимом максимуме Runtime API 200; добавлен exportRuntimeQuery с cap limit и fallback без sort при 422.",
+      impact:
+        "Office → Объект → Экспорт Excel: файл формируется без аварийного завершения при сортировке по системным и пользовательским полям.",
+      relatedContours: ["Object Platform", "Object Table", "Excel Export"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "object-table-excel-export-hierarchy-column-ux",
+      date: "2026-06-06",
+      title: "Excel Export: колонка «Иерархия» после «№»",
+      type: "ux",
+      description:
+        "Колонка иерархии в .xlsx переименована в «Иерархия» и вставляется сразу после «№»; hierarchyNumber, tree order и экспорт свёрнутых узлов не менялись.",
+      impact:
+        "Office → Object Table → Export Excel: № | Иерархия | Название задачи | …",
+      relatedContours: [
+        "Object Platform",
+        "Object Table",
+        "Excel Export",
+        "Hierarchy Export",
+        "UT Parity",
+      ],
+      relatedDebt: ["Universal Table Retirement"],
+      relatedAdr: null,
+    },
+    {
+      key: "object-table-excel-export-hierarchy-labels",
+      date: "2026-06-06",
+      title: "Excel Export: иерархия и label для списков/статусов",
+      type: "enhancement",
+      description:
+        "prepareExportTableRows переиспользует buildObjectTableHierarchyDisplayRows с полным раскрытием дерева; добавлена колонка «Иерархический №»; formatExportCellValue/choiceUtils резолвят key → label из settings_json.options.",
+      impact:
+        "Office → Object Table → Export Excel: tree order 1 / 2 / 2.1 / 2.2 / 3; «Средний», «В работе», «Не начато» вместо sredniy, v_rabote, ne_nachato.",
+      relatedContours: [
+        "Object Platform",
+        "Object Table",
+        "Excel Export",
+        "Hierarchy Export",
+        "Field Formatting",
+        "UT Parity",
+      ],
+      relatedDebt: ["Universal Table Retirement"],
+      relatedAdr: null,
+    },
+    {
+      key: "object-table-excel-import-default-values-fix",
+      date: "2026-06-06",
+      title: "Excel Import: fix default values для обязательных полей без колонки",
+      type: "fix",
+      description:
+        "Значения по умолчанию сохраняются между шагами, применяются при валидации и импорте; добавлены «Текущий пользователь», select колонки Excel и предупреждения на шаге «Колонки».",
+      impact:
+        "Office → Object → Импорт Excel → Колонки: «Постановщик» без колонки в Excel больше не блокирует импорт после выбора default value.",
+      relatedContours: [
+        "Object Platform",
+        "Excel Import",
+        "Required Fields",
+        "Default Values",
+        "Import Wizard",
+      ],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "object-table-excel-import-default-values",
+      date: "2026-06-06",
+      title: "Excel Import: значения по умолчанию для обязательных полей",
+      type: "feature",
+      description:
+        "Шаг «Колонки» поддерживает источник данных для обязательных полей: колонка Excel или значение по умолчанию (пользователь, статус, список, текст, число, дата).",
+      impact:
+        "Office → Object → Импорт Excel → Колонки: «Постановщик = Михаил Запевалов» подставляется во все импортируемые строки без колонки в Excel.",
+      relatedContours: [
+        "Object Platform",
+        "Excel Import",
+        "Default Values",
+        "Import Wizard",
+        "Office Object Table",
+      ],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "object-table-excel-import-review-ux",
+      date: "2026-06-06",
+      title: "Excel Import: UX шага «Проверка»",
+      type: "quality",
+      description:
+        "Шаг проверки показывает блок обязательных несопоставленных полей, подсказку при нуле валидных строк и кнопку «Исправить сопоставление»; footer [Назад][Исправить][Импорт] справа.",
+      impact:
+        "Office → Object → Импорт Excel → Проверка: пользователь не попадает в тупик при «Обязательное поле не сопоставлено».",
+      relatedContours: [
+        "Object Platform",
+        "Excel Import",
+        "Import Wizard UX",
+        "Validation UX",
+        "Office Object Table",
+      ],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "object-table-excel-import-value-mapping-auth-api-fix",
+      date: "2026-06-06",
+      title: "Excel Import: исправлен импорт authApi для сопоставления пользователей",
+      type: "fix",
+      description:
+        "loadImportUsersForSelect.js импортировал getUsers из неверного относительного пути (на уровень выше, чем нужно) — Vite не собирал frontend.",
+      impact:
+        "Office → Object → Импорт Excel → Сопоставление значений: шаг снова открывается, список пользователей загружается через существующий authApi.getUsers.",
+      relatedContours: [
+        "Object Platform",
+        "Excel Import",
+        "Value Mapping",
+        "Import Wizard",
+      ],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "object-table-excel-import-value-mapping",
+      date: "2026-06-06",
+      title: "Excel Import: сопоставление значений",
+      type: "feature",
+      description:
+        "Мастер импорта получил шаг «Сопоставление значений» между колонками и проверкой: статусы, списки и пользователи сопоставляются вручную, если автоматическое разрешение не сработало.",
+      impact:
+        "Office → Object → Импорт Excel: «Выполняется → В работе», «Средняя → Средний», ручной выбор пользователя; шаг пропускается, если все значения распознаны.",
+      relatedContours: [
+        "Object Platform",
+        "Excel Import",
+        "Value Mapping",
+        "Import Wizard",
+        "Office Object Table",
+      ],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "object-table-excel-import-wizard-clean-ux",
+      date: "2026-06-06",
+      title: "Excel Import: чистый UX шага «Файл»",
+      type: "quality",
+      description:
+        "Убраны лишние пояснения, шапка сведена к «Импорт Excel» и названию объекта, stepper идёт сразу под заголовком, footer [Отмена][Далее →] справа.",
+      impact:
+        "Office → Object Menu → Импорт Excel: минималистичный первый шаг без перегруза текстом.",
+      relatedContours: [
+        "Object Platform",
+        "Excel Import",
+        "Import Wizard UX",
+        "Office Object Table",
+      ],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "object-table-excel-import-wizard-compact-ux",
+      date: "2026-06-06",
+      title: "Excel Import: компактный UX шага «Файл»",
+      type: "quality",
+      description:
+        "Шаг «Файл» доведён до завершённого вида: компактная модалка без пустого пространства, уменьшенная dropzone, иконка Excel, подсказка формата, карточка файла и видимая кнопка «Далее →».",
+      impact:
+        "Office → Object Menu → Импорт Excel: пользователь сразу видит сценарий, формат .xlsx и может перейти дальше после чтения файла.",
+      relatedContours: [
+        "Object Platform",
+        "Excel Import",
+        "Import Wizard UX",
+        "Office Object Table",
+      ],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "object-table-excel-import-wizard-ux",
+      date: "2026-06-06",
+      title: "Excel Import: UX мастера (шаг «Файл»)",
+      type: "quality",
+      description:
+        "Первый шаг импорта оформлен как полноценный мастер: индикатор прогресса, drag-and-drop зона, карточка файла, статистика листа и компактные badge найденных колонок.",
+      impact:
+        "Office → Object Menu → Импорт Excel: пользователь видит этап, содержимое файла и может перейти «Далее →» только после успешного чтения.",
+      relatedContours: [
+        "Object Platform",
+        "Excel Import",
+        "Import Wizard UX",
+        "Office Object Table",
+      ],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "object-table-excel-import-mvp",
+      date: "2026-06-06",
+      title: "Object Platform: импорт Excel (MVP)",
+      type: "feature",
+      description:
+        "Пункт «Импорт Excel» в контекстном меню объекта открывает PlatformModal-мастер: выбор .xlsx и листа, автосопоставление колонок с полями объекта, предпросмотр ошибок, импорт валидных строк.",
+      impact:
+        "Office → Object Header Menu → Импорт Excel: создаются новые записи через runtimeWriteGateway.createEntity (чанки по 50); таблица обновляется после импорта; Studio Preview без импорта.",
+      relatedContours: [
+        "Object Platform",
+        "Object Table",
+        "UT Parity",
+        "Excel Import",
+        "Office Object Table",
+      ],
+      relatedDebt: ["Universal Table Retirement"],
+      relatedAdr: null,
+    },
+    {
+      key: "object-table-excel-export-mvp",
+      date: "2026-06-06",
+      title: "Object Platform: экспорт Excel (MVP)",
+      type: "feature",
+      description:
+        "Пункт «Экспорт Excel» в контекстном меню объекта выгружает текущее табличное представление Object Table: видимые колонки, порядок, фильтры, сортировка; читаемые значения пользователей, статусов, связей, дат и ссылок.",
+      impact:
+        "Office → Объект → Таблица → «Название ▾ → Экспорт Excel»: скачивается .xlsx до 10 000 записей без Universal Tables.",
+      relatedContours: ["Object Platform", "Object Table", "UT Parity", "Excel Export"],
+      relatedDebt: ["Universal Table Retirement"],
       relatedAdr: null,
     },
     {

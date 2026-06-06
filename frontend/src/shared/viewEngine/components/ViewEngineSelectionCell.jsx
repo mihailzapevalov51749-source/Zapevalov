@@ -1,3 +1,5 @@
+import ViewEngineSelectionTreeToggle from "./ViewEngineSelectionTreeToggle.jsx";
+
 function stopSelectionPointerEvent(event) {
   event.stopPropagation();
 }
@@ -7,6 +9,9 @@ export function ViewEngineHeaderSelectionCell({
   indeterminate = false,
   disabled = false,
   onChange,
+  hierarchyTreeEnabled = false,
+  treeHeaderExpanded = false,
+  onToggleTreeHeader,
 }) {
   return (
     <div
@@ -31,6 +36,13 @@ export function ViewEngineHeaderSelectionCell({
         className="view-engine-table-checkbox"
         aria-label="Выбрать все видимые строки"
       />
+      {hierarchyTreeEnabled ? (
+        <ViewEngineSelectionTreeToggle
+          variant="header"
+          isExpanded={treeHeaderExpanded}
+          onToggle={onToggleTreeHeader}
+        />
+      ) : null}
     </div>
   );
 }
@@ -39,7 +51,15 @@ export function ViewEngineRowSelectionCell({
   checked = false,
   disabled = false,
   onChange,
+  hierarchy = null,
+  hierarchyTreeEnabled = false,
+  onToggleExpand,
 }) {
+  const showTreeToggle =
+    hierarchyTreeEnabled && hierarchy && typeof hierarchy === "object";
+  const hasChildren = showTreeToggle ? Boolean(hierarchy.hasChildren) : false;
+  const isExpanded = showTreeToggle ? Boolean(hierarchy.isExpanded) : false;
+
   return (
     <div
       className="view-engine-table-selection-cell"
@@ -58,6 +78,14 @@ export function ViewEngineRowSelectionCell({
         className="view-engine-table-checkbox"
         aria-label="Выбрать строку"
       />
+      {showTreeToggle ? (
+        <ViewEngineSelectionTreeToggle
+          variant="row"
+          hasChildren={hasChildren}
+          isExpanded={isExpanded}
+          onToggle={onToggleExpand}
+        />
+      ) : null}
     </div>
   );
 }

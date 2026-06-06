@@ -31,4 +31,12 @@ describe("useObjectViewQuery contract", () => {
   it("documents optional catalog metadata as non-blocking", () => {
     assert.match(hookSource, /catch \{\s*\n\s*if \(!cancelled\) \{\s*\n\s*setCatalog\(null\)/);
   });
+
+  it("uses demo rows in studio preview without runtime list fetch", () => {
+    assert.match(hookSource, /previewMode/);
+    assert.match(hookSource, /buildStudioPreviewListResult/);
+    assert.match(hookSource, /if \(previewMode\) \{\s*\n\s*loadPreviewRows\(\)/);
+    assert.match(hookSource, /if \(!previewMode\) \{/);
+    assert.match(hookSource, /previewHierarchyInstances/);
+  });
 });

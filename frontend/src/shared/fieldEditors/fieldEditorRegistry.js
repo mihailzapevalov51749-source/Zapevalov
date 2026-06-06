@@ -5,6 +5,7 @@ import NumberFieldEditor from "./editors/NumberFieldEditor";
 import TextFieldEditor from "./editors/TextFieldEditor";
 import RelationFieldEditor from "./editors/RelationFieldEditor";
 import UserFieldEditor from "./editors/UserFieldEditor";
+import LinkFieldEditor from "./editors/LinkFieldEditor";
 
 export const FIELD_EDITOR_TYPE_TEXT = "text";
 export const FIELD_EDITOR_TYPE_TEXTAREA = "textarea";
@@ -16,6 +17,7 @@ export const FIELD_EDITOR_TYPE_CHOICE = "choice";
 export const FIELD_EDITOR_TYPE_MULTI_CHOICE = "multi_choice";
 export const FIELD_EDITOR_TYPE_USER = "user";
 export const FIELD_EDITOR_TYPE_RELATION = "relation";
+export const FIELD_EDITOR_TYPE_LINK = "link";
 
 export const MVP_CREATABLE_FIELD_TYPES = [
   FIELD_EDITOR_TYPE_TEXT,
@@ -27,6 +29,7 @@ export const MVP_CREATABLE_FIELD_TYPES = [
   FIELD_EDITOR_TYPE_CHOICE,
   FIELD_EDITOR_TYPE_MULTI_CHOICE,
   FIELD_EDITOR_TYPE_USER,
+  FIELD_EDITOR_TYPE_LINK,
 ];
 
 const fieldEditorRegistry = {
@@ -40,6 +43,7 @@ const fieldEditorRegistry = {
   [FIELD_EDITOR_TYPE_MULTI_CHOICE]: ChoiceFieldEditor,
   [FIELD_EDITOR_TYPE_USER]: UserFieldEditor,
   [FIELD_EDITOR_TYPE_RELATION]: RelationFieldEditor,
+  [FIELD_EDITOR_TYPE_LINK]: LinkFieldEditor,
 };
 
 /**

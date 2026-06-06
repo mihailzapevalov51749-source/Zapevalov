@@ -26,7 +26,9 @@ DEFAULT_VALUE_SPECIFIC_RECORD = "specific_record"
 
 NO_DEFAULT_FIELD_TYPES = frozenset({FieldType.FILE})
 
-TEXT_LIKE_FIELD_TYPES = frozenset({FieldType.TEXT, FieldType.TEXTAREA, FieldType.UUID})
+TEXT_LIKE_FIELD_TYPES = frozenset(
+    {FieldType.TEXT, FieldType.TEXTAREA, FieldType.UUID, FieldType.LINK},
+)
 
 CHOICE_FIELD_TYPES = frozenset({FieldType.CHOICE, FieldType.MULTI_CHOICE})
 

@@ -87,6 +87,15 @@ CHOICE_OPERATORS = frozenset(
 
 BOOLEAN_OPERATORS = frozenset({FILTER_OP_EQ, FILTER_OP_NEQ})
 
+RELATION_OPERATORS = frozenset(
+    {
+        FILTER_OP_EQ,
+        FILTER_OP_NEQ,
+        FILTER_OP_IS_EMPTY,
+        FILTER_OP_IS_NOT_EMPTY,
+    },
+)
+
 CHOICE_LIKE_FIELD_TYPES = frozenset(
     {
         FieldType.CHOICE.value,
@@ -116,6 +125,9 @@ def normalize_catalog_field_type(field_type: str | None) -> str:
     if normalized == FieldType.TEXTAREA.value:
         return FieldType.TEXT.value
 
+    if normalized == FieldType.LINK.value:
+        return FieldType.TEXT.value
+
     if normalized in {field.value for field in FieldType}:
         return normalized
 
@@ -135,6 +147,8 @@ def allowed_operators_for_field_type(field_type: str | None) -> frozenset[str]:
         return CHOICE_OPERATORS
     if normalized == FieldType.BOOLEAN.value:
         return BOOLEAN_OPERATORS
+    if normalized == FieldType.RELATION.value:
+        return RELATION_OPERATORS
 
     return TEXT_OPERATORS
 

@@ -191,12 +191,15 @@ export function getObjectTypeAppearanceFields(source) {
     source.displayColor ??
     null;
 
+  const baseIcons = getObjectTypeIconFields(source);
+  const displayIcons = getObjectTypeIconFields({
+    icon_type: source.display_icon_type ?? source.displayIconType,
+    icon_file_url: source.display_icon_file_url ?? source.displayIconFileUrl,
+  });
+
   return {
-    ...getObjectTypeIconFields(source),
-    ...getObjectTypeIconFields({
-      icon_type: source.display_icon_type ?? source.displayIconType,
-      icon_file_url: source.display_icon_file_url ?? source.displayIconFileUrl,
-    }),
+    icon_type: displayIcons.icon_type ?? baseIcons.icon_type,
+    icon_file_url: displayIcons.icon_file_url ?? baseIcons.icon_file_url,
     color: normalizeObjectTypeColor(color),
   };
 }

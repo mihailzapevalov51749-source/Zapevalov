@@ -80,6 +80,13 @@ const BOOLEAN_OPERATORS = [
   { value: FILTER_OPERATOR_BOOLEAN_FALSE, label: "Нет" },
 ];
 
+const RELATION_OPERATORS = [
+  { value: FILTER_OPERATOR_EQ, label: "Равно" },
+  { value: FILTER_OPERATOR_NEQ, label: "Не равно" },
+  { value: FILTER_OPERATOR_IS_NOT_EMPTY, label: "Заполнено" },
+  { value: FILTER_OPERATOR_IS_EMPTY, label: "Не заполнено" },
+];
+
 function normalizeFilterFieldType(fieldType, rawFieldType) {
   const normalized = String(fieldType || rawFieldType || "text").trim().toLowerCase();
   const raw = String(rawFieldType || "").trim().toLowerCase();
@@ -111,6 +118,10 @@ function normalizeFilterFieldType(fieldType, rawFieldType) {
     return "user";
   }
 
+  if (normalized === "relation" || raw === "relation") {
+    return "relation";
+  }
+
   return "text";
 }
 
@@ -135,6 +146,8 @@ export function getOperatorsForFieldOption(fieldOption) {
       return CHOICE_OPERATORS;
     case "boolean":
       return BOOLEAN_OPERATORS;
+    case "relation":
+      return RELATION_OPERATORS;
     default:
       return TEXT_OPERATORS;
   }

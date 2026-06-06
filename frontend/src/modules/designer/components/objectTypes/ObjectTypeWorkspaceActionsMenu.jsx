@@ -15,7 +15,7 @@ const MENU_SECTIONS = [
     id: "runtime",
     label: "Runtime",
     items: [
-      { id: "open-runtime-preview", label: "Открыть Runtime Preview" },
+      { id: "open-runtime-preview", label: "Открыть предпросмотр" },
       { id: "manage-publication", label: "Управление публикацией" },
       { id: "publish-history", label: "История публикаций" },
     ],

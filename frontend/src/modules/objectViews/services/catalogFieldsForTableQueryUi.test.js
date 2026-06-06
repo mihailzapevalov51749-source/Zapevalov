@@ -10,14 +10,11 @@ const source = readFileSync(
 );
 
 describe("catalogFieldsForTableQueryUi", () => {
-  it("filters relation fields out of table filter/sort UI", () => {
+  it("includes relation fields in table filter UI with peer metadata", () => {
     assert.match(source, /isRelationFieldType/);
-    assert.match(source, /return !isRelationFieldType\(rawType\)/);
-  });
-
-  it("does not re-add relation keys from projection", () => {
-    assert.match(source, /if \(isRelationFieldType\(rawType\)\)/);
-    assert.match(source, /continue;/);
+    assert.match(source, /peerObjectTypeKey/);
+    assert.match(source, /resolveRelationFieldPeerObjectTypeKey/);
+    assert.match(source, /fieldType: "relation"/);
   });
 
   it("excludes presentation-only __table_row_number from filter options", () => {

@@ -26,12 +26,16 @@
 .portal-object-runtime-header__title {
   margin: 0;
   padding: 0;
+  min-width: 0;
   font-size: 15px;
   font-weight: 600;
   line-height: 1.2;
   color: #0f172a;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.portal-object-runtime-header__context-trigger {
+  max-width: 100%;
+  color: inherit;
 }
 
 .portal-object-runtime-header__tabs {

@@ -7,6 +7,7 @@ import {
 } from "../../../../shared/relation/hierarchyRelationProfile.js";
 import { buildHierarchyEdgeMaps } from "../services/buildHierarchyEdgeMaps.js";
 import { buildObjectTableHierarchyDisplayRows } from "../services/buildObjectTableHierarchyDisplayRows.js";
+import { resolveExpandableHierarchyRowIds } from "../services/resolveExpandableHierarchyRowIds.js";
 import useObjectTableHierarchyExpanded from "./useObjectTableHierarchyExpanded.js";
 
 function findCatalogRelation(catalog, relationKey) {
@@ -29,6 +30,8 @@ export default function useObjectTableHierarchyRows({
   catalog,
   flatRows = [],
   enabled = true,
+  previewMode = false,
+  previewHierarchyInstances = null,
 }) {
   const hierarchyRelationKey = useMemo(
     () => resolvePrimaryHierarchySubtaskRelationKey(catalog, objectTypeKey),
@@ -51,6 +54,8 @@ export default function useObjectTableHierarchyRows({
     expandedRowIds,
     toggleRowExpanded,
     expandRow,
+    expandAll,
+    collapseAll,
   } = useObjectTableHierarchyExpanded({
     tenantId,
     objectTypeKey,
@@ -75,6 +80,15 @@ export default function useObjectTableHierarchyRows({
       return;
     }
 
+    if (previewMode) {
+      setInstances(
+        Array.isArray(previewHierarchyInstances) ? previewHierarchyInstances : [],
+      );
+      setEdgesError("");
+      setEdgesLoading(false);
+      return;
+    }
+
     setEdgesLoading(true);
     setEdgesError("");
 
@@ -92,15 +106,32 @@ export default function useObjectTableHierarchyRows({
     } finally {
       setEdgesLoading(false);
     }
-  }, [treeEnabled, tenantId, hierarchyRelationKey]);
+  }, [
+    treeEnabled,
+    tenantId,
+    hierarchyRelationKey,
+    previewMode,
+    previewHierarchyInstances,
+  ]);
 
   useEffect(() => {
     void loadEdges();
-  }, [loadEdges]);
+  }, [loadEdges, previewHierarchyInstances]);
 
   const { parentByChild, childrenByParent } = useMemo(
     () => buildHierarchyEdgeMaps(instances, relationDefinition),
     [instances, relationDefinition],
+  );
+
+  const expandableRowIds = useMemo(
+    () =>
+      treeEnabled
+        ? resolveExpandableHierarchyRowIds({
+            childrenByParent,
+            flatRowIds: flatRowIds,
+          })
+        : [],
+    [treeEnabled, childrenByParent, flatRowIds],
   );
 
   const displayRows = useMemo(() => {
@@ -127,11 +158,15 @@ export default function useObjectTableHierarchyRows({
     hierarchyRelationKey,
     displayRows,
     parentByChild,
+    childrenByParent,
+    expandableRowIds,
     edgesLoading,
     edgesError,
     reloadEdges: loadEdges,
     expandedRowIds,
     toggleRowExpanded,
     expandRow,
+    expandAll,
+    collapseAll,
   };
 }

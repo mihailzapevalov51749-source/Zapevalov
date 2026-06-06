@@ -1,9 +1,32 @@
-export function getColumnOptions(column) {
-  const rawOptions =
+function readChoiceOptionsSource(column) {
+  const fieldDef =
+    column?.fieldDef && typeof column.fieldDef === "object" ? column.fieldDef : null;
+  const settings =
+    fieldDef?.settings && typeof fieldDef.settings === "object"
+      ? fieldDef.settings
+      : column?.settings && typeof column.settings === "object"
+        ? column.settings
+        : fieldDef?.settings_json && typeof fieldDef.settings_json === "object"
+          ? fieldDef.settings_json
+          : column?.settings_json && typeof column.settings_json === "object"
+            ? column.settings_json
+            : {};
+
+  return (
     column?.options ||
+    fieldDef?.options ||
+    settings?.options ||
     column?.settings?.options ||
     column?.config?.options ||
-    [];
+    settings?.choices ||
+    settings?.status_options ||
+    settings?.statusOptions ||
+    []
+  );
+}
+
+export function getColumnOptions(column) {
+  const rawOptions = readChoiceOptionsSource(column);
 
   if (!Array.isArray(rawOptions)) {
     return [];
@@ -23,9 +46,10 @@ export function getOptionLabel(option) {
 
   return (
     option.label ||
-    option.title ||
     option.name ||
+    option.title ||
     option.value ||
+    option.key ||
     ""
   );
 }
@@ -90,9 +114,9 @@ export function normalizeChoiceValue(
         const optionLabel = getOptionLabel(option);
 
         const optionId =
-          option?.id ||
-          option?.key ||
-          option?.value ||
+          option?.key ??
+          option?.value ??
+          option?.id ??
           optionLabel;
 
         return (
@@ -117,9 +141,9 @@ export function normalizeChoiceValue(
       const optionLabel = getOptionLabel(option);
 
       const optionId =
-        option?.id ||
-        option?.key ||
-        option?.value ||
+        option?.key ??
+        option?.value ??
+        option?.id ??
         optionLabel;
 
       return (

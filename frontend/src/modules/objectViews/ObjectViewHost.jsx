@@ -218,6 +218,7 @@ export default function ObjectViewHost({
     pageSize,
     effectiveContract: session.effectiveContract,
     sessionState: session.sessionState,
+    previewMode: mode === "studio-preview",
   });
 
   useEffect(() => {

@@ -39,6 +39,31 @@ export function hasUnpublishedObjectTypeChanges(objectType) {
   return updatedAt > lastPublishedAt;
 }
 
+export function findObjectTypeNavigationItem(items, objectTypeId) {
+  if (!objectTypeId || !Array.isArray(items)) {
+    return null;
+  }
+
+  const targetId = String(objectTypeId);
+
+  for (const item of items) {
+    if (!item || typeof item !== "object") {
+      continue;
+    }
+
+    if (item.type === "object_type" && String(item.object_type_id) === targetId) {
+      return item;
+    }
+
+    const nested = findObjectTypeNavigationItem(item.children, objectTypeId);
+    if (nested) {
+      return nested;
+    }
+  }
+
+  return null;
+}
+
 export function treeHasObjectTypeMenuPlacement(items, objectTypeId) {
   if (!objectTypeId || !Array.isArray(items)) {
     return false;

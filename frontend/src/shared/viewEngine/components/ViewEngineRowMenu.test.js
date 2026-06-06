@@ -20,6 +20,10 @@ describe("ViewEngineRowMenu", () => {
       resolve(here, "ViewEngineTitleFieldChrome.jsx"),
       "utf8",
     );
+    const selectionCellSource = readFileSync(
+      resolve(here, "ViewEngineSelectionCell.jsx"),
+      "utf8",
+    );
 
     expect(source).toContain("createChildMenuLabel");
     expect(source).toContain("Удалить");
@@ -28,10 +32,12 @@ describe("ViewEngineRowMenu", () => {
     expect(cssSource).toContain("view-engine-row-menu-slot");
     expect(cellSource).toContain("rendererContext?.rowActions");
     expect(cellSource).toContain("isRowHovered");
-    expect(titleChromeSource).toMatch(/\{menu\}\s+<ViewEngineHierarchyTitleChrome/);
-    expect(titleChromeSource).toMatch(
-      /\{menu\}\s+<div\s+className="view-engine-title-field-chrome__body"/,
-    );
-    expect(cssSource).toContain("grid-template-columns: 18px minmax(0, 1fr)");
+    expect(titleChromeSource).toContain("ViewEngineTitleHierarchyNumber");
+    expect(titleChromeSource).toContain("view-engine-title-field-chrome__content");
+    expect(selectionCellSource).toContain("ViewEngineSelectionTreeToggle");
+    expect(source).toContain("readOnly");
+    expect(cssSource).toContain("grid-template-columns: 24px minmax(0, 1fr)");
+    expect(cssSource).toContain("view-engine-table-selection-tree-toggle");
+    expect(cssSource).toContain("min-width: 36px");
   });
 });

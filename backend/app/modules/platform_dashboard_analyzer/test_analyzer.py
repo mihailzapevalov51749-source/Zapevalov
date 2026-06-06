@@ -5,6 +5,17 @@ from app.modules.platform_dashboard_analyzer.refresh import build_scan_context
 from app.modules.platform_dashboard_analyzer.stage_works import (
     STAGE_CANONICAL,
     _library_deep_link_supports_document_opening,
+    _object_context_menu_complete,
+    _object_table_excel_export_complete,
+    _object_table_excel_import_complete,
+    _object_table_selection_tree_toggle_ux_complete,
+    _object_table_studio_preview_parity_complete,
+    _studio_preview_business_context_ux_complete,
+    _studio_preview_tab_selector_ux_complete,
+    _studio_preview_mock_data_complete,
+    _studio_preview_demo_data_toolbar_badge_complete,
+    _studio_object_type_header_icon_parity_complete,
+    _object_table_title_hierarchy_number_ux_complete,
     evaluate_stage_work_status,
     resolve_stage_works,
     split_stage_works,
@@ -189,6 +200,137 @@ def test_legacy_isolation_readiness_uses_code_guards_not_doc_markers():
         assert evaluate_stage_work_status("legacy-isolation", work, ctx) != "done" or work in completed
 
 
+def test_object_table_ut_parity_link_field_type_complete():
+    ctx = build_scan_context()
+    link_work = "Реализовать тип поля Ссылка"
+
+    assert evaluate_stage_work_status("object-table-ut-parity", link_work, ctx) == "done"
+
+    completed, current, next_items, readiness = split_stage_works(
+        "object-table-ut-parity",
+        resolve_stage_works("object-table-ut-parity", {}),
+        ctx,
+    )
+
+    assert link_work in completed
+    assert link_work not in next_items
+    assert readiness == 24
+
+
+def test_object_table_ut_parity_checklist_in_card_complete():
+    ctx = build_scan_context()
+    checklist_work = "Реализовать чек-листы в карточке"
+
+    assert evaluate_stage_work_status("object-table-ut-parity", checklist_work, ctx) == "done"
+
+    completed, current, next_items, readiness = split_stage_works(
+        "object-table-ut-parity",
+        resolve_stage_works("object-table-ut-parity", {}),
+        ctx,
+    )
+
+    assert checklist_work in completed
+    assert checklist_work not in next_items
+    assert readiness == 24
+
+
+def test_object_context_menu_complete():
+    ctx = build_scan_context()
+    assert _object_context_menu_complete(ctx) is True
+
+
+def test_object_table_title_hierarchy_number_ux_complete():
+    ctx = build_scan_context()
+    assert _object_table_title_hierarchy_number_ux_complete(ctx) is True
+
+
+def test_object_table_selection_tree_toggle_ux_complete():
+    ctx = build_scan_context()
+    assert _object_table_selection_tree_toggle_ux_complete(ctx) is True
+
+
+def test_object_table_studio_preview_parity_complete():
+    ctx = build_scan_context()
+    assert _object_table_studio_preview_parity_complete(ctx) is True
+
+
+def test_studio_preview_business_context_ux_complete():
+    ctx = build_scan_context()
+    assert _studio_preview_business_context_ux_complete(ctx) is True
+
+
+def test_studio_preview_tab_selector_ux_complete():
+    ctx = build_scan_context()
+    assert _studio_preview_tab_selector_ux_complete(ctx) is True
+
+
+def test_studio_preview_mock_data_complete():
+    ctx = build_scan_context()
+    assert _studio_preview_mock_data_complete(ctx) is True
+
+
+def test_studio_preview_demo_data_toolbar_badge_complete():
+    ctx = build_scan_context()
+    assert _studio_preview_demo_data_toolbar_badge_complete(ctx) is True
+
+
+def test_studio_object_type_header_icon_parity_complete():
+    ctx = build_scan_context()
+    assert _studio_object_type_header_icon_parity_complete(ctx) is True
+
+
+def test_object_table_excel_export_complete():
+    ctx = build_scan_context()
+    excel_export_work = "Реализовать экспорт Excel"
+
+    assert _object_table_excel_export_complete(ctx) is True
+    assert evaluate_stage_work_status("object-table-ut-parity", excel_export_work, ctx) == "done"
+
+    completed, current, next_items, readiness = split_stage_works(
+        "object-table-ut-parity",
+        resolve_stage_works("object-table-ut-parity", {}),
+        ctx,
+    )
+
+    assert excel_export_work in completed
+    assert excel_export_work not in next_items
+
+
+def test_object_table_excel_import_complete():
+    ctx = build_scan_context()
+    excel_import_work = "Реализовать импорт Excel"
+
+    assert _object_table_excel_import_complete(ctx) is True
+    assert evaluate_stage_work_status("object-table-ut-parity", excel_import_work, ctx) == "done"
+
+    completed, current, next_items, readiness = split_stage_works(
+        "object-table-ut-parity",
+        resolve_stage_works("object-table-ut-parity", {}),
+        ctx,
+    )
+
+    assert excel_import_work in completed
+    assert excel_import_work not in next_items
+    assert readiness == 32
+
+
+def test_object_table_ut_parity_relation_filter_complete():
+    ctx = build_scan_context()
+    relation_filter_work = "Реализовать фильтрацию по связям"
+
+    assert evaluate_stage_work_status("object-table-ut-parity", relation_filter_work, ctx) == "done"
+
+    completed, current, next_items, readiness = split_stage_works(
+        "object-table-ut-parity",
+        resolve_stage_works("object-table-ut-parity", {}),
+        ctx,
+    )
+
+    assert relation_filter_work in completed
+    assert relation_filter_work not in next_items
+    assert readiness == 24
+
+
 def test_object_table_ut_parity_multi_sort_deferred_post_mvp():
     ctx = build_scan_context()
     works = resolve_stage_works("object-table-ut-parity", {})
@@ -201,7 +343,7 @@ def test_object_table_ut_parity_multi_sort_deferred_post_mvp():
     assert "Реализовать многоколоночную сортировку" in next_items
     assert "Реализовать многоколоночную сортировку" not in completed
     assert "Реализовать многоколоночную сортировку" not in current
-    assert readiness == 0
+    assert readiness == 24
 
 
 def test_object_table_ut_parity_work_weights_sum_to_100():

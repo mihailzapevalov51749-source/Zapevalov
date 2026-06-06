@@ -1,5 +1,7 @@
 import ObjectTypeIcon from "../../shared/icons/ObjectTypeIcon";
+import ObjectContextMenuTrigger from "../../shared/objectPlatform/objectContextMenu/ObjectContextMenuTrigger";
 
+import "../../shared/objectPlatform/objectContextMenu/objectContextMenu.css";
 import "./workspaceRuntimeTabsBar.css";
 import "./portalObjectRuntimeHeader.css";
 
@@ -13,6 +15,9 @@ const RUNTIME_TAB_TOKENS = {
  */
 export default function PortalObjectRuntimeHeader({
   objectName = "Объект",
+  tenantId = null,
+  objectTypeKey = null,
+  objectTypeId = null,
   iconType = null,
   iconFileUrl = null,
   color = null,
@@ -34,7 +39,15 @@ export default function PortalObjectRuntimeHeader({
           size={28}
           className="object-type-icon--header portal-object-runtime-header__icon"
         />
-        <h1 className="portal-object-runtime-header__title">{objectName}</h1>
+        <h1 className="portal-object-runtime-header__title">
+          <ObjectContextMenuTrigger
+            className="portal-object-runtime-header__context-trigger"
+            objectName={objectName}
+            tenantId={tenantId}
+            objectTypeKey={objectTypeKey}
+            objectTypeId={objectTypeId}
+          />
+        </h1>
       </div>
 
       {tabItems.length > 0 ? (

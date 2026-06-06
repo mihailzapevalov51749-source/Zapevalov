@@ -122,6 +122,7 @@ export default function ObjectTableViewSettingsFiltersModal({
   effectiveContract,
   catalog,
   objectTypeKey,
+  tenantId = null,
   sessionApi,
   onApplied,
   savedFilters = [],
@@ -554,6 +555,9 @@ export default function ObjectTableViewSettingsFiltersModal({
                         onChange={(nextValue) =>
                           updateCondition(condition.id, { value: nextValue })
                         }
+                        tenantId={tenantId}
+                        catalog={catalog}
+                        objectTypeKey={objectTypeKey}
                         style={inputStyle}
                         disabled={!hasFields}
                       />

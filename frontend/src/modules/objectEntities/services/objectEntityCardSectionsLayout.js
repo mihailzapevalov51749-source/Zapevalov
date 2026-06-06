@@ -11,7 +11,7 @@ export const OBJECT_ENTITY_SECTION_TYPES = {
   comments: "comments",
 };
 
-export const OBJECT_ENTITY_INNER_TAB_IDS = ["notes", "relations"];
+export const OBJECT_ENTITY_INNER_TAB_IDS = ["checklist", "notes", "relations"];
 
 export const REQUIRED_CARD_SECTION_IDS = ["main", "fields"];
 
@@ -26,6 +26,7 @@ const SECTION_TYPE_BY_ID = {
 };
 
 const INNER_TAB_LABELS = {
+  checklist: "Чек-лист",
   notes: "Заметки",
   relations: "Связанные записи",
 };

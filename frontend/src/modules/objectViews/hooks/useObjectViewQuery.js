@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getPublishedCatalog } from "../../designer/api/runtimeCatalogApi";
 import { getApiErrorMessage } from "../../designer/api/platformApiClient";
 import { runtimeReadGateway } from "../../runtimeReadGateway";
+import { buildStudioPreviewListResult } from "../../../shared/objectPlatform/services/preview/buildStudioPreviewListResult.js";
 import { buildPublishedViewRaw } from "../services/buildPublishedViewRaw";
 import { mapObjectViewQueryToRuntimeParams } from "../services/mapObjectViewQueryToRuntimeParams";
 import { getPrimarySortState } from "../services/sortRulesUtils";
@@ -31,8 +32,9 @@ export default function useObjectViewQuery({
   pageSize = DEFAULT_LIMIT,
   effectiveContract = null,
   sessionState = null,
+  previewMode = false,
 }) {
-  const limit = pageSize;
+  const limit = previewMode ? 7 : pageSize;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -44,6 +46,7 @@ export default function useObjectViewQuery({
   const [publishedViewRaw, setPublishedViewRaw] = useState(null);
   const [publishedObjectView, setPublishedObjectView] = useState(null);
   const [listResult, setListResult] = useState(null);
+  const [previewHierarchyInstances, setPreviewHierarchyInstances] = useState([]);
   const [metaReady, setMetaReady] = useState(false);
 
   const loadRequestRef = useRef(0);
@@ -51,10 +54,12 @@ export default function useObjectViewQuery({
   const projectionRef = useRef(projection);
   const offsetRef = useRef(offset);
   const effectiveContractRef = useRef(effectiveContract);
+  const catalogRef = useRef(catalog);
 
   projectionRef.current = projection;
   offsetRef.current = offset;
   effectiveContractRef.current = effectiveContract;
+  catalogRef.current = catalog;
 
   const filterSignature = useMemo(
     () => buildFilterSignature(effectiveContract, sessionState),
@@ -71,6 +76,21 @@ export default function useObjectViewQuery({
     [effectiveContract],
   );
 
+  const loadPreviewRows = useCallback(() => {
+    const contract = effectiveContractRef.current;
+    const preview = buildStudioPreviewListResult({
+      catalog: catalogRef.current,
+      objectTypeKey,
+      contract,
+      runtimeProjection: projectionRef.current,
+      viewKey,
+    });
+
+    setListResult(preview.listResult);
+    setPreviewHierarchyInstances(preview.hierarchyInstances);
+    setError("");
+  }, [objectTypeKey, viewKey]);
+
   const loadRows = useCallback(
     async ({ offsetSnapshot, projectionSnapshot } = {}) => {
       if (!objectTypeKey) {
@@ -85,6 +105,16 @@ export default function useObjectViewQuery({
 
       setLoading(true);
       setError("");
+
+      if (previewMode) {
+        loadPreviewRows();
+
+        if (loadRequestRef.current === requestId) {
+          setLoading(false);
+        }
+
+        return;
+      }
 
       const activeOffset = offsetSnapshot ?? offsetRef.current;
       const contract = effectiveContractRef.current;
@@ -108,12 +138,14 @@ export default function useObjectViewQuery({
         }
 
         setListResult(gatewayResponse);
+        setPreviewHierarchyInstances([]);
       } catch (err) {
         if (loadRequestRef.current !== requestId) {
           return;
         }
 
         setListResult(null);
+        setPreviewHierarchyInstances([]);
         setError(
           getApiErrorMessage(
             err,
@@ -126,7 +158,15 @@ export default function useObjectViewQuery({
         }
       }
     },
-    [objectTypeKey, tenantId, viewKey, limit, sessionState],
+    [
+      objectTypeKey,
+      tenantId,
+      viewKey,
+      limit,
+      sessionState,
+      previewMode,
+      loadPreviewRows,
+    ],
   );
 
   const reload = useCallback(async () => {
@@ -144,6 +184,7 @@ export default function useObjectViewQuery({
     setPublishedViewRaw(null);
     setPublishedObjectView(null);
     setListResult(null);
+    setPreviewHierarchyInstances([]);
 
     if (!objectTypeKey) {
       setError("Object type key не определён");
@@ -157,47 +198,49 @@ export default function useObjectViewQuery({
 
       let nextProjection = null;
 
-      try {
-        const projectionResponse = await runtimeReadGateway.getProjection({
-          tenantId,
-          objectTypeKey,
-          viewKey,
-        });
+      if (!previewMode) {
+        try {
+          const projectionResponse = await runtimeReadGateway.getProjection({
+            tenantId,
+            objectTypeKey,
+            viewKey,
+          });
 
-        nextProjection = projectionResponse?.projection;
-        const nextPublishedViewRaw = buildPublishedViewRaw(projectionResponse);
-        const nextObjectView =
-          projectionResponse?.objectView ||
-          projectionResponse?.object_view ||
-          nextPublishedViewRaw?.settings_json?.objectView ||
-          null;
+          nextProjection = projectionResponse?.projection;
+          const nextPublishedViewRaw = buildPublishedViewRaw(projectionResponse);
+          const nextObjectView =
+            projectionResponse?.objectView ||
+            projectionResponse?.object_view ||
+            nextPublishedViewRaw?.settings_json?.objectView ||
+            null;
 
-        setPublishedViewRaw(nextPublishedViewRaw);
-        setPublishedObjectView(
-          nextObjectView && typeof nextObjectView === "object"
-            ? nextObjectView
-            : null,
-        );
+          setPublishedViewRaw(nextPublishedViewRaw);
+          setPublishedObjectView(
+            nextObjectView && typeof nextObjectView === "object"
+              ? nextObjectView
+              : null,
+          );
 
-        if (isRuntimeProjectionValid(nextProjection)) {
-          setProjection(nextProjection);
-          setProjectionValid(true);
-        } else {
+          if (isRuntimeProjectionValid(nextProjection)) {
+            setProjection(nextProjection);
+            setProjectionValid(true);
+          } else {
+            setProjection(null);
+            setProjectionValid(false);
+            nextProjection = null;
+          }
+        } catch (projectionError) {
           setProjection(null);
           setProjectionValid(false);
           nextProjection = null;
-        }
-      } catch (projectionError) {
-        setProjection(null);
-        setProjectionValid(false);
-        nextProjection = null;
-        if (!cancelled) {
-          setError(
-            getApiErrorMessage(
-              projectionError,
-              "Не удалось загрузить projection опубликованного представления.",
-            ),
-          );
+          if (!cancelled) {
+            setError(
+              getApiErrorMessage(
+                projectionError,
+                "Не удалось загрузить projection опубликованного представления.",
+              ),
+            );
+          }
         }
       }
 
@@ -205,10 +248,12 @@ export default function useObjectViewQuery({
         const catalogResponse = await getPublishedCatalog(tenantId);
         if (!cancelled) {
           setCatalog(catalogResponse);
+          catalogRef.current = catalogResponse;
         }
       } catch {
         if (!cancelled) {
           setCatalog(null);
+          catalogRef.current = null;
         }
       }
 
@@ -231,10 +276,26 @@ export default function useObjectViewQuery({
     return () => {
       cancelled = true;
     };
-  }, [tenantId, objectTypeKey, viewKey, loadRows]);
+  }, [tenantId, objectTypeKey, viewKey, loadRows, previewMode]);
 
   useEffect(() => {
-    if (!metaReady || !objectTypeKey) {
+    if (!previewMode || !metaReady || !objectTypeKey) {
+      return;
+    }
+
+    loadPreviewRows();
+  }, [
+    previewMode,
+    metaReady,
+    objectTypeKey,
+    filterSignature,
+    sortSignature,
+    loadPreviewRows,
+    effectiveContract,
+  ]);
+
+  useEffect(() => {
+    if (!metaReady || !objectTypeKey || previewMode) {
       return;
     }
 
@@ -246,10 +307,10 @@ export default function useObjectViewQuery({
     loadRows({
       offsetSnapshot: offset,
     });
-  }, [offset, metaReady, objectTypeKey, loadRows]);
+  }, [offset, metaReady, objectTypeKey, loadRows, previewMode]);
 
   useEffect(() => {
-    if (!metaReady || !objectTypeKey) {
+    if (!metaReady || !objectTypeKey || previewMode) {
       return;
     }
 
@@ -259,19 +320,27 @@ export default function useObjectViewQuery({
     loadRows({
       offsetSnapshot: 0,
     });
-  }, [filterSignature, sortSignature, metaReady, objectTypeKey, loadRows]);
+  }, [filterSignature, sortSignature, metaReady, objectTypeKey, loadRows, previewMode]);
 
   const resetOffset = useCallback(() => {
     setOffset(0);
   }, []);
 
   const goToPreviousPage = useCallback(() => {
+    if (previewMode) {
+      return;
+    }
+
     setOffset((current) => Math.max(0, current - limit));
-  }, [limit]);
+  }, [limit, previewMode]);
 
   const goToNextPage = useCallback(() => {
+    if (previewMode) {
+      return;
+    }
+
     setOffset((current) => current + limit);
-  }, [limit]);
+  }, [limit, previewMode]);
 
   return {
     loading,
@@ -282,6 +351,8 @@ export default function useObjectViewQuery({
     publishedViewRaw,
     publishedObjectView,
     listResult,
+    previewHierarchyInstances,
+    previewMode,
     tableSort,
     offset,
     setOffset,

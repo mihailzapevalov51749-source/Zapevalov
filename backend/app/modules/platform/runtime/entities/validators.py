@@ -6,6 +6,7 @@ from app.modules.platform.runtime.entities.system_fields import (
     strip_client_system_values,
 )
 from app.modules.platform.shared.enums import FieldType
+from app.modules.platform.shared.link_value import validate_link_field_value
 from app.modules.platform.shared.relation_field_contract import is_relation_field_type
 
 
@@ -51,6 +52,10 @@ def validate_field_value(field_metadata: dict[str, Any], value: Any) -> None:
     if field_type in {FieldType.TEXT, FieldType.TEXTAREA}:
         if not isinstance(value, str):
             raise ValueError(f"Поле '{field_key}' ожидает string или null")
+        return
+
+    if field_type == FieldType.LINK:
+        validate_link_field_value(field_key, value)
         return
 
     if field_type == FieldType.NUMBER:

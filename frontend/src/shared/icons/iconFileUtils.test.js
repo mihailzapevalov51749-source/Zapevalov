@@ -46,6 +46,20 @@ describe("getObjectTypeAppearanceFields", () => {
       color: "#112233",
     });
   });
+
+  it("keeps object type icon fields when display_icon enrichment is absent", () => {
+    expect(
+      getObjectTypeAppearanceFields({
+        icon_type: "upload",
+        icon_file_url: "/uploads/icons/object.png",
+        color: "#112233",
+      }),
+    ).toEqual({
+      icon_type: "upload",
+      icon_file_url: "/uploads/icons/object.png",
+      color: "#112233",
+    });
+  });
 });
 
 describe("mergeObjectTypeAppearance", () => {

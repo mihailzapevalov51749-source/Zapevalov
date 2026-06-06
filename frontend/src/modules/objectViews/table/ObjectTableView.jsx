@@ -74,6 +74,16 @@ import {
   saveColumnWidth,
 } from "./services/objectTableColumnWidthsStorage";
 import { mapColumnWidthsToTableKeys } from "./services/mapColumnWidthsToTableKeys";
+import { TABLE_BASE_STATE_NAME } from "./preferences/tableBaseState";
+import {
+  registerObjectTableExportProvider,
+  unregisterObjectTableExportProvider,
+} from "../../../shared/objectPlatform/services/export/objectTableExportBridge";
+import { resolveImportableFields } from "../../../shared/objectPlatform/services/import/resolveImportableFields";
+import {
+  registerObjectTableImportProvider,
+  unregisterObjectTableImportProvider,
+} from "../../../shared/objectPlatform/services/import/objectTableImportBridge";
 
 import "../../../shared/viewEngine/viewEngineTable.css";
 
@@ -139,8 +149,11 @@ export default function ObjectTableView({
 }) {
   void viewLabel;
 
+  const isPreviewMode = mode === "studio-preview";
+  const hierarchyDataEnabled = Boolean(tenantId && objectTypeKey && query.catalog);
+
   const createEntityEnabled =
-    mode !== "studio-preview" && Boolean(tenantId && objectTypeKey && query.catalog);
+    !isPreviewMode && hierarchyDataEnabled;
 
   const handleEntityCreated = useCallback(async () => {
     query.resetOffset?.();
@@ -156,7 +169,7 @@ export default function ObjectTableView({
   const inlineEdit = useObjectTableInlineEdit({
     tenantId,
     objectTypeKey,
-    enabled: entityCardEnabled,
+    enabled: entityCardEnabled && !isPreviewMode,
     onEntityUpdated: () => query.reload?.(),
   });
 
@@ -475,10 +488,88 @@ export default function ObjectTableView({
     columns: tableData.columns,
     relationColumns: relationTableColumns,
     enabled:
+      !isPreviewMode &&
       Boolean(tenantId) &&
       relationTableColumns.length > 0 &&
       tableData.rows.length > 0,
   });
+
+  const exportRuntimeViewKey = isTableBaseStateActive
+    ? String(publishedTableViewKey || "default_table").trim()
+    : String(activeViewKey || publishedTableViewKey || "default_table").trim();
+
+  const exportViewName = isTableBaseStateActive
+    ? TABLE_BASE_STATE_NAME
+    : activeViewDisplayName;
+
+  useEffect(() => {
+    if (isPreviewMode) {
+      return undefined;
+    }
+
+    const provider = {
+      canExport: () =>
+        Boolean(tenantId) &&
+        Boolean(objectTypeKey) &&
+        tableData.columns.length > 0,
+      buildSnapshot: async (menuContext = {}) => ({
+        tenantId,
+        objectTypeKey,
+        viewKey: exportRuntimeViewKey,
+        objectName: String(menuContext?.objectName || objectTypeLabel || "").trim() || "Объект",
+        viewName: exportViewName,
+        contract: contractForColumns,
+        session: {
+          activeQuickFilterId: sessionApi?.activeQuickFilterId ?? null,
+        },
+        columns: tableData.columns,
+        relationColumns: relationTableColumns,
+        catalog: query.catalog ?? null,
+      }),
+    };
+
+    registerObjectTableExportProvider(provider);
+
+    return () => {
+      unregisterObjectTableExportProvider(provider);
+    };
+  }, [
+    tenantId,
+    objectTypeKey,
+    objectTypeLabel,
+    exportRuntimeViewKey,
+    exportViewName,
+    contractForColumns,
+    sessionApi?.activeQuickFilterId,
+    tableData.columns,
+    relationTableColumns,
+    query.catalog,
+    isPreviewMode,
+  ]);
+
+  useEffect(() => {
+    if (isPreviewMode) {
+      return undefined;
+    }
+
+    const provider = {
+      canImport: () => Boolean(tenantId) && Boolean(objectTypeKey) && Boolean(query.catalog),
+      buildImportSnapshot: async (menuContext = {}) => ({
+        tenantId,
+        objectTypeKey,
+        objectName:
+          String(menuContext?.objectName || objectTypeLabel || "").trim() || "Объект",
+        importableFields: resolveImportableFields(query.catalog, objectTypeKey),
+        onImported: () => query.reload?.(),
+      }),
+    };
+
+    registerObjectTableImportProvider(provider);
+
+    return () => {
+      unregisterObjectTableImportProvider(provider);
+    };
+  }, [tenantId, objectTypeKey, objectTypeLabel, query.catalog, isPreviewMode, query.reload]);
 
   const hierarchyViewKey = isTableBaseStateActive
     ? String(publishedTableViewKey || "default_table").trim()
@@ -490,7 +581,9 @@ export default function ObjectTableView({
     viewKey: hierarchyViewKey,
     catalog: query.catalog,
     flatRows: relationTable.enrichedRows,
-    enabled: mode !== "studio-preview",
+    enabled: hierarchyDataEnabled,
+    previewMode: isPreviewMode,
+    previewHierarchyInstances: query.previewHierarchyInstances,
   });
 
   useEffect(() => {
@@ -541,27 +634,38 @@ export default function ObjectTableView({
   const isBulkDeleteFlowActive =
     bulkEntityDelete.confirmOpen || bulkEntityDelete.scenarioOpen;
 
-  const rowSelection = useMemo(
-    () =>
-      showSelectionColumn && mode !== "studio-preview"
-        ? {
-            isSelected: tableSelection.isSelected,
-            onToggleRow: tableSelection.toggleSelection,
-            headerChecked: tableSelection.headerChecked,
-            headerIndeterminate: tableSelection.headerIndeterminate,
-            onToggleAllVisible: tableSelection.toggleAllVisible,
-          }
-        : null,
-    [
-      mode,
-      showSelectionColumn,
-      tableSelection.headerChecked,
-      tableSelection.headerIndeterminate,
-      tableSelection.isSelected,
-      tableSelection.toggleAllVisible,
-      tableSelection.toggleSelection,
-    ],
-  );
+  const rowSelection = useMemo(() => {
+    if (!showSelectionColumn) {
+      return null;
+    }
+
+    if (isPreviewMode) {
+      return {
+        disabled: true,
+        isSelected: () => false,
+        onToggleRow: undefined,
+        headerChecked: false,
+        headerIndeterminate: false,
+        onToggleAllVisible: undefined,
+      };
+    }
+
+    return {
+      isSelected: tableSelection.isSelected,
+      onToggleRow: tableSelection.toggleSelection,
+      headerChecked: tableSelection.headerChecked,
+      headerIndeterminate: tableSelection.headerIndeterminate,
+      onToggleAllVisible: tableSelection.toggleAllVisible,
+    };
+  }, [
+    isPreviewMode,
+    showSelectionColumn,
+    tableSelection.headerChecked,
+    tableSelection.headerIndeterminate,
+    tableSelection.isSelected,
+    tableSelection.toggleAllVisible,
+    tableSelection.toggleSelection,
+  ]);
 
   const handleOpenRelatedEntityFromTable = useCallback(
     ({ entityId, objectTypeKey: relatedObjectTypeKey }) => {
@@ -725,10 +829,9 @@ export default function ObjectTableView({
 
   const canCreateSubtaskFromRow = useMemo(
     () =>
-      createEntityEnabled &&
       hasHierarchySubtasksFeature(query.catalog, objectTypeKey) &&
       Boolean(hierarchyRelationKey),
-    [createEntityEnabled, query.catalog, objectTypeKey, hierarchyRelationKey],
+    [query.catalog, objectTypeKey, hierarchyRelationKey],
   );
 
   const handleCreateSubtaskFromRow = useCallback(
@@ -747,29 +850,56 @@ export default function ObjectTableView({
   );
 
   const rowActionsEnabled =
-    createEntityEnabled &&
-    mode !== "studio-preview" &&
-    !inlineEdit.isInlineEditMode;
+    canCreateSubtaskFromRow &&
+    !inlineEdit.isInlineEditMode &&
+    (createEntityEnabled || isPreviewMode);
+
+  const expandableHierarchyRowIds = hierarchyTable.expandableRowIds;
+
+  const hierarchyTreeHeaderExpanded = hierarchyTable.expandedRowIds.size > 0;
+
+  const handleToggleHierarchyTreeHeader = useCallback(() => {
+    if (!hierarchyTable.treeEnabled) {
+      return;
+    }
+
+    if (hierarchyTable.expandedRowIds.size > 0) {
+      hierarchyTable.collapseAll();
+      return;
+    }
+
+    hierarchyTable.expandAll(expandableHierarchyRowIds);
+  }, [
+    expandableHierarchyRowIds,
+    hierarchyTable.collapseAll,
+    hierarchyTable.expandAll,
+    hierarchyTable.expandedRowIds.size,
+    hierarchyTable.treeEnabled,
+  ]);
 
   const tableRendererContext = useMemo(
     () => ({
+      previewMode: isPreviewMode,
       onOpenRelatedEntity: handleOpenRelatedEntityFromTable,
       onBeginDeleteEntity: handleBeginDeleteEntity,
       rowActions: rowActionsEnabled
         ? {
             enabled: true,
+            readOnly: isPreviewMode,
             canCreateSubtask: canCreateSubtaskFromRow,
-            canDelete: true,
+            canDelete: !isPreviewMode,
             titleFieldKey,
             createChildMenuLabel,
-            onCreateSubtask: handleCreateSubtaskFromRow,
-            onBeginDeleteEntity: handleBeginDeleteEntity,
+            onCreateSubtask: isPreviewMode ? undefined : handleCreateSubtaskFromRow,
+            onBeginDeleteEntity: isPreviewMode ? undefined : handleBeginDeleteEntity,
           }
         : null,
       hierarchyTree: hierarchyTable.treeEnabled
         ? {
             enabled: true,
             onToggleRowExpanded: hierarchyTable.toggleRowExpanded,
+            headerTreeExpanded: hierarchyTreeHeaderExpanded,
+            onToggleTreeHeader: handleToggleHierarchyTreeHeader,
           }
         : null,
       onOpenFile: (file, meta = {}) => {
@@ -814,9 +944,12 @@ export default function ObjectTableView({
       canCreateSubtaskFromRow,
       createChildMenuLabel,
       rowActionsEnabled,
+      isPreviewMode,
       titleFieldKey,
       hierarchyTable.treeEnabled,
       hierarchyTable.toggleRowExpanded,
+      hierarchyTreeHeaderExpanded,
+      handleToggleHierarchyTreeHeader,
       inlineEdit.isInlineEditMode,
       objectTypeKey,
       tenantId,
@@ -1194,7 +1327,7 @@ export default function ObjectTableView({
 
   const handleTableSurfaceClick = useCallback(
     (event) => {
-      if (!entityCardEnabled || inlineEdit.isInlineEditMode) {
+      if (!entityCardEnabled || inlineEdit.isInlineEditMode || isPreviewMode) {
         return;
       }
 
@@ -1244,7 +1377,7 @@ export default function ObjectTableView({
 
       entityCard.openCard(rowId);
     },
-    [displayRows, entityCard, entityCardEnabled, inlineEdit.isInlineEditMode],
+    [displayRows, entityCard, entityCardEnabled, inlineEdit.isInlineEditMode, isPreviewMode],
   );
 
   const resolveColumnResizeFieldKey = useCallback(
@@ -1378,7 +1511,11 @@ export default function ObjectTableView({
             catalog={query.catalog}
             onSelectView={onSelectView}
             onOpenFilters={() => handleOpenFiltersEditor(null)}
-            onToggleInlineEdit={inlineEdit.toggleInlineEditMode}
+            previewMode={isPreviewMode}
+            previewShowCreateButton={isPreviewMode && hierarchyDataEnabled}
+            onToggleInlineEdit={
+              isPreviewMode ? undefined : inlineEdit.toggleInlineEditMode
+            }
             isInlineEditMode={inlineEdit.isInlineEditMode}
             onOpenViewSettingsForKey={handleOpenViewSettingsForKey}
             onSetDefaultView={handleSetDefaultForView}
@@ -1473,6 +1610,7 @@ export default function ObjectTableView({
         effectiveContract={effectiveContract}
         catalog={query.catalog}
         objectTypeKey={objectTypeKey}
+        tenantId={tenantId}
         sessionApi={sessionApi}
         onApplied={handleApplyFilters}
         savedFilters={effectiveContract?.query?.filters?.savedFilters || []}
@@ -1493,12 +1631,14 @@ export default function ObjectTableView({
         sessionApi={sessionApi}
       />
 
-      <ObjectTableBulkActionsBar
-        selectedCount={tableSelection.selectedCount}
-        onClearSelection={tableSelection.clearSelection}
-        onDelete={handleBulkDeleteClick}
-        deleting={bulkEntityDelete.isBusy}
-      />
+      {!isPreviewMode ? (
+        <ObjectTableBulkActionsBar
+          selectedCount={tableSelection.selectedCount}
+          onClearSelection={tableSelection.clearSelection}
+          onDelete={handleBulkDeleteClick}
+          deleting={bulkEntityDelete.isBusy}
+        />
+      ) : null}
 
       <div
         ref={tableSurfaceRef}
@@ -1548,6 +1688,7 @@ export default function ObjectTableView({
         </div>
       ) : null}
 
+        {!isPreviewMode ? (
         <PlatformQuickCreateForm
           open={entityCard.quickCreate?.open}
           onClose={entityCard.quickCreate?.close}
@@ -1563,7 +1704,9 @@ export default function ObjectTableView({
           submitError={entityCard.quickCreate?.submitError}
           submitLabel={entityCard.quickCreate?.submitLabel}
         />
+        ) : null}
 
+        {!isPreviewMode ? (
         <ObjectEntityDeleteConfirmModal
           open={deleteConfirmOpen}
           mode={isBulkDeleteFlowActive ? "bulk" : "single"}
@@ -1584,7 +1727,9 @@ export default function ObjectTableView({
               : entityDelete.confirmSimpleDelete
           }
         />
+        ) : null}
 
+        {!isPreviewMode ? (
         <ObjectEntityDeleteScenarioModal
           open={deleteScenarioOpen}
           mode={isBulkDeleteFlowActive ? "bulk" : "single"}
@@ -1614,7 +1759,9 @@ export default function ObjectTableView({
               : entityDelete.confirmScenarioDelete
           }
         />
+        ) : null}
 
+        {!isPreviewMode ? (
         <ObjectEntityCardModal
           open={entityCard.isOpen}
           suspendOverlayVisibility={isWorkspaceFileOpen}
@@ -1642,6 +1789,7 @@ export default function ObjectTableView({
           onBeginCreateSubtask={entityCard.beginCreateSubtask}
           subtasksReloadToken={entityCard.subtasksReloadToken}
         />
+        ) : null}
     </div>
     </YasiiSurfaceContextProvider>
   );

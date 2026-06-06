@@ -3,7 +3,7 @@ export const DESIGNER_TABS = [
   { id: "fields", label: "Поля" },
   { id: "relations", label: "Связи" },
   { id: "views", label: "Вкладки" },
-  { id: "runtime-preview", label: "Runtime Preview" },
+  { id: "runtime-preview", label: "Предпросмотр" },
 ];
 
 export const DESIGNER_TAB_IDS = DESIGNER_TABS.map((tab) => tab.id);

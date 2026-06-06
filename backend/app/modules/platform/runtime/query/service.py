@@ -83,7 +83,10 @@ def query_entities(
         )
         for condition in filter_conditions:
             field_type = field_map[condition.field].get("field_type")
-            if field_type == FieldType.UUID and condition.value not in (None, ""):
+            if field_type in {FieldType.UUID, FieldType.RELATION} and condition.value not in (
+                None,
+                "",
+            ):
                 validate_uuid_string(str(condition.value), condition.field)
     except ValueError as exc:
         raise _validation_http_error(exc) from exc

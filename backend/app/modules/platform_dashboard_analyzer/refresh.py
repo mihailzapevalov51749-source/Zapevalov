@@ -2148,6 +2148,1229 @@ def _ensure_owner_stage_detail_panel_dashboard_notes(
     return added, journal_lines
 
 
+OBJECT_TABLE_LINK_FIELD_TYPE_HISTORY_SLUG = "object-table-link-field-type-20260605"
+OBJECT_TABLE_LINK_FIELD_TYPE_CHANGELOG_SLUG = (
+    "object-table-link-field-type-changelog-20260605"
+)
+
+_OBJECT_TABLE_LINK_FIELD_TYPE_HISTORY_DESCRIPTION = (
+    "Object Platform: тип поля «Ссылка» — создание в Studio, ввод URL в карточке, "
+    "кликабельное отображение в таблице, фильтрация и сортировка как у текста."
+)
+
+_OBJECT_TABLE_LINK_FIELD_TYPE_CHANGELOG_DESCRIPTION = (
+    "Добавлен field_type=link: backend validation, LinkFieldEditor, безопасное "
+    "открытие http/https, хранение URL в runtime_entity_values.value_json."
+)
+
+
+def _ensure_object_table_link_field_type_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-table-ut-parity")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_LINK_FIELD_TYPE_HISTORY_SLUG,
+        title="Object Platform: тип поля «Ссылка»",
+        description=_OBJECT_TABLE_LINK_FIELD_TYPE_HISTORY_DESCRIPTION,
+        result=_OBJECT_TABLE_LINK_FIELD_TYPE_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_LINK_FIELD_TYPE_CHANGELOG_SLUG,
+        title="Журнал изменений: тип поля «Ссылка»",
+        description=_OBJECT_TABLE_LINK_FIELD_TYPE_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_LINK_FIELD_TYPE_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TABLE_LINK_FIELD_TYPE_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_ENTITY_CARD_CHECKLIST_HISTORY_SLUG = (
+    "object-table-entity-card-checklist-20260605"
+)
+OBJECT_TABLE_ENTITY_CARD_CHECKLIST_CHANGELOG_SLUG = (
+    "object-table-entity-card-checklist-changelog-20260605"
+)
+
+_OBJECT_TABLE_ENTITY_CARD_CHECKLIST_HISTORY_DESCRIPTION = (
+    "Object Platform: вкладка «Чек-лист» в карточке runtime-объекта — добавление пунктов, "
+    "отметка выполнения, редактирование, удаление, прогресс и счётчик на вкладке."
+)
+
+_OBJECT_TABLE_ENTITY_CARD_CHECKLIST_CHANGELOG_DESCRIPTION = (
+    "Чек-лист в карточке Object Platform привязан к runtime_entity (UUID записи); "
+    "переиспользованы checklist API и UI-паттерн Universal Tables без legacy table_row."
+)
+
+
+def _ensure_object_table_entity_card_checklist_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-table-ut-parity")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_ENTITY_CARD_CHECKLIST_HISTORY_SLUG,
+        title="Object Platform: чек-лист в карточке объекта",
+        description=_OBJECT_TABLE_ENTITY_CARD_CHECKLIST_HISTORY_DESCRIPTION,
+        result=_OBJECT_TABLE_ENTITY_CARD_CHECKLIST_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_ENTITY_CARD_CHECKLIST_CHANGELOG_SLUG,
+        title="Журнал изменений: чек-лист в карточке Object Platform",
+        description=_OBJECT_TABLE_ENTITY_CARD_CHECKLIST_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_ENTITY_CARD_CHECKLIST_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TABLE_ENTITY_CARD_CHECKLIST_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_CONTEXT_MENU_HISTORY_SLUG = "object-context-menu-20260606"
+OBJECT_CONTEXT_MENU_CHANGELOG_SLUG = "object-context-menu-changelog-20260606"
+
+_OBJECT_CONTEXT_MENU_HISTORY_DESCRIPTION = (
+    "Object Platform: контекстное меню объекта в шапке runtime — триггер «Название ▾», "
+    "единая точка управления объектом, расширяемый registry действий."
+)
+
+_OBJECT_CONTEXT_MENU_CHANGELOG_DESCRIPTION = (
+    "Добавлено Object Context Menu между иконкой объекта и вкладками; MVP-пункты "
+    "Импорт/Экспорт Excel (заглушки), закрытие по клику вне/Escape."
+)
+
+
+def _ensure_object_context_menu_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_CONTEXT_MENU_HISTORY_SLUG,
+        title="Object Platform: контекстное меню объекта",
+        description=_OBJECT_CONTEXT_MENU_HISTORY_DESCRIPTION,
+        result=_OBJECT_CONTEXT_MENU_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=None,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+
+    if _add_activity(
+        db,
+        slug=OBJECT_CONTEXT_MENU_CHANGELOG_SLUG,
+        title="Журнал изменений: контекстное меню объекта",
+        description=_OBJECT_CONTEXT_MENU_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_CONTEXT_MENU_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=None,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_CONTEXT_MENU_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_EXCEL_EXPORT_HISTORY_SLUG = (
+    "object-table-excel-export-20260606"
+)
+OBJECT_TABLE_EXCEL_EXPORT_CHANGELOG_SLUG = (
+    "object-table-excel-export-changelog-20260606"
+)
+
+_OBJECT_TABLE_EXCEL_EXPORT_HISTORY_DESCRIPTION = (
+    "Object Platform: MVP-экспорт Excel из контекстного меню объекта — текущее "
+    "табличное представление (видимые колонки, порядок, фильтры, сортировка), "
+    "читаемые значения полей, до 10 000 записей."
+)
+
+_OBJECT_TABLE_EXCEL_EXPORT_CHANGELOG_DESCRIPTION = (
+    "Экспорт Excel запускается через «Название объекта ▾ → Экспорт Excel»; "
+    "данные берутся из Object Platform runtime (не Universal Tables), файл "
+    "формируется сервисом exportObjectTableToExcel с учётом активного представления."
+)
+
+
+def _ensure_object_table_excel_export_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-table-ut-parity")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_EXCEL_EXPORT_HISTORY_SLUG,
+        title="Object Platform: экспорт Excel (MVP)",
+        description=_OBJECT_TABLE_EXCEL_EXPORT_HISTORY_DESCRIPTION,
+        result=_OBJECT_TABLE_EXCEL_EXPORT_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_EXCEL_EXPORT_CHANGELOG_SLUG,
+        title="Журнал изменений: экспорт Excel Object Table",
+        description=_OBJECT_TABLE_EXCEL_EXPORT_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_EXCEL_EXPORT_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TABLE_EXCEL_EXPORT_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_TITLE_HIERARCHY_NUMBER_UX_CHANGELOG_SLUG = (
+    "object-table-title-hierarchy-number-ux-20260606"
+)
+
+_OBJECT_TABLE_TITLE_HIERARCHY_NUMBER_UX_CHANGELOG_DESCRIPTION = (
+    "Object Table: иерархический номер в Title Field — единая зона [меню ⋮] [раскрытие ›] "
+    "[hierarchyNumber] [название]; приоритет row.hierarchy.hierarchyNumber; фиксированные "
+    "ширины зон; hover-меню без сдвига строки; колонка № (record_number) без изменений."
+)
+
+
+def _ensure_object_table_title_hierarchy_number_ux_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_TITLE_HIERARCHY_NUMBER_UX_CHANGELOG_SLUG,
+        title="Object Table: иерархический номер в Title Field",
+        description=_OBJECT_TABLE_TITLE_HIERARCHY_NUMBER_UX_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_TITLE_HIERARCHY_NUMBER_UX_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=None,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TABLE_TITLE_HIERARCHY_NUMBER_UX_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_SELECTION_TREE_TOGGLE_UX_CHANGELOG_SLUG = (
+    "object-table-selection-tree-toggle-ux-20260606"
+)
+
+_OBJECT_TABLE_SELECTION_TREE_TOGGLE_UX_CHANGELOG_DESCRIPTION = (
+    "Object Table: раскрытие дерева перенесено в колонку чекбокса — первая служебная колонка "
+    "[checkbox][tree toggle]; шапка с глобальным expandAll/collapseAll через expandedRowIds; "
+    "строки без детей — только чекбокс; Title Field без зоны раскрытия."
+)
+
+STUDIO_PREVIEW_BUSINESS_CONTEXT_UX_CHANGELOG_SLUG = (
+    "studio-preview-business-context-ux-20260606"
+)
+
+_STUDIO_PREVIEW_BUSINESS_CONTEXT_UX_CHANGELOG_DESCRIPTION = (
+    "Studio: вкладка «Предпросмотр» — бизнес-контекст (используется, статус, отображается) "
+    "вместо технических строк runtime/query; переименование Runtime Preview → Предпросмотр."
+)
+
+
+def _ensure_studio_preview_business_context_ux_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=STUDIO_PREVIEW_BUSINESS_CONTEXT_UX_CHANGELOG_SLUG,
+        title="Studio: бизнес-контекст вкладки «Предпросмотр»",
+        description=_STUDIO_PREVIEW_BUSINESS_CONTEXT_UX_CHANGELOG_DESCRIPTION,
+        result=_STUDIO_PREVIEW_BUSINESS_CONTEXT_UX_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=None,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_STUDIO_PREVIEW_BUSINESS_CONTEXT_UX_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+STUDIO_PREVIEW_TAB_SELECTOR_UX_CHANGELOG_SLUG = (
+    "studio-preview-tab-selector-ux-20260606"
+)
+
+_STUDIO_PREVIEW_TAB_SELECTOR_UX_CHANGELOG_DESCRIPTION = (
+    "Studio: вкладка «Предпросмотр» показывает выбранную вкладку объекта — dropdown "
+    "«Предпросмотр ▾», название и статус вкладки, блок «Используется»; preview-only "
+    "через ObjectViewHost без поля «Отображается»."
+)
+
+
+def _ensure_studio_preview_tab_selector_ux_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=STUDIO_PREVIEW_TAB_SELECTOR_UX_CHANGELOG_SLUG,
+        title="Studio: предпросмотр выбранной вкладки объекта",
+        description=_STUDIO_PREVIEW_TAB_SELECTOR_UX_CHANGELOG_DESCRIPTION,
+        result=_STUDIO_PREVIEW_TAB_SELECTOR_UX_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=None,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_STUDIO_PREVIEW_TAB_SELECTOR_UX_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+STUDIO_PREVIEW_TAB_BAR_UX_CHANGELOG_SLUG = (
+    "studio-preview-tab-bar-ux-20260606"
+)
+
+_STUDIO_PREVIEW_TAB_BAR_UX_CHANGELOG_DESCRIPTION = (
+    "Studio Preview UX: dropdown «Предпросмотр ▾» перенесён в tab-bar; на странице — "
+    "компактное имя вкладки, тип, платформенный badge статуса и «Используется» только "
+    "с маршрутами Офис (без Studio)."
+)
+
+
+def _ensure_studio_preview_tab_bar_ux_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=STUDIO_PREVIEW_TAB_BAR_UX_CHANGELOG_SLUG,
+        title="Studio Preview: dropdown в tab-bar и office-only usage",
+        description=_STUDIO_PREVIEW_TAB_BAR_UX_CHANGELOG_DESCRIPTION,
+        result=_STUDIO_PREVIEW_TAB_BAR_UX_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=None,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_STUDIO_PREVIEW_TAB_BAR_UX_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+STUDIO_OBJECT_TYPE_HEADER_ICON_CHANGELOG_SLUG = (
+    "studio-object-type-header-icon-20260606"
+)
+
+_STUDIO_OBJECT_TYPE_HEADER_ICON_CHANGELOG_DESCRIPTION = (
+    "Studio Object Type Header: единый резолв иконки с Office — "
+    "getObjectTypeAppearanceFields не затирает icon_type/icon_file_url пустыми display_*; "
+    "mergeObjectTypeAppearance с navigation fallback в ObjectTypeWorkspacePage."
+)
+
+
+def _ensure_studio_object_type_header_icon_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=STUDIO_OBJECT_TYPE_HEADER_ICON_CHANGELOG_SLUG,
+        title="Studio: иконка объекта в шапке workspace",
+        description=_STUDIO_OBJECT_TYPE_HEADER_ICON_CHANGELOG_DESCRIPTION,
+        result=_STUDIO_OBJECT_TYPE_HEADER_ICON_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=None,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_STUDIO_OBJECT_TYPE_HEADER_ICON_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+STUDIO_PREVIEW_DEMO_DATA_TOOLBAR_BADGE_CHANGELOG_SLUG = (
+    "studio-preview-demo-data-toolbar-badge-20260606"
+)
+
+_STUDIO_PREVIEW_DEMO_DATA_TOOLBAR_BADGE_CHANGELOG_DESCRIPTION = (
+    "Studio Preview: badge «Демо-данные» в панели таблицы вместо строки над таблицей; "
+    "warning-стиль, tooltip; только mode=studio-preview."
+)
+
+
+def _ensure_studio_preview_demo_data_toolbar_badge_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=STUDIO_PREVIEW_DEMO_DATA_TOOLBAR_BADGE_CHANGELOG_SLUG,
+        title="Studio Preview: badge демо-данных в toolbar",
+        description=_STUDIO_PREVIEW_DEMO_DATA_TOOLBAR_BADGE_CHANGELOG_DESCRIPTION,
+        result=_STUDIO_PREVIEW_DEMO_DATA_TOOLBAR_BADGE_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=None,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_STUDIO_PREVIEW_DEMO_DATA_TOOLBAR_BADGE_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+STUDIO_PREVIEW_MOCK_DATA_CHANGELOG_SLUG = (
+    "studio-preview-mock-data-20260606"
+)
+
+_STUDIO_PREVIEW_MOCK_DATA_CHANGELOG_DESCRIPTION = (
+    "Studio Preview: демонстрационные строки вместо runtime records — mock data по схеме "
+    "объекта, без GET /runtime/query для строк; Office без изменений."
+)
+
+
+def _ensure_studio_preview_mock_data_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=STUDIO_PREVIEW_MOCK_DATA_CHANGELOG_SLUG,
+        title="Studio Preview: демонстрационные данные",
+        description=_STUDIO_PREVIEW_MOCK_DATA_CHANGELOG_DESCRIPTION,
+        result=_STUDIO_PREVIEW_MOCK_DATA_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=None,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_STUDIO_PREVIEW_MOCK_DATA_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_STUDIO_PREVIEW_PARITY_CHANGELOG_SLUG = (
+    "object-table-studio-preview-parity-20260606"
+)
+
+_OBJECT_TABLE_STUDIO_PREVIEW_PARITY_CHANGELOG_DESCRIPTION = (
+    "Object Table Studio Preview: единый render path с Office — иерархия, tree toggle, "
+    "иерархическая нумерация, disabled чекбоксы; режим «Предпросмотр» блокирует изменение "
+    "данных, inline edit, массовые действия и карточку записи."
+)
+
+
+def _ensure_object_table_studio_preview_parity_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_STUDIO_PREVIEW_PARITY_CHANGELOG_SLUG,
+        title="Object Table: Studio Preview parity с Office",
+        description=_OBJECT_TABLE_STUDIO_PREVIEW_PARITY_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_STUDIO_PREVIEW_PARITY_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=None,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TABLE_STUDIO_PREVIEW_PARITY_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_SELECTION_TREE_EXPAND_ALL_FIX_CHANGELOG_SLUG = (
+    "object-table-selection-tree-expand-all-fix-20260606"
+)
+
+_OBJECT_TABLE_SELECTION_TREE_EXPAND_ALL_FIX_CHANGELOG_DESCRIPTION = (
+    "Bugfix Object Table: глобальное раскрытие дерева из шапки работает из полностью свернутого "
+    "состояния — expandableRowIds строится по childrenByParent и полному flatRows, а не по "
+    "видимым displayRows."
+)
+
+
+def _ensure_object_table_selection_tree_toggle_ux_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_SELECTION_TREE_TOGGLE_UX_CHANGELOG_SLUG,
+        title="Object Table: раскрытие дерева в колонке чекбокса",
+        description=_OBJECT_TABLE_SELECTION_TREE_TOGGLE_UX_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_SELECTION_TREE_TOGGLE_UX_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=None,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TABLE_SELECTION_TREE_TOGGLE_UX_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+def _ensure_object_table_selection_tree_expand_all_fix_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_SELECTION_TREE_EXPAND_ALL_FIX_CHANGELOG_SLUG,
+        title="Bugfix: Object Table — глобальное раскрытие дерева",
+        description=_OBJECT_TABLE_SELECTION_TREE_EXPAND_ALL_FIX_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_SELECTION_TREE_EXPAND_ALL_FIX_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=None,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(
+            _OBJECT_TABLE_SELECTION_TREE_EXPAND_ALL_FIX_CHANGELOG_DESCRIPTION
+        )
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_EXCEL_EXPORT_HIERARCHY_COLUMN_UX_CHANGELOG_SLUG = (
+    "object-table-excel-export-hierarchy-column-ux-20260606"
+)
+
+_OBJECT_TABLE_EXCEL_EXPORT_HIERARCHY_COLUMN_UX_CHANGELOG_DESCRIPTION = (
+    "Excel Export: колонка иерархии переименована в «Иерархия» и размещена после «№» "
+    "(порядок: № → Иерархия → название); расчёт hierarchyNumber без изменений."
+)
+
+
+def _ensure_object_table_excel_export_hierarchy_column_ux_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-table-ut-parity")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_EXCEL_EXPORT_HIERARCHY_COLUMN_UX_CHANGELOG_SLUG,
+        title="Excel Export: колонка «Иерархия» после «№»",
+        description=_OBJECT_TABLE_EXCEL_EXPORT_HIERARCHY_COLUMN_UX_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_EXCEL_EXPORT_HIERARCHY_COLUMN_UX_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(
+            _OBJECT_TABLE_EXCEL_EXPORT_HIERARCHY_COLUMN_UX_CHANGELOG_DESCRIPTION
+        )
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_EXCEL_EXPORT_HIERARCHY_LABELS_CHANGELOG_SLUG = (
+    "object-table-excel-export-hierarchy-labels-20260606"
+)
+
+_OBJECT_TABLE_EXCEL_EXPORT_HIERARCHY_LABELS_CHANGELOG_DESCRIPTION = (
+    "Excel Export: tree order и колонка «Иерархический №» через "
+    "buildObjectTableHierarchyDisplayRows (все узлы, включая свёрнутые); "
+    "списки и статусы экспортируются как label из settings_json.options."
+)
+
+
+def _ensure_object_table_excel_export_hierarchy_labels_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-table-ut-parity")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_EXCEL_EXPORT_HIERARCHY_LABELS_CHANGELOG_SLUG,
+        title="Excel Export: иерархия и label для списков/статусов",
+        description=_OBJECT_TABLE_EXCEL_EXPORT_HIERARCHY_LABELS_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_EXCEL_EXPORT_HIERARCHY_LABELS_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(
+            _OBJECT_TABLE_EXCEL_EXPORT_HIERARCHY_LABELS_CHANGELOG_DESCRIPTION
+        )
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_EXCEL_EXPORT_FIX_CHANGELOG_SLUG = (
+    "object-table-excel-export-fix-changelog-20260606"
+)
+
+_OBJECT_TABLE_EXCEL_EXPORT_FIX_CHANGELOG_DESCRIPTION = (
+    "Исправлен Excel Export: пагинация экспорта ограничена лимитом Runtime API (200), "
+    "сортировка маппится через тот же mapper, что и Object Table; при 422 на sort — "
+    "безопасный fallback без сортировки с console.warn."
+)
+
+
+def _ensure_object_table_excel_export_fix_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-table-ut-parity")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_EXCEL_EXPORT_FIX_CHANGELOG_SLUG,
+        title="Bugfix: Excel Export — Runtime query 422",
+        description=_OBJECT_TABLE_EXCEL_EXPORT_FIX_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_EXCEL_EXPORT_FIX_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TABLE_EXCEL_EXPORT_FIX_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_EXCEL_IMPORT_HISTORY_SLUG = (
+    "object-table-excel-import-20260606"
+)
+OBJECT_TABLE_EXCEL_IMPORT_CHANGELOG_SLUG = (
+    "object-table-excel-import-changelog-20260606"
+)
+
+_OBJECT_TABLE_EXCEL_IMPORT_HISTORY_DESCRIPTION = (
+    "Object Platform: MVP-импорт Excel из контекстного меню объекта — создание "
+    "новых записей через runtime_entity/runtime_entity_values, мастер из 4 шагов "
+    "(файл, сопоставление, проверка, результат), chunk create по 50 строк."
+)
+
+_OBJECT_TABLE_EXCEL_IMPORT_CHANGELOG_DESCRIPTION = (
+    "Импорт Excel запускается через «Название объекта ▾ → Импорт Excel» только в "
+    "Office; PlatformModal-мастер читает .xlsx, сопоставляет колонки с полями "
+    "объекта, валидирует строки и создаёт записи через runtimeWriteGateway.createEntity."
+)
+
+
+def _ensure_object_table_excel_import_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-table-ut-parity")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_EXCEL_IMPORT_HISTORY_SLUG,
+        title="Object Platform: импорт Excel (MVP)",
+        description=_OBJECT_TABLE_EXCEL_IMPORT_HISTORY_DESCRIPTION,
+        result=_OBJECT_TABLE_EXCEL_IMPORT_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_EXCEL_IMPORT_CHANGELOG_SLUG,
+        title="Журнал изменений: импорт Excel Object Table",
+        description=_OBJECT_TABLE_EXCEL_IMPORT_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_EXCEL_IMPORT_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TABLE_EXCEL_IMPORT_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_EXCEL_IMPORT_WIZARD_UX_CHANGELOG_SLUG = (
+    "object-table-excel-import-wizard-ux-20260606"
+)
+
+_OBJECT_TABLE_EXCEL_IMPORT_WIZARD_UX_CHANGELOG_DESCRIPTION = (
+    "Excel Import: шаг «Файл» оформлен как мастер — индикатор 4 шагов, drag-and-drop "
+    "зона загрузки, карточка файла, статистика листа, badge-колонки и активная кнопка "
+    "«Далее →»; PlatformModal с сохранением drag/resize."
+)
+
+
+def _ensure_object_table_excel_import_wizard_ux_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-table-ut-parity")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_EXCEL_IMPORT_WIZARD_UX_CHANGELOG_SLUG,
+        title="Excel Import: UX мастера (шаг «Файл»)",
+        description=_OBJECT_TABLE_EXCEL_IMPORT_WIZARD_UX_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_EXCEL_IMPORT_WIZARD_UX_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TABLE_EXCEL_IMPORT_WIZARD_UX_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_EXCEL_IMPORT_WIZARD_COMPACT_UX_CHANGELOG_SLUG = (
+    "object-table-excel-import-wizard-compact-ux-20260606"
+)
+
+_OBJECT_TABLE_EXCEL_IMPORT_WIZARD_COMPACT_UX_CHANGELOG_DESCRIPTION = (
+    "Excel Import: компактный шаг «Файл» — уменьшена высота модалки и dropzone, "
+    "иконка FileSpreadsheet, подсказка .xlsx, карточка файла, badge-колонки, "
+    "платформенные кнопки «Выбрать файл» / «Далее →» (без designer-btn в Office)."
+)
+
+
+def _ensure_object_table_excel_import_wizard_compact_ux_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-table-ut-parity")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_EXCEL_IMPORT_WIZARD_COMPACT_UX_CHANGELOG_SLUG,
+        title="Excel Import: компактный UX шага «Файл»",
+        description=_OBJECT_TABLE_EXCEL_IMPORT_WIZARD_COMPACT_UX_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_EXCEL_IMPORT_WIZARD_COMPACT_UX_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(
+            _OBJECT_TABLE_EXCEL_IMPORT_WIZARD_COMPACT_UX_CHANGELOG_DESCRIPTION
+        )
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_EXCEL_IMPORT_WIZARD_CLEAN_UX_CHANGELOG_SLUG = (
+    "object-table-excel-import-wizard-clean-ux-20260606"
+)
+
+_OBJECT_TABLE_EXCEL_IMPORT_WIZARD_CLEAN_UX_CHANGELOG_DESCRIPTION = (
+    "Excel Import: чистый шаг «Файл» — компактная шапка (Импорт Excel / объект), "
+    "stepper ①–④ сразу под заголовком, уменьшенная dropzone, кнопки [Отмена][Далее →] "
+    "справа; уведомление о .xlsx только при неверном формате файла."
+)
+
+
+def _ensure_object_table_excel_import_wizard_clean_ux_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-table-ut-parity")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_EXCEL_IMPORT_WIZARD_CLEAN_UX_CHANGELOG_SLUG,
+        title="Excel Import: чистый UX шага «Файл»",
+        description=_OBJECT_TABLE_EXCEL_IMPORT_WIZARD_CLEAN_UX_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_EXCEL_IMPORT_WIZARD_CLEAN_UX_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(
+            _OBJECT_TABLE_EXCEL_IMPORT_WIZARD_CLEAN_UX_CHANGELOG_DESCRIPTION
+        )
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_EXCEL_IMPORT_VALUE_MAPPING_CHANGELOG_SLUG = (
+    "object-table-excel-import-value-mapping-20260606"
+)
+
+_OBJECT_TABLE_EXCEL_IMPORT_VALUE_MAPPING_CHANGELOG_DESCRIPTION = (
+    "Excel Import: шаг «Сопоставление значений» для статусов, списков и пользователей — "
+    "ручное сопоставление нераспознанных Excel-значений с автопропуском при точном match; "
+    "валидация повторно учитывает правила перед импортом."
+)
+
+
+def _ensure_object_table_excel_import_value_mapping_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-table-ut-parity")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_EXCEL_IMPORT_VALUE_MAPPING_CHANGELOG_SLUG,
+        title="Excel Import: сопоставление значений",
+        description=_OBJECT_TABLE_EXCEL_IMPORT_VALUE_MAPPING_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_EXCEL_IMPORT_VALUE_MAPPING_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TABLE_EXCEL_IMPORT_VALUE_MAPPING_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_EXCEL_IMPORT_DEFAULT_VALUES_FIX_CHANGELOG_SLUG = (
+    "object-table-excel-import-default-values-fix-20260606"
+)
+
+_OBJECT_TABLE_EXCEL_IMPORT_DEFAULT_VALUES_FIX_CHANGELOG_DESCRIPTION = (
+    "Excel Import fix: default values для обязательных полей без колонки Excel — "
+    "«Текущий пользователь», сохранение правил между шагами, применение при "
+    "валидации/импорте, select колонки и предупреждения на шаге «Колонки»."
+)
+
+
+def _ensure_object_table_excel_import_default_values_fix_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-table-ut-parity")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_EXCEL_IMPORT_DEFAULT_VALUES_FIX_CHANGELOG_SLUG,
+        title="Excel Import: fix default values обязательных полей",
+        description=_OBJECT_TABLE_EXCEL_IMPORT_DEFAULT_VALUES_FIX_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_EXCEL_IMPORT_DEFAULT_VALUES_FIX_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(
+            _OBJECT_TABLE_EXCEL_IMPORT_DEFAULT_VALUES_FIX_CHANGELOG_DESCRIPTION
+        )
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_EXCEL_IMPORT_DEFAULT_VALUES_CHANGELOG_SLUG = (
+    "object-table-excel-import-default-values-20260606"
+)
+
+_OBJECT_TABLE_EXCEL_IMPORT_DEFAULT_VALUES_CHANGELOG_DESCRIPTION = (
+    "Excel Import: обязательные поля на шаге «Колонки» — источник «Колонка Excel» "
+    "или «Значение по умолчанию»; defaultValues-сервис подставляет значение во все "
+    "создаваемые записи, валидация не требует колонку в Excel."
+)
+
+
+def _ensure_object_table_excel_import_default_values_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-table-ut-parity")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_EXCEL_IMPORT_DEFAULT_VALUES_CHANGELOG_SLUG,
+        title="Excel Import: default values для обязательных полей",
+        description=_OBJECT_TABLE_EXCEL_IMPORT_DEFAULT_VALUES_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_EXCEL_IMPORT_DEFAULT_VALUES_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TABLE_EXCEL_IMPORT_DEFAULT_VALUES_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_EXCEL_IMPORT_REVIEW_UX_CHANGELOG_SLUG = (
+    "object-table-excel-import-review-ux-20260606"
+)
+
+_OBJECT_TABLE_EXCEL_IMPORT_REVIEW_UX_CHANGELOG_DESCRIPTION = (
+    "Excel Import UX: шаг «Проверка» объясняет несопоставленные обязательные поля, "
+    "показывает подсказку при нуле валидных строк и кнопку «Исправить сопоставление»; "
+    "footer [Назад][Исправить][Импорт] выровнен справа."
+)
+
+
+def _ensure_object_table_excel_import_review_ux_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-table-ut-parity")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_EXCEL_IMPORT_REVIEW_UX_CHANGELOG_SLUG,
+        title="Excel Import: UX шага «Проверка»",
+        description=_OBJECT_TABLE_EXCEL_IMPORT_REVIEW_UX_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_EXCEL_IMPORT_REVIEW_UX_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TABLE_EXCEL_IMPORT_REVIEW_UX_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_EXCEL_IMPORT_VALUE_MAPPING_AUTH_API_FIX_CHANGELOG_SLUG = (
+    "object-table-excel-import-value-mapping-auth-api-fix-20260606"
+)
+
+_OBJECT_TABLE_EXCEL_IMPORT_VALUE_MAPPING_AUTH_API_FIX_CHANGELOG_DESCRIPTION = (
+    "Excel Import bugfix: loadImportUsersForSelect импортирует getUsers из "
+    "frontend/src/api/authApi.js — Vite снова собирает frontend, шаг "
+    "«Сопоставление значений» загружает каталог пользователей."
+)
+
+
+def _ensure_object_table_excel_import_value_mapping_auth_api_fix_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-table-ut-parity")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_EXCEL_IMPORT_VALUE_MAPPING_AUTH_API_FIX_CHANGELOG_SLUG,
+        title="Excel Import: fix authApi import для value mapping",
+        description=_OBJECT_TABLE_EXCEL_IMPORT_VALUE_MAPPING_AUTH_API_FIX_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_EXCEL_IMPORT_VALUE_MAPPING_AUTH_API_FIX_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(
+            _OBJECT_TABLE_EXCEL_IMPORT_VALUE_MAPPING_AUTH_API_FIX_CHANGELOG_DESCRIPTION
+        )
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_RELATION_FILTER_HISTORY_SLUG = (
+    "object-table-relation-filter-20260606"
+)
+OBJECT_TABLE_RELATION_FILTER_CHANGELOG_SLUG = (
+    "object-table-relation-filter-changelog-20260606"
+)
+
+_OBJECT_TABLE_RELATION_FILTER_HISTORY_DESCRIPTION = (
+    "Object Table: MVP-фильтрация по полям типа «Связь» — операторы равно / не равно / "
+    "заполнено / не заполнено, выбор связанной записи по названию в модалке фильтров."
+)
+
+_OBJECT_TABLE_RELATION_FILTER_CHANGELOG_DESCRIPTION = (
+    "Фильтрация связей выполняется на backend через runtime_relation_instances "
+    "(без value_json); UI selector ищет записи целевого типа и восстанавливает title "
+    "сохранённых и быстрых фильтров."
+)
+
+
+def _ensure_object_table_relation_filter_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-table-ut-parity")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_RELATION_FILTER_HISTORY_SLUG,
+        title="Object Table: фильтрация по связям (MVP)",
+        description=_OBJECT_TABLE_RELATION_FILTER_HISTORY_DESCRIPTION,
+        result=_OBJECT_TABLE_RELATION_FILTER_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_RELATION_FILTER_CHANGELOG_SLUG,
+        title="Журнал изменений: фильтрация по связям Object Table",
+        description=_OBJECT_TABLE_RELATION_FILTER_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_RELATION_FILTER_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TABLE_RELATION_FILTER_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
 OBJECT_TABLE_MULTI_SORT_HISTORY_SLUG = "object-table-multi-sort-20260605"
 OBJECT_TABLE_MULTI_SORT_CHANGELOG_SLUG = "object-table-multi-sort-changelog-20260605"
 
@@ -3120,6 +4343,386 @@ def refresh_platform_dashboard(db: Session, repo_root=None, initiated_by=None) -
         changed_work_items = [
             *changed_work_items,
             *owner_detail_panel_journal_lines,
+        ]
+
+    link_field_added, link_field_journal_lines = (
+        _ensure_object_table_link_field_type_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += link_field_added
+    if link_field_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *link_field_journal_lines,
+        ]
+
+    checklist_added, checklist_journal_lines = (
+        _ensure_object_table_entity_card_checklist_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += checklist_added
+    if checklist_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *checklist_journal_lines,
+        ]
+
+    relation_filter_added, relation_filter_journal_lines = (
+        _ensure_object_table_relation_filter_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += relation_filter_added
+    if relation_filter_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *relation_filter_journal_lines,
+        ]
+
+    object_context_menu_added, object_context_menu_journal_lines = (
+        _ensure_object_context_menu_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += object_context_menu_added
+    if object_context_menu_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *object_context_menu_journal_lines,
+        ]
+
+    excel_export_added, excel_export_journal_lines = (
+        _ensure_object_table_excel_export_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += excel_export_added
+    if excel_export_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *excel_export_journal_lines,
+        ]
+
+    excel_export_fix_added, excel_export_fix_journal_lines = (
+        _ensure_object_table_excel_export_fix_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += excel_export_fix_added
+    if excel_export_fix_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *excel_export_fix_journal_lines,
+        ]
+
+    excel_export_hierarchy_labels_added, excel_export_hierarchy_labels_journal_lines = (
+        _ensure_object_table_excel_export_hierarchy_labels_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += excel_export_hierarchy_labels_added
+    if excel_export_hierarchy_labels_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *excel_export_hierarchy_labels_journal_lines,
+        ]
+
+    excel_export_hierarchy_column_ux_added, excel_export_hierarchy_column_ux_journal_lines = (
+        _ensure_object_table_excel_export_hierarchy_column_ux_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += excel_export_hierarchy_column_ux_added
+    if excel_export_hierarchy_column_ux_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *excel_export_hierarchy_column_ux_journal_lines,
+        ]
+
+    excel_import_added, excel_import_journal_lines = (
+        _ensure_object_table_excel_import_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += excel_import_added
+    if excel_import_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *excel_import_journal_lines,
+        ]
+
+    excel_import_wizard_ux_added, excel_import_wizard_ux_journal_lines = (
+        _ensure_object_table_excel_import_wizard_ux_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += excel_import_wizard_ux_added
+    if excel_import_wizard_ux_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *excel_import_wizard_ux_journal_lines,
+        ]
+
+    excel_import_wizard_compact_ux_added, excel_import_wizard_compact_ux_journal_lines = (
+        _ensure_object_table_excel_import_wizard_compact_ux_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += excel_import_wizard_compact_ux_added
+    if excel_import_wizard_compact_ux_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *excel_import_wizard_compact_ux_journal_lines,
+        ]
+
+    excel_import_wizard_clean_ux_added, excel_import_wizard_clean_ux_journal_lines = (
+        _ensure_object_table_excel_import_wizard_clean_ux_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += excel_import_wizard_clean_ux_added
+    if excel_import_wizard_clean_ux_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *excel_import_wizard_clean_ux_journal_lines,
+        ]
+
+    excel_import_value_mapping_added, excel_import_value_mapping_journal_lines = (
+        _ensure_object_table_excel_import_value_mapping_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += excel_import_value_mapping_added
+    if excel_import_value_mapping_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *excel_import_value_mapping_journal_lines,
+        ]
+
+    excel_import_default_values_added, excel_import_default_values_journal_lines = (
+        _ensure_object_table_excel_import_default_values_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += excel_import_default_values_added
+    if excel_import_default_values_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *excel_import_default_values_journal_lines,
+        ]
+
+    (
+        excel_import_default_values_fix_added,
+        excel_import_default_values_fix_journal_lines,
+    ) = _ensure_object_table_excel_import_default_values_fix_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += excel_import_default_values_fix_added
+    if excel_import_default_values_fix_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *excel_import_default_values_fix_journal_lines,
+        ]
+
+    excel_import_review_ux_added, excel_import_review_ux_journal_lines = (
+        _ensure_object_table_excel_import_review_ux_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += excel_import_review_ux_added
+    if excel_import_review_ux_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *excel_import_review_ux_journal_lines,
+        ]
+
+    (
+        excel_import_value_mapping_auth_api_fix_added,
+        excel_import_value_mapping_auth_api_fix_journal_lines,
+    ) = _ensure_object_table_excel_import_value_mapping_auth_api_fix_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += excel_import_value_mapping_auth_api_fix_added
+    if excel_import_value_mapping_auth_api_fix_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *excel_import_value_mapping_auth_api_fix_journal_lines,
+        ]
+
+    title_hierarchy_ux_added, title_hierarchy_ux_journal_lines = (
+        _ensure_object_table_title_hierarchy_number_ux_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += title_hierarchy_ux_added
+    if title_hierarchy_ux_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *title_hierarchy_ux_journal_lines,
+        ]
+
+    selection_tree_toggle_ux_added, selection_tree_toggle_ux_journal_lines = (
+        _ensure_object_table_selection_tree_toggle_ux_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += selection_tree_toggle_ux_added
+    if selection_tree_toggle_ux_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *selection_tree_toggle_ux_journal_lines,
+        ]
+
+    selection_tree_expand_all_fix_added, selection_tree_expand_all_fix_journal_lines = (
+        _ensure_object_table_selection_tree_expand_all_fix_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += selection_tree_expand_all_fix_added
+    if selection_tree_expand_all_fix_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *selection_tree_expand_all_fix_journal_lines,
+        ]
+
+    studio_preview_parity_added, studio_preview_parity_journal_lines = (
+        _ensure_object_table_studio_preview_parity_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += studio_preview_parity_added
+    if studio_preview_parity_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *studio_preview_parity_journal_lines,
+        ]
+
+    studio_preview_context_added, studio_preview_context_journal_lines = (
+        _ensure_studio_preview_business_context_ux_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += studio_preview_context_added
+    if studio_preview_context_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *studio_preview_context_journal_lines,
+        ]
+
+    studio_preview_tab_selector_added, studio_preview_tab_selector_journal_lines = (
+        _ensure_studio_preview_tab_selector_ux_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += studio_preview_tab_selector_added
+    if studio_preview_tab_selector_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *studio_preview_tab_selector_journal_lines,
+        ]
+
+    studio_preview_tab_bar_added, studio_preview_tab_bar_journal_lines = (
+        _ensure_studio_preview_tab_bar_ux_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += studio_preview_tab_bar_added
+    if studio_preview_tab_bar_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *studio_preview_tab_bar_journal_lines,
+        ]
+
+    studio_preview_mock_data_added, studio_preview_mock_data_journal_lines = (
+        _ensure_studio_preview_mock_data_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += studio_preview_mock_data_added
+    if studio_preview_mock_data_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *studio_preview_mock_data_journal_lines,
+        ]
+
+    studio_object_type_header_icon_added, studio_object_type_header_icon_journal_lines = (
+        _ensure_studio_object_type_header_icon_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += studio_object_type_header_icon_added
+    if studio_object_type_header_icon_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *studio_object_type_header_icon_journal_lines,
+        ]
+
+    studio_preview_demo_badge_added, studio_preview_demo_badge_journal_lines = (
+        _ensure_studio_preview_demo_data_toolbar_badge_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += studio_preview_demo_badge_added
+    if studio_preview_demo_badge_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *studio_preview_demo_badge_journal_lines,
         ]
 
     multi_sort_added, multi_sort_journal_lines = (

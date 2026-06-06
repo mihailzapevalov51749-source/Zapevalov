@@ -77,6 +77,10 @@ export default function ViewEngineTable({
 
   const showGrid = !error && rows.length > 0;
   const selectionEnabled = Boolean(showSelectionColumn && rowSelection);
+  const selectionDisabled = Boolean(rowSelection?.disabled);
+  const selectionInteractive = selectionEnabled && !selectionDisabled;
+  const hierarchyTree = rendererContext?.hierarchyTree || null;
+  const hierarchyTreeEnabled = Boolean(hierarchyTree?.enabled);
 
   const [hoveredRowId, setHoveredRowId] = useState(null);
 
@@ -141,10 +145,15 @@ export default function ViewEngineTable({
                     indeterminate={
                       selectionEnabled ? Boolean(rowSelection.headerIndeterminate) : false
                     }
-                    disabled={!selectionEnabled || rows.length === 0}
+                    disabled={!selectionInteractive || rows.length === 0}
                     onChange={
-                      selectionEnabled ? () => rowSelection.onToggleAllVisible?.() : undefined
+                      selectionInteractive
+                        ? () => rowSelection.onToggleAllVisible?.()
+                        : undefined
                     }
+                    hierarchyTreeEnabled={hierarchyTreeEnabled}
+                    treeHeaderExpanded={Boolean(hierarchyTree?.headerTreeExpanded)}
+                    onToggleTreeHeader={hierarchyTree?.onToggleTreeHeader}
                   />
                 ) : null}
 
@@ -205,11 +214,16 @@ export default function ViewEngineTable({
                         checked={
                           selectionEnabled ? Boolean(rowSelection.isSelected?.(row.id)) : false
                         }
-                        disabled={!selectionEnabled}
+                        disabled={!selectionInteractive}
                         onChange={
-                          selectionEnabled
+                          selectionInteractive
                             ? () => rowSelection.onToggleRow?.(row.id)
                             : undefined
+                        }
+                        hierarchy={row.hierarchy}
+                        hierarchyTreeEnabled={hierarchyTreeEnabled}
+                        onToggleExpand={() =>
+                          hierarchyTree?.onToggleRowExpanded?.(row.id)
                         }
                       />
                     ) : null}

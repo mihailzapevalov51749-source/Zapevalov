@@ -1,10 +1,12 @@
 from typing import Any
+from uuid import UUID
 
 from sqlalchemy import Numeric, and_, cast, not_
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Session, aliased, joinedload
 
 from app.modules.platform.runtime.entities.models import RuntimeEntity, RuntimeEntityValue
+from app.modules.platform.runtime.relation_instances.models import RuntimeRelationInstance
 from app.modules.platform.runtime.entities.system_fields import (
     SYSTEM_FIELD_KEYS,
     is_runtime_system_field_key,
@@ -193,6 +195,94 @@ def _apply_system_field_predicate(column, field_type: str, op: str, value: Any):
     raise ValueError(f"Неподдерживаемый оператор фильтра: {op}")
 
 
+def _parse_relation_field_settings(field_meta: dict[str, Any]) -> tuple[str, str]:
+    settings = field_meta.get("settings_json") or {}
+    if not isinstance(settings, dict):
+        settings = {}
+
+    relation_key = str(settings.get("relation_key") or "").strip()
+    role = str(settings.get("role") or "").strip()
+
+    if not relation_key or role not in {"source", "target"}:
+        field_key = field_meta.get("key", "?")
+        raise ValueError(
+            f"Поле '{field_key}': relation field settings_json некорректны",
+        )
+
+    return relation_key, role
+
+
+def _relation_linked_entity_ids_subquery(
+    db: Session,
+    tenant_id: int,
+    *,
+    relation_key: str,
+    role: str,
+    peer_entity_id: UUID | None = None,
+):
+    relation_query = db.query(RuntimeRelationInstance).filter(
+        RuntimeRelationInstance.tenant_id == tenant_id,
+        RuntimeRelationInstance.relation_key == relation_key,
+        RuntimeRelationInstance.deleted_at.is_(None),
+    )
+
+    if role == "source":
+        if peer_entity_id is not None:
+            relation_query = relation_query.filter(
+                RuntimeRelationInstance.target_entity_id == peer_entity_id,
+            )
+        return relation_query.with_entities(
+            RuntimeRelationInstance.source_entity_id,
+        ).distinct()
+
+    if peer_entity_id is not None:
+        relation_query = relation_query.filter(
+            RuntimeRelationInstance.source_entity_id == peer_entity_id,
+        )
+    return relation_query.with_entities(
+        RuntimeRelationInstance.target_entity_id,
+    ).distinct()
+
+
+def _apply_relation_field_filter(
+    query,
+    db: Session,
+    tenant_id: int,
+    condition: ParsedFilterCondition,
+    field_meta: dict[str, Any],
+):
+    relation_key, role = _parse_relation_field_settings(field_meta)
+
+    if condition.op in {FILTER_OP_IS_EMPTY, FILTER_OP_IS_NOT_EMPTY}:
+        linked_entities = _relation_linked_entity_ids_subquery(
+            db,
+            tenant_id,
+            relation_key=relation_key,
+            role=role,
+        ).subquery()
+
+        if condition.op == FILTER_OP_IS_EMPTY:
+            return query.filter(~RuntimeEntity.id.in_(linked_entities))
+        return query.filter(RuntimeEntity.id.in_(linked_entities))
+
+    peer_entity_id = UUID(str(condition.value))
+    linked_entities = _relation_linked_entity_ids_subquery(
+        db,
+        tenant_id,
+        relation_key=relation_key,
+        role=role,
+        peer_entity_id=peer_entity_id,
+    ).subquery()
+
+    if condition.op == FILTER_OP_EQ:
+        return query.filter(RuntimeEntity.id.in_(linked_entities))
+
+    if condition.op == FILTER_OP_NEQ:
+        return query.filter(~RuntimeEntity.id.in_(linked_entities))
+
+    raise ValueError(f"Неподдерживаемый оператор фильтра: {condition.op}")
+
+
 def _apply_single_filter_condition(
     query,
     db: Session,
@@ -203,6 +293,15 @@ def _apply_single_filter_condition(
     field_meta = field_map[condition.field]
     field_type = normalize_catalog_field_type(field_meta.get("field_type"))
     entity_column = SYSTEM_FIELD_FILTER_COLUMNS.get(condition.field)
+
+    if field_type == FieldType.RELATION.value:
+        return _apply_relation_field_filter(
+            query,
+            db,
+            tenant_id,
+            condition,
+            field_meta,
+        )
 
     if entity_column is not None:
         return query.filter(

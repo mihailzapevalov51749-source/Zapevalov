@@ -64,6 +64,10 @@ function normalizeRendererType(field) {
     return "lookup";
   }
 
+  if (type === "link" || type === "url") {
+    return "link";
+  }
+
   return type;
 }
 
@@ -300,6 +304,14 @@ function RuntimeFieldCell({
               role={isEditable ? "button" : undefined}
               tabIndex={isEditable ? 0 : undefined}
               onClick={handleActivate}
+              onDoubleClick={(event) => {
+                if (!isEditable || type !== "link") {
+                  return;
+                }
+
+                event.preventDefault();
+                handleActivate();
+              }}
               onKeyDown={(event) => {
                 if (!isEditable) {
                   return;

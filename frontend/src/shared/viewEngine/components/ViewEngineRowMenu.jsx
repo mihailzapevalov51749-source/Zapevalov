@@ -62,6 +62,7 @@ function getMenuPositionStyle(anchorRect) {
  */
 export default function ViewEngineRowMenu({
   visible = false,
+  readOnly = false,
   canCreateSubtask = true,
   canDelete = true,
   createChildMenuLabel = "Создать дочернюю запись",
@@ -74,6 +75,7 @@ export default function ViewEngineRowMenu({
 
   const showButton = visible || isMenuOpen;
   const hasActions =
+    readOnly ||
     (canCreateSubtask && typeof onCreateSubtask === "function") ||
     (canDelete && typeof onDelete === "function");
 
@@ -161,19 +163,34 @@ export default function ViewEngineRowMenu({
           onClick={(event) => event.stopPropagation()}
           onMouseDown={(event) => event.stopPropagation()}
         >
-          {canCreateSubtask && typeof onCreateSubtask === "function" ? (
-            <button type="button" onClick={handleCreateSubtask} style={menuItemStyle}>
+          {canCreateSubtask &&
+          (readOnly || typeof onCreateSubtask === "function") ? (
+            <button
+              type="button"
+              onClick={readOnly ? undefined : handleCreateSubtask}
+              disabled={readOnly}
+              title={readOnly ? "Недоступно в предпросмотре" : undefined}
+              style={{
+                ...menuItemStyle,
+                opacity: readOnly ? 0.45 : 1,
+                cursor: readOnly ? "not-allowed" : "pointer",
+              }}
+            >
               {createChildMenuLabel}
             </button>
           ) : null}
 
-          {canDelete && typeof onDelete === "function" ? (
+          {canDelete && (readOnly || typeof onDelete === "function") ? (
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={readOnly ? undefined : handleDelete}
+              disabled={readOnly}
+              title={readOnly ? "Недоступно в предпросмотре" : undefined}
               style={{
                 ...menuItemStyle,
                 color: "#dc2626",
+                opacity: readOnly ? 0.45 : 1,
+                cursor: readOnly ? "not-allowed" : "pointer",
               }}
             >
               Удалить

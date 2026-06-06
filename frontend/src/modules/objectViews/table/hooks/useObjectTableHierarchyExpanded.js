@@ -103,9 +103,27 @@ export default function useObjectTableHierarchyExpanded({
     });
   }, []);
 
+  const expandAll = useCallback((rowIds = []) => {
+    const normalized = Array.isArray(rowIds)
+      ? rowIds.map(String).filter((id) => id.trim() !== "")
+      : [];
+
+    if (!normalized.length) {
+      return;
+    }
+
+    setExpandedRowIds(new Set(normalized));
+  }, []);
+
+  const collapseAll = useCallback(() => {
+    setExpandedRowIds(new Set());
+  }, []);
+
   return {
     expandedRowIds,
     toggleRowExpanded,
     expandRow,
+    expandAll,
+    collapseAll,
   };
 }

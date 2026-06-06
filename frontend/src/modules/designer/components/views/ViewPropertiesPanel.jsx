@@ -131,7 +131,7 @@ export default function ViewPropertiesPanel({
                   className="designer-btn"
                   onClick={onOpenRuntimePreview}
                 >
-                  Открыть preview
+                  Открыть предпросмотр
                 </button>
               </div>
 
@@ -225,8 +225,7 @@ export default function ViewPropertiesPanel({
               </div>
 
               <p className="designer-view-form__hint">
-                Preview обновится после Publish catalog (projection берётся из published
-                catalog).
+                Предпросмотр обновится после публикации каталога.
               </p>
             </div>
           </section>

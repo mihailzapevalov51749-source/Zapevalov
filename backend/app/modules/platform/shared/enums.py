@@ -19,6 +19,7 @@ class FieldType(StrEnum):
     USER = "user"
     FILE = "file"
     RELATION = "relation"
+    LINK = "link"
 
 
 class RelationType(StrEnum):

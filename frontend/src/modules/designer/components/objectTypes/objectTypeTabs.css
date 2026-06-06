@@ -48,3 +48,20 @@
   color: #5b21b6;
   border-bottom-color: #7c3aed;
 }
+
+.object-type-tabs__preview-trigger {
+  gap: 4px;
+}
+
+.object-type-tabs__preview-chevron {
+  flex: 0 0 auto;
+  font-size: 11px;
+  line-height: 1;
+  color: #94a3b8;
+}
+
+.object-type-tabs__preview-trigger:hover .object-type-tabs__preview-chevron,
+.object-type-tabs__preview-trigger.is-active .object-type-tabs__preview-chevron,
+.object-type-tabs__preview-trigger[aria-expanded="true"] .object-type-tabs__preview-chevron {
+  color: #64748b;
+}

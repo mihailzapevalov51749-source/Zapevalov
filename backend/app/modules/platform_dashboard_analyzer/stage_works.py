@@ -787,9 +787,39 @@ def evaluate_stage_work_status(slug: str, work: str, ctx: ScanContext) -> str:
         return "planned"
 
     if slug == "object-table-ut-parity":
+        if "чек-лист" in lower:
+            return (
+                "done"
+                if _object_entity_card_checklist_complete(ctx)
+                else "planned"
+            )
         if "многоколоноч" in lower and "сортиров" in lower:
             # Post-MVP backlog: multi-column sort removed from Object Table MVP.
             return "planned"
+        if "ссылка" in lower and "пол" in lower:
+            return (
+                "done"
+                if _object_platform_link_field_type_complete(ctx)
+                else "planned"
+            )
+        if "фильтрац" in lower and "связ" in lower:
+            return (
+                "done"
+                if _object_table_relation_filter_complete(ctx)
+                else "planned"
+            )
+        if "экспорт" in lower and "excel" in lower:
+            return (
+                "done"
+                if _object_table_excel_export_complete(ctx)
+                else "planned"
+            )
+        if "импорт" in lower and "excel" in lower:
+            return (
+                "done"
+                if _object_table_excel_import_complete(ctx)
+                else "planned"
+            )
         return "planned"
 
     if slug == "runtime-foundation":
@@ -828,10 +858,22 @@ def evaluate_stage_work_status(slug: str, work: str, ctx: ScanContext) -> str:
             "ui framework" in lower and "модальн" in lower
         ):
             return "done" if _frontend_has(ctx, "PlatformModal") else "in_progress"
-        if "публика" in lower or "preview" in lower:
+        if "preview" in lower:
+            return (
+                "done"
+                if _studio_preview_tab_selector_ux_complete(ctx)
+                and _studio_preview_mock_data_complete(ctx)
+                and _studio_preview_demo_data_toolbar_badge_complete(ctx)
+                else "in_progress"
+            )
+        if "публика" in lower:
             return "done" if _frontend_has(ctx, "ObjectTypePublishToMenuDialog") else "in_progress"
         if "studio" in lower and "runtime" in lower:
-            return "in_progress"
+            return (
+                "done"
+                if _studio_object_type_header_icon_parity_complete(ctx)
+                else "in_progress"
+            )
         return "planned"
 
     if slug == "ai-native-layer":
@@ -902,6 +944,12 @@ def evaluate_stage_work_status(slug: str, work: str, ctx: ScanContext) -> str:
                 if _relation_field_object_table_tree_view_complete(ctx)
                 else "planned"
             )
+        if "фильтрац" in lower and "связ" in lower:
+            return (
+                "done"
+                if _object_table_relation_filter_complete(ctx)
+                else "planned"
+            )
         return "planned"
 
     return "planned"
@@ -942,6 +990,1224 @@ def _view_engine_row_menu_complete(ctx: ScanContext) -> bool:
         and "rendererContext?.rowActions" in cell_text
         and "hoveredRowId" in table_text
         and "isRowHovered" in table_text
+    )
+
+
+def _object_platform_link_field_type_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    backend = ctx.repo_root / "backend" / "app" / "modules" / "platform"
+
+    paths = (
+        backend / "shared" / "enums.py",
+        backend / "shared" / "link_value.py",
+        backend / "runtime" / "entities" / "validators.py",
+        frontend / "shared" / "fieldEditors" / "editors" / "LinkFieldEditor.jsx",
+        frontend / "shared" / "fieldTypes" / "link" / "LinkValueRenderer.jsx",
+        frontend / "shared" / "fieldTypes" / "link" / "linkUtils.js",
+        frontend / "modules" / "designer" / "components" / "fields" / "CreateFieldModal.jsx",
+        frontend / "shared" / "fieldEditors" / "fieldEditorRegistry.js",
+    )
+
+    if not all(path.is_file() for path in paths):
+        return False
+
+    enums_text = paths[0].read_text(encoding="utf-8", errors="ignore")
+    link_value_text = paths[1].read_text(encoding="utf-8", errors="ignore")
+    validators_text = paths[2].read_text(encoding="utf-8", errors="ignore")
+    editor_text = paths[3].read_text(encoding="utf-8", errors="ignore")
+    renderer_text = paths[4].read_text(encoding="utf-8", errors="ignore")
+    link_utils_text = paths[5].read_text(encoding="utf-8", errors="ignore")
+    create_field_text = paths[6].read_text(encoding="utf-8", errors="ignore")
+    registry_text = paths[7].read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        'LINK = "link"' in enums_text
+        and "validate_link_field_value" in validators_text
+        and "FieldType.LINK" in validators_text
+        and "isBlockedLinkScheme" in link_utils_text
+        and "resolveLinkHref" in link_utils_text
+        and "noopener noreferrer" in renderer_text
+        and "LinkFieldEditor" in editor_text
+        and '"link"' in create_field_text
+        and "FIELD_EDITOR_TYPE_LINK" in registry_text
+        and "javascript" in link_value_text
+    )
+
+
+def _object_context_menu_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    root = ctx.repo_root
+    paths = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "objectContextMenu"
+        / "ObjectContextMenuTrigger.jsx",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "objectContextMenu"
+        / "objectContextMenuActions.js",
+        root
+        / "frontend"
+        / "src"
+        / "portal"
+        / "components"
+        / "PortalObjectRuntimeHeader.jsx",
+    )
+
+    if not all(path.is_file() for path in paths):
+        return False
+
+    trigger = paths[0].read_text(encoding="utf-8", errors="ignore")
+    actions = paths[1].read_text(encoding="utf-8", errors="ignore")
+    header = paths[2].read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "object-context-menu-trigger__chevron" in trigger
+        and "buildObjectContextMenuActions" in actions
+        and "IMPORT_EXCEL" in actions
+        and "EXPORT_EXCEL" in actions
+        and "ObjectContextMenuTrigger" in header
+    )
+
+
+def _object_table_excel_export_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    root = ctx.repo_root
+    paths = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "export"
+        / "exportObjectTableToExcel.js",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "export"
+        / "exportRuntimeQuery.js",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "export"
+        / "objectTableExportBridge.js",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "objectContextMenu"
+        / "objectContextMenuActions.js",
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "ObjectTableView.jsx",
+    )
+
+    if not all(path.is_file() for path in paths):
+        return False
+
+    prepare_rows = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "export"
+        / "prepareExportTableRows.js"
+    )
+    order_hierarchy_rows = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "export"
+        / "orderExportHierarchyRows.js"
+    )
+    choice_utils = (
+        root / "frontend" / "src" / "shared" / "fieldTypes" / "choice" / "choiceUtils.js"
+    )
+    format_value = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "export"
+        / "formatExportCellValue.js"
+    )
+
+    if not all(
+        path.is_file()
+        for path in (prepare_rows, order_hierarchy_rows, choice_utils, format_value)
+    ):
+        return False
+
+    export_service = paths[0].read_text(encoding="utf-8", errors="ignore")
+    runtime_query = paths[1].read_text(encoding="utf-8", errors="ignore")
+    bridge = paths[2].read_text(encoding="utf-8", errors="ignore")
+    actions = paths[3].read_text(encoding="utf-8", errors="ignore")
+    table_view = paths[4].read_text(encoding="utf-8", errors="ignore")
+    prepare_rows_text = prepare_rows.read_text(encoding="utf-8", errors="ignore")
+    order_hierarchy_rows_text = order_hierarchy_rows.read_text(
+        encoding="utf-8", errors="ignore"
+    )
+    choice_utils_text = choice_utils.read_text(encoding="utf-8", errors="ignore")
+    format_value_text = format_value.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "exportObjectTableToExcel" in export_service
+        and "OBJECT_TABLE_EXPORT_SCOPES" in export_service
+        and "prepareExportTableRows" in export_service
+        and "buildExportColumnsWithHierarchy" in export_service
+        and "fetchExportTableRows" in export_service
+        and "RUNTIME_QUERY_MAX_LIMIT" in runtime_query
+        and "mapObjectViewQueryToRuntimeParams" in runtime_query
+        and "Excel export fallback: runtime sort rejected" in runtime_query
+        and "registerObjectTableExportProvider" in bridge
+        and "runExportExcel" in actions
+        and "exportObjectTableToExcel" in actions
+        and "registerObjectTableExportProvider" in table_view
+        and "catalog: query.catalog" in table_view
+        and "prepareExportTableRows" in prepare_rows_text
+        and "orderFlatRowsForHierarchyExport" in order_hierarchy_rows_text
+        and 'label: "Иерархия"' in order_hierarchy_rows_text
+        and "isTableRowNumberPresentationFieldKey" in order_hierarchy_rows_text
+        and "buildObjectTableHierarchyDisplayRows" in order_hierarchy_rows_text
+        and "readChoiceOptionsSource" in choice_utils_text
+        and "fieldDef?.options" in choice_utils_text
+        and "normalizeChoiceValue" in format_value_text
+    )
+
+
+def _object_table_excel_import_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    root = ctx.repo_root
+    paths = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "import"
+        / "runObjectExcelImport.js",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "import"
+        / "objectTableImportBridge.js",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "objectContextMenu"
+        / "objectContextMenuActions.js",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "objectExcelImport"
+        / "ObjectExcelImportModal.jsx",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "objectExcelImport"
+        / "ObjectExcelImportHost.jsx",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "objectExcelImport"
+        / "ObjectExcelImportStepper.jsx",
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "ObjectTableView.jsx",
+        root
+        / "frontend"
+        / "src"
+        / "portal"
+        / "pages"
+        / "PortalObjectDataPage.jsx",
+    )
+
+    if not all(path.is_file() for path in paths):
+        return False
+
+    service_paths = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "import"
+        / "parseObjectExcelImportFile.js",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "import"
+        / "buildObjectExcelColumnMappings.js",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "import"
+        / "validateObjectExcelImportRows.js",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "import"
+        / "normalizeObjectExcelImportValue.js",
+    )
+
+    if not all(path.is_file() for path in service_paths):
+        return False
+
+    run_import = paths[0].read_text(encoding="utf-8", errors="ignore")
+    bridge = paths[1].read_text(encoding="utf-8", errors="ignore")
+    actions = paths[2].read_text(encoding="utf-8", errors="ignore")
+    modal = paths[3].read_text(encoding="utf-8", errors="ignore")
+    host = paths[4].read_text(encoding="utf-8", errors="ignore")
+    stepper = paths[5].read_text(encoding="utf-8", errors="ignore")
+    table_view = paths[6].read_text(encoding="utf-8", errors="ignore")
+    portal_page = paths[7].read_text(encoding="utf-8", errors="ignore")
+    parse_file = service_paths[0].read_text(encoding="utf-8", errors="ignore")
+    mappings = service_paths[1].read_text(encoding="utf-8", errors="ignore")
+    validate_rows = service_paths[2].read_text(encoding="utf-8", errors="ignore")
+    normalize_value = service_paths[3].read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "runObjectExcelImport" in run_import
+        and "runtimeWriteGateway.createEntity" in run_import
+        and "OBJECT_EXCEL_IMPORT_CHUNK_SIZE" in run_import
+        and "registerObjectTableImportProvider" in bridge
+        and "requestObjectExcelImportOpen" in bridge
+        and "runImportExcel" in actions
+        and "requestObjectExcelImportOpen" in actions
+        and "PlatformModal" in modal
+        and "validateObjectExcelImportRows" in modal
+        and "ObjectExcelImportStepper" in modal
+        and "FileSpreadsheet" in modal
+        and "object-excel-import__dropzone" in modal
+        and "object-excel-import__btn--primary" in modal
+        and "object-excel-import__footer--end" in modal
+        and "UNSUPPORTED_FILE_MESSAGE" in modal
+        and "subtitle={objectName}" in modal
+        and "FILE_STEP_CONTENT_STYLE" in modal
+        and "Создание записей из Excel-файла" not in modal
+        and "Поддерживается формат: .xlsx" not in modal
+        and "canProceedFromFile" in modal
+        and "Далее →" in modal
+        and "designer-btn" not in modal
+        and "ObjectExcelImportValueMappingPanel" in modal
+        and "ObjectExcelImportDefaultValuesPanel" in modal
+        and "importDefaultValues" in modal
+        and "ObjectExcelImportReviewPanel" in modal
+        and "Исправить сопоставление" in modal
+        and "handleFixMapping" in modal
+        and "buildImportValueMappings" in modal
+        and "handleProceedFromValueMapping" in modal
+        and 'step === "valueMapping"' in modal
+        and "ObjectExcelImportHost" in host
+        and 'marker: "①"' in stepper
+        and "valueMapping" in stepper
+        and 'marker: "⑤"' in stepper
+        and "Импорт" in stepper
+        and "subscribeObjectExcelImportOpen" in host
+        and "registerObjectTableImportProvider" in table_view
+        and "resolveImportableFields" in table_view
+        and "ObjectExcelImportHost" in portal_page
+        and "parseObjectExcelImportFile" in parse_file
+        and "buildObjectExcelColumnMappings" in mappings
+        and "validateObjectExcelImportRows" in validate_rows
+        and "normalizeObjectExcelImportValue" in normalize_value
+        and "resolveChoiceImportKey" in normalize_value
+        and "applyImportValueMappings" in normalize_value
+        and _object_table_excel_import_value_mapping_complete(ctx)
+        and _object_table_excel_import_default_values_complete(ctx)
+    )
+
+
+def _object_table_excel_import_default_values_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    root = ctx.repo_root
+    paths = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "import"
+        / "defaultValues"
+        / "buildImportDefaultValues.js",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "import"
+        / "defaultValues"
+        / "applyImportDefaultValues.js",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "import"
+        / "defaultValues"
+        / "validateImportDefaultValue.js",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "objectExcelImport"
+        / "ObjectExcelImportDefaultValuesPanel.jsx",
+    )
+
+    if not all(path.is_file() for path in paths):
+        return False
+
+    build_defaults = paths[0].read_text(encoding="utf-8", errors="ignore")
+    apply_defaults = paths[1].read_text(encoding="utf-8", errors="ignore")
+    panel = paths[3].read_text(encoding="utf-8", errors="ignore")
+    validate_rows = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "import"
+        / "validateObjectExcelImportRows.js"
+    ).read_text(encoding="utf-8", errors="ignore")
+    ensure_rules = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "import"
+        / "defaultValues"
+        / "ensureImportDefaultFieldRules.js"
+    ).read_text(encoding="utf-8", errors="ignore")
+    validate_default_rules = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "import"
+        / "defaultValues"
+        / "validateImportDefaultFieldRules.js"
+    ).read_text(encoding="utf-8", errors="ignore")
+    resolve_current_user = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "import"
+        / "defaultValues"
+        / "resolveImportDefaultUserId.js"
+    ).read_text(encoding="utf-8", errors="ignore")
+    modal = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "objectExcelImport"
+        / "ObjectExcelImportModal.jsx"
+    ).read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "IMPORT_DATA_SOURCE_DEFAULT_VALUE" in build_defaults
+        and "supportsImportDefaultValue" in build_defaults
+        and "applyImportDefaultValues" in apply_defaults
+        and "applyImportDefaultValues" in validate_rows
+        and "ensureImportDefaultFieldRules" in ensure_rules
+        and "validateImportDefaultFieldRules" in validate_default_rules
+        and "IMPORT_DEFAULT_CURRENT_USER_VALUE" in resolve_current_user
+        and "importContext" in modal
+        and "Значение по умолчанию" in panel
+        and "Колонка Excel" in panel
+        and "IMPORT_DEFAULT_CURRENT_USER_LABEL" in panel
+    )
+
+
+def _object_table_excel_import_value_mapping_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    root = ctx.repo_root
+    paths = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "import"
+        / "valueMapping"
+        / "collectUnresolvedImportValues.js",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "import"
+        / "valueMapping"
+        / "buildImportValueMappings.js",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "import"
+        / "valueMapping"
+        / "applyImportValueMappings.js",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "import"
+        / "valueMapping"
+        / "resolveImportValueCandidates.js",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "objectExcelImport"
+        / "ObjectExcelImportValueMappingPanel.jsx",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "import"
+        / "valueMapping"
+        / "loadImportUsersForSelect.js",
+    )
+
+    if not all(path.is_file() for path in paths):
+        return False
+
+    load_users = paths[5].read_text(encoding="utf-8", errors="ignore")
+    if "../../../../../api/authApi" not in load_users:
+        return False
+
+    collect = paths[0].read_text(encoding="utf-8", errors="ignore")
+    apply = paths[2].read_text(encoding="utf-8", errors="ignore")
+    panel = paths[4].read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "needsUserMapping" in collect
+        and "VALUE_MAPPING_CANDIDATE_ERRORS" in collect
+        and "IMPORT_VALUE_SKIP_OPTION" in apply
+        and "withSkipMappingOption" in panel
+        and "VALUE_MAPPING_SECTION_LABELS" in panel
+    )
+
+
+def _object_table_title_hierarchy_number_ux_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    root = ctx.repo_root
+    paths = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "viewEngine"
+        / "utils"
+        / "resolveTitleFieldDisplayNumber.js",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "viewEngine"
+        / "components"
+        / "ViewEngineTitleFieldChrome.jsx",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "viewEngine"
+        / "components"
+        / "ViewEngineTitleHierarchyNumber.jsx",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "viewEngine"
+        / "ViewEngineCell.jsx",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "viewEngine"
+        / "viewEngineTable.css",
+    )
+
+    if not all(path.is_file() for path in paths):
+        return False
+
+    resolver = paths[0].read_text(encoding="utf-8", errors="ignore")
+    chrome = paths[1].read_text(encoding="utf-8", errors="ignore")
+    number = paths[2].read_text(encoding="utf-8", errors="ignore")
+    cell = paths[3].read_text(encoding="utf-8", errors="ignore")
+    css = paths[4].read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "hierarchyNumber" in resolver
+        and "ViewEngineTitleHierarchyNumber" in chrome
+        and "view-engine-title-hierarchy-number" in number
+        and "resolveTitleFieldDisplayNumber" in cell
+        and "displayNumber" in cell
+        and "grid-template-columns: 24px" in css
+        and "min-width: 36px" in css
+        and "ViewEngineTitleExpandToggle" not in chrome
+    )
+
+
+def _object_table_selection_tree_toggle_ux_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    root = ctx.repo_root
+    paths = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "viewEngine"
+        / "components"
+        / "ViewEngineSelectionCell.jsx",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "viewEngine"
+        / "components"
+        / "ViewEngineSelectionTreeToggle.jsx",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "viewEngine"
+        / "ViewEngineTable.jsx",
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "ObjectTableView.jsx",
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "hooks"
+        / "useObjectTableHierarchyExpanded.js",
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "hooks"
+        / "useObjectTableHierarchyRows.js",
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "services"
+        / "resolveExpandableHierarchyRowIds.js",
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "viewEngine"
+        / "viewEngineTable.css",
+    )
+
+    if not all(path.is_file() for path in paths):
+        return False
+
+    selection_cell = paths[0].read_text(encoding="utf-8", errors="ignore")
+    tree_toggle = paths[1].read_text(encoding="utf-8", errors="ignore")
+    table = paths[2].read_text(encoding="utf-8", errors="ignore")
+    table_view = paths[3].read_text(encoding="utf-8", errors="ignore")
+    expanded_hook = paths[4].read_text(encoding="utf-8", errors="ignore")
+    hierarchy_hook = paths[5].read_text(encoding="utf-8", errors="ignore")
+    expandable_resolver = paths[6].read_text(encoding="utf-8", errors="ignore")
+    css = paths[7].read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "ViewEngineSelectionTreeToggle" in selection_cell
+        and "onToggleTreeHeader" in selection_cell
+        and "hasChildren" in tree_toggle
+        and "hierarchyTree?.onToggleRowExpanded" in table
+        and "expandableRowIds" in table_view
+        and "expandAll" in expanded_hook
+        and "collapseAll" in expanded_hook
+        and "resolveExpandableHierarchyRowIds" in hierarchy_hook
+        and "childrenByParent.entries" in expandable_resolver
+        and "view-engine-table-selection-tree-toggle" in css
+    )
+
+
+def _object_table_studio_preview_parity_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    root = ctx.repo_root
+    table_view = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "ObjectTableView.jsx"
+    )
+    views_bar = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "components"
+        / "ObjectTableViewsBar.jsx"
+    )
+    row_menu = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "viewEngine"
+        / "components"
+        / "ViewEngineRowMenu.jsx"
+    )
+    preview_tab = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "designer"
+        / "components"
+        / "tabs"
+        / "RuntimePreviewTab.jsx"
+    )
+    css = root / "frontend" / "src" / "shared" / "viewEngine" / "viewEngineTable.css"
+
+    if not all(path.is_file() for path in (table_view, views_bar, row_menu, preview_tab, css)):
+        return False
+
+    table_text = table_view.read_text(encoding="utf-8", errors="ignore")
+    views_bar_text = views_bar.read_text(encoding="utf-8", errors="ignore")
+    row_menu_text = row_menu.read_text(encoding="utf-8", errors="ignore")
+    preview_tab_text = preview_tab.read_text(encoding="utf-8", errors="ignore")
+    css_text = css.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        'mode === "studio-preview"' in table_text
+        and "enabled: hierarchyDataEnabled" in table_text
+        and "mode !== \"studio-preview\"" not in table_text
+        and "readOnly: isPreviewMode" in table_text
+        and "previewShowCreateButton" in views_bar_text
+        and "readOnly" in row_menu_text
+        and 'mode="studio-preview"' in preview_tab_text
+    )
+
+
+def _studio_preview_tab_selector_ux_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    root = ctx.repo_root
+    preview_tab = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "designer"
+        / "components"
+        / "tabs"
+        / "RuntimePreviewTab.jsx"
+    )
+    tab_trigger = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "designer"
+        / "components"
+        / "objectTypes"
+        / "ObjectTypePreviewTabTrigger.jsx"
+    )
+    object_type_tabs = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "designer"
+        / "components"
+        / "objectTypes"
+        / "ObjectTypeTabs.jsx"
+    )
+    preview_context = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "designer"
+        / "context"
+        / "ObjectTypePreviewTabContext.jsx"
+    )
+    context_block = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "designer"
+        / "components"
+        / "preview"
+        / "StudioPreviewContextBlock.jsx"
+    )
+    status_presentation = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "designer"
+        / "utils"
+        / "resolveObjectViewTabStatusPresentation.js"
+    )
+    usage_resolver = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "designer"
+        / "utils"
+        / "resolveObjectViewUsagePaths.js"
+    )
+    tabs = root / "frontend" / "src" / "modules" / "designer" / "constants" / "tabs.js"
+
+    if not all(
+        path.is_file()
+        for path in (
+            preview_tab,
+            tab_trigger,
+            object_type_tabs,
+            preview_context,
+            context_block,
+            status_presentation,
+            usage_resolver,
+            tabs,
+        )
+    ):
+        return False
+
+    preview_text = preview_tab.read_text(encoding="utf-8", errors="ignore")
+    context_text = context_block.read_text(encoding="utf-8", errors="ignore")
+    tab_trigger_text = tab_trigger.read_text(encoding="utf-8", errors="ignore")
+    object_type_tabs_text = object_type_tabs.read_text(encoding="utf-8", errors="ignore")
+    usage_text = usage_resolver.read_text(encoding="utf-8", errors="ignore")
+    tabs_text = tabs.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "useObjectTypePreviewTab" in preview_text
+        and "resolveObjectViewTabStatusPresentation" in preview_text
+        and "resolveObjectViewTypeLabel" in preview_text
+        and "designer-preview-tab__view-meta" in preview_text
+        and "StudioPreviewTabDropdown" not in preview_text
+        and 'mode="studio-preview"' in preview_text
+        and "ObjectTypePreviewTabTrigger" in object_type_tabs_text
+        and "Предпросмотр" in tab_trigger_text
+        and "Используется:" in context_text
+        and "Отображается:" not in context_text
+        and "Статус:" not in context_text
+        and "Студия" not in usage_text
+        and "Офис" in usage_text
+        and "GET /runtime/query" not in preview_text
+        and '"runtime-preview", label: "Предпросмотр"' in tabs_text
+    )
+
+
+def _studio_preview_mock_data_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    root = ctx.repo_root
+    query_hook = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "hooks"
+        / "useObjectViewQuery.js"
+    )
+    view_host = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "ObjectViewHost.jsx"
+    )
+    table_view = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "ObjectTableView.jsx"
+    )
+    preview_tab = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "designer"
+        / "components"
+        / "tabs"
+        / "RuntimePreviewTab.jsx"
+    )
+    mock_rows = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "preview"
+        / "buildObjectTabPreviewMockRows.js"
+    )
+    mock_list = (
+        root
+        / "frontend"
+        / "src"
+        / "shared"
+        / "objectPlatform"
+        / "services"
+        / "preview"
+        / "buildStudioPreviewListResult.js"
+    )
+
+    if not all(
+        path.is_file()
+        for path in (
+            query_hook,
+            view_host,
+            table_view,
+            preview_tab,
+            mock_rows,
+            mock_list,
+        )
+    ):
+        return False
+
+    query_text = query_hook.read_text(encoding="utf-8", errors="ignore")
+    host_text = view_host.read_text(encoding="utf-8", errors="ignore")
+    table_text = table_view.read_text(encoding="utf-8", errors="ignore")
+    preview_text = preview_tab.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "previewMode" in query_text
+        and "buildStudioPreviewListResult" in query_text
+        and 'previewMode: mode === "studio-preview"' in host_text
+        and "previewHierarchyInstances" in table_text
+        and "runtimeReadGateway.getObjectList" in query_text
+    )
+
+
+def _studio_preview_demo_data_toolbar_badge_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    root = ctx.repo_root
+    views_bar = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "components"
+        / "ObjectTableViewsBar.jsx"
+    )
+    preview_tab = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "designer"
+        / "components"
+        / "tabs"
+        / "RuntimePreviewTab.jsx"
+    )
+    toolbar_css = root / "frontend" / "src" / "shared" / "viewEngine" / "viewEngineTable.css"
+
+    if not all(path.is_file() for path in (views_bar, preview_tab, toolbar_css)):
+        return False
+
+    views_bar_text = views_bar.read_text(encoding="utf-8", errors="ignore")
+    preview_text = preview_tab.read_text(encoding="utf-8", errors="ignore")
+    toolbar_css_text = toolbar_css.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "{previewMode ? (" in views_bar_text
+        and "view-engine-toolbar__demo-badge" in views_bar_text
+        and "Демо-данные" in views_bar_text
+        and "Отображаются демонстрационные данные." in views_bar_text
+        and "view-engine-toolbar--with-demo-badge" in views_bar_text
+        and "view-engine-toolbar__demo-badge" in toolbar_css_text
+        and "designer-preview-tab__demo-note" not in preview_text
+        and "Показаны демонстрационные данные" not in preview_text
+    )
+
+
+def _studio_preview_business_context_ux_complete(ctx: ScanContext) -> bool:
+    """Backward-compatible alias for older analyzer imports."""
+    return _studio_preview_tab_selector_ux_complete(ctx)
+
+
+def _studio_object_type_header_icon_parity_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    root = ctx.repo_root
+    icon_utils = root / "frontend" / "src" / "shared" / "icons" / "iconFileUtils.js"
+    workspace_page = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "designer"
+        / "pages"
+        / "ObjectTypeWorkspacePage.jsx"
+    )
+    workspace_header = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "designer"
+        / "components"
+        / "objectTypes"
+        / "ObjectTypeWorkspaceHeader.jsx"
+    )
+    portal_page = (
+        root / "frontend" / "src" / "portal" / "pages" / "PortalObjectDataPage.jsx"
+    )
+
+    if not all(
+        path.is_file()
+        for path in (icon_utils, workspace_page, workspace_header, portal_page)
+    ):
+        return False
+
+    icon_utils_text = icon_utils.read_text(encoding="utf-8", errors="ignore")
+    workspace_page_text = workspace_page.read_text(encoding="utf-8", errors="ignore")
+    workspace_header_text = workspace_header.read_text(encoding="utf-8", errors="ignore")
+    portal_page_text = portal_page.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "displayIcons.icon_type ?? baseIcons.icon_type" in icon_utils_text
+        and "mergeObjectTypeAppearance" in workspace_page_text
+        and "findObjectTypeNavigationItem" in workspace_page_text
+        and "ObjectTypeIcon" in workspace_header_text
+        and "mergeObjectTypeAppearance" in portal_page_text
+    )
+
+
+def _object_table_relation_filter_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    root = ctx.repo_root
+    backend_files = (
+        root
+        / "backend"
+        / "app"
+        / "modules"
+        / "platform"
+        / "runtime"
+        / "query"
+        / "filter_operators.py",
+        root
+        / "backend"
+        / "app"
+        / "modules"
+        / "platform"
+        / "runtime"
+        / "query"
+        / "repository.py",
+    )
+    frontend_files = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "services"
+        / "catalogFieldsForTableQueryUi.js",
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "services"
+        / "tableFilterOperators.js",
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "viewSettings"
+        / "RelationFilterPeerSelect.jsx",
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "table"
+        / "viewSettings"
+        / "ObjectTableFilterValueEditor.jsx",
+    )
+
+    if not all(path.is_file() for path in (*backend_files, *frontend_files)):
+        return False
+
+    filter_ops = backend_files[0].read_text(encoding="utf-8", errors="ignore")
+    repository = backend_files[1].read_text(encoding="utf-8", errors="ignore")
+    catalog_ui = frontend_files[0].read_text(encoding="utf-8", errors="ignore")
+    table_ops = frontend_files[1].read_text(encoding="utf-8", errors="ignore")
+    peer_select = frontend_files[2].read_text(encoding="utf-8", errors="ignore")
+    value_editor = frontend_files[3].read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "RELATION_OPERATORS" in filter_ops
+        and "FieldType.RELATION" in filter_ops
+        and "_apply_relation_field_filter" in repository
+        and "RuntimeRelationInstance" in repository
+        and 'fieldType: "relation"' in catalog_ui
+        and "peerObjectTypeKey" in catalog_ui
+        and "RELATION_OPERATORS" in table_ops
+        and "queryRuntimeEntities" in peer_select
+        and "getRuntimeEntity" in peer_select
+        and "RelationFilterPeerSelect" in value_editor
+        and 'fieldType === "relation"' in value_editor
+    )
+
+
+def _object_entity_card_checklist_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    paths = (
+        frontend / "shared" / "checklists" / "EntityChecklistPanel.jsx",
+        frontend / "modules" / "objectEntities" / "components" / "ObjectEntityChecklist.jsx",
+        frontend / "modules" / "objectEntities" / "components" / "ObjectEntityCardTabsBlock.jsx",
+        frontend / "modules" / "objectEntities" / "services" / "objectEntityCardSectionsLayout.js",
+    )
+
+    if not all(path.is_file() for path in paths):
+        return False
+
+    panel_text = paths[0].read_text(encoding="utf-8", errors="ignore")
+    adapter_text = paths[1].read_text(encoding="utf-8", errors="ignore")
+    tabs_block_text = paths[2].read_text(encoding="utf-8", errors="ignore")
+    layout_text = paths[3].read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "createChecklistItem" in panel_text
+        and "completedCount" in panel_text
+        and "resolveRuntimeEntityCommunicationIdentity" in adapter_text
+        and "EntityChecklistPanel" in adapter_text
+        and "ObjectEntityChecklist" in tabs_block_text
+        and 'tabId === "checklist"' in tabs_block_text
+        and "getChecklist" in tabs_block_text
+        and "checklistCount" in tabs_block_text
+        and '"checklist"' in layout_text
+        and "OBJECT_ENTITY_INNER_TAB_IDS" in layout_text
     )
 
 
@@ -1317,7 +2583,10 @@ def _relation_field_object_table_tree_view_complete(ctx: ScanContext) -> bool:
         / "buildObjectTableHierarchyDisplayRows.js"
     )
     relations_api = frontend / "api" / "runtimeRelationsApi.js"
-    chrome = frontend / "shared" / "viewEngine" / "ViewEngineHierarchyTitleChrome.jsx"
+    selection_cell = (
+        frontend / "shared" / "viewEngine" / "components" / "ViewEngineSelectionCell.jsx"
+    )
+    table_engine = frontend / "shared" / "viewEngine" / "ViewEngineTable.jsx"
     display_test = (
         frontend
         / "modules"
@@ -1334,7 +2603,8 @@ def _relation_field_object_table_tree_view_complete(ctx: ScanContext) -> bool:
             hook,
             display_builder,
             relations_api,
-            chrome,
+            selection_cell,
+            table_engine,
             display_test,
             table_view,
         )
@@ -1344,12 +2614,8 @@ def _relation_field_object_table_tree_view_complete(ctx: ScanContext) -> bool:
     hook_text = hook.read_text(encoding="utf-8", errors="ignore")
     api_text = relations_api.read_text(encoding="utf-8", errors="ignore")
     table_text = table_view.read_text(encoding="utf-8", errors="ignore")
-    cell_path = frontend / "shared" / "viewEngine" / "ViewEngineCell.jsx"
-    cell_text = (
-        cell_path.read_text(encoding="utf-8", errors="ignore")
-        if cell_path.is_file()
-        else ""
-    )
+    selection_text = selection_cell.read_text(encoding="utf-8", errors="ignore")
+    table_engine_text = table_engine.read_text(encoding="utf-8", errors="ignore")
 
     return (
         "listRelationInstancesByKey" in hook_text
@@ -1357,7 +2623,8 @@ def _relation_field_object_table_tree_view_complete(ctx: ScanContext) -> bool:
         and "listRelationInstancesByKey" in api_text
         and "useObjectTableHierarchyRows" in table_text
         and "hierarchyTree" in table_text
-        and "ViewEngineHierarchyTitleChrome" in cell_text
+        and "ViewEngineSelectionTreeToggle" in selection_text
+        and "hierarchyTree?.onToggleRowExpanded" in table_engine_text
         and "parent_row_id" not in hook_text
         and "parent_row_id" not in display_builder.read_text(encoding="utf-8", errors="ignore")
     )

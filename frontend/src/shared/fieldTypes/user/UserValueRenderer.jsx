@@ -130,12 +130,18 @@ export default function UserValueRenderer({
   value,
   compact = false,
   emptyValue = "—",
+  previewMode = false,
 }) {
   const snapshotUser = useMemo(() => normalizeUser(value), [value]);
 
   const [actualUsers, setActualUsers] = useState(cachedUsers || []);
 
   useEffect(() => {
+    if (previewMode) {
+      setActualUsers([]);
+      return undefined;
+    }
+
     let isMounted = true;
 
     loadActualUsers().then((users) => {
@@ -147,7 +153,7 @@ export default function UserValueRenderer({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [previewMode]);
 
   const user = useMemo(
     () => mergeWithActualUser(snapshotUser, actualUsers),

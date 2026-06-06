@@ -4,6 +4,7 @@ import { getApiErrorMessage } from "../../modules/designer/api/platformApiClient
 import * as runtimeCatalogApi from "../../modules/designer/api/runtimeCatalogApi";
 import { ObjectViewHost } from "../../modules/objectViews";
 import { mergeObjectTypeAppearance } from "../../shared/icons/iconFileUtils";
+import ObjectExcelImportHost from "../../shared/objectPlatform/objectExcelImport/ObjectExcelImportHost";
 import PortalObjectRuntimeHeader from "../components/PortalObjectRuntimeHeader";
 import {
   findPublishedObjectTab,
@@ -199,6 +200,9 @@ export default function PortalObjectDataPage({
     >
       <PortalObjectRuntimeHeader
         objectName={objectType?.name || "Объект"}
+        tenantId={tenantId}
+        objectTypeKey={objectTypeKey}
+        objectTypeId={objectTypeId}
         iconType={appearance.icon_type}
         iconFileUrl={appearance.icon_file_url}
         color={appearance.color}
@@ -276,6 +280,8 @@ export default function PortalObjectDataPage({
           объект.
         </div>
       ) : null}
+
+      <ObjectExcelImportHost />
     </div>
   );
 }

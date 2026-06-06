@@ -28,6 +28,10 @@ const TYPE_OPTIONS_BY_FIELD = {
     { value: DEFAULT_VALUE_NONE, label: "Нет" },
     { value: DEFAULT_VALUE_CONSTANT, label: "Константа" },
   ],
+  link: [
+    { value: DEFAULT_VALUE_NONE, label: "Нет" },
+    { value: DEFAULT_VALUE_CONSTANT, label: "Константа" },
+  ],
   number: [
     { value: DEFAULT_VALUE_NONE, label: "Нет" },
     { value: DEFAULT_VALUE_CONSTANT, label: "Константа" },

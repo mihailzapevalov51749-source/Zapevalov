@@ -282,6 +282,15 @@ def coerce_filter_value(
     if field_type == FieldType.MULTI_CHOICE.value and operator == "eq":
         return _coerce_list_value(field_key, raw_value)
 
+    if field_type == FieldType.RELATION.value:
+        normalized = str(raw_value).strip()
+        if not normalized:
+            raise ValueError(
+                f"Поле '{field_key}': filter value должно быть valid UUID string",
+            )
+        validate_uuid_string(normalized, field_key)
+        return normalized
+
     raise ValueError(f"Поле '{field_key}': неподдерживаемый field_type для filter")
 
 

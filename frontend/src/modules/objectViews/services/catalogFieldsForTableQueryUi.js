@@ -1,4 +1,8 @@
-import { isRelationFieldType } from "../../designer/components/fields/relationFieldFormUtils";
+import {
+  isRelationFieldType,
+  normalizeRelationSettingsFromField,
+} from "../../designer/components/fields/relationFieldFormUtils";
+import { resolveRelationFieldPeerObjectTypeKey } from "../../objectEntities/services/resolveRelationFieldPeerObjectType";
 import { normalizeFieldEditorType } from "../../../shared/fieldEditors/fieldEditorRegistry";
 import {
   isTableDedicatedRecordNumberFieldKey,
@@ -28,9 +32,10 @@ export function normalizeTableFilterFieldKey(fieldKey) {
 
 /**
  * @param {Record<string, unknown> | null | undefined} field
- * @returns {{ key: string, label: string, fieldType: string, rawFieldType?: string, options?: Array<{ key: string, label: string }>, multiple?: boolean } | null}
+ * @param {{ catalog?: Record<string, unknown> | null, objectTypeKey?: string | null }} [context]
+ * @returns {{ key: string, label: string, fieldType: string, rawFieldType?: string, options?: Array<{ key: string, label: string }>, multiple?: boolean, relationKey?: string, role?: string, cardinality?: string, peerObjectTypeKey?: string } | null}
  */
-export function buildTableFilterFieldOption(field) {
+export function buildTableFilterFieldOption(field, context = {}) {
   const key = String(field?.key || "").trim();
 
   if (!key || isTableRowNumberPresentationFieldKey(key)) {
@@ -42,13 +47,36 @@ export function buildTableFilterFieldOption(field) {
     .trim()
     .toLowerCase();
 
-  return {
+  const baseOption = {
     key,
     label: String(field?.name || field?.label || key),
     fieldType: fieldDef?.type || normalizeFieldEditorType(rawType),
     rawFieldType: rawType,
     options: Array.isArray(fieldDef?.options) ? fieldDef.options : [],
     multiple: Boolean(fieldDef?.multiple),
+  };
+
+  if (!isRelationFieldType(rawType)) {
+    return baseOption;
+  }
+
+  const relationSettings = normalizeRelationSettingsFromField(
+    field?.settings_json || field?.settings,
+  );
+  const peerObjectTypeKey =
+    resolveRelationFieldPeerObjectTypeKey(
+      context.catalog,
+      context.objectTypeKey,
+      field,
+    ) || "";
+
+  return {
+    ...baseOption,
+    fieldType: "relation",
+    relationKey: relationSettings.relation_key,
+    role: relationSettings.role,
+    cardinality: relationSettings.cardinality,
+    peerObjectTypeKey,
   };
 }
 
@@ -84,7 +112,7 @@ function buildRecordNumberFilterOption(catalogFields = []) {
 }
 
 /**
- * Catalog fields eligible for table filter/sort UI (relation excluded on table stage).
+ * Catalog fields eligible for table filter/sort UI.
  *
  * @param {Array<Record<string, unknown>>} fields
  */
@@ -96,11 +124,7 @@ export function filterCatalogFieldsForTableQueryUi(fields = []) {
       return false;
     }
 
-    const rawType = String(field?.field_type || field?.type || "")
-      .trim()
-      .toLowerCase();
-
-    return !isRelationFieldType(rawType);
+    return true;
   });
 }
 
@@ -123,7 +147,7 @@ export function buildTableQueryFieldOptions({
   const byKey = new Map();
 
   for (const field of fields) {
-    const option = buildTableFilterFieldOption(field);
+    const option = buildTableFilterFieldOption(field, { catalog, objectTypeKey });
 
     if (!option) {
       continue;
@@ -158,18 +182,11 @@ export function buildTableQueryFieldOptions({
     }
 
     const catalogField = catalogFieldsByKey.get(normalized);
-    const rawType = String(
-      catalogField?.field_type || catalogField?.type || "",
-    )
-      .trim()
-      .toLowerCase();
-
-    if (isRelationFieldType(rawType)) {
-      continue;
-    }
-
     if (catalogField) {
-      const option = buildTableFilterFieldOption(catalogField);
+      const option = buildTableFilterFieldOption(catalogField, {
+        catalog,
+        objectTypeKey,
+      });
 
       if (option) {
         byKey.set(option.key, option);

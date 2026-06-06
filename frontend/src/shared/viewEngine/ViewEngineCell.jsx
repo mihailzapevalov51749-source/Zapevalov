@@ -2,9 +2,8 @@ import FieldEditor from "../fieldEditors/FieldEditor";
 import FieldValueRenderer from "../fieldTypes/FieldValueRenderer";
 import RelationTableCellRenderer from "../fieldTypes/relation/RelationTableCellRenderer";
 import ExpandableTableCell from "../table/ExpandableTableCell";
-import ViewEngineHierarchyTitleChrome from "./ViewEngineHierarchyTitleChrome.jsx";
 import ViewEngineTitleFieldChrome from "./components/ViewEngineTitleFieldChrome.jsx";
-import ViewEngineTitlePositionBadge from "./ViewEngineTitlePositionBadge.jsx";
+import { resolveTitleFieldDisplayNumber } from "./utils/resolveTitleFieldDisplayNumber.js";
 import { isRelationTableValue } from "../../modules/objectViews/services/relationTableValue";
 import { isCreatableFieldType } from "../fieldEditors/fieldEditorRegistry";
 
@@ -88,12 +87,16 @@ export default function ViewEngineCell({
     isPrimary &&
     hierarchyMeta &&
     rendererContext?.hierarchyTree?.enabled;
-  const positionNumber = String(
-    row?.positionNumber ?? row?.displayPosition ?? "",
-  ).trim();
-  const showPositionBadge = isPrimary && Boolean(positionNumber);
   const rowActions = rendererContext?.rowActions || null;
   const rowActionsEnabled = Boolean(isPrimary && rowActions?.enabled);
+  const displayNumber = resolveTitleFieldDisplayNumber(row, {
+    hierarchyTreeEnabled: showHierarchyChrome,
+  });
+  const useTitleFieldChrome =
+    isPrimary &&
+    (rowActionsEnabled ||
+      showHierarchyChrome ||
+      Boolean(displayNumber));
   const entityTitle = resolveRowEntityTitle(
     row,
     rowActions?.titleFieldKey || column?.key,
@@ -132,6 +135,7 @@ export default function ViewEngineCell({
         resolveUser: rendererContext.resolveUser,
         resolveLookup: rendererContext.resolveLookup,
         onOpenFile: rendererContext.onOpenFile,
+        previewMode: rendererContext.previewMode,
       }
     : {};
 
@@ -212,18 +216,20 @@ export default function ViewEngineCell({
               inline
             />
           </div>
-        ) : rowActionsEnabled ? (
+        ) : useTitleFieldChrome ? (
           <ViewEngineTitleFieldChrome
             hierarchy={hierarchyMeta}
-            onToggleExpand={() =>
-              rendererContext?.hierarchyTree?.onToggleRowExpanded?.(row?.id)
-            }
-            positionNumber={positionNumber}
+            displayNumber={displayNumber}
+            hierarchyTreeEnabled={showHierarchyChrome}
             isRowHovered={isRowHovered}
-            rowActions={{
-              ...rowActions,
-              hierarchyTreeEnabled: showHierarchyChrome,
-            }}
+            rowActions={
+              rowActionsEnabled
+                ? {
+                    ...rowActions,
+                    hierarchyTreeEnabled: showHierarchyChrome,
+                  }
+                : null
+            }
             onCreateSubtask={() =>
               rowActions?.onCreateSubtask?.({
                 entityId: row?.id,
@@ -246,59 +252,15 @@ export default function ViewEngineCell({
               {({ expanded }) => renderValue(expanded)}
             </ExpandableTableCell>
           </ViewEngineTitleFieldChrome>
-        ) : showHierarchyChrome ? (
-          <ViewEngineHierarchyTitleChrome
-            hierarchy={hierarchyMeta}
-            onToggleExpand={() =>
-              rendererContext?.hierarchyTree?.onToggleRowExpanded?.(row?.id)
-            }
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                minWidth: 0,
-                width: "100%",
-              }}
-            >
-              {showPositionBadge ? (
-                <ViewEngineTitlePositionBadge value={positionNumber} />
-              ) : null}
-              <div style={{ minWidth: 0, flex: 1, overflow: "hidden" }}>
-                <ExpandableTableCell
-                  column={rendererColumn}
-                  value={value}
-                  align={rendererColumn?.align}
-                  readOnly
-                >
-                  {({ expanded }) => renderValue(expanded)}
-                </ExpandableTableCell>
-              </div>
-            </div>
-          </ViewEngineHierarchyTitleChrome>
         ) : (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              minWidth: 0,
-              width: "100%",
-            }}
+          <ExpandableTableCell
+            column={rendererColumn}
+            value={value}
+            align={rendererColumn?.align}
+            readOnly
           >
-            {showPositionBadge ? (
-              <ViewEngineTitlePositionBadge value={positionNumber} />
-            ) : null}
-            <div style={{ minWidth: 0, flex: 1, overflow: "hidden" }}>
-              <ExpandableTableCell
-                column={rendererColumn}
-                value={value}
-                align={rendererColumn?.align}
-                readOnly
-              >
-                {({ expanded }) => renderValue(expanded)}
-              </ExpandableTableCell>
-            </div>
-          </div>
+            {({ expanded }) => renderValue(expanded)}
+          </ExpandableTableCell>
         )}
       </div>
     </div>

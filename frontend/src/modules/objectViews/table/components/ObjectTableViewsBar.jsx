@@ -20,6 +20,8 @@ export default function ObjectTableViewsBar({
   catalog = null,
   onSelectView,
   onOpenFilters,
+  previewMode = false,
+  previewShowCreateButton = false,
   onToggleInlineEdit,
   isInlineEditMode = false,
   onOpenViewSettingsForKey,
@@ -235,9 +237,15 @@ export default function ObjectTableViewsBar({
     );
   };
 
+  const demoBadgeTooltip =
+    "Отображаются демонстрационные данные.\nРеальные записи Office не используются.";
+
   return (
     <>
-      <div className="view-engine-toolbar" data-object-table-views-bar="true">
+      <div
+        className={`view-engine-toolbar${previewMode ? " view-engine-toolbar--with-demo-badge" : ""}`}
+        data-object-table-views-bar="true"
+      >
         <div className="view-engine-toolbar__left">
           {typeof onToggleInlineEdit === "function" ? (
             <button
@@ -259,7 +267,17 @@ export default function ObjectTableViewsBar({
             </button>
           ) : null}
 
-          {canCreateEntity ? (
+          {previewShowCreateButton ? (
+            <button
+              type="button"
+              className="view-engine-toolbar__tool-btn"
+              title="Недоступно в предпросмотре"
+              aria-label="Добавить экземпляр объекта (недоступно в предпросмотре)"
+              disabled
+            >
+              +
+            </button>
+          ) : canCreateEntity ? (
             <button
               type="button"
               className="view-engine-toolbar__tool-btn"
@@ -327,6 +345,18 @@ export default function ObjectTableViewsBar({
             ) : null}
           </div>
         </div>
+
+        {previewMode ? (
+          <div className="view-engine-toolbar__center">
+            <span
+              className="view-engine-toolbar__demo-badge"
+              title={demoBadgeTooltip}
+              aria-label={demoBadgeTooltip.replace("\n", " ")}
+            >
+              Демо-данные
+            </span>
+          </div>
+        ) : null}
 
         <div className="view-engine-toolbar__right">
           {pinnedRepresentationViews.map((view) => renderRepresentationButton(view))}
