@@ -953,14 +953,16 @@ export default function DesignerShell() {
           <YasiiSurfaceContextProvider value={yasiiSurfaceContext}>
             <div
               className="designer-root"
-              style={{
-                flex: "1 1 auto",
-                height: "100%",
-                minHeight: 0,
-                overflow: "auto",
-                padding: "20px 24px 32px",
-                boxSizing: "border-box",
-              }}
+        style={{
+          flex: "1 1 auto",
+          height: "100%",
+          minHeight: 0,
+          minWidth: 0,
+          overflowX: "hidden",
+          overflowY: "auto",
+          padding: "20px 24px 32px",
+          boxSizing: "border-box",
+        }}
             >
               <Outlet />
             </div>

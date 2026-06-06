@@ -14,7 +14,6 @@ export function getTableSortIcon(sortDirection) {
 
 export default function TableSortToggleButton({
   sortDirection = null,
-  sortOrder = null,
   onToggle,
   title = "Сортировка",
 }) {
@@ -27,24 +26,12 @@ export default function TableSortToggleButton({
       onClick={(event) => {
         event.preventDefault();
         event.stopPropagation();
-        onToggle?.();
+        onToggle?.(event);
       }}
       title={title}
       aria-label={title}
     >
       <span>{getTableSortIcon(sortDirection)}</span>
-      {sortOrder != null ? (
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 800,
-            lineHeight: 1,
-            color: "#64748b",
-          }}
-        >
-          {sortOrder}
-        </span>
-      ) : null}
     </button>
   );
 }

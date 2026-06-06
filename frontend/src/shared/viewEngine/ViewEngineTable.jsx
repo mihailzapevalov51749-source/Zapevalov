@@ -21,7 +21,7 @@ import {
 } from "./viewEngineStyles";
 
 import { formatSystemRowNumber } from "../entity-ui/entityValueUtils";
-import { columnMatchesSortField } from "./systemColumnKeys";
+import { getColumnSortState } from "./sortStateUtils.js";
 
 import "./viewEngineTable.css";
 
@@ -34,6 +34,7 @@ export default function ViewEngineTable({
   loading = false,
   error = "",
   sort = null,
+  sortRules = null,
   onToggleColumnSort,
   rendererContext = null,
   enableColumnResize = true,
@@ -66,15 +67,22 @@ export default function ViewEngineTable({
     { showSelectionColumn, showRowNumberColumn },
   );
 
-  const activeSortField = sort?.field || null;
+  const resolvedSortRules = useMemo(() => {
+    if (Array.isArray(sortRules)) {
+      return sortRules;
+    }
+
+    return [];
+  }, [sortRules]);
+
+  const showGrid = !error && rows.length > 0;
+  const selectionEnabled = Boolean(showSelectionColumn && rowSelection);
+
   const [hoveredRowId, setHoveredRowId] = useState(null);
 
   const rowsById = useMemo(() => {
     return new Map(rows.map((row) => [row.id, row]));
   }, [rows]);
-
-  const showGrid = !loading && !error && rows.length > 0;
-  const selectionEnabled = Boolean(showSelectionColumn && rowSelection);
 
   const tableWidthStyle = {
     width: fullTableMinWidth,
@@ -143,12 +151,10 @@ export default function ViewEngineTable({
                 {showRowNumberColumn ? <ViewEngineHeaderRowNumberCell /> : null}
 
                 {columns.map((column) => {
-                  const sortDirection = columnMatchesSortField(
+                  const { direction: sortDirection } = getColumnSortState(
+                    resolvedSortRules,
                     column.key,
-                    activeSortField,
-                  )
-                    ? sort?.order || null
-                    : null;
+                  );
 
                   return (
                     <ViewEngineHeaderCell
@@ -164,7 +170,7 @@ export default function ViewEngineTable({
                         enableColumnResize &&
                         (column.source === "field" || column.source === "system")
                       }
-                      onSortToggle={() => onToggleColumnSort?.(column.key)}
+                      onSortToggle={(event) => onToggleColumnSort?.(column.key, event)}
                       onResizeMouseDown={(event) =>
                         handleResizeMouseDown(event, column)
                       }
@@ -175,7 +181,7 @@ export default function ViewEngineTable({
             </div>
 
             <ViewEngineTableState
-              isLoading={loading}
+              isLoading={loading && rows.length === 0}
               error={error}
               rowsCount={rows.length}
               fullTableMinWidth={fullTableMinWidth}

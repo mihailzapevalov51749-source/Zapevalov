@@ -1,28 +1,15 @@
 import { useMemo } from "react";
 
-import { getNextSortRules } from "../../services/sortRulesUtils";
 import {
-  findCatalogObjectType,
-  getObjectTypeFields,
-} from "../services/tableModelAdapter";
+  getNextSortRules,
+  normalizeSortRulesArray,
+} from "../../services/sortRulesUtils";
+import { resolveTableFieldLabels } from "../../services/columnPresentationUtils";
 
-const SORT_LABELS = {
-  none: "—",
+const ORDER_LABELS = {
   asc: "↑",
   desc: "↓",
 };
-
-function getSortStateForField(rules, fieldKey) {
-  const rule = (rules || []).find(
-    (item) => String(item?.field) === String(fieldKey),
-  );
-
-  if (!rule) {
-    return "none";
-  }
-
-  return rule.order === "desc" ? "desc" : "asc";
-}
 
 export default function ObjectTableViewSettingsSortDetails({
   effectiveContract,
@@ -30,69 +17,58 @@ export default function ObjectTableViewSettingsSortDetails({
   objectTypeKey,
   sessionApi,
 }) {
-  const fieldOptions = useMemo(() => {
-    const keysFromProjection = effectiveContract?.projection?.fieldKeys || [];
-    const objectType = findCatalogObjectType(catalog, objectTypeKey);
-    const fields = getObjectTypeFields(objectType);
-    const byKey = new Map();
+  const fieldLabels = useMemo(
+    () => resolveTableFieldLabels(catalog, objectTypeKey, effectiveContract),
+    [catalog, objectTypeKey, effectiveContract],
+  );
 
-    for (const field of fields) {
-      const key = String(field?.key || "").trim();
+  const sortRule = normalizeSortRulesArray(
+    effectiveContract?.query?.sort?.rules || [],
+  )[0] ?? null;
 
-      if (!key) {
-        continue;
-      }
-
-      byKey.set(key, {
-        key,
-        label: String(field?.name || field?.label || key),
-      });
-    }
-
-    for (const key of keysFromProjection) {
-      if (!byKey.has(key)) {
-        byKey.set(key, { key, label: key });
-      }
-    }
-
-    return Array.from(byKey.values()).sort((a, b) =>
-      a.label.localeCompare(b.label, "ru"),
-    );
-  }, [catalog, objectTypeKey, effectiveContract]);
-
-  const sortRules = effectiveContract?.query?.sort?.rules || [];
-
-  const handleToggleSort = (fieldKey) => {
-    const nextRules = getNextSortRules(sortRules, fieldKey);
+  const patchSortRules = (nextRules) => {
     sessionApi?.patchSession?.({ sortRules: nextRules });
   };
 
-  if (fieldOptions.length === 0) {
-    return (
-      <div className="ot-view-settings-panel__detail-row">
-        Сортировка не настроена
-      </div>
-    );
-  }
-
   return (
-    <div className="ot-view-settings-panel__fields-list">
-      {fieldOptions.map((field) => {
-        const state = getSortStateForField(sortRules, field.key);
-
-        return (
-          <div key={field.key} className="ot-view-settings-panel__sort-row">
-            <span className="ot-view-settings-panel__column-label">{field.label}</span>
+    <div className="ot-view-settings-panel__sort-panel">
+      {sortRule ? (
+        <div className="ot-view-settings-panel__fields-list">
+          <div className="ot-view-settings-panel__sort-row">
+            <span className="ot-view-settings-panel__column-label">
+              {fieldLabels.get(sortRule.field) || sortRule.field}
+            </span>
             <button
               type="button"
-              className={`ot-view-settings-panel__sort-toggle${state !== "none" ? " is-active" : ""}`}
-              onClick={() => handleToggleSort(field.key)}
+              className="ot-view-settings-panel__sort-toggle is-active"
+              onClick={() =>
+                patchSortRules(
+                  getNextSortRules([sortRule], sortRule.field).length
+                    ? [{ ...sortRule, order: sortRule.order === "asc" ? "desc" : "asc" }]
+                    : [],
+                )
+              }
             >
-              {SORT_LABELS[state]}
+              {ORDER_LABELS[sortRule.order === "desc" ? "desc" : "asc"]}
+            </button>
+            <button
+              type="button"
+              className="ot-view-settings-panel__column-move"
+              title="Удалить"
+              onClick={() => patchSortRules([])}
+            >
+              ×
             </button>
           </div>
-        );
-      })}
+        </div>
+      ) : (
+        <div className="ot-view-settings-panel__detail-row">Без сортировки</div>
+      )}
+
+      <p className="ot-view-settings-panel__sort-hint">
+        Сортировка настраивается кликом по заголовку столбца в таблице: по
+        возрастанию, по убыванию, снять.
+      </p>
     </div>
   );
 }

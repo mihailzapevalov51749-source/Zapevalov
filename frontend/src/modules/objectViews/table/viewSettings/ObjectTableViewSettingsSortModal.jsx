@@ -1,7 +1,10 @@
 import { useMemo } from "react";
 
 import { PlatformModal } from "../../../../shared/platformModal";
-import { getNextSortRules } from "../../services/sortRulesUtils";
+import {
+  getNextSortRules,
+  normalizeSortRulesArray,
+} from "../../services/sortRulesUtils";
 import { buildTableQueryFieldOptions } from "../../services/catalogFieldsForTableQueryUi";
 import { getTablePresentationFieldKeys } from "../../services/columnPresentationUtils";
 import {
@@ -15,20 +18,7 @@ import {
 
 import "./objectTableViewSettings.css";
 
-function getSortStateForField(rules, fieldKey) {
-  const rule = (rules || []).find(
-    (item) => String(item?.field) === String(fieldKey),
-  );
-
-  if (!rule) {
-    return "none";
-  }
-
-  return rule.order === "desc" ? "desc" : "asc";
-}
-
-const SORT_LABELS = {
-  none: "—",
+const ORDER_LABELS = {
   asc: "↑",
   desc: "↓",
 };
@@ -54,12 +44,21 @@ export default function ObjectTableViewSettingsSortModal({
     [catalog, objectTypeKey, effectiveContract],
   );
 
-  const sortRules = effectiveContract?.query?.sort?.rules || [];
+  const sortRule = normalizeSortRulesArray(
+    effectiveContract?.query?.sort?.rules || [],
+  )[0] ?? null;
 
-  const handleToggleSort = (fieldKey) => {
-    const nextRules = getNextSortRules(sortRules, fieldKey);
+  const patchSortRules = (nextRules) => {
     sessionApi?.patchSession?.({ sortRules: nextRules });
   };
+
+  const labelByKey = useMemo(() => {
+    const map = new Map();
+    for (const field of fieldOptions) {
+      map.set(field.key, field.label);
+    }
+    return map;
+  }, [fieldOptions]);
 
   return (
     <PlatformModal
@@ -67,7 +66,7 @@ export default function ObjectTableViewSettingsSortModal({
       open={open}
       onClose={onClose}
       title="Сортировка"
-      subtitle="Сортировка записей в таблице"
+      subtitle="Сортировка по одному столбцу"
       canCustomizeLayout={canCustomizeLayout}
       defaultBounds={OBJECT_TABLE_VIEW_CHILD_MODAL_DEFAULT_BOUNDS}
       ariaLabel="Настройка сортировки табличного представления"
@@ -75,36 +74,50 @@ export default function ObjectTableViewSettingsSortModal({
         <button
           type="button"
           className="designer-btn"
-          onClick={() => sessionApi?.patchSession?.({ sortRules: [] })}
+          onClick={() => patchSortRules([])}
         >
           Сбросить сортировку
         </button>
       }
     >
       <p className="object-table-view-settings__hint">
-        Нажмите на поле, чтобы переключить сортировку: по возрастанию, по
-        убыванию или без сортировки.
+        Нажмите на заголовок столбца в таблице, чтобы включить сортировку по
+        возрастанию, затем по убыванию или снять её. Одновременно активен
+        только один столбец.
       </p>
 
-      <ul className="object-table-view-settings__list">
-        {fieldOptions.map((field) => {
-          const state = getSortStateForField(sortRules, field.key);
-
-          return (
-            <li key={field.key} className="object-table-view-settings__list-item">
-              <span style={{ flex: 1, fontSize: 13 }}>{field.label}</span>
-              <button
-                type="button"
-                className={`designer-btn${state !== "none" ? " designer-btn--primary" : ""}`}
-                style={{ minWidth: 40 }}
-                onClick={() => handleToggleSort(field.key)}
-              >
-                {SORT_LABELS[state]}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      {sortRule ? (
+        <ul className="object-table-view-settings__list">
+          <li className="object-table-view-settings__list-item">
+            <span style={{ flex: 1, fontSize: 13 }}>
+              {labelByKey.get(sortRule.field) || sortRule.field}
+            </span>
+            <button
+              type="button"
+              className="designer-btn designer-btn--primary"
+              style={{ minWidth: 40 }}
+              onClick={() =>
+                patchSortRules(
+                  getNextSortRules([sortRule], sortRule.field).length
+                    ? [{ ...sortRule, order: sortRule.order === "asc" ? "desc" : "asc" }]
+                    : [],
+                )
+              }
+            >
+              {ORDER_LABELS[sortRule.order === "desc" ? "desc" : "asc"]}
+            </button>
+            <button
+              type="button"
+              className="designer-btn"
+              onClick={() => patchSortRules([])}
+            >
+              Удалить
+            </button>
+          </li>
+        </ul>
+      ) : (
+        <p className="object-table-view-settings__hint">Сортировка не задана.</p>
+      )}
     </PlatformModal>
   );
 }

@@ -41,7 +41,16 @@ export default function RuntimePreviewTab({
         </div>
       </div>
 
-      <ObjectViewHost
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          flex: 1,
+          minHeight: 280,
+          minWidth: 0,
+        }}
+      >
+        <ObjectViewHost
         tenantId={tenantId}
         objectTypeId={objectTypeId}
         objectTypeKey={objectTypeKey}
@@ -52,6 +61,7 @@ export default function RuntimePreviewTab({
         showToolbar
         onSchemaChanged={onSchemaChanged}
       />
+      </div>
     </div>
   );
 }

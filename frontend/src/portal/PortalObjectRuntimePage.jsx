@@ -377,6 +377,7 @@ export default function PortalObjectRuntimePage() {
           width: "100%",
           height: "100%",
           minHeight: 0,
+          minWidth: 0,
           display: "flex",
           flexDirection: "column",
           boxSizing: "border-box",
@@ -422,10 +423,12 @@ export default function PortalObjectRuntimePage() {
             position: "relative",
             flex: 1,
             minHeight: 0,
+            minWidth: 0,
             width: "100%",
             display: "flex",
             flexDirection: "column",
-            overflow: isWorkspaceFileOpen ? "hidden" : "auto",
+            overflowX: "hidden",
+            overflowY: isWorkspaceFileOpen ? "hidden" : "auto",
             padding: (() => {
               if (isWorkspaceFileOpen) {
                 return 0;
@@ -443,6 +446,7 @@ export default function PortalObjectRuntimePage() {
             style={{
               flex: 1,
               minHeight: 0,
+              minWidth: 0,
               width: "100%",
               display: "flex",
               flexDirection: "column",

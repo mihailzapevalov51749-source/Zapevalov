@@ -2026,6 +2026,187 @@ def _ensure_object_engine_record_number_fix_dashboard_notes(
     return added, journal_lines
 
 
+OBJECT_TABLE_UT_PARITY_DASHBOARD_HISTORY_SLUG = (
+    "object-table-ut-parity-dashboard-works-20260605"
+)
+OBJECT_TABLE_UT_PARITY_DASHBOARD_CHANGELOG_SLUG = (
+    "object-table-ut-parity-dashboard-changelog-20260605"
+)
+
+_OBJECT_TABLE_UT_PARITY_DASHBOARD_HISTORY_DESCRIPTION = (
+    "Dashboard: в этап «Переход на объектную платформу» добавлены остаточные "
+    "работы по аудиту Universal Tables vs Object Table (P0–P3, взвешенные шаги)."
+)
+
+_OBJECT_TABLE_UT_PARITY_DASHBOARD_CHANGELOG_DESCRIPTION = (
+    "Добавлены 19 шагов закрытия пробелов Object Table: миграция legacy, "
+    "чек-листы, multi-sort, фильтры по связям, drag строк, режим дерева, "
+    "поиск, bulk edit, Excel и др."
+)
+
+
+def _ensure_object_table_ut_parity_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-table-ut-parity")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_UT_PARITY_DASHBOARD_HISTORY_SLUG,
+        title="Переход на объектную платформу: остаточные работы Object Table",
+        description=_OBJECT_TABLE_UT_PARITY_DASHBOARD_HISTORY_DESCRIPTION,
+        result=_OBJECT_TABLE_UT_PARITY_DASHBOARD_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_UT_PARITY_DASHBOARD_CHANGELOG_SLUG,
+        title="Журнал изменений: работы UT → Object Table на Dashboard",
+        description=_OBJECT_TABLE_UT_PARITY_DASHBOARD_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_UT_PARITY_DASHBOARD_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TABLE_UT_PARITY_DASHBOARD_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OWNER_STAGE_DETAIL_PANEL_HISTORY_SLUG = (
+    "owner-stage-detail-panel-ux-20260605"
+)
+OWNER_STAGE_DETAIL_PANEL_CHANGELOG_SLUG = (
+    "owner-stage-detail-panel-ux-changelog-20260605"
+)
+
+_OWNER_STAGE_DETAIL_PANEL_HISTORY_DESCRIPTION = (
+    "Dashboard: правая панель этапа показывает сводку задач (выполнено / в работе / "
+    "не начато), следующие задачи, блок «В работе» и выполненные задачи с весами."
+)
+
+_OWNER_STAGE_DETAIL_PANEL_CHANGELOG_DESCRIPTION = (
+    "Переработана правая панель выбранного этапа: вместо «Выполнено этапов / Всего "
+    "этапов / Следующий этап» — списки задач по статусам, раскрываемые секции и "
+    "отображение весов (без изменения расчёта готовности)."
+)
+
+
+def _ensure_owner_stage_detail_panel_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OWNER_STAGE_DETAIL_PANEL_HISTORY_SLUG,
+        title="Dashboard: улучшение отображения этапов",
+        description=_OWNER_STAGE_DETAIL_PANEL_HISTORY_DESCRIPTION,
+        result=_OWNER_STAGE_DETAIL_PANEL_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=None,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+
+    if _add_activity(
+        db,
+        slug=OWNER_STAGE_DETAIL_PANEL_CHANGELOG_SLUG,
+        title="Журнал изменений: панель деталей этапа Dashboard",
+        description=_OWNER_STAGE_DETAIL_PANEL_CHANGELOG_DESCRIPTION,
+        result=_OWNER_STAGE_DETAIL_PANEL_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=None,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OWNER_STAGE_DETAIL_PANEL_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TABLE_MULTI_SORT_HISTORY_SLUG = "object-table-multi-sort-20260605"
+OBJECT_TABLE_MULTI_SORT_CHANGELOG_SLUG = "object-table-multi-sort-changelog-20260605"
+
+_OBJECT_TABLE_MULTI_SORT_HISTORY_DESCRIPTION = (
+    "Object Table: многоколоночная сортировка в Object View — несколько уровней "
+    "ORDER BY, панель «Сортировки», Shift+клик по заголовку, сохранение в представлении."
+)
+
+_OBJECT_TABLE_MULTI_SORT_CHANGELOG_DESCRIPTION = (
+    "Добавлена многоколоночная сортировка Object Table: query.sort.rules[], "
+    "runtime sorts API, панель управления порядком, совместимость со старыми представлениями."
+)
+
+
+def _ensure_object_table_multi_sort_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-table-ut-parity")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_MULTI_SORT_HISTORY_SLUG,
+        title="Object Table: многоколоночная сортировка",
+        description=_OBJECT_TABLE_MULTI_SORT_HISTORY_DESCRIPTION,
+        result=_OBJECT_TABLE_MULTI_SORT_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TABLE_MULTI_SORT_CHANGELOG_SLUG,
+        title="Журнал изменений: многоколоночная сортировка Object Table",
+        description=_OBJECT_TABLE_MULTI_SORT_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TABLE_MULTI_SORT_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TABLE_MULTI_SORT_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
 def _average_readiness(values: dict[str, int | None]) -> int | None:
 
     readiness_values = [value for value in values.values() if value is not None]
@@ -2911,6 +3092,48 @@ def refresh_platform_dashboard(db: Session, repo_root=None, initiated_by=None) -
         changed_work_items = [
             *changed_work_items,
             *title_field_visibility_journal_lines,
+        ]
+
+    ut_parity_dashboard_added, ut_parity_dashboard_journal_lines = (
+        _ensure_object_table_ut_parity_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += ut_parity_dashboard_added
+    if ut_parity_dashboard_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *ut_parity_dashboard_journal_lines,
+        ]
+
+    owner_detail_panel_added, owner_detail_panel_journal_lines = (
+        _ensure_owner_stage_detail_panel_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += owner_detail_panel_added
+    if owner_detail_panel_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *owner_detail_panel_journal_lines,
+        ]
+
+    multi_sort_added, multi_sort_journal_lines = (
+        _ensure_object_table_multi_sort_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += multi_sort_added
+    if multi_sort_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *multi_sort_journal_lines,
         ]
 
     dashboard_meta = {

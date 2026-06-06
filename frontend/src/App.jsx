@@ -160,13 +160,6 @@ export default function App() {
         />
       ) : null}
 
-      {import.meta.env.DEV ? (
-        <Route
-          path="/dev/appshell-shadow-designer"
-          element={<AppShellShadowDesignerPreview />}
-        />
-      ) : null}
-
       <Route path="/tasks" element={<PortalPageView />} />
 
       <Route path="/universal-table" element={<PortalPageView />} />

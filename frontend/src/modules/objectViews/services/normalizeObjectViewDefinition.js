@@ -6,6 +6,7 @@ import {
 import { applyContractGuards, normalizePresentationTable } from "./contractGuards";
 import { mergeTablePresentationWithColumnsSettings } from "./columnVisibilitySettings";
 import { syncObjectViewContractWithCatalog } from "./syncProjectionWithCatalogFields";
+import { normalizeSortRulesArray } from "./sortRulesUtils";
 
 function withCatalogProjectionSync(contract, fallback = {}) {
   if (!contract) {
@@ -55,21 +56,30 @@ export function legacyProjectionToFieldKeys(projection) {
 }
 
 function normalizeSortRules(defaultSort) {
-  if (!defaultSort || typeof defaultSort !== "object") {
-    return [...DEFAULT_OBJECT_VIEW_QUERY.sort.rules];
+  if (Array.isArray(defaultSort)) {
+    return normalizeSortRulesArray(defaultSort);
   }
 
-  const field =
-    typeof defaultSort.field === "string" && defaultSort.field.trim()
-      ? defaultSort.field.trim()
-      : "created_at";
+  if (defaultSort && typeof defaultSort === "object") {
+    if (Array.isArray(defaultSort.rules)) {
+      return normalizeSortRulesArray(defaultSort.rules);
+    }
 
-  const order =
-    defaultSort.order === "asc" || defaultSort.order === "desc"
-      ? defaultSort.order
-      : "asc";
+    if (Array.isArray(defaultSort.sorts)) {
+      return normalizeSortRulesArray(defaultSort.sorts);
+    }
 
-  return [{ field, order }];
+    if (typeof defaultSort.field === "string" && defaultSort.field.trim()) {
+      return normalizeSortRulesArray([
+        {
+          field: defaultSort.field,
+          order: defaultSort.order ?? defaultSort.direction ?? "asc",
+        },
+      ]);
+    }
+  }
+
+  return [];
 }
 
 function normalizeFilterConditions(source) {
@@ -353,8 +363,8 @@ function mergeObjectViewContract(base, objectView, rawView, fallback = {}) {
       },
       sort: {
         rules: Array.isArray(objectView.query?.sort?.rules)
-          ? objectView.query.sort.rules
-          : normalizeSortRules(fallback.projection?.default_sort),
+          ? normalizeSortRulesArray(objectView.query.sort.rules)
+          : normalizeSortRules(objectView.query?.sort ?? fallback.projection?.default_sort),
       },
       pagination: {
         defaultPageSize:

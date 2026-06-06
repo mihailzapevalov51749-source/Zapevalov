@@ -79,6 +79,7 @@ export default function AppShellFrame({
           style={{
             flex: 1,
             minHeight: 0,
+            minWidth: 0,
             width: "100%",
             overflow: "hidden",
             boxSizing: "border-box",

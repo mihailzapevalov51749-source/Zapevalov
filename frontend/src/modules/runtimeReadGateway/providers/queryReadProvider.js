@@ -14,6 +14,7 @@ export const queryReadProvider = {
       offset = 0,
       sort = "created_at",
       order = "desc",
+      sorts = undefined,
       filters = {},
     } = params;
 
@@ -22,6 +23,7 @@ export const queryReadProvider = {
       offset,
       sort,
       order,
+      ...(sorts ? { sorts } : {}),
       ...(filters && typeof filters === "object" ? filters : {}),
     });
 

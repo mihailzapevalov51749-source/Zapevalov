@@ -84,7 +84,7 @@ export const DEFAULT_OBJECT_VIEW_QUERY = {
     defaultQuickFilterId: null,
   },
   sort: {
-    rules: [{ field: "created_at", order: "asc" }],
+    rules: [],
   },
   pagination: {
     defaultPageSize: 20,

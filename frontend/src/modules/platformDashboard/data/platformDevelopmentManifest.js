@@ -1,5 +1,5 @@
 export const platformDevelopmentManifest = {
-  updatedAt: "2026-06-06T12:00:00",
+  updatedAt: "2026-06-05T22:00:00",
 
   title: "Развитие платформы ЯсноПро",
 
@@ -137,6 +137,18 @@ export const platformDevelopmentManifest = {
   achievements: [
     {
       date: "2026-06-05",
+      text: "Object Table: многоколоночная сортировка — несколько уровней ORDER BY, панель «Сортировки», Shift+клик, сохранение в Object View.",
+    },
+    {
+      date: "2026-06-05",
+      text: "Dashboard: правая панель этапа показывает сводку задач, следующие задачи, блок «В работе» и выполненные задачи с весами и раскрываемыми списками.",
+    },
+    {
+      date: "2026-06-05",
+      text: "Dashboard: в этап «Переход на объектную платформу» добавлены остаточные работы по аудиту Universal Tables vs Object Table (19 шагов, P0–P3).",
+    },
+    {
+      date: "2026-06-05",
       text: "Упрощён сценарий действий в модалке удаления объекта с зависимостями: единая кнопка «Удалить», выбор сценария карточками, без дублирующей кнопки открытия зависимостей.",
     },
     {
@@ -194,6 +206,30 @@ export const platformDevelopmentManifest = {
   ],
 
   platformChangelog: [
+    {
+      date: "2026-06-05",
+      version: null,
+      title: "Object Table: многоколоночная сортировка",
+      summary:
+        "Object View поддерживает несколько уровней сортировки (query.sort.rules), runtime API sorts[], панель управления и Shift+клик по заголовкам; старые представления совместимы.",
+      nextStage: "Реализовать чек-листы в карточке",
+    },
+    {
+      date: "2026-06-05",
+      version: null,
+      title: "Dashboard: улучшение отображения этапов",
+      summary:
+        "Правая панель выбранного этапа показывает выполненные, текущие и оставшиеся задачи с весами, раскрываемые секции «Следующие задачи», «В работе» и «Выполненные задачи»; расчёт готовности не изменён.",
+      nextStage: null,
+    },
+    {
+      date: "2026-06-05",
+      version: null,
+      title: "Dashboard: остаточные работы UT → Object Table",
+      summary:
+        "В этап «Переход на объектную платформу» добавлены 19 шагов закрытия функциональных пробелов Object Table (миграция legacy, чек-листы, multi-sort, фильтры по связям, режим дерева, Excel и др.) с весами P0–P3.",
+      nextStage: "Завершить перевод legacy страниц на объектную платформу",
+    },
     {
       date: "2026-06-04",
       version: null,
@@ -693,10 +729,11 @@ export const platformDevelopmentManifest = {
       linkedContours: ["Object Platform", "Publish"],
       linkedDebt: ["Legacy Block Isolation"],
       keyWorks: [
+        "Завершить перевод legacy страниц на объектную платформу",
         "Запрет создания новых UT blocks — COMPLETED",
         "Legacy block types из новых сценариев — COMPLETED",
         "Placeholder для existing UT blocks — COMPLETED",
-        "Аудит UT bridges в navigation/sidebar",
+        "Убрать переходы в Universal Tables",
       ],
       risks: [
         "Случайное использование legacy в новых порталах",
@@ -722,6 +759,7 @@ export const platformDevelopmentManifest = {
       linkedContours: ["Object Platform", "Runtime Entity"],
       linkedDebt: ["Universal Table Retirement", "Legacy Block Isolation"],
       keyWorks: [
+        "Подготовить стратегию миграции данных Universal Tables",
         "План миграции оставшихся portal-страниц",
         "Вывод Universal Table из продукта",
         "Коммуникация перехода для владельцев порталов",
@@ -733,6 +771,47 @@ export const platformDevelopmentManifest = {
       completionCriteria: [
         "Legacy-табличный модуль удалён из продукта",
         "Все критичные сценарии переведены на object platform",
+      ],
+    },
+    {
+      key: "object-table-ut-parity",
+      title: "Object Table vs Universal Tables",
+      description:
+        "Остаточные работы по аудиту функционального соответствия перед полным отказом от Universal Tables.",
+      status: "planned",
+      readiness: 0,
+      ownerFocus:
+        "Закрыть пользовательские пробелы Object Table, выявленные аудитом UT vs OT.",
+      result:
+        "Object Table покрывает ключевой функционал Universal Tables; legacy можно отключить.",
+      nextMilestone: "Реализовать чек-листы в карточке.",
+      linkedContours: ["Object Platform", "Object Card", "Views Engine"],
+      linkedDebt: ["Universal Table Retirement"],
+      keyWorks: [
+        "Реализовать чек-листы в карточке",
+        "Реализовать многоколоночную сортировку (после MVP)",
+        "Реализовать фильтрацию по связям",
+        "Реализовать перетаскивание строк",
+        "Реализовать режим дерева",
+        "Реализовать поиск по таблице",
+        "Реализовать дублирование записей",
+        "Реализовать массовое изменение записей",
+        "Сохранять выбранный быстрый фильтр",
+        "Вернуть номер строки таблицы",
+        "Реализовать редактирование связей в таблице",
+        "Реализовать экспорт Excel",
+        "Реализовать импорт Excel",
+        "Реализовать закрепление колонок",
+        "Реализовать виртуализацию строк",
+        "Реализовать тип поля Ссылка",
+      ],
+      risks: [
+        "Преждевременное отключение UT до закрытия пробелов",
+        "Дублирование работ с relation-field-type без координации",
+      ],
+      completionCriteria: [
+        "Object Table покрывает пользовательский функционал Universal Tables",
+        "Universal Tables можно отключить без потери ключевых возможностей",
       ],
     },
     {

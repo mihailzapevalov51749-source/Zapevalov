@@ -37,6 +37,16 @@ const UNSUPPORTED_VIEW_PLACEHOLDER_STYLE = {
   border: "1px solid #e2e8f0",
 };
 
+const OBJECT_VIEW_HOST_TABLE_LAYOUT_STYLE = {
+  display: "flex",
+  flexDirection: "column",
+  flex: 1,
+  minHeight: 0,
+  minWidth: 0,
+  width: "100%",
+  overflow: "hidden",
+};
+
 /**
  * Universal Object View host — routes by viewType to adapters.
  */
@@ -574,6 +584,7 @@ export default function ObjectViewHost({
         className={rootClassName}
         data-object-view-host="table"
         data-runtime-source={source || undefined}
+        style={OBJECT_VIEW_HOST_TABLE_LAYOUT_STYLE}
       >
         <ObjectTableView
           tenantId={tenantId}

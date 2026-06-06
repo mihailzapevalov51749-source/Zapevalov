@@ -38,7 +38,7 @@ function buildFieldLabelMap(catalog, objectTypeKey, contract) {
 }
 
 function formatSortLabel(rules, fieldLabels) {
-  const primary = Array.isArray(rules) && rules.length ? rules[0] : null;
+  const primary = Array.isArray(rules) ? rules[0] : null;
 
   if (!primary?.field) {
     return "Без сортировки";

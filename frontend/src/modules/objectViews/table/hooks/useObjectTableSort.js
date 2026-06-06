@@ -3,23 +3,32 @@ import { useCallback } from "react";
 import { getNextSortRules } from "../../services/sortRulesUtils";
 
 /**
- * Sort toggling via object view session (single rule MVP).
+ * Single-column sort toggling via object view session.
  */
 export default function useObjectTableSort({ effectiveContract, patchSession }) {
+  const patchSortRules = useCallback(
+    (nextRules) => {
+      if (typeof patchSession !== "function") {
+        return;
+      }
+
+      patchSession({ sortRules: nextRules });
+    },
+    [patchSession],
+  );
+
   const toggleColumnSort = useCallback(
     (columnKey) => {
       const normalizedKey = String(columnKey || "").trim();
 
-      if (!normalizedKey || typeof patchSession !== "function") {
+      if (!normalizedKey) {
         return;
       }
 
       const currentRules = effectiveContract?.query?.sort?.rules || [];
-      const nextRules = getNextSortRules(currentRules, normalizedKey);
-
-      patchSession({ sortRules: nextRules });
+      patchSortRules(getNextSortRules(currentRules, normalizedKey));
     },
-    [effectiveContract, patchSession],
+    [effectiveContract, patchSortRules],
   );
 
   return {

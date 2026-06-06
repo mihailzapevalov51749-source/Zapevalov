@@ -1,5 +1,8 @@
 import { systemColumnKeyToRuntimeSortField } from "../../../shared/viewEngine/systemColumnKeys";
-import { resolveRuntimeListSort } from "./sortRulesUtils";
+import {
+  normalizeSortRulesArray,
+  resolveRuntimeListSort,
+} from "./sortRulesUtils";
 import {
   getQuickFilterConditions,
   mergeRuntimeFilterConditions,
@@ -25,7 +28,8 @@ export function mapObjectViewQueryToRuntimeParams({
   const limit = Number(pagination.limit) > 0 ? Number(pagination.limit) : 20;
   const offset = Number(pagination.offset) >= 0 ? Number(pagination.offset) : 0;
 
-  const resolvedSort = resolveRuntimeListSort(contract?.query?.sort?.rules || []);
+  const sortRules = normalizeSortRulesArray(contract?.query?.sort?.rules || []);
+  const resolvedSort = resolveRuntimeListSort(sortRules);
 
   const baseConditions = contract?.query?.filters?.conditions || [];
   const savedFilters = contract?.query?.filters?.savedFilters || [];

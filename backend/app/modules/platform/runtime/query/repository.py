@@ -264,6 +264,54 @@ def _order_clause(sort_field: str, sort_order: str):
     return desc, nullsfirst
 
 
+def _resolve_entity_sort_field(sort_field: str) -> str:
+    entity_sort_field = sort_field
+    if is_runtime_system_field_key(sort_field):
+        from app.modules.platform.runtime.entities.system_fields import (
+            runtime_sort_field_for_column_key,
+        )
+
+        entity_sort_field = runtime_sort_field_for_column_key(sort_field)
+    return entity_sort_field
+
+
+def _apply_sort_specs(
+    query,
+    tenant_id: int,
+    sort_specs: list[tuple[str, str]],
+):
+    from sqlalchemy import asc, desc
+
+    order_parts = []
+    custom_join_index = 0
+
+    for sort_field, sort_order in sort_specs:
+        order_fn, nulls_fn = _order_clause(sort_field, sort_order)
+        entity_sort_field = _resolve_entity_sort_field(sort_field)
+
+        if entity_sort_field in ENTITY_SORT_FIELDS:
+            order_col = getattr(RuntimeEntity, entity_sort_field)
+            order_parts.append(nulls_fn(order_fn(order_col)))
+        else:
+            sort_value = aliased(RuntimeEntityValue, name=f"ov_sort_{custom_join_index}")
+            custom_join_index += 1
+            query = query.outerjoin(
+                sort_value,
+                and_(
+                    sort_value.entity_id == RuntimeEntity.id,
+                    sort_value.tenant_id == tenant_id,
+                    sort_value.field_key == sort_field,
+                ),
+            )
+            order_parts.append(nulls_fn(order_fn(sort_value.value_json)))
+
+    last_order = sort_specs[-1][1] if sort_specs else "asc"
+    tie_order_fn = asc if last_order == "asc" else desc
+    order_parts.append(tie_order_fn(RuntimeEntity.id))
+
+    return query.order_by(*order_parts)
+
+
 def query_entities(
     db: Session,
     tenant_id: int,
@@ -272,8 +320,7 @@ def query_entities(
     filter_conditions: list[ParsedFilterCondition] | None = None,
     filters: dict[str, Any] | None = None,
     field_map: dict[str, dict[str, Any]] | None = None,
-    sort_field: str,
-    sort_order: str,
+    sort_specs: list[tuple[str, str]] | None = None,
     limit: int,
     offset: int,
 ) -> tuple[list[RuntimeEntity], int]:
@@ -295,35 +342,11 @@ def query_entities(
 
     total = filtered.count()
 
-    order_fn, nulls_fn = _order_clause(sort_field, sort_order)
+    specs = list(sort_specs or [])
+    if not specs:
+        specs = [("created_at", "desc")]
 
-    entity_sort_field = sort_field
-    if is_runtime_system_field_key(sort_field):
-        from app.modules.platform.runtime.entities.system_fields import (
-            runtime_sort_field_for_column_key,
-        )
-
-        entity_sort_field = runtime_sort_field_for_column_key(sort_field)
-
-    if entity_sort_field in ENTITY_SORT_FIELDS:
-        order_col = getattr(RuntimeEntity, entity_sort_field)
-        ordered = filtered.order_by(
-            nulls_fn(order_fn(order_col)),
-            order_fn(RuntimeEntity.id),
-        )
-    else:
-        sort_value = aliased(RuntimeEntityValue)
-        ordered = filtered.outerjoin(
-            sort_value,
-            and_(
-                sort_value.entity_id == RuntimeEntity.id,
-                sort_value.tenant_id == tenant_id,
-                sort_value.field_key == sort_field,
-            ),
-        ).order_by(
-            nulls_fn(order_fn(sort_value.value_json)),
-            order_fn(RuntimeEntity.id),
-        )
+    ordered = _apply_sort_specs(filtered, tenant_id, specs)
 
     entities = (
         ordered.options(joinedload(RuntimeEntity.values))

@@ -71,7 +71,7 @@ export function buildTableBaseStateContract(
         defaultQuickFilterId: null,
       },
       sort: {
-        rules: [...DEFAULT_OBJECT_VIEW_QUERY.sort.rules],
+        rules: [],
       },
       pagination: {
         defaultPageSize: Number(pageSize) || 20,

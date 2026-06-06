@@ -4,7 +4,35 @@ from app.modules.platform_dashboard_analyzer.backend_scan import (
 )
 from app.modules.platform_dashboard_analyzer.frontend_scan import frontend_has_marker, frontend_has_module
 from app.modules.platform_dashboard_analyzer.types import ScanContext
-MAX_STAGE_WORKS = 8
+MAX_STAGE_WORKS = 24
+
+# Веса work items (сумма по slug с весами = 100, где задано). P0 > P1 > P2 > P3.
+STAGE_WORK_WEIGHTS: dict[str, dict[str, int]] = {
+    "legacy-isolation": {
+        "Завершить перевод legacy страниц на объектную платформу": 20,
+    },
+    "legacy-removal": {
+        "Подготовить стратегию миграции данных Universal Tables": 20,
+    },
+    "object-table-ut-parity": {
+        "Реализовать чек-листы в карточке": 10,
+        "Реализовать многоколоночную сортировку": 10,
+        "Реализовать фильтрацию по связям": 10,
+        "Реализовать перетаскивание строк": 10,
+        "Реализовать режим дерева": 10,
+        "Реализовать поиск по таблице": 5,
+        "Реализовать дублирование записей": 5,
+        "Реализовать массовое изменение записей": 5,
+        "Сохранять выбранный быстрый фильтр": 5,
+        "Вернуть номер строки таблицы": 5,
+        "Реализовать редактирование связей в таблице": 5,
+        "Реализовать экспорт Excel": 4,
+        "Реализовать импорт Excel": 4,
+        "Реализовать закрепление колонок": 4,
+        "Реализовать виртуализацию строк": 4,
+        "Реализовать тип поля Ссылка": 4,
+    },
+}
 
 STAGE_CANONICAL: dict[str, dict[str, list[str]]] = {
     "object-platform-independence": {
@@ -22,10 +50,11 @@ STAGE_CANONICAL: dict[str, dict[str, list[str]]] = {
     },
     "legacy-isolation": {
         "works": [
+            "Завершить перевод legacy страниц на объектную платформу",
             "Запретить создание новых UT blocks",
             "Убрать table/universal_table block types из новых сценариев — already done",
             "Заменить старые table blocks на placeholder",
-            "Убрать UT bridges из navigation/sidebar",
+            "Убрать переходы в Universal Tables",
             "Отделить PortalPageView от UniversalTableView",
         ],
         "completion_criteria": [
@@ -35,6 +64,7 @@ STAGE_CANONICAL: dict[str, dict[str, list[str]]] = {
     },
     "legacy-removal": {
         "works": [
+            "Подготовить стратегию миграции данных Universal Tables",
             "Удалить modules/universalTable из frontend",
             "Удалить universal_tables backend router",
             "Удалить universal_views backend router",
@@ -44,6 +74,34 @@ STAGE_CANONICAL: dict[str, dict[str, list[str]]] = {
         "completion_criteria": [
             "Legacy-табличный модуль удалён из продукта",
             "Критичные сценарии переведены на object platform",
+        ],
+    },
+    "object-table-ut-parity": {
+        "goal": (
+            "Закрыть функциональные пробелы Object Table относительно Universal Tables "
+            "перед полным отказом от legacy-контура."
+        ),
+        "works": [
+            "Реализовать чек-листы в карточке",
+            "Реализовать многоколоночную сортировку",
+            "Реализовать фильтрацию по связям",
+            "Реализовать перетаскивание строк",
+            "Реализовать режим дерева",
+            "Реализовать поиск по таблице",
+            "Реализовать дублирование записей",
+            "Реализовать массовое изменение записей",
+            "Сохранять выбранный быстрый фильтр",
+            "Вернуть номер строки таблицы",
+            "Реализовать редактирование связей в таблице",
+            "Реализовать экспорт Excel",
+            "Реализовать импорт Excel",
+            "Реализовать закрепление колонок",
+            "Реализовать виртуализацию строк",
+            "Реализовать тип поля Ссылка",
+        ],
+        "completion_criteria": [
+            "Object Table покрывает пользовательский функционал Universal Tables",
+            "Universal Tables можно отключить без потери ключевых возможностей",
         ],
     },
     "runtime-foundation": {
@@ -695,6 +753,10 @@ def evaluate_stage_work_status(slug: str, work: str, ctx: ScanContext) -> str:
         return "planned"
 
     if slug == "legacy-isolation":
+        if "завершить перевод legacy страниц" in lower:
+            if _legacy_portal_page_view_decoupled_from_universal_table_view(ctx):
+                return "in_progress"
+            return "planned"
         if "запретить создание" in lower or "ut blocks" in lower:
             return "done" if _legacy_block_creation_blocked(ctx) else "in_progress"
         if "block types" in lower and "placeholder" not in lower:
@@ -702,6 +764,8 @@ def evaluate_stage_work_status(slug: str, work: str, ctx: ScanContext) -> str:
         if "placeholder" in lower or ("table blocks" in lower and "заменить" in lower):
             return "done" if _legacy_table_blocks_use_placeholder_boundary(ctx) else "in_progress"
         if ("bridges" in lower and ("navigation" in lower or "sidebar" in lower)) or (
+            "переходы" in lower and "universal tables" in lower
+        ) or (
             "ut bridges" in lower
         ):
             return "done" if _legacy_nav_sidebar_bridges_use_adapter(ctx) else "in_progress"
@@ -716,8 +780,16 @@ def evaluate_stage_work_status(slug: str, work: str, ctx: ScanContext) -> str:
         return "planned"
 
     if slug == "legacy-removal":
+        if "стратегию миграции" in lower or "миграции данных" in lower:
+            return "planned"
         if "universaltable" in lower and "frontend" in lower:
             return "planned" if frontend_has_module(ctx.frontend, "modules/universalTable") else "done"
+        return "planned"
+
+    if slug == "object-table-ut-parity":
+        if "многоколоноч" in lower and "сортиров" in lower:
+            # Post-MVP backlog: multi-column sort removed from Object Table MVP.
+            return "planned"
         return "planned"
 
     if slug == "runtime-foundation":
@@ -978,6 +1050,44 @@ def _object_table_bulk_delete_complete(ctx: ScanContext) -> bool:
         and "buildBulkDeleteLabels" in labels_text
         and "buildBulkDeleteStatsBadges" in labels_text
         and "ObjectEntityDeleteBulkBadges" in scenario_modal_text
+    )
+
+
+def _object_table_multi_sort_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    backend = ctx.repo_root / "backend" / "app" / "modules" / "platform" / "runtime" / "query"
+
+    paths = (
+        frontend / "modules" / "objectViews" / "services" / "sortRulesUtils.js",
+        frontend / "modules" / "objectViews" / "table" / "components" / "ObjectTableActiveSortsBar.jsx",
+        frontend / "modules" / "objectViews" / "table" / "hooks" / "useObjectTableSort.js",
+        frontend / "shared" / "viewEngine" / "ViewEngineTable.jsx",
+        backend / "repository.py",
+        backend / "validators.py",
+        backend / "test_sort_specs.py",
+    )
+
+    if not all(path.is_file() for path in paths):
+        return False
+
+    sort_utils = paths[0].read_text(encoding="utf-8", errors="ignore")
+    sort_bar = paths[1].read_text(encoding="utf-8", errors="ignore")
+    sort_hook = paths[2].read_text(encoding="utf-8", errors="ignore")
+    table = paths[3].read_text(encoding="utf-8", errors="ignore")
+    repository = paths[4].read_text(encoding="utf-8", errors="ignore")
+    validators = paths[5].read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "getNextSortRulesAppend" in sort_utils
+        and "resolveRuntimeListSorts" in sort_utils
+        and "ObjectTableActiveSortsBar" in sort_bar
+        and "reorderSort" in sort_hook
+        and "sortRules" in table
+        and "_apply_sort_specs" in repository
+        and "parse_sort_specs" in validators
     )
 
 
@@ -1689,6 +1799,22 @@ def resolve_stage_completion_criteria(slug: str, phase_doc: dict) -> list[str]:
     return canonical
 
 
+def _work_item_weight(slug: str, work: str, *, works: list[str]) -> int:
+    slug_weights = STAGE_WORK_WEIGHTS.get(slug, {})
+    if work in slug_weights:
+        return slug_weights[work]
+
+    if slug in STAGE_WORK_WEIGHTS and slug_weights:
+        # Распределить оставшийся вес поровну между work items без явного веса.
+        assigned = sum(slug_weights.values())
+        unassigned = [item for item in works if item not in slug_weights]
+        if unassigned and work in unassigned:
+            remainder = max(0, 100 - assigned)
+            return max(1, remainder // len(unassigned)) if remainder else 1
+
+    return 1
+
+
 def split_stage_works(
     slug: str,
     works: list[str],
@@ -1700,17 +1826,22 @@ def split_stage_works(
     completed: list[str] = []
     current: list[str] = []
     next_items: list[str] = []
+    total_weight = 0
+    done_weight = 0
 
     for work in works:
+        weight = _work_item_weight(slug, work, works=works)
+        total_weight += weight
         status = evaluate_stage_work_status(slug, work, ctx)
         if status == "done":
             completed.append(work)
+            done_weight += weight
         elif status == "in_progress":
             current.append(work)
         else:
             next_items.append(work)
 
-    readiness = round(len(completed) / len(works) * 100)
+    readiness = round(done_weight / total_weight * 100) if total_weight else None
     return completed, current, next_items, readiness
 
 

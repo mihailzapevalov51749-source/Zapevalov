@@ -189,6 +189,28 @@ def test_legacy_isolation_readiness_uses_code_guards_not_doc_markers():
         assert evaluate_stage_work_status("legacy-isolation", work, ctx) != "done" or work in completed
 
 
+def test_object_table_ut_parity_multi_sort_deferred_post_mvp():
+    ctx = build_scan_context()
+    works = resolve_stage_works("object-table-ut-parity", {})
+    assert len(works) == 16
+    completed, current, next_items, readiness = split_stage_works(
+        "object-table-ut-parity",
+        works,
+        ctx,
+    )
+    assert "Реализовать многоколоночную сортировку" in next_items
+    assert "Реализовать многоколоночную сортировку" not in completed
+    assert "Реализовать многоколоночную сортировку" not in current
+    assert readiness == 0
+
+
+def test_object_table_ut_parity_work_weights_sum_to_100():
+    from app.modules.platform_dashboard_analyzer.stage_works import STAGE_WORK_WEIGHTS
+
+    weights = STAGE_WORK_WEIGHTS["object-table-ut-parity"]
+    assert sum(weights.values()) == 100
+
+
 def test_legacy_placeholder_work_item_completed():
     ctx = build_scan_context()
     placeholder_work = next(
@@ -227,7 +249,8 @@ def test_legacy_nav_sidebar_bridges_work_item_completed():
             "legacy-isolation",
             ctx.docs.migration_phases.get("legacy-isolation", {}),
         )
-        if "bridges" in work.lower() and "navigation" in work.lower()
+        if ("bridges" in work.lower() and "navigation" in work.lower())
+        or "переходы" in work.lower()
     )
 
     status = evaluate_stage_work_status("legacy-isolation", bridges_work, ctx)

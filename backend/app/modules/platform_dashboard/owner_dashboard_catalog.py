@@ -68,6 +68,7 @@ DEV_PLATFORM_TRANSITION_IMPLEMENTATION_SLUGS: Final[tuple[str, ...]] = (
     "object-platform-independence",
     "legacy-isolation",
     "legacy-removal",
+    "object-table-ut-parity",
 )
 
 COMPANY_STAGE_KEYS: Final[tuple[str, ...]] = (

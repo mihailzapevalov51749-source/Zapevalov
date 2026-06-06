@@ -15,11 +15,13 @@ from app.modules.platform.runtime.query.validators import (
     coerce_filter_conditions,
     fields_by_key,
     parse_filter_conditions,
+    parse_sort_specs,
     validate_filter_conditions,
     validate_limit,
     validate_offset,
     validate_order,
     validate_sort,
+    validate_sort_specs,
     validate_uuid_string,
 )
 from app.modules.platform.shared.enums import FieldType
@@ -62,12 +64,17 @@ def query_entities(
 
     field_map = fields_by_key(metadata.fields)
     filter_conditions_raw = parse_filter_conditions(query_params)
+    sort_specs = parse_sort_specs(query_params)
 
     try:
         validate_limit(limit)
         validate_offset(offset)
         validate_order(order)
         validate_sort(sort, field_map)
+        if sort_specs is None:
+            sort_specs = [(sort, order)]
+        else:
+            validate_sort_specs(sort_specs, field_map)
         validate_filter_conditions(filter_conditions_raw, field_map)
         filter_conditions = (
             coerce_filter_conditions(filter_conditions_raw, field_map)
@@ -87,8 +94,7 @@ def query_entities(
         object_type_key,
         filter_conditions=filter_conditions,
         field_map=field_map,
-        sort_field=sort,
-        sort_order=order,
+        sort_specs=sort_specs,
         limit=limit,
         offset=offset,
     )

@@ -124,7 +124,6 @@
   max-width: 100%;
 }
 
-/* Hosted shell */
 .view-engine-hosted-table {
   display: flex;
   flex-direction: column;
@@ -138,6 +137,20 @@
   overflow: hidden;
   box-sizing: border-box;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.035);
+}
+
+.object-view-host[data-object-view-host="table"] {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+[data-page-canvas] > div {
+  min-width: 0;
 }
 
 .view-engine-table-root.view-engine-table-root--hosted {
@@ -822,6 +835,87 @@
 
 .view-engine-toolbar__refresh:disabled {
   opacity: 0.5;
+  cursor: default;
+}
+
+.view-engine-toolbar--sorts {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.view-engine-toolbar__sorts-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.view-engine-toolbar__sort-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.view-engine-toolbar__sort-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 12px;
+  color: #334155;
+}
+
+.view-engine-toolbar__sort-drag {
+  cursor: grab;
+  color: #94a3b8;
+  font-size: 10px;
+  user-select: none;
+}
+
+.view-engine-toolbar__sort-index {
+  font-weight: 700;
+  color: #64748b;
+}
+
+.view-engine-toolbar__sort-label {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.view-engine-toolbar__sort-direction,
+.view-engine-toolbar__sort-move,
+.view-engine-toolbar__sort-remove {
+  min-width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.view-engine-toolbar__sort-direction:hover,
+.view-engine-toolbar__sort-move:hover:not(:disabled),
+.view-engine-toolbar__sort-remove:hover {
+  background: #e2e8f0;
+}
+
+.view-engine-toolbar__sort-move:disabled {
+  opacity: 0.35;
   cursor: default;
 }
 

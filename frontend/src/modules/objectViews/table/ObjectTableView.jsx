@@ -477,7 +477,6 @@ export default function ObjectTableView({
     enabled:
       Boolean(tenantId) &&
       relationTableColumns.length > 0 &&
-      !query.loading &&
       tableData.rows.length > 0,
   });
 
@@ -687,6 +686,8 @@ export default function ObjectTableView({
     effectiveContract,
     patchSession: sessionApi?.patchSession,
   });
+
+  const activeSortRules = effectiveContract?.query?.sort?.rules || [];
 
   const handleToggleSort = (columnKey) => {
     toggleColumnSort(columnKey);
@@ -1514,7 +1515,7 @@ export default function ObjectTableView({
           rows={displayRows}
           loading={query.loading}
           error={query.error}
-          sort={tableData.sort}
+          sortRules={activeSortRules}
           onToggleColumnSort={handleToggleSort}
           rendererContext={tableRendererContext}
           minHeight={minHeight}
@@ -1537,7 +1538,7 @@ export default function ObjectTableView({
         />
       </div>
 
-      {!query.loading && !query.error ? (
+      {!query.error ? (
         <div className="view-engine-hosted-table__footer">
           <ViewEnginePagination
             pagination={tableData.pagination}

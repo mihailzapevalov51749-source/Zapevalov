@@ -27,7 +27,6 @@ export default function ViewEngineHeaderCell({
   label,
   sortable = false,
   sortDirection = null,
-  sortOrder = null,
   onSortToggle,
   onResizeMouseDown,
   isTitle = false,
@@ -84,7 +83,6 @@ export default function ViewEngineHeaderCell({
       {sortable ? (
         <TableSortToggleButton
           sortDirection={sortDirection}
-          sortOrder={sortOrder}
           onToggle={onSortToggle}
         />
       ) : null}
