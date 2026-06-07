@@ -1,7 +1,10 @@
 import {
   listHierarchyParentRelationKeys,
 } from "./hierarchyParentRelation.js";
-import { resolveEntityTitle } from "./resolveEntityTitle.js";
+import {
+  resolveEntityDisplayTitle,
+  resolveEntityTitleFieldKey,
+} from "./resolveEntityDisplayTitle.js";
 
 function normalizeId(value) {
   return String(value ?? "").trim();
@@ -26,11 +29,7 @@ function findCatalogObjectType(catalog, objectTypeKey) {
  * @param {string} objectTypeKey
  */
 export function resolveTitleFieldKeyForObjectType(catalog, objectTypeKey) {
-  const objectType = findCatalogObjectType(catalog, objectTypeKey);
-  const fields = Array.isArray(objectType?.fields) ? objectType.fields : [];
-  const titleField = fields.find((field) => field?.is_title || field?.isTitle);
-
-  return String(titleField?.key || titleField?.field_key || "").trim();
+  return resolveEntityTitleFieldKey({ catalog, objectTypeKey }) || "";
 }
 
 /**
@@ -128,12 +127,12 @@ export async function resolveParentContextFromRelations({
     );
 
     if (parentEntity) {
-      const values =
-        parentEntity?.values && typeof parentEntity.values === "object"
-          ? parentEntity.values
-          : {};
-
-      label = resolveEntityTitle(values, titleFieldKey);
+      label = resolveEntityDisplayTitle({
+        entity: parentEntity,
+        catalog,
+        objectTypeKey: parentRef.parentObjectTypeKey,
+        titleFieldKey,
+      });
     }
   } catch {
     label = "";

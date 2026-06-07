@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import PortalLayout from "../../layouts/PortalLayout";
 import useNavigationTree from "../../modules/navigation/hooks/useNavigationTree";
-import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../../modules/designer/utils/navigationReload";
+import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../../shared/navigation/navigationReload";
 import { getLastRuntimePath } from "../../shared/appMode/appModeStorage";
 import { readYasiiPreWorkspacePath } from "../workspace/yasiiWorkspaceModeStorage.js";
 import { YasiiSurfaceContextProvider } from "../context/YasiiSurfaceContext.jsx";

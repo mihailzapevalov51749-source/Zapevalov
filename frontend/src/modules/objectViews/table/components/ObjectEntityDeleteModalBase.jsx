@@ -30,6 +30,7 @@ export default function ObjectEntityDeleteModalBase({
       canCustomizeLayout
       keepFullyVisible
       viewportInset={24}
+      layoutPreset="compact"
       defaultBounds={defaultBounds}
       ariaLabel={ariaLabel}
       footer={footer}

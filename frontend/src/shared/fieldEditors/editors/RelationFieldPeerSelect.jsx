@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { queryRuntimeEntities } from "../../../modules/designer/api/runtimeQueryApi";
-import { resolveEntityTitle } from "../../../modules/objectEntities/services/resolveEntityTitle";
-import { findCatalogObjectType } from "../../../modules/objectViews/table/services/adapters/ObjectTypeTableAdapter";
+import { resolvePeerEntityLabel } from "../../../modules/objectEntities/services/resolveEntityDisplayTitle";
 import {
   relationActionButtonStyle,
   relationSelectControlStyle,
@@ -10,15 +9,7 @@ import {
 } from "../../fieldTypes/relation/relationFieldStyles";
 
 function resolvePeerLabel(catalog, objectTypeKey, entity) {
-  const objectType = findCatalogObjectType(catalog, objectTypeKey);
-  const fields = Array.isArray(objectType?.fields) ? objectType.fields : [];
-  const titleField = fields.find((field) => field?.is_title || field?.isTitle);
-  const titleFieldKey = String(titleField?.key || titleField?.field_key || "").trim();
-  const values =
-    entity?.values && typeof entity.values === "object" ? entity.values : {};
-  const title = resolveEntityTitle(values, titleFieldKey);
-
-  return title || String(entity?.id || "Запись");
+  return resolvePeerEntityLabel(catalog, objectTypeKey, entity);
 }
 
 export default function RelationFieldPeerSelect({
@@ -27,6 +18,7 @@ export default function RelationFieldPeerSelect({
   catalog = null,
   peerObjectTypeKey = "",
   submitting = false,
+  placeholder = "",
   onSubmit,
   onCancel,
 }) {
@@ -109,7 +101,7 @@ export default function RelationFieldPeerSelect({
           disabled={submitting || loading || !peerObjectTypeKey}
         >
           <option value="">
-            {loading ? "Загрузка…" : "Выберите запись"}
+            {loading ? "Загрузка…" : placeholder || "Выберите запись"}
           </option>
           {peerEntities.map((entity) => {
             const id = String(entity?.id ?? "").trim();

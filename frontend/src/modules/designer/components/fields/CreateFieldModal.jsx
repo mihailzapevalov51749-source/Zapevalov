@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import ChoiceOptionsEditor from "./ChoiceOptionsEditor";
+import DefaultValueEditor from "./defaultValue/DefaultValueEditor";
 import RelationFieldSettings from "./RelationFieldSettings";
+import {
+  buildDefaultValuePayload,
+  emptyDefaultValue,
+  validateDefaultValueDraft,
+} from "./defaultValue/defaultValueFormUtils";
 import {
   buildChoiceSettingsPayload,
   buildFileSettingsPayload,
@@ -15,6 +21,8 @@ import {
   buildRelationSettingsPayload,
   isRelationFieldType,
   validateRelationFieldDraft,
+  formatRelationFieldApiError,
+  resolveRelationFieldSettingsPayload,
 } from "./relationFieldFormUtils";
 
 import "./createFieldModal.css";
@@ -44,6 +52,7 @@ const INITIAL_FORM = {
   key_is_manual: false,
   field_type: "text",
   description: "",
+  placeholder: "",
   is_required: false,
   is_unique: false,
   quick_create: false,
@@ -52,11 +61,14 @@ const INITIAL_FORM = {
   file_multiple: true,
   relation_key: "",
   relation_role: "",
-  relation_cardinality: "one",
+  relation_cardinality: "",
+  default_value: emptyDefaultValue("text"),
+  default_value_error: "",
 };
 
-function validateForm(form, existingFieldKeys) {
+function validateForm(form, existingFieldKeys, context = {}) {
   const errors = {};
+  const { objectTypeId = null, relationDefinitions = [] } = context;
   const name = String(form.name || "").trim();
   const key = String(form.key || "").trim();
   const fieldType = String(form.field_type || "").trim();
@@ -96,22 +108,44 @@ function validateForm(form, existingFieldKeys) {
   if (isRelationFieldType(fieldType)) {
     Object.assign(
       errors,
-      validateRelationFieldDraft({
-        relation_key: form.relation_key,
-        role: form.relation_role,
-        cardinality: form.relation_cardinality,
-      }),
+      validateRelationFieldDraft(
+        {
+          relation_key: form.relation_key,
+          role: form.relation_role,
+          cardinality: form.relation_cardinality,
+        },
+        { objectTypeId, relationDefinitions },
+      ),
     );
+  }
+
+  const effectiveFieldType = isChoiceFieldType(fieldType)
+    ? resolveChoiceFieldTypeForSave(fieldType, form.choice_multiple)
+    : fieldType;
+
+  if (!isFileFieldType(effectiveFieldType)) {
+    const defaultValueError = validateDefaultValueDraft(form.default_value, effectiveFieldType, {
+      choiceOptions: form.choice_options,
+    });
+
+    if (defaultValueError) {
+      errors.default_value = defaultValueError;
+    }
   }
 
   return errors;
 }
 
-function buildCreatePayload(form, existingFieldKeys) {
+function buildCreatePayload(form, existingFieldKeys, context = {}) {
+  const { objectTypeId = null, relationDefinitions = [] } = context;
   const name = String(form.name || "").trim();
   const key = String(form.key || "").trim().toLowerCase();
   const fieldType = String(form.field_type || "text").trim();
   const description = String(form.description || "").trim();
+  const placeholder = String(form.placeholder || "").trim();
+  const effectiveFieldType = isChoiceFieldType(fieldType)
+    ? resolveChoiceFieldTypeForSave(fieldType, form.choice_multiple)
+    : fieldType;
 
   const payload = {
     name,
@@ -125,6 +159,10 @@ function buildCreatePayload(form, existingFieldKeys) {
 
   if (description) {
     payload.description = description;
+  }
+
+  if (placeholder) {
+    payload.placeholder = placeholder;
   }
 
   if (isChoiceFieldType(fieldType)) {
@@ -143,11 +181,32 @@ function buildCreatePayload(form, existingFieldKeys) {
   }
 
   if (isRelationFieldType(fieldType)) {
-    payload.settings_json = buildRelationSettingsPayload({
+    const relationSettings = resolveRelationFieldSettingsPayload({
+      objectTypeId,
+      relationDefinitions,
       relation_key: form.relation_key,
-      role: form.relation_role,
-      cardinality: form.relation_cardinality,
     });
+
+    if (relationSettings) {
+      payload.settings_json = relationSettings;
+    } else {
+      payload.settings_json = buildRelationSettingsPayload({
+        relation_key: form.relation_key,
+        role: form.relation_role,
+        cardinality: form.relation_cardinality,
+      });
+    }
+  }
+
+  if (!isFileFieldType(effectiveFieldType)) {
+    const builtDefaultValue = buildDefaultValuePayload(
+      form.default_value,
+      effectiveFieldType,
+    );
+
+    if (builtDefaultValue?.payload) {
+      payload.default_value_json = builtDefaultValue.payload;
+    }
   }
 
   void existingFieldKeys;
@@ -215,7 +274,8 @@ export default function CreateFieldModal({
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const nextErrors = validateForm(form, reservedKeys);
+    const relationContext = { objectTypeId, relationDefinitions };
+    const nextErrors = validateForm(form, reservedKeys, relationContext);
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) {
@@ -223,7 +283,7 @@ export default function CreateFieldModal({
     }
 
     try {
-      await onCreate?.(buildCreatePayload(form, reservedKeys));
+      await onCreate?.(buildCreatePayload(form, reservedKeys, relationContext));
       resetForm();
     } catch {
       // Parent surfaces submitError.
@@ -324,8 +384,11 @@ export default function CreateFieldModal({
                   if (isRelationFieldType(nextFieldType)) {
                     patch.relation_key = "";
                     patch.relation_role = "";
-                    patch.relation_cardinality = "one";
+                    patch.relation_cardinality = "";
                   }
+
+                  patch.default_value = emptyDefaultValue(nextFieldType);
+                  patch.default_value_error = "";
 
                   return patch;
                 });
@@ -351,6 +414,19 @@ export default function CreateFieldModal({
                 setForm((prev) => ({ ...prev, description: event.target.value }))
               }
               placeholder="Необязательно"
+              rows={3}
+            />
+          </label>
+
+          <label className="designer-label">
+            Подсказка
+            <textarea
+              className="designer-textarea"
+              value={form.placeholder}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, placeholder: event.target.value }))
+              }
+              placeholder="Например: Кратко опишите проблему"
               rows={3}
             />
           </label>
@@ -383,6 +459,30 @@ export default function CreateFieldModal({
               />
               Несколько файлов
             </label>
+          ) : null}
+
+          <DefaultValueEditor
+            fieldType={form.field_type}
+            value={form.default_value}
+            onChange={(default_value) =>
+              setForm((prev) => ({
+                ...prev,
+                default_value,
+                default_value_error: "",
+              }))
+            }
+            choiceOptions={form.choice_options}
+            tenantId={tenantId}
+            objectTypeId={objectTypeId}
+            relationDefinitions={relationDefinitions}
+            relationKey={form.relation_key}
+            relationRole={form.relation_role}
+          />
+
+          {errors.default_value || form.default_value_error ? (
+            <p className="designer-create-field-modal__error">
+              {errors.default_value || form.default_value_error}
+            </p>
           ) : null}
 
           {showRelationOptions ? (

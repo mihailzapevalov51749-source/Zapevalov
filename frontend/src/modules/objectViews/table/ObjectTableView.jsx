@@ -74,17 +74,6 @@ import {
   saveColumnWidth,
 } from "./services/objectTableColumnWidthsStorage";
 import { mapColumnWidthsToTableKeys } from "./services/mapColumnWidthsToTableKeys";
-import { TABLE_BASE_STATE_NAME } from "./preferences/tableBaseState";
-import {
-  registerObjectTableExportProvider,
-  unregisterObjectTableExportProvider,
-} from "../../../shared/objectPlatform/services/export/objectTableExportBridge";
-import { resolveImportableFields } from "../../../shared/objectPlatform/services/import/resolveImportableFields";
-import {
-  registerObjectTableImportProvider,
-  unregisterObjectTableImportProvider,
-} from "../../../shared/objectPlatform/services/import/objectTableImportBridge";
-
 import "../../../shared/viewEngine/viewEngineTable.css";
 
 const DEFAULT_VIEW_LABEL = "Таблица";
@@ -493,83 +482,6 @@ export default function ObjectTableView({
       relationTableColumns.length > 0 &&
       tableData.rows.length > 0,
   });
-
-  const exportRuntimeViewKey = isTableBaseStateActive
-    ? String(publishedTableViewKey || "default_table").trim()
-    : String(activeViewKey || publishedTableViewKey || "default_table").trim();
-
-  const exportViewName = isTableBaseStateActive
-    ? TABLE_BASE_STATE_NAME
-    : activeViewDisplayName;
-
-  useEffect(() => {
-    if (isPreviewMode) {
-      return undefined;
-    }
-
-    const provider = {
-      canExport: () =>
-        Boolean(tenantId) &&
-        Boolean(objectTypeKey) &&
-        tableData.columns.length > 0,
-      buildSnapshot: async (menuContext = {}) => ({
-        tenantId,
-        objectTypeKey,
-        viewKey: exportRuntimeViewKey,
-        objectName: String(menuContext?.objectName || objectTypeLabel || "").trim() || "Объект",
-        viewName: exportViewName,
-        contract: contractForColumns,
-        session: {
-          activeQuickFilterId: sessionApi?.activeQuickFilterId ?? null,
-        },
-        columns: tableData.columns,
-        relationColumns: relationTableColumns,
-        catalog: query.catalog ?? null,
-      }),
-    };
-
-    registerObjectTableExportProvider(provider);
-
-    return () => {
-      unregisterObjectTableExportProvider(provider);
-    };
-  }, [
-    tenantId,
-    objectTypeKey,
-    objectTypeLabel,
-    exportRuntimeViewKey,
-    exportViewName,
-    contractForColumns,
-    sessionApi?.activeQuickFilterId,
-    tableData.columns,
-    relationTableColumns,
-    query.catalog,
-    isPreviewMode,
-  ]);
-
-  useEffect(() => {
-    if (isPreviewMode) {
-      return undefined;
-    }
-
-    const provider = {
-      canImport: () => Boolean(tenantId) && Boolean(objectTypeKey) && Boolean(query.catalog),
-      buildImportSnapshot: async (menuContext = {}) => ({
-        tenantId,
-        objectTypeKey,
-        objectName:
-          String(menuContext?.objectName || objectTypeLabel || "").trim() || "Объект",
-        importableFields: resolveImportableFields(query.catalog, objectTypeKey),
-        onImported: () => query.reload?.(),
-      }),
-    };
-
-    registerObjectTableImportProvider(provider);
-
-    return () => {
-      unregisterObjectTableImportProvider(provider);
-    };
-  }, [tenantId, objectTypeKey, objectTypeLabel, query.catalog, isPreviewMode, query.reload]);
 
   const hierarchyViewKey = isTableBaseStateActive
     ? String(publishedTableViewKey || "default_table").trim()
@@ -1696,6 +1608,9 @@ export default function ObjectTableView({
           modalKey={entityCard.quickCreate?.modalKey}
           title={entityCard.quickCreate?.title}
           objectTypeLabel={entityCard.quickCreate?.objectTypeLabel}
+          tenantId={entityCard.quickCreate?.tenantId}
+          catalog={catalog}
+          objectTypeKey={entityCard.quickCreate?.objectTypeKey}
           fields={entityCard.quickCreate?.fields || []}
           formValues={entityCard.quickCreate?.formValues || {}}
           onFieldChange={entityCard.quickCreate?.setFieldValue}
@@ -1703,6 +1618,7 @@ export default function ObjectTableView({
           submitting={entityCard.quickCreate?.submitting}
           submitError={entityCard.quickCreate?.submitError}
           submitLabel={entityCard.quickCreate?.submitLabel}
+          canCustomizeLayout
         />
         ) : null}
 

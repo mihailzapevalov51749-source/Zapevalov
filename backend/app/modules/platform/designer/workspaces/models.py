@@ -58,6 +58,12 @@ class DesignerWorkspaceTab(Base):
         nullable=True,
         index=True,
     )
+    object_view_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("designer_view_definitions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     tab_type = Column(String(30), nullable=False, default="object")
     target_type = Column(String(30), nullable=True)
     target_id = Column(String(255), nullable=True)

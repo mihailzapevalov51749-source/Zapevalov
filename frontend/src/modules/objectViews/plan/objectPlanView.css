@@ -1,0 +1,752 @@
+.object-plan-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.object-plan-view__shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.object-plan-view__status {
+  margin: 0;
+  padding: 8px 14px;
+  font-size: 13px;
+  color: #64748b;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.object-plan-view__status--error {
+  color: #b91c1c;
+}
+
+.object-plan-view__workspace {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.object-plan-view__tree-pane {
+  flex: 0 0 auto;
+  min-width: 280px;
+  max-width: 600px;
+  min-height: 0;
+  overflow: auto;
+  background: #f8fafc;
+  border-right: 1px solid #e2e8f0;
+}
+
+.object-plan-view__resize-handle {
+  flex: 0 0 5px;
+  cursor: col-resize;
+  background: linear-gradient(90deg, transparent, #e2e8f0 45%, #e2e8f0 55%, transparent);
+  position: relative;
+  z-index: 2;
+}
+
+.object-plan-view__resize-handle:hover,
+.object-plan-view__resize-handle:active {
+  background: linear-gradient(90deg, transparent, #93c5fd 45%, #93c5fd 55%, transparent);
+}
+
+.object-plan-view__work-pane {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.object-plan-view__tree-panel {
+  padding: 10px 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+
+.object-plan-view__tree-panel.is-root-drop-target {
+  background: #f8fafc;
+  outline: 1px dashed #93c5fd;
+  outline-offset: -2px;
+}
+
+.object-plan-view__tree-panel--empty {
+  flex: 1;
+  justify-content: center;
+  min-height: 180px;
+}
+
+.object-plan-view__tree-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 12px;
+  text-align: center;
+}
+
+.object-plan-view__tree-empty-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.object-plan-view__tree-empty-text {
+  margin: 0;
+  max-width: 240px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #64748b;
+  white-space: pre-line;
+}
+
+.object-plan-view__tree-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.object-plan-view__tree-create {
+  border: none;
+  background: var(--platform-accent, #2563eb);
+  color: #fff;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.object-plan-view__tree-create:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.object-plan-view__tree-toolbar {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.object-plan-view__tree-action {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  border-radius: 6px;
+  padding: 3px 7px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.object-plan-view__tree-count {
+  font-size: 11px;
+  color: #94a3b8;
+  min-width: 20px;
+  text-align: right;
+}
+
+.object-plan-view__tree-root-drop {
+  border: 1px dashed #e2e8f0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  background: #fff;
+}
+
+.object-plan-view__tree-root-drop.is-drop-target {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.object-plan-view__tree-root-drop-label {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.object-plan-view__tree-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px minmax(88px, 108px);
+  gap: 8px;
+  align-items: center;
+  padding: 4px 8px 4px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #0f172a;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.object-plan-view__tree-columns-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding-left: 8px;
+}
+
+.object-plan-view__tree-columns-name-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.object-plan-view__tree-expand-all {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  padding: 0;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.object-plan-view__tree-expand-all:hover {
+  color: #0f172a;
+}
+
+.object-plan-view__tree-columns-readiness,
+.object-plan-view__tree-columns-status {
+  text-align: right;
+}
+
+.object-plan-view__tree-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.object-plan-view__tree-node {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px minmax(88px, 108px);
+  gap: 8px;
+  align-items: center;
+  min-height: 26px;
+  border-radius: 6px;
+  padding: 0 6px 0 0;
+}
+
+.object-plan-view__tree-node.is-selected {
+  background: #ede9fe;
+}
+
+.object-plan-view__tree-node.is-dragging {
+  opacity: 0.45;
+}
+
+.object-plan-view__tree-node.is-drop-target {
+  outline: 1px solid #2563eb;
+  background: #eff6ff;
+}
+
+.object-plan-view__tree-node-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.object-plan-view__tree-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  flex: 0 0 auto;
+  padding: 0;
+}
+
+.object-plan-view__tree-toggle--spacer {
+  display: inline-flex;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.object-plan-view__tree-icon {
+  flex: 0 0 auto;
+  color: #64748b;
+}
+
+.object-plan-view__tree-select {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.object-plan-view__tree-number {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: #64748b;
+}
+
+.object-plan-view__tree-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.object-plan-view__tree-col-readiness {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  text-align: right;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: #2563eb;
+}
+
+.object-plan-view__tree-col-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 0;
+  font-size: 11px;
+  line-height: 1.2;
+  color: #475569;
+}
+
+.object-plan-view__tree-status-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.object-plan-view__tree-status-dot {
+  font-size: 10px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.object-plan-view__work-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.object-plan-view__work-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+  flex-shrink: 0;
+}
+
+.object-plan-view__work-title {
+  margin: 0;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 42%;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.object-plan-view__work-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.object-plan-view__work-tab {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+}
+
+.object-plan-view__work-tab.is-active {
+  color: #0f172a;
+  border-bottom-color: #2563eb;
+}
+
+.object-plan-view__work-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0;
+}
+
+.object-plan-view__work-empty {
+  margin: 0;
+  padding: 32px 24px;
+  color: #94a3b8;
+  font-size: 14px;
+}
+
+.object-plan-view__info {
+  padding: 20px 24px 28px;
+}
+
+.object-plan-view__info-hero {
+  margin-bottom: 16px;
+}
+
+.object-plan-view__info-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #0f172a;
+}
+
+.object-plan-view__info-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 24px;
+  margin-bottom: 20px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.object-plan-view__info-metrics--single {
+  grid-template-columns: minmax(0, 1fr);
+  margin-bottom: 12px;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.object-plan-view__info-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.object-plan-view__info-field-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.object-plan-view__status-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.object-plan-view__status-control-dot,
+.object-plan-view__status-readonly .object-plan-view__status-control-dot {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.object-plan-view__status-control-select {
+  min-width: 160px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.object-plan-view__status-readonly {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.object-plan-view__readiness-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.object-plan-view__readiness-track {
+  flex: 1;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  max-width: 220px;
+}
+
+.object-plan-view__readiness-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #3b82f6);
+  border-radius: 999px;
+}
+
+.object-plan-view__readiness-value {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.object-plan-view__info-section + .object-plan-view__info-section {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.object-plan-view__info-section-title {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.object-plan-view__info-description-text,
+.object-plan-view__info-muted {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #334155;
+}
+
+.object-plan-view__info-muted {
+  color: #94a3b8;
+}
+
+.object-plan-view__checklist-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 10px 12px;
+}
+
+.object-plan-view__info-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 20px;
+}
+
+.object-plan-view__info-grid-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.object-plan-view__info-grid-value {
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.object-plan-view__issues-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #334155;
+  font-size: 14px;
+}
+
+.object-plan-view__issue-item + .object-plan-view__issue-item {
+  margin-top: 8px;
+}
+
+.object-plan-view__issue-title {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.object-plan-view__issue-meta {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.object-plan-view__empty {
+  padding: 20px 12px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.object-plan-view__work-comments,
+.object-plan-view__work-history {
+  padding: 12px 16px 16px;
+  min-height: 0;
+}
+
+.object-plan-view__activities-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+  padding: 12px 16px;
+}
+
+@media (max-width: 960px) {
+  .object-plan-view__workspace {
+    flex-direction: column;
+  }
+
+  .object-plan-view__tree-pane {
+    width: 100% !important;
+    flex-basis: auto !important;
+    max-width: none;
+    max-height: 42vh;
+    border-right: none;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .object-plan-view__resize-handle {
+    display: none;
+  }
+
+  .object-plan-view__info-metrics,
+  .object-plan-view__info-fields-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.object-plan-view__work-area--constructor .object-plan-view__work-tab--constructor {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.object-plan-view__work-tab-label {
+  white-space: nowrap;
+}
+
+.object-plan-view__work-tab-label-input,
+.object-plan-view__info-grid-label-input {
+  width: 100%;
+  min-width: 0;
+  padding: 2px 6px;
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  background: #fff;
+}
+
+.object-plan-view__work-tab-handle {
+  display: inline-flex;
+  align-items: center;
+  color: #cbd5e1;
+  cursor: grab;
+}
+
+.object-plan-view__work-tab--constructor.is-drag-over {
+  outline: 1px dashed #2563eb;
+  outline-offset: 2px;
+}
+
+/* Constructor overlays on runtime info grid — no card layout, keep 2-column grid */
+.object-plan-view__info-grid-item--constructor {
+  position: relative;
+  padding-left: 18px;
+  cursor: context-menu;
+}
+
+.object-plan-view__info-grid-item--constructor.is-dragging {
+  opacity: 0.45;
+}
+
+.object-plan-view__info-grid-item--constructor.is-drag-over {
+  outline: 1px dashed #2563eb;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.object-plan-view__info-grid-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: #94a3b8;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  pointer-events: auto;
+}
+
+.object-plan-view__info-grid-handle:active {
+  cursor: grabbing;
+  color: #64748b;
+}
+
+.object-plan-view__info-grid-drop-indicator {
+  display: none;
+}
+
+.object-plan-view__info-grid-drop-indicator.is-before,
+.object-plan-view__info-grid-drop-indicator.is-after {
+  display: block;
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #2563eb;
+  pointer-events: none;
+}
+
+.object-plan-view__info-grid-drop-indicator.is-before {
+  top: -4px;
+}
+
+.object-plan-view__info-grid-drop-indicator.is-after {
+  bottom: -4px;
+}

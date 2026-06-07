@@ -9,6 +9,7 @@ export default function NumberFieldEditor({
   readOnly = false,
   autoFocus = false,
   inline = false,
+  placeholder = "",
   onCancel,
   onCommit,
 }) {
@@ -50,6 +51,7 @@ export default function NumberFieldEditor({
       readOnly={readOnly}
       disabled={readOnly}
       autoFocus={autoFocus}
+      placeholder={placeholder || undefined}
       onChange={handleChange}
       onKeyDown={handleKeyDown}
       style={style}

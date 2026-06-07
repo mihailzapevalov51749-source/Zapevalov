@@ -41,6 +41,7 @@ export default function ChoiceFieldEditor({
   autoFocus = false,
   inline = false,
   openOnMount = false,
+  placeholder = "",
   onCancel,
   onDismiss,
 }) {
@@ -103,6 +104,8 @@ export default function ChoiceFieldEditor({
     );
   }
 
+  const emptyOptionLabel = placeholder || "—";
+
   return (
     <select
       ref={selectRef}
@@ -128,7 +131,7 @@ export default function ChoiceFieldEditor({
           : {}),
       }}
     >
-      <option value="">—</option>
+      <option value="">{emptyOptionLabel}</option>
       {options.map((option) => (
         <option key={option.key} value={option.key}>
           {option.label}

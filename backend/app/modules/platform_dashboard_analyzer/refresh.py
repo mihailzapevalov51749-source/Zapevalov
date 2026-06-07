@@ -2547,6 +2547,43 @@ def _ensure_studio_preview_tab_bar_ux_dashboard_notes(
     return added, journal_lines
 
 
+STUDIO_OBJECT_TYPE_ACTIONS_MENU_CHANGELOG_SLUG = (
+    "studio-object-type-actions-menu-20260607"
+)
+
+_STUDIO_OBJECT_TYPE_ACTIONS_MENU_CHANGELOG_DESCRIPTION = (
+    "Studio Object Actions Menu: меню «…» в шапке типа объекта снова открывается "
+    "(portal + fixed positioning); пункты Переименовать / Дублировать / Удалить; "
+    "удаление через ObjectTypeDeleteConfirmModal с delete-preview API."
+)
+
+
+def _ensure_studio_object_type_actions_menu_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=STUDIO_OBJECT_TYPE_ACTIONS_MENU_CHANGELOG_SLUG,
+        title="Studio: меню действий типа объекта",
+        description=_STUDIO_OBJECT_TYPE_ACTIONS_MENU_CHANGELOG_DESCRIPTION,
+        result=_STUDIO_OBJECT_TYPE_ACTIONS_MENU_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=None,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_STUDIO_OBJECT_TYPE_ACTIONS_MENU_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
 STUDIO_OBJECT_TYPE_HEADER_ICON_CHANGELOG_SLUG = (
     "studio-object-type-header-icon-20260606"
 )
@@ -2689,6 +2726,572 @@ def _ensure_object_table_studio_preview_parity_dashboard_notes(
     ):
         added += 1
         journal_lines.append(_OBJECT_TABLE_STUDIO_PREVIEW_PARITY_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_PLAN_VIEW_CHANGELOG_SLUG = "object-plan-view-20260607"
+
+_OBJECT_PLAN_VIEW_CHANGELOG_DESCRIPTION = (
+    'Object Platform: представление объекта «План» (view_type=plan) — иерархия по relation, '
+    "дерево + панель деталей, готовность по статусам, следующие шаги, опциональные проблемы; "
+    "Studio → Object Type → Tabs → View Type = План; Office → Object Tab → План; "
+    "Studio Preview на mock-данных без runtime records."
+)
+
+OBJECT_VIEW_ARCHITECTURE_CHANGELOG_SLUG = "object-view-architecture-20260607"
+
+_OBJECT_VIEW_ARCHITECTURE_CHANGELOG_DESCRIPTION = (
+    "Платформенное ядро: утверждена целевая модель Object Tab = Projection + Query + View Settings "
+    "для Table/Plan/Card/Kanban/Calendar/Tree/Diagram. Матрица отклонений, legacy и roadmap "
+    "этапов 0–6 в docs/architecture/OBJECT_VIEW_ARCHITECTURE.md v1.1."
+)
+
+OBJECT_VIEW_CONTRACT_CHANGELOG_SLUG = "object-view-contract-20260608"
+
+_OBJECT_VIEW_CONTRACT_CHANGELOG_DESCRIPTION = (
+    "Платформенное ядро: этап 1 — контракт представлений. roleMapping в ObjectViewContract "
+    "(draft/save/publish/catalog); publish validation projection + roleMapping ⊆ projection; "
+    "dual-read adapter resolvePlanRoleMappingDualRead (не подключён к runtime). "
+    "Документ docs/architecture/OBJECT_VIEW_CONTRACT.md."
+)
+
+OBJECT_VIEW_PROJECTION_UI_CHANGELOG_SLUG = "object-view-projection-ui-20260608"
+
+_OBJECT_VIEW_PROJECTION_UI_CHANGELOG_DESCRIPTION = (
+    "Платформенное ядро: этап 2 — Projection UI. ObjectProjectionPanel для Table/Plan/Form/Card/List; "
+    "Plan получил блок Projection над настройками Плана; fieldKeys сохраняются в контракт. "
+    "Runtime без изменений."
+)
+
+OBJECT_VIEW_ROLE_MAPPING_UI_CHANGELOG_SLUG = "object-view-role-mapping-ui-20260608"
+
+_OBJECT_VIEW_ROLE_MAPPING_UI_CHANGELOG_DESCRIPTION = (
+    "Платформенное ядро: этап 3 — Role Mapping UI. ObjectRoleMappingPanel (универсальный компонент); "
+    "Plan: nodeTitle/nodeStatus/nodeDescription/nextSteps из Projection; roleMapping в draft/save/publish. "
+    "Legacy *FieldKey сохранены и помечены."
+)
+
+OBJECT_VIEW_DUAL_READ_CHANGELOG_SLUG = "object-view-dual-read-20260608"
+
+_OBJECT_VIEW_DUAL_READ_CHANGELOG_DESCRIPTION = (
+    "Платформенное ядро: этап 4 — Runtime dual-read для Plan. resolvePlanRoleMappingDualRead "
+    "подключён в ObjectPlanView/buildPlanTree; приоритет roleMapping → legacy → fallback. "
+    "Старые Plan-вкладки работают без изменений. Следующий этап: очистка legacy."
+)
+
+OBJECT_VIEW_LEGACY_DEPRECATION_CHANGELOG_SLUG = "object-view-legacy-deprecation-20260608"
+
+_OBJECT_VIEW_LEGACY_DEPRECATION_CHANGELOG_DESCRIPTION = (
+    "Платформенное ядро: этап 5A — Plan Legacy Deprecation. presentation.plan.*FieldKey "
+    "помечены @deprecated; publish snapshot добавляет usesLegacyPlanFields; Plan debug без "
+    "window.__YASNOPRO_*; dual-read и fallback сохранены. Следующий этап 5B: удаление legacy."
+)
+
+OBJECT_VIEW_LEGACY_USAGE_AUDIT_CHANGELOG_SLUG = "object-view-legacy-usage-audit-20260608"
+
+_OBJECT_VIEW_LEGACY_USAGE_AUDIT_CHANGELOG_DESCRIPTION = (
+    "Платформенное ядро: этап 5A.1 — Legacy Usage Audit. Read-only аудит published Plan "
+    "(audit_plan_legacy_usage.py): 1 Plan, 100% legacy, removal readiness 25%. "
+    "Рекомендация: Migration Assistant перед этапом 5B."
+)
+
+OBJECT_VIEW_LEGACY_SNAPSHOT_CLEANUP_CHANGELOG_SLUG = "object-view-legacy-snapshot-cleanup-20260608"
+
+_OBJECT_VIEW_LEGACY_SNAPSHOT_CLEANUP_CHANGELOG_DESCRIPTION = (
+    "Платформенное ядро: этап 5B — Plan Legacy Snapshot Cleanup. "
+    "sanitize_presentation_plan удаляет *FieldKey из publish snapshot при "
+    "usesLegacyPlanFields=false; catalog v69; Mixed=0; draft/Studio/dual-read сохранены. "
+    "Следующий этап 5C: Fallback cleanup."
+)
+
+OBJECT_VIEW_FALLBACK_AUDIT_CHANGELOG_SLUG = "object-view-fallback-audit-20260608"
+
+_OBJECT_VIEW_FALLBACK_AUDIT_CHANGELOG_DESCRIPTION = (
+    "Платформенное ядро: этап 5C.1 — Runtime Fallback Audit. "
+    "Карта F1–F8; Published Plan v69 не использует role-mapping fallback; "
+    "Studio Preview — mock tree. Рекомендация 5C.2: удалить F1–F6 после тестов."
+)
+
+OBJECT_VIEW_FALLBACK_REMOVAL_CHANGELOG_SLUG = "object-view-fallback-removal-20260607"
+
+_OBJECT_VIEW_FALLBACK_REMOVAL_CHANGELOG_DESCRIPTION = (
+    "Платформенное ядро: этап 5C.2 — Plan Fallback Removal. "
+    "Удалены F1–F6 (resolvePlanRoleMapping, planEntityUtils tree, buildPlanTree); "
+    "dual-read roleMapping → legacy; F7 Issues panel и F8 buildPlanTree safety сохранены. "
+    "Plan Tree Fallback Count = 0. Следующий этап 5D: Legacy Dual-Read Removal."
+)
+
+OBJECT_VIEW_LEGACY_DUAL_READ_AUDIT_CHANGELOG_SLUG = "object-view-legacy-dual-read-audit-20260607"
+
+_OBJECT_VIEW_LEGACY_DUAL_READ_AUDIT_CHANGELOG_DESCRIPTION = (
+    "Платформенное ядро: этап 5D.1 — Legacy Dual-Read Usage Audit. "
+    "Published Plan v69 roleMapping-only; legacy tier не в Office runtime; "
+    "draft legacy keys только в Studio. Рекомендация 5D.2: удалить legacy tier после тестов."
+)
+
+OBJECT_VIEW_LEGACY_DUAL_READ_REMOVAL_CHANGELOG_SLUG = "object-view-legacy-dual-read-removal-20260607"
+
+_OBJECT_VIEW_LEGACY_DUAL_READ_REMOVAL_CHANGELOG_DESCRIPTION = (
+    "Платформенное ядро: этап 5D.2 — Plan Legacy Dual-Read Removal. "
+    "resolvePlanRoleMapping — roleMapping only; legacy tier удалён из Plan tree runtime; "
+    "buildPlanTree F8 → EMPTY_PLAN_ROLE_MAPPING. Studio draft, Migration Assistant, "
+    "publish diagnostic сохранены. Следующий этап 5E: Issues Panel (F7)."
+)
+
+OBJECT_VIEW_ENTITY_TITLE_UNIFICATION_CHANGELOG_SLUG = "object-view-entity-title-unification-20260607"
+
+_OBJECT_VIEW_ENTITY_TITLE_UNIFICATION_CHANGELOG_DESCRIPTION = (
+    "Платформенное ядро: этап 5E — Entity Title Resolution. "
+    "resolveEntityDisplayTitle: Projection.titleFieldKey → Object Type Title Field → [id]; "
+    "F7 resolvePlanEntityTitle удалён; Issues/Related/Lookup мигрированы. "
+    "Runtime Title Fallbacks = 0 в object platform. Следующий этап 5F."
+)
+
+OBJECT_VIEW_PLAN_UI_CLEANUP_CHANGELOG_SLUG = "object-view-plan-ui-cleanup-20260607"
+
+_OBJECT_VIEW_PLAN_UI_CLEANUP_CHANGELOG_DESCRIPTION = (
+    "Платформенное ядро: этап 5F — UI Cleanup Plan Settings. "
+    "Удалены legacy *FieldKey controls из Studio; Migration Assistant скрыт при заполненном "
+    "roleMapping; draft legacy keys и generatePlanRoleMappingFromLegacy сохранены. "
+    "Legacy Controls Visible = 0; Plan Settings Simplified = true. Следующий этап 6."
+)
+
+OBJECT_VIEW_PLAN_STATUS_DISPLAY_BUGFIX_CHANGELOG_SLUG = (
+    "object-view-plan-status-display-bugfix-20260607"
+)
+
+_OBJECT_VIEW_PLAN_STATUS_DISPLAY_BUGFIX_CHANGELOG_DESCRIPTION = (
+    "Bugfix: Plan status display uses object field settings. "
+    "resolvePlanFieldDisplayValue + normalizeChoiceValue; option key → label как в Table; "
+    "ownStatusLabel не подменяется rollup-категорией."
+)
+
+OBJECT_VIEW_PLAN_UI_REFERENCE_LAYOUT_CHANGELOG_SLUG = (
+    "object-view-plan-ui-reference-layout-20260607"
+)
+
+_OBJECT_VIEW_PLAN_UI_REFERENCE_LAYOUT_CHANGELOG_DESCRIPTION = (
+    "Plan UI — Reference Layout. Дерево: нумерация 1/1.1, компактные колонки, ПКМ-меню, "
+    "resize 280-600px (localStorage). Правая область: вкладки сверху "
+    "(Инфо/Комментарии/История/Файлы/Задачи/Связи/Активности). "
+    "Инфо: Projection + Runtime Entity; архитектура данных без изменений."
+)
+
+OBJECT_VIEW_PLAN_TREE_VISUAL_POLISH_CHANGELOG_SLUG = (
+    "object-view-plan-tree-visual-polish-20260608"
+)
+
+_OBJECT_VIEW_PLAN_TREE_VISUAL_POLISH_CHANGELOG_DESCRIPTION = (
+    "Plan Tree Visual Polish. Заголовки колонок #0f172a; глобальное раскрытие Chevron "
+    "слева от «Название»; удалён GripVertical; единый gap 8px в строке; "
+    "вертикальное выравнивание; логика дерева/статусов/готовности без изменений."
+)
+
+OBJECT_VIEW_PLAN_LAYOUT_SETTINGS_CHANGELOG_SLUG = (
+    "object-view-plan-layout-settings-20260608"
+)
+
+_OBJECT_VIEW_PLAN_LAYOUT_SETTINGS_CHANGELOG_DESCRIPTION = (
+    "Plan View Settings — tabs synchronized between Studio Preview and Office Runtime. "
+    "planLayout in presentation.plan; Info tab fields from projection.infoFieldKeys; "
+    "draft overlay in studio-preview."
+)
+
+OBJECT_VIEW_PLAN_PROPERTIES_SIMPLIFICATION_CHANGELOG_SLUG = (
+    "object-view-plan-properties-simplification-20260608"
+)
+
+_OBJECT_VIEW_PLAN_PROPERTIES_SIMPLIFICATION_CHANGELOG_DESCRIPTION = (
+    "Plan properties panel: Projection column «Инфо» + visibility eye; Title Field for "
+    "tree/work area/card; removed Role Mapping, issues relation and info sections UI; "
+    "tabs configured separately (visibility, order, label)."
+)
+
+OBJECT_VIEW_PLAN_TABS_SHOW_IN_INFO_CHANGELOG_SLUG = (
+    "object-view-plan-tabs-show-in-info-20260608"
+)
+
+_OBJECT_VIEW_PLAN_TABS_SHOW_IN_INFO_CHANGELOG_DESCRIPTION = (
+    "Plan tabs: added checklist tab (system module); showInInfo embeds tab content inside "
+    "Info tab; Studio UI drag | eye | Info checkbox | label; eye and showInInfo are "
+    "independent; Studio Preview and Office Runtime synchronized."
+)
+
+OBJECT_VIEW_PLAN_TABS_HEADER_FILTER_BUGFIX_CHANGELOG_SLUG = (
+    "object-view-plan-tabs-header-filter-bugfix-20260608"
+)
+
+_OBJECT_VIEW_PLAN_TABS_HEADER_FILTER_BUGFIX_CHANGELOG_DESCRIPTION = (
+    "Bugfix: Plan work-area header excludes tabs with showInInfo=true; "
+    "embedded blocks still render inside Info tab regardless of visible flag."
+)
+
+OBJECT_VIEW_PLAN_PREVIEW_CONSTRUCTOR_CHANGELOG_SLUG = (
+    "object-view-plan-preview-constructor-20260608"
+)
+
+_OBJECT_VIEW_PLAN_PREVIEW_CONSTRUCTOR_CHANGELOG_DESCRIPTION = (
+    "Plan Preview visual constructor: context menus and drag & drop for Info fields "
+    "and work-area tabs; updates projection, field definitions and planLayout.tabs; "
+    "single source of truth synced with properties panel and Office Runtime."
+)
+
+
+def _ensure_object_view_architecture_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "object-platform-independence")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_ARCHITECTURE_CHANGELOG_SLUG,
+        title="Платформенное ядро: архитектура представлений объектов",
+        description=_OBJECT_VIEW_ARCHITECTURE_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_ARCHITECTURE_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_ARCHITECTURE_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_CONTRACT_CHANGELOG_SLUG,
+        title="Платформенное ядро: контракт представлений (этап 1)",
+        description=_OBJECT_VIEW_CONTRACT_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_CONTRACT_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_CONTRACT_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_PROJECTION_UI_CHANGELOG_SLUG,
+        title="Платформенное ядро: Projection UI (этап 2)",
+        description=_OBJECT_VIEW_PROJECTION_UI_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_PROJECTION_UI_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_PROJECTION_UI_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_ROLE_MAPPING_UI_CHANGELOG_SLUG,
+        title="Платформенное ядро: Role Mapping UI (этап 3)",
+        description=_OBJECT_VIEW_ROLE_MAPPING_UI_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_ROLE_MAPPING_UI_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_ROLE_MAPPING_UI_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_DUAL_READ_CHANGELOG_SLUG,
+        title="Платформенное ядро: Runtime dual-read (этап 4)",
+        description=_OBJECT_VIEW_DUAL_READ_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_DUAL_READ_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_DUAL_READ_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_LEGACY_DEPRECATION_CHANGELOG_SLUG,
+        title="Платформенное ядро: Plan Legacy Deprecation (этап 5A)",
+        description=_OBJECT_VIEW_LEGACY_DEPRECATION_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_LEGACY_DEPRECATION_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_LEGACY_DEPRECATION_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_LEGACY_USAGE_AUDIT_CHANGELOG_SLUG,
+        title="Платформенное ядро: Plan Legacy Usage Audit (этап 5A.1)",
+        description=_OBJECT_VIEW_LEGACY_USAGE_AUDIT_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_LEGACY_USAGE_AUDIT_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_LEGACY_USAGE_AUDIT_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_LEGACY_SNAPSHOT_CLEANUP_CHANGELOG_SLUG,
+        title="Платформенное ядро: Plan Legacy Snapshot Cleanup (этап 5B)",
+        description=_OBJECT_VIEW_LEGACY_SNAPSHOT_CLEANUP_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_LEGACY_SNAPSHOT_CLEANUP_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_LEGACY_SNAPSHOT_CLEANUP_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_FALLBACK_AUDIT_CHANGELOG_SLUG,
+        title="Платформенное ядро: Plan Runtime Fallback Audit (этап 5C.1)",
+        description=_OBJECT_VIEW_FALLBACK_AUDIT_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_FALLBACK_AUDIT_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_FALLBACK_AUDIT_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_FALLBACK_REMOVAL_CHANGELOG_SLUG,
+        title="Платформенное ядро: Plan Fallback Removal (этап 5C.2)",
+        description=_OBJECT_VIEW_FALLBACK_REMOVAL_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_FALLBACK_REMOVAL_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_FALLBACK_REMOVAL_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_LEGACY_DUAL_READ_AUDIT_CHANGELOG_SLUG,
+        title="Платформенное ядро: Plan Legacy Dual-Read Audit (этап 5D.1)",
+        description=_OBJECT_VIEW_LEGACY_DUAL_READ_AUDIT_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_LEGACY_DUAL_READ_AUDIT_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_LEGACY_DUAL_READ_AUDIT_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_LEGACY_DUAL_READ_REMOVAL_CHANGELOG_SLUG,
+        title="Платформенное ядро: Plan Legacy Dual-Read Removal (этап 5D.2)",
+        description=_OBJECT_VIEW_LEGACY_DUAL_READ_REMOVAL_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_LEGACY_DUAL_READ_REMOVAL_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_LEGACY_DUAL_READ_REMOVAL_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_ENTITY_TITLE_UNIFICATION_CHANGELOG_SLUG,
+        title="Платформенное ядро: Entity Title Resolution (этап 5E)",
+        description=_OBJECT_VIEW_ENTITY_TITLE_UNIFICATION_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_ENTITY_TITLE_UNIFICATION_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_ENTITY_TITLE_UNIFICATION_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_PLAN_UI_CLEANUP_CHANGELOG_SLUG,
+        title="Платформенное ядро: UI Cleanup Plan Settings (этап 5F)",
+        description=_OBJECT_VIEW_PLAN_UI_CLEANUP_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_PLAN_UI_CLEANUP_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_PLAN_UI_CLEANUP_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_PLAN_STATUS_DISPLAY_BUGFIX_CHANGELOG_SLUG,
+        title="Bugfix: Plan status display uses object field settings",
+        description=_OBJECT_VIEW_PLAN_STATUS_DISPLAY_BUGFIX_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_PLAN_STATUS_DISPLAY_BUGFIX_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_PLAN_STATUS_DISPLAY_BUGFIX_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_PLAN_UI_REFERENCE_LAYOUT_CHANGELOG_SLUG,
+        title="Plan UI — Reference Layout",
+        description=_OBJECT_VIEW_PLAN_UI_REFERENCE_LAYOUT_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_PLAN_UI_REFERENCE_LAYOUT_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_PLAN_UI_REFERENCE_LAYOUT_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_PLAN_TREE_VISUAL_POLISH_CHANGELOG_SLUG,
+        title="Plan Tree Visual Polish",
+        description=_OBJECT_VIEW_PLAN_TREE_VISUAL_POLISH_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_PLAN_TREE_VISUAL_POLISH_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_PLAN_TREE_VISUAL_POLISH_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_PLAN_LAYOUT_SETTINGS_CHANGELOG_SLUG,
+        title="Plan View Settings — tabs & info layout",
+        description=_OBJECT_VIEW_PLAN_LAYOUT_SETTINGS_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_PLAN_LAYOUT_SETTINGS_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_PLAN_LAYOUT_SETTINGS_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_PLAN_PROPERTIES_SIMPLIFICATION_CHANGELOG_SLUG,
+        title="Plan properties panel simplification",
+        description=_OBJECT_VIEW_PLAN_PROPERTIES_SIMPLIFICATION_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_PLAN_PROPERTIES_SIMPLIFICATION_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_PLAN_PROPERTIES_SIMPLIFICATION_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_PLAN_TABS_SHOW_IN_INFO_CHANGELOG_SLUG,
+        title="Plan tabs — checklist & showInInfo",
+        description=_OBJECT_VIEW_PLAN_TABS_SHOW_IN_INFO_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_PLAN_TABS_SHOW_IN_INFO_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_PLAN_TABS_SHOW_IN_INFO_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_PLAN_TABS_HEADER_FILTER_BUGFIX_CHANGELOG_SLUG,
+        title="Bugfix: showInInfo tabs excluded from Plan header",
+        description=_OBJECT_VIEW_PLAN_TABS_HEADER_FILTER_BUGFIX_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_PLAN_TABS_HEADER_FILTER_BUGFIX_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_PLAN_TABS_HEADER_FILTER_BUGFIX_CHANGELOG_DESCRIPTION)
+
+    if _add_activity(
+        db,
+        slug=OBJECT_VIEW_PLAN_PREVIEW_CONSTRUCTOR_CHANGELOG_SLUG,
+        title="Plan Preview visual constructor",
+        description=_OBJECT_VIEW_PLAN_PREVIEW_CONSTRUCTOR_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_VIEW_PLAN_PREVIEW_CONSTRUCTOR_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_VIEW_PLAN_PREVIEW_CONSTRUCTOR_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+def _ensure_object_plan_view_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "relation-field-type")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_PLAN_VIEW_CHANGELOG_SLUG,
+        title='Object Platform: представление «План»',
+        description=_OBJECT_PLAN_VIEW_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_PLAN_VIEW_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_PLAN_VIEW_CHANGELOG_DESCRIPTION)
 
     return added, journal_lines
 
@@ -3179,6 +3782,1135 @@ def _ensure_object_table_excel_import_default_values_fix_dashboard_notes(
 OBJECT_TABLE_EXCEL_IMPORT_DEFAULT_VALUES_CHANGELOG_SLUG = (
     "object-table-excel-import-default-values-20260606"
 )
+
+CREATE_FIELD_MODAL_DEFAULT_VALUE_CHANGELOG_SLUG = (
+    "create-field-modal-default-value-20260607"
+)
+
+_CREATE_FIELD_MODAL_DEFAULT_VALUE_CHANGELOG_DESCRIPTION = (
+    "Create Field Modal: секция «Значение по умолчанию» при создании поля — "
+    "переиспользован DefaultValueEditor, default_value_json сохраняется сразу; "
+    "Studio → Object Type → Fields → Добавить поле."
+)
+
+
+def _ensure_create_field_modal_default_value_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=CREATE_FIELD_MODAL_DEFAULT_VALUE_CHANGELOG_SLUG,
+        title="Create Field Modal: default value при создании поля",
+        description=_CREATE_FIELD_MODAL_DEFAULT_VALUE_CHANGELOG_DESCRIPTION,
+        result=_CREATE_FIELD_MODAL_DEFAULT_VALUE_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_CREATE_FIELD_MODAL_DEFAULT_VALUE_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+PLATFORM_MODAL_FOOTER_LAYOUT_CHANGELOG_SLUG = "platform-modal-footer-layout-20260607"
+
+_PLATFORM_MODAL_FOOTER_LAYOUT_CHANGELOG_DESCRIPTION = (
+    "PlatformModal footer layout: body scroll отделён от footer, footer всегда видим "
+    "(z-index, flex-shrink 0), resize-handles не перекрывают кнопки, minWidth для footer-safe "
+    "модалок; общий CSS platform-modal-footer для кнопок Справка/Отмена/Создать."
+)
+
+
+def _ensure_platform_modal_footer_layout_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=PLATFORM_MODAL_FOOTER_LAYOUT_CHANGELOG_SLUG,
+        title="PlatformModal: footer layout и footer-safe minWidth",
+        description=_PLATFORM_MODAL_FOOTER_LAYOUT_CHANGELOG_DESCRIPTION,
+        result=_PLATFORM_MODAL_FOOTER_LAYOUT_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_PLATFORM_MODAL_FOOTER_LAYOUT_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OFFICE_OBJECT_RECORD_CREATE_MODAL_RESIZE_CHANGELOG_SLUG = (
+    "office-object-record-create-modal-resize-20260607"
+)
+
+_OFFICE_OBJECT_RECORD_CREATE_MODAL_RESIZE_CHANGELOG_DESCRIPTION = (
+    "Office «Новая запись»: PlatformQuickCreateForm с canCustomizeLayout, "
+    "resize-handles в углу модалки, platform-modal-footer без negative margin, "
+    "persist key office.objectRecord.create.{objectTypeKey}."
+)
+
+
+def _ensure_office_object_record_create_modal_resize_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OFFICE_OBJECT_RECORD_CREATE_MODAL_RESIZE_CHANGELOG_SLUG,
+        title="Office Quick Create: resize модалки «Новая запись»",
+        description=_OFFICE_OBJECT_RECORD_CREATE_MODAL_RESIZE_CHANGELOG_DESCRIPTION,
+        result=_OFFICE_OBJECT_RECORD_CREATE_MODAL_RESIZE_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OFFICE_OBJECT_RECORD_CREATE_MODAL_RESIZE_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+PLATFORM_MODAL_MIN_WIDTH_300_CHANGELOG_SLUG = "platform-modal-min-width-300-20260607"
+
+_PLATFORM_MODAL_MIN_WIDTH_300_CHANGELOG_DESCRIPTION = (
+    "PlatformModal minWidth снижен до 300px (standard и compact); footer кнопки адаптируются "
+    "(flex-wrap, min-width 88px); сохранённые большие размеры не затронуты."
+)
+
+
+def _ensure_platform_modal_min_width_300_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=PLATFORM_MODAL_MIN_WIDTH_300_CHANGELOG_SLUG,
+        title="PlatformModal: minWidth 300px",
+        description=_PLATFORM_MODAL_MIN_WIDTH_300_CHANGELOG_DESCRIPTION,
+        result=_PLATFORM_MODAL_MIN_WIDTH_300_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_PLATFORM_MODAL_MIN_WIDTH_300_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+PLATFORM_MODAL_STANDARD_MIN_WIDTH_CHANGELOG_SLUG = "platform-modal-standard-min-width-520-20260607"
+
+_PLATFORM_MODAL_STANDARD_MIN_WIDTH_CHANGELOG_DESCRIPTION = (
+    "PlatformModal standard minWidth 520px (эталон Office «Новая запись»); "
+    "layoutPreset standard|compact; viewport clamp; compact delete modals сохраняют малый размер."
+)
+
+
+def _ensure_platform_modal_standard_min_width_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=PLATFORM_MODAL_STANDARD_MIN_WIDTH_CHANGELOG_SLUG,
+        title="PlatformModal: единый minWidth 520px для рабочих модалок",
+        description=_PLATFORM_MODAL_STANDARD_MIN_WIDTH_CHANGELOG_DESCRIPTION,
+        result=_PLATFORM_MODAL_STANDARD_MIN_WIDTH_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_PLATFORM_MODAL_STANDARD_MIN_WIDTH_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+PLATFORM_MODAL_RESIZE_REGRESSION_CHANGELOG_SLUG = "platform-modal-resize-handles-zindex-20260607"
+
+_PLATFORM_MODAL_RESIZE_REGRESSION_CHANGELOG_DESCRIPTION = (
+    "PlatformModal resize regression fix: footer z-index больше не перекрывает "
+    "resize-handles (E/S/SE); data-platform-modal-resize-handle; persist bounds без регрессии footer."
+)
+
+
+def _ensure_platform_modal_resize_regression_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=PLATFORM_MODAL_RESIZE_REGRESSION_CHANGELOG_SLUG,
+        title="PlatformModal: восстановлен resize после footer layout",
+        description=_PLATFORM_MODAL_RESIZE_REGRESSION_CHANGELOG_DESCRIPTION,
+        result=_PLATFORM_MODAL_RESIZE_REGRESSION_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_PLATFORM_MODAL_RESIZE_REGRESSION_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+PLATFORM_QUICK_CREATE_OFFICE_ACCENT_CHANGELOG_SLUG = "platform-quick-create-office-accent-20260607"
+
+_PLATFORM_QUICK_CREATE_OFFICE_ACCENT_CHANGELOG_DESCRIPTION = (
+    "Office Quick Create «Новая запись»: primary-кнопка наследует --platform-accent (blue) "
+    "через data-platform-zone на PlatformModal; убран хардкод Studio purple #7c3aed."
+)
+
+
+def _ensure_platform_quick_create_office_accent_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=PLATFORM_QUICK_CREATE_OFFICE_ACCENT_CHANGELOG_SLUG,
+        title="Office Quick Create: синий accent primary-кнопки",
+        description=_PLATFORM_QUICK_CREATE_OFFICE_ACCENT_CHANGELOG_DESCRIPTION,
+        result=_PLATFORM_QUICK_CREATE_OFFICE_ACCENT_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_PLATFORM_QUICK_CREATE_OFFICE_ACCENT_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+PLAN_VIEW_RENDERER_ROUTING_CHANGELOG_SLUG = "plan-view-renderer-routing-preview-office-20260607"
+
+_PLAN_VIEW_RENDERER_ROUTING_CHANGELOG_DESCRIPTION = (
+    "Plan view renderer: resolveActiveObjectTabView для plan/table; Studio Preview передаёт viewType; "
+    "Office query limit ≤200; PlanViewEmptyState вместо fallback table и validation error."
+)
+
+
+def _ensure_plan_view_renderer_routing_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=PLAN_VIEW_RENDERER_ROUTING_CHANGELOG_SLUG,
+        title="Plan view: единый renderer в Preview и Office",
+        description=_PLAN_VIEW_RENDERER_ROUTING_CHANGELOG_DESCRIPTION,
+        result=_PLAN_VIEW_RENDERER_ROUTING_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_PLAN_VIEW_RENDERER_ROUTING_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+FIELD_PLACEHOLDER_SUPPORT_CHANGELOG_SLUG = "field-placeholder-support-20260607"
+
+_FIELD_PLACEHOLDER_SUPPORT_CHANGELOG_DESCRIPTION = (
+    "Field placeholder support added: field hints can now be configured in Studio "
+    "and displayed in create/edit forms and runtime inputs."
+)
+
+
+def _ensure_field_placeholder_support_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=FIELD_PLACEHOLDER_SUPPORT_CHANGELOG_SLUG,
+        title="Field placeholder: подсказка в формах ввода",
+        description=_FIELD_PLACEHOLDER_SUPPORT_CHANGELOG_DESCRIPTION,
+        result=_FIELD_PLACEHOLDER_SUPPORT_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_FIELD_PLACEHOLDER_SUPPORT_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OFFICE_PLAN_OBJECT_TAB_CONTRACT_CHANGELOG_SLUG = "office-plan-object-tab-contract-routing-20260607"
+
+_OFFICE_PLAN_OBJECT_TAB_CONTRACT_CHANGELOG_DESCRIPTION = (
+    "Office Plan: requestedObjectTabKey выбирает published contract вкладки (architecture), "
+    "а не default_table; hierarchyRelationKey доходит до ObjectPlanView; empty state данных."
+)
+
+
+def _ensure_office_plan_object_tab_contract_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OFFICE_PLAN_OBJECT_TAB_CONTRACT_CHANGELOG_SLUG,
+        title="Office Plan: contract routing по object tab key",
+        description=_OFFICE_PLAN_OBJECT_TAB_CONTRACT_CHANGELOG_DESCRIPTION,
+        result=_OFFICE_PLAN_OBJECT_TAB_CONTRACT_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OFFICE_PLAN_OBJECT_TAB_CONTRACT_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OFFICE_PLAN_VIEW_HOOKS_CHANGELOG_SLUG = "office-plan-view-hooks-order-20260607"
+
+_OFFICE_PLAN_VIEW_HOOKS_CHANGELOG_DESCRIPTION = (
+    "ObjectPlanViewConfigured: hooks до conditional return; usePlanHierarchy.enabled; "
+    "relationsLoading skeleton; Plan debug через planViewDebug (import.meta.env.DEV + SHOW_PLAN_DEBUG)."
+)
+
+
+def _ensure_office_plan_view_hooks_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OFFICE_PLAN_VIEW_HOOKS_CHANGELOG_SLUG,
+        title="Office Plan: исправлен порядок React hooks",
+        description=_OFFICE_PLAN_VIEW_HOOKS_CHANGELOG_DESCRIPTION,
+        result=_OFFICE_PLAN_VIEW_HOOKS_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OFFICE_PLAN_VIEW_HOOKS_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+PLAN_VIEW_ORPHAN_RECORDS_CHANGELOG_SLUG = "plan-view-orphan-records-root-nodes-20260607"
+
+_PLAN_VIEW_ORPHAN_RECORDS_CHANGELOG_DESCRIPTION = (
+    "Plan Office: empty state по planEntityCount (records), не по relation instances; "
+    "несвязанные записи — корневые узлы; buildPlanTree.test orphan/parent/child."
+)
+
+
+def _ensure_plan_view_orphan_records_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=PLAN_VIEW_ORPHAN_RECORDS_CHANGELOG_SLUG,
+        title="Plan: корневые записи без relation instances",
+        description=_PLAN_VIEW_ORPHAN_RECORDS_CHANGELOG_DESCRIPTION,
+        result=_PLAN_VIEW_ORPHAN_RECORDS_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_PLAN_VIEW_ORPHAN_RECORDS_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TAB_MENU_IN_TAB_HISTORY_SLUG = "object-tab-menu-in-tab-20260607"
+OBJECT_TAB_MENU_IN_TAB_CHANGELOG_SLUG = "object-tab-menu-in-tab-changelog-20260607"
+
+_OBJECT_TAB_MENU_IN_TAB_HISTORY_DESCRIPTION = (
+    "Object Tab Settings: настройка «Меню во вкладке» (menuInTab) — перенос "
+    "Object Context Menu из заголовка объекта в название активной вкладки для "
+    "всех типов представлений."
+)
+
+_OBJECT_TAB_MENU_IN_TAB_CHANGELOG_DESCRIPTION = (
+    "Studio → Свойства вкладки → «Меню во вкладке» (ниже «Активное представление»); "
+    "settings_json.tabSettings.menuInTab; Office скрывает блок «Название объекта ▾» "
+    "и показывает единый ObjectContextMenuTrigger в активной вкладке."
+)
+
+
+def _ensure_object_tab_menu_in_tab_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TAB_MENU_IN_TAB_HISTORY_SLUG,
+        title="Object Tab: настройка «Меню во вкладке»",
+        description=_OBJECT_TAB_MENU_IN_TAB_HISTORY_DESCRIPTION,
+        result=_OBJECT_TAB_MENU_IN_TAB_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TAB_MENU_IN_TAB_CHANGELOG_SLUG,
+        title="Журнал изменений: «Меню во вкладке»",
+        description=_OBJECT_TAB_MENU_IN_TAB_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TAB_MENU_IN_TAB_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TAB_MENU_IN_TAB_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TAB_MENU_IN_TAB_FIX_CHANGELOG_SLUG = "object-tab-menu-in-tab-fix-20260607"
+
+_OBJECT_TAB_MENU_IN_TAB_FIX_CHANGELOG_DESCRIPTION = (
+    "Fix menuInTab: Studio publish сохраняет dirty вкладки перед publish; "
+    "Office перечитывает published catalog после publish; "
+    "parse settings_json string; preserve tabSettings в publish contract."
+)
+
+
+def _ensure_object_tab_menu_in_tab_fix_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TAB_MENU_IN_TAB_FIX_CHANGELOG_SLUG,
+        title="Fix: «Меню во вкладке» доходит до Office",
+        description=_OBJECT_TAB_MENU_IN_TAB_FIX_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TAB_MENU_IN_TAB_FIX_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TAB_MENU_IN_TAB_FIX_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+VIEW_PROPERTIES_PANEL_STUDIO_VIEW_TYPES_FIX_SLUG = (
+    "view-properties-panel-studio-view-types-fix-20260607"
+)
+
+_VIEW_PROPERTIES_PANEL_STUDIO_VIEW_TYPES_FIX_DESCRIPTION = (
+    "Bugfix Studio: восстановлен импорт STUDIO_VIEW_TYPES и PlanViewSettingsPanel "
+    "в ViewPropertiesPanel после добавления «Меню во вкладке»; menuInTab остаётся "
+    "универсальным для всех типов вкладок."
+)
+
+
+def _ensure_view_properties_panel_studio_view_types_fix_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=VIEW_PROPERTIES_PANEL_STUDIO_VIEW_TYPES_FIX_SLUG,
+        title="Bugfix: ViewPropertiesPanel STUDIO_VIEW_TYPES",
+        description=_VIEW_PROPERTIES_PANEL_STUDIO_VIEW_TYPES_FIX_DESCRIPTION,
+        result=_VIEW_PROPERTIES_PANEL_STUDIO_VIEW_TYPES_FIX_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_VIEW_PROPERTIES_PANEL_STUDIO_VIEW_TYPES_FIX_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TAB_MENU_IN_TAB_RUNTIME_FIX_SLUG = "object-tab-menu-in-tab-runtime-fix-20260607"
+
+_OBJECT_TAB_MENU_IN_TAB_RUNTIME_FIX_DESCRIPTION = (
+    "Fix menuInTab runtime: tabSettings сохраняются в update_view и publish normalize; "
+    "Office header читает activeTab.menuInTab; диагностика MENU_IN_TAB_* за debug flag."
+)
+
+
+def _ensure_object_tab_menu_in_tab_runtime_fix_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TAB_MENU_IN_TAB_RUNTIME_FIX_SLUG,
+        title="Fix: menuInTab в Office runtime",
+        description=_OBJECT_TAB_MENU_IN_TAB_RUNTIME_FIX_DESCRIPTION,
+        result=_OBJECT_TAB_MENU_IN_TAB_RUNTIME_FIX_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TAB_MENU_IN_TAB_RUNTIME_FIX_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TAB_MENU_IN_TAB_LAYOUT_FIX_SLUG = "object-tab-menu-in-tab-layout-fix-20260607"
+
+_OBJECT_TAB_MENU_IN_TAB_LAYOUT_FIX_DESCRIPTION = (
+    "Bugfix menuInTab layout: Office переносит меню во вкладку (Архитектура ▾); "
+    "при menuInTab=true collapse пустого object header — контент начинается сразу "
+    "под строкой вкладок."
+)
+
+
+def _ensure_object_tab_menu_in_tab_layout_fix_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TAB_MENU_IN_TAB_LAYOUT_FIX_SLUG,
+        title="Bugfix: menuInTab layout в Office",
+        description=_OBJECT_TAB_MENU_IN_TAB_LAYOUT_FIX_DESCRIPTION,
+        result=_OBJECT_TAB_MENU_IN_TAB_LAYOUT_FIX_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TAB_MENU_IN_TAB_LAYOUT_FIX_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TAB_MENU_IN_TAB_TRIGGER_SYNC_FIX_SLUG = (
+    "object-tab-menu-in-tab-trigger-sync-fix-20260607"
+)
+
+_OBJECT_TAB_MENU_IN_TAB_TRIGGER_SYNC_FIX_DESCRIPTION = (
+    "Bugfix menuInTab: Office рендерит ObjectContextMenuTrigger во вкладке по "
+    "resolvedActiveTab.menuInTab и resolvedActiveKey; устранён рассинхрон "
+    "resolvedActiveTab и tabs.map (tab.menuInTab)."
+)
+
+
+def _ensure_object_tab_menu_in_tab_trigger_sync_fix_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TAB_MENU_IN_TAB_TRIGGER_SYNC_FIX_SLUG,
+        title="Bugfix: menuInTab trigger во вкладке",
+        description=_OBJECT_TAB_MENU_IN_TAB_TRIGGER_SYNC_FIX_DESCRIPTION,
+        result=_OBJECT_TAB_MENU_IN_TAB_TRIGGER_SYNC_FIX_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TAB_MENU_IN_TAB_TRIGGER_SYNC_FIX_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TAB_MENU_IN_TAB_WORKSPACE_TAB_FIX_SLUG = (
+    "object-tab-menu-in-tab-workspace-tab-fix-20260607"
+)
+
+_OBJECT_TAB_MENU_IN_TAB_WORKSPACE_TAB_FIX_DESCRIPTION = (
+    "Bugfix menuInTab: меню во вкладке пространства (WorkspaceRuntimeTabsBar) "
+    "при hideObjectTabBar; bridge publishPortalObjectViewHeader; удалены window debug flags."
+)
+
+
+def _ensure_object_tab_menu_in_tab_workspace_tab_fix_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TAB_MENU_IN_TAB_WORKSPACE_TAB_FIX_SLUG,
+        title="Bugfix: menuInTab во вкладке workspace",
+        description=_OBJECT_TAB_MENU_IN_TAB_WORKSPACE_TAB_FIX_DESCRIPTION,
+        result=_OBJECT_TAB_MENU_IN_TAB_WORKSPACE_TAB_FIX_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TAB_MENU_IN_TAB_WORKSPACE_TAB_FIX_DESCRIPTION)
+
+    return added, journal_lines
+
+
+PLAN_VIEW_TARGET_UI_CHANGELOG_SLUG = "plan-view-target-ui-20260607"
+
+_PLAN_VIEW_TARGET_UI_CHANGELOG_DESCRIPTION = (
+    "Plan target UI: три зоны (дерево 35% + карточка 65% + нижняя панель 30%); "
+    "drag-and-drop reparent через Relation Engine; rollup статусов/готовности; "
+    "вкладки Активности/Комментарии/История/Файлы/Связи/Задачи; "
+    "Office → Object Tab → План."
+)
+
+
+def _ensure_plan_view_target_ui_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=PLAN_VIEW_TARGET_UI_CHANGELOG_SLUG,
+        title="Plan: целевой интерфейс (дерево + карточка + вкладки)",
+        description=_PLAN_VIEW_TARGET_UI_CHANGELOG_DESCRIPTION,
+        result=_PLAN_VIEW_TARGET_UI_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_PLAN_VIEW_TARGET_UI_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+PLAN_SELF_RELATION_UNIVERSAL_CHANGELOG_SLUG = "plan-self-relation-universal-empty-states-20260607"
+
+_PLAN_SELF_RELATION_UNIVERSAL_CHANGELOG_DESCRIPTION = (
+    "Plan self-relation universal: isSelfRelationDefinition по source/target object type; "
+    "Plan использует hierarchyRelationKey из contract (не task_subtask); "
+    "раздельные empty states настройки и данных; предупреждение для one_to_one."
+)
+
+
+def _ensure_plan_self_relation_universal_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=PLAN_SELF_RELATION_UNIVERSAL_CHANGELOG_SLUG,
+        title="Plan: универсальная self-relation и empty states",
+        description=_PLAN_SELF_RELATION_UNIVERSAL_CHANGELOG_DESCRIPTION,
+        result=_PLAN_SELF_RELATION_UNIVERSAL_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_PLAN_SELF_RELATION_UNIVERSAL_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+PLAN_VIEW_PUBLISH_RUNTIME_CHANGELOG_SLUG = "plan-view-publish-runtime-settings-20260607"
+
+_PLAN_VIEW_PUBLISH_RUNTIME_CHANGELOG_DESCRIPTION = (
+    "Plan view publish/runtime: objectView.presentation.plan сохраняется в draft, "
+    "публикуется в catalog snapshot и читается Office; scaffold при create/publish; "
+    "Save вкладки Plan из header Studio."
+)
+
+
+def _ensure_plan_view_publish_runtime_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=PLAN_VIEW_PUBLISH_RUNTIME_CHANGELOG_SLUG,
+        title="Plan view: публикация и runtime-настройки",
+        description=_PLAN_VIEW_PUBLISH_RUNTIME_CHANGELOG_DESCRIPTION,
+        result=_PLAN_VIEW_PUBLISH_RUNTIME_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_PLAN_VIEW_PUBLISH_RUNTIME_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+STUDIO_OBJECT_VIEW_DRAFT_PREVIEW_SYNC_CHANGELOG_SLUG = (
+    "studio-object-view-draft-preview-sync-20260607"
+)
+
+_STUDIO_OBJECT_VIEW_DRAFT_PREVIEW_SYNC_CHANGELOG_DESCRIPTION = (
+    "Studio Preview draft sync: после создания вкладки обновляются ObjectTypePreviewTabContext "
+    "и RuntimePreviewTab (schemaRevision); Save активен для Studio draft; публикация не обязательна."
+)
+
+
+def _ensure_studio_object_view_draft_preview_sync_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=STUDIO_OBJECT_VIEW_DRAFT_PREVIEW_SYNC_CHANGELOG_SLUG,
+        title="Studio Preview: синхронизация draft-вкладок после создания",
+        description=_STUDIO_OBJECT_VIEW_DRAFT_PREVIEW_SYNC_CHANGELOG_DESCRIPTION,
+        result=_STUDIO_OBJECT_VIEW_DRAFT_PREVIEW_SYNC_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_STUDIO_OBJECT_VIEW_DRAFT_PREVIEW_SYNC_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+PLATFORM_MODAL_HELP_CHANGELOG_SLUG = "platform-modal-help-hover-card-20260607"
+
+_PLATFORM_MODAL_HELP_CHANGELOG_DESCRIPTION = (
+    "PlatformModalHelp: единая всплывающая справка в footer (hover/focus/Escape), "
+    "portal-карточка без изменения высоты footer; Create Tab Modal — текст «Создание вкладки»."
+)
+
+
+def _ensure_platform_modal_help_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=PLATFORM_MODAL_HELP_CHANGELOG_SLUG,
+        title="PlatformModalHelp: всплывающая справка в footer",
+        description=_PLATFORM_MODAL_HELP_CHANGELOG_DESCRIPTION,
+        result=_PLATFORM_MODAL_HELP_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_PLATFORM_MODAL_HELP_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+PLATFORM_ACCENT_ZONES_CHANGELOG_SLUG = "platform-accent-zones-studio-office-20260607"
+
+_PLATFORM_ACCENT_ZONES_CHANGELOG_DESCRIPTION = (
+    "Studio/Office accent zones: data-platform-zone на body и PlatformModal; "
+    "semantic tokens --platform-accent (Studio purple #7c3aed, Office blue #2563ff); "
+    "Create Tab Modal и footer PlatformModal наследуют тему без хардкода."
+)
+
+
+def _ensure_platform_accent_zones_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=PLATFORM_ACCENT_ZONES_CHANGELOG_SLUG,
+        title="Studio/Office: цветовые зоны акцента (purple/blue)",
+        description=_PLATFORM_ACCENT_ZONES_CHANGELOG_DESCRIPTION,
+        result=_PLATFORM_ACCENT_ZONES_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_PLATFORM_ACCENT_ZONES_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+CREATE_RELATION_DEFINITION_MODAL_FOOTER_CHANGELOG_SLUG = (
+    "create-relation-definition-modal-footer-20260607"
+)
+
+_CREATE_RELATION_DEFINITION_MODAL_FOOTER_CHANGELOG_DESCRIPTION = (
+    "Create Relation Modal UX: фиксированный footer PlatformModal "
+    "[Отмена][Создать связь], scroll только в body, minHeight 480px; "
+    "Studio → Object Type → Relations → Создать связь."
+)
+
+
+def _ensure_create_relation_definition_modal_footer_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=CREATE_RELATION_DEFINITION_MODAL_FOOTER_CHANGELOG_SLUG,
+        title="Create Relation Modal: footer и «Создать связь»",
+        description=_CREATE_RELATION_DEFINITION_MODAL_FOOTER_CHANGELOG_DESCRIPTION,
+        result=_CREATE_RELATION_DEFINITION_MODAL_FOOTER_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_CREATE_RELATION_DEFINITION_MODAL_FOOTER_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+RELATION_FIELD_AUTO_ROLE_CHANGELOG_SLUG = "relation-field-auto-role-20260607"
+
+_RELATION_FIELD_AUTO_ROLE_CHANGELOG_DESCRIPTION = (
+    "Bugfix relation field: роль и кардинальность определяются автоматически по "
+    "relation definition; Create Field Modal больше не отправляет неверный role; "
+    "Studio → Object Type → Fields → Создать поле → Связь."
+)
+
+
+def _ensure_relation_field_auto_role_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    stage = (
+        db.query(PlatformImplementationStage)
+        .filter(PlatformImplementationStage.slug == "designer-foundation")
+        .one_or_none()
+    )
+    related_stage_id = stage.id if stage is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=RELATION_FIELD_AUTO_ROLE_CHANGELOG_SLUG,
+        title="Relation field: auto role/cardinality (422 fix)",
+        description=_RELATION_FIELD_AUTO_ROLE_CHANGELOG_DESCRIPTION,
+        result=_RELATION_FIELD_AUTO_ROLE_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_stage_id=related_stage_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    ):
+        added += 1
+        journal_lines.append(_RELATION_FIELD_AUTO_ROLE_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
 
 _OBJECT_TABLE_EXCEL_IMPORT_DEFAULT_VALUES_CHANGELOG_DESCRIPTION = (
     "Excel Import: обязательные поля на шаге «Колонки» — источник «Колонка Excel» "
@@ -4542,6 +6274,410 @@ def refresh_platform_dashboard(db: Session, repo_root=None, initiated_by=None) -
         ]
 
     (
+        create_field_modal_default_value_added,
+        create_field_modal_default_value_journal_lines,
+    ) = _ensure_create_field_modal_default_value_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += create_field_modal_default_value_added
+    if create_field_modal_default_value_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *create_field_modal_default_value_journal_lines,
+        ]
+
+    (
+        platform_modal_footer_layout_added,
+        platform_modal_footer_layout_journal_lines,
+    ) = _ensure_platform_modal_footer_layout_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += platform_modal_footer_layout_added
+    if platform_modal_footer_layout_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *platform_modal_footer_layout_journal_lines,
+        ]
+
+    (
+        platform_modal_resize_added,
+        platform_modal_resize_journal_lines,
+    ) = _ensure_platform_modal_resize_regression_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += platform_modal_resize_added
+    if platform_modal_resize_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *platform_modal_resize_journal_lines,
+        ]
+
+    (
+        platform_modal_min_width_added,
+        platform_modal_min_width_journal_lines,
+    ) = _ensure_platform_modal_standard_min_width_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += platform_modal_min_width_added
+    if platform_modal_min_width_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *platform_modal_min_width_journal_lines,
+        ]
+
+    (
+        platform_modal_min_width_300_added,
+        platform_modal_min_width_300_journal_lines,
+    ) = _ensure_platform_modal_min_width_300_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += platform_modal_min_width_300_added
+    if platform_modal_min_width_300_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *platform_modal_min_width_300_journal_lines,
+        ]
+
+    (
+        platform_accent_zones_added,
+        platform_accent_zones_journal_lines,
+    ) = _ensure_platform_accent_zones_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += platform_accent_zones_added
+    if platform_accent_zones_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *platform_accent_zones_journal_lines,
+        ]
+
+    (
+        quick_create_accent_added,
+        quick_create_accent_journal_lines,
+    ) = _ensure_platform_quick_create_office_accent_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += quick_create_accent_added
+    if quick_create_accent_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *quick_create_accent_journal_lines,
+        ]
+
+    (
+        office_record_create_resize_added,
+        office_record_create_resize_journal_lines,
+    ) = _ensure_office_object_record_create_modal_resize_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += office_record_create_resize_added
+    if office_record_create_resize_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *office_record_create_resize_journal_lines,
+        ]
+
+    (
+        platform_modal_help_added,
+        platform_modal_help_journal_lines,
+    ) = _ensure_platform_modal_help_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += platform_modal_help_added
+    if platform_modal_help_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *platform_modal_help_journal_lines,
+        ]
+
+    (
+        studio_view_draft_preview_added,
+        studio_view_draft_preview_journal_lines,
+    ) = _ensure_studio_object_view_draft_preview_sync_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += studio_view_draft_preview_added
+    if studio_view_draft_preview_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *studio_view_draft_preview_journal_lines,
+        ]
+
+    (
+        plan_view_renderer_added,
+        plan_view_renderer_journal_lines,
+    ) = _ensure_plan_view_renderer_routing_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += plan_view_renderer_added
+    if plan_view_renderer_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *plan_view_renderer_journal_lines,
+        ]
+
+    (
+        field_placeholder_added,
+        field_placeholder_journal_lines,
+    ) = _ensure_field_placeholder_support_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += field_placeholder_added
+    if field_placeholder_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *field_placeholder_journal_lines,
+        ]
+
+    (
+        plan_view_publish_runtime_added,
+        plan_view_publish_runtime_journal_lines,
+    ) = _ensure_plan_view_publish_runtime_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += plan_view_publish_runtime_added
+    if plan_view_publish_runtime_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *plan_view_publish_runtime_journal_lines,
+        ]
+
+    (
+        plan_self_relation_added,
+        plan_self_relation_journal_lines,
+    ) = _ensure_plan_self_relation_universal_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += plan_self_relation_added
+    if plan_self_relation_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *plan_self_relation_journal_lines,
+        ]
+
+    (
+        office_plan_tab_added,
+        office_plan_tab_journal_lines,
+    ) = _ensure_office_plan_object_tab_contract_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += office_plan_tab_added
+    if office_plan_tab_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *office_plan_tab_journal_lines,
+        ]
+
+    (
+        office_plan_hooks_added,
+        office_plan_hooks_journal_lines,
+    ) = _ensure_office_plan_view_hooks_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += office_plan_hooks_added
+    if office_plan_hooks_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *office_plan_hooks_journal_lines,
+        ]
+
+    (
+        plan_orphan_records_added,
+        plan_orphan_records_journal_lines,
+    ) = _ensure_plan_view_orphan_records_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += plan_orphan_records_added
+    if plan_orphan_records_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *plan_orphan_records_journal_lines,
+        ]
+
+    (
+        plan_target_ui_added,
+        plan_target_ui_journal_lines,
+    ) = _ensure_plan_view_target_ui_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += plan_target_ui_added
+    if plan_target_ui_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *plan_target_ui_journal_lines,
+        ]
+
+    (
+        object_tab_menu_in_tab_added,
+        object_tab_menu_in_tab_journal_lines,
+    ) = _ensure_object_tab_menu_in_tab_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += object_tab_menu_in_tab_added
+    if object_tab_menu_in_tab_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *object_tab_menu_in_tab_journal_lines,
+        ]
+
+    (
+        object_tab_menu_in_tab_fix_added,
+        object_tab_menu_in_tab_fix_journal_lines,
+    ) = _ensure_object_tab_menu_in_tab_fix_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += object_tab_menu_in_tab_fix_added
+    if object_tab_menu_in_tab_fix_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *object_tab_menu_in_tab_fix_journal_lines,
+        ]
+
+    (
+        view_properties_panel_fix_added,
+        view_properties_panel_fix_journal_lines,
+    ) = _ensure_view_properties_panel_studio_view_types_fix_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += view_properties_panel_fix_added
+    if view_properties_panel_fix_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *view_properties_panel_fix_journal_lines,
+        ]
+
+    (
+        object_tab_menu_in_tab_runtime_fix_added,
+        object_tab_menu_in_tab_runtime_fix_journal_lines,
+    ) = _ensure_object_tab_menu_in_tab_runtime_fix_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += object_tab_menu_in_tab_runtime_fix_added
+    if object_tab_menu_in_tab_runtime_fix_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *object_tab_menu_in_tab_runtime_fix_journal_lines,
+        ]
+
+    (
+        object_tab_menu_in_tab_layout_fix_added,
+        object_tab_menu_in_tab_layout_fix_journal_lines,
+    ) = _ensure_object_tab_menu_in_tab_layout_fix_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += object_tab_menu_in_tab_layout_fix_added
+    if object_tab_menu_in_tab_layout_fix_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *object_tab_menu_in_tab_layout_fix_journal_lines,
+        ]
+
+    (
+        object_tab_menu_in_tab_trigger_sync_fix_added,
+        object_tab_menu_in_tab_trigger_sync_fix_journal_lines,
+    ) = _ensure_object_tab_menu_in_tab_trigger_sync_fix_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += object_tab_menu_in_tab_trigger_sync_fix_added
+    if object_tab_menu_in_tab_trigger_sync_fix_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *object_tab_menu_in_tab_trigger_sync_fix_journal_lines,
+        ]
+
+    (
+        object_tab_menu_in_tab_workspace_tab_fix_added,
+        object_tab_menu_in_tab_workspace_tab_fix_journal_lines,
+    ) = _ensure_object_tab_menu_in_tab_workspace_tab_fix_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += object_tab_menu_in_tab_workspace_tab_fix_added
+    if object_tab_menu_in_tab_workspace_tab_fix_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *object_tab_menu_in_tab_workspace_tab_fix_journal_lines,
+        ]
+
+    (
+        create_relation_modal_footer_added,
+        create_relation_modal_footer_journal_lines,
+    ) = _ensure_create_relation_definition_modal_footer_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += create_relation_modal_footer_added
+    if create_relation_modal_footer_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *create_relation_modal_footer_journal_lines,
+        ]
+
+    relation_field_auto_role_added, relation_field_auto_role_journal_lines = (
+        _ensure_relation_field_auto_role_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += relation_field_auto_role_added
+    if relation_field_auto_role_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *relation_field_auto_role_journal_lines,
+        ]
+
+    (
         excel_import_default_values_fix_added,
         excel_import_default_values_fix_journal_lines,
     ) = _ensure_object_table_excel_import_default_values_fix_dashboard_notes(
@@ -4697,6 +6833,34 @@ def refresh_platform_dashboard(db: Session, repo_root=None, initiated_by=None) -
             *studio_preview_mock_data_journal_lines,
         ]
 
+    object_plan_view_added, object_plan_view_journal_lines = (
+        _ensure_object_plan_view_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += object_plan_view_added
+    if object_plan_view_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *object_plan_view_journal_lines,
+        ]
+
+    object_view_arch_added, object_view_arch_journal_lines = (
+        _ensure_object_view_architecture_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += object_view_arch_added
+    if object_view_arch_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *object_view_arch_journal_lines,
+        ]
+
     studio_object_type_header_icon_added, studio_object_type_header_icon_journal_lines = (
         _ensure_studio_object_type_header_icon_dashboard_notes(
             db,
@@ -4709,6 +6873,20 @@ def refresh_platform_dashboard(db: Session, repo_root=None, initiated_by=None) -
         changed_work_items = [
             *changed_work_items,
             *studio_object_type_header_icon_journal_lines,
+        ]
+
+    studio_object_type_actions_menu_added, studio_object_type_actions_menu_journal_lines = (
+        _ensure_studio_object_type_actions_menu_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += studio_object_type_actions_menu_added
+    if studio_object_type_actions_menu_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *studio_object_type_actions_menu_journal_lines,
         ]
 
     studio_preview_demo_badge_added, studio_preview_demo_badge_journal_lines = (

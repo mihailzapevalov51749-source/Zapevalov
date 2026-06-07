@@ -1,15 +1,17 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 
-describe("ObjectTableView excel import integration", () => {
-  it("registers import provider only outside studio preview", () => {
-    const source = readFileSync(new URL("./ObjectTableView.jsx", import.meta.url), "utf8");
+const tableSource = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), "ObjectTableView.jsx"),
+  "utf8",
+);
 
-    assert.match(source, /registerObjectTableImportProvider/);
-    assert.match(source, /resolveImportableFields/);
-    assert.match(source, /buildImportSnapshot/);
-    assert.match(source, /onImported: \(\) => query\.reload/);
-    assert.match(source, /if \(isPreviewMode\) \{[\s\S]*return undefined;[\s\S]*registerObjectTableImportProvider/);
+describe("ObjectTableView excel import integration", () => {
+  it("relies on ObjectViewHost runtime context actions instead of local providers", () => {
+    assert.doesNotMatch(tableSource, /registerObjectTableImportProvider/);
+    assert.match(tableSource, /query\.reload/);
   });
 });

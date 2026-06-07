@@ -11,6 +11,7 @@ import {
   resolveDefaultPublishedObjectTabKey,
   resolvePublishedObjectTabs,
 } from "../services/resolvePublishedObjectTabs";
+import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../../shared/navigation/navigationReload";
 import {
   clearPortalObjectViewHeader,
   publishPortalObjectViewHeader,
@@ -22,7 +23,9 @@ async function resolveObjectTypeFromPublishedCatalog(tenantId, objectTypeRef) {
     return null;
   }
 
-  const catalog = await runtimeCatalogApi.getPublishedCatalog(tenantId);
+  const catalog = await runtimeCatalogApi.getPublishedCatalog(tenantId, {
+    cacheBust: true,
+  });
   const items = Array.isArray(catalog?.object_types) ? catalog.object_types : [];
 
   return (
@@ -38,6 +41,8 @@ export default function PortalObjectDataPage({
   source = "portal",
   navigationAppearance = null,
   activeObjectTabKey = null,
+  fixedObjectTabKey = null,
+  hideObjectTabBar = false,
   syncObjectTabRoute = false,
   onNavigateObjectTab = null,
 }) {
@@ -79,6 +84,18 @@ export default function PortalObjectDataPage({
   }, [loadPage]);
 
   useEffect(() => {
+    const handleCatalogReload = () => {
+      loadPage();
+    };
+
+    window.addEventListener(PORTAL_NAVIGATION_RELOAD_EVENT, handleCatalogReload);
+
+    return () => {
+      window.removeEventListener(PORTAL_NAVIGATION_RELOAD_EVENT, handleCatalogReload);
+    };
+  }, [loadPage]);
+
+  useEffect(() => {
     return () => {
       clearPortalObjectViewHeader();
     };
@@ -89,10 +106,13 @@ export default function PortalObjectDataPage({
     [objectType],
   );
 
-  const resolvedObjectTabKey = useMemo(
-    () => resolveDefaultPublishedObjectTabKey(objectTabs, activeObjectTabKey),
-    [objectTabs, activeObjectTabKey],
-  );
+  const resolvedObjectTabKey = useMemo(() => {
+    const fixedKey = String(fixedObjectTabKey || "").trim();
+    if (fixedKey) {
+      return fixedKey;
+    }
+    return resolveDefaultPublishedObjectTabKey(objectTabs, activeObjectTabKey);
+  }, [objectTabs, activeObjectTabKey, fixedObjectTabKey]);
 
   const activeObjectTab = useMemo(
     () => findPublishedObjectTab(objectTabs, resolvedObjectTabKey),
@@ -100,7 +120,37 @@ export default function PortalObjectDataPage({
   );
 
   useEffect(() => {
-    if (!syncObjectTabRoute || !onNavigateObjectTab || loading || !objectType) {
+    if (!objectType || loading) {
+      return;
+    }
+
+    publishPortalObjectViewHeader({
+      tenantId,
+      objectTypeId: objectType.id,
+      objectTypeKey: objectType.key,
+      objectName: objectType.name || "Объект",
+      activeObjectTabKey: resolvedObjectTabKey,
+      menuInTab: activeObjectTab?.menuInTab === true,
+      hideObjectTabBar: hideObjectTabBar || Boolean(fixedObjectTabKey),
+    });
+  }, [
+    objectType,
+    loading,
+    tenantId,
+    resolvedObjectTabKey,
+    activeObjectTab?.menuInTab,
+    hideObjectTabBar,
+    fixedObjectTabKey,
+  ]);
+
+  useEffect(() => {
+    if (
+      fixedObjectTabKey ||
+      !syncObjectTabRoute ||
+      !onNavigateObjectTab ||
+      loading ||
+      !objectType
+    ) {
       return;
     }
 
@@ -121,11 +171,15 @@ export default function PortalObjectDataPage({
     loading,
     objectType,
     activeObjectTabKey,
+    fixedObjectTabKey,
     resolvedObjectTabKey,
   ]);
 
   const handleSelectObjectTab = useCallback(
     (nextTabKey) => {
+      if (hideObjectTabBar || fixedObjectTabKey) {
+        return;
+      }
       const normalized = String(nextTabKey || "").trim();
 
       if (!normalized || normalized === resolvedObjectTabKey) {
@@ -134,22 +188,35 @@ export default function PortalObjectDataPage({
 
       onNavigateObjectTab?.(normalized);
     },
-    [resolvedObjectTabKey, onNavigateObjectTab],
+    [fixedObjectTabKey, hideObjectTabBar, resolvedObjectTabKey, onNavigateObjectTab],
   );
 
   const handleActiveViewContextChange = useCallback(
     (context) => {
       publishPortalObjectViewHeader({
+        tenantId,
         objectTypeId: objectType?.id,
         objectTypeKey: objectType?.key,
+        objectName: objectType?.name || "Объект",
         activeAdapterType: context?.activeAdapterType,
         activeAdapterLabel: context?.activeAdapterLabel,
         activeObjectTabKey: resolvedObjectTabKey,
         activeRepresentationKey: context?.activeRepresentationKey,
         activeRepresentationName: context?.activeRepresentationName,
+        menuInTab: activeObjectTab?.menuInTab === true,
+        hideObjectTabBar: hideObjectTabBar || Boolean(fixedObjectTabKey),
       });
     },
-    [objectType?.id, objectType?.key, resolvedObjectTabKey],
+    [
+      tenantId,
+      objectType?.id,
+      objectType?.key,
+      objectType?.name,
+      resolvedObjectTabKey,
+      activeObjectTab?.menuInTab,
+      hideObjectTabBar,
+      fixedObjectTabKey,
+    ],
   );
 
   if (loading) {
@@ -206,9 +273,10 @@ export default function PortalObjectDataPage({
         iconType={appearance.icon_type}
         iconFileUrl={appearance.icon_file_url}
         color={appearance.color}
-        tabs={objectTabs}
+        tabs={hideObjectTabBar || fixedObjectTabKey ? [] : objectTabs}
+        activeTab={activeObjectTab}
         activeTabKey={resolvedObjectTabKey}
-        onSelectTab={handleSelectObjectTab}
+        onSelectTab={hideObjectTabBar || fixedObjectTabKey ? null : handleSelectObjectTab}
       />
 
       {!catalogPublished ? (

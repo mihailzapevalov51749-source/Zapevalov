@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 
 import { ObjectViewHost } from "../../../objectViews";
 import { useObjectTypePreviewTab } from "../../context/ObjectTypePreviewTabContext";
+import { usePlanViewStudio } from "../../context/PlanViewStudioContext";
 import StudioPreviewContextBlock from "../preview/StudioPreviewContextBlock";
 import { resolveObjectViewTabStatusPresentation } from "../../utils/resolveObjectViewTabStatusPresentation";
 import { resolveObjectViewTypeLabel } from "../../utils/resolveObjectViewTypeLabel";
@@ -23,13 +24,46 @@ export default function RuntimePreviewTab({
   const { objectTypeId: routeObjectTypeId } = useParams();
   const resolvedObjectTypeId = objectTypeId || routeObjectTypeId;
 
+  const previewTabContext = useObjectTypePreviewTab() || {};
+  const planStudio = usePlanViewStudio();
+
   const {
     selectedView,
     selectedViewKey,
     loading: viewsLoading,
     error: viewsError,
     reloadViews,
-  } = useObjectTypePreviewTab() || {};
+    studioViewDraft: previewTabStudioViewDraft,
+    planPreviewEditor: previewTabPlanPreviewEditor,
+  } = previewTabContext;
+
+  const planPreviewEditor =
+    planStudio?.planPreviewEditor ?? previewTabPlanPreviewEditor ?? null;
+
+  const studioViewDraftSettingsJson = useMemo(() => {
+    const studioDraft = planStudio?.studioViewDraftSettings;
+    if (
+      studioDraft?.viewKey &&
+      selectedViewKey &&
+      studioDraft.viewKey === selectedViewKey
+    ) {
+      return studioDraft.settingsJson;
+    }
+
+    if (
+      previewTabStudioViewDraft?.viewKey &&
+      selectedViewKey &&
+      previewTabStudioViewDraft.viewKey === selectedViewKey
+    ) {
+      return previewTabStudioViewDraft.settingsJson;
+    }
+
+    return null;
+  }, [
+    planStudio?.studioViewDraftSettings,
+    previewTabStudioViewDraft,
+    selectedViewKey,
+  ]);
 
   const [usagePaths, setUsagePaths] = useState([]);
 
@@ -114,10 +148,14 @@ export default function RuntimePreviewTab({
             objectTypeId={resolvedObjectTypeId}
             objectTypeKey={objectTypeKey}
             viewKey={selectedViewKey}
+            viewType={selectedView?.view_type || "table"}
             pageSize={20}
             mode="studio-preview"
             minHeight={280}
-            showToolbar
+            showToolbar={String(selectedView?.view_type || "table").toLowerCase() === "table"}
+            studioViewDraftSettingsJson={studioViewDraftSettingsJson}
+            planPreviewEditor={planPreviewEditor}
+            studioPreviewCatalog={planStudio?.studioPreviewCatalog ?? null}
             onSchemaChanged={async () => {
               await onSchemaChanged?.();
               await reloadViews?.();

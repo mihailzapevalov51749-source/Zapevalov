@@ -1,10 +1,19 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
 import PlatformModalShell from "./PlatformModalShell";
-import usePlatformModalLayout from "./usePlatformModalLayout";
+import usePlatformModalLayout, {
+  resolvePlatformModalMinWidth,
+} from "./usePlatformModalLayout";
 
 /**
  * Platform work modal: drag (header), resize (E/S/SE), persisted bounds.
+ *
+ * Accent theme: inherits data-platform-zone from PlatformModalShell
+ * (Studio = purple, Office = blue). Do not hardcode accent colors in modal content.
+ *
+ * layoutPreset:
+ * - "standard" — work modals (forms); min width = PLATFORM_MODAL_STANDARD_MIN_WIDTH (300px)
+ * - "compact" — confirm/notice dialogs; smaller min width allowed
  */
 export default function PlatformModal({
   modalKey,
@@ -24,12 +33,22 @@ export default function PlatformModal({
   viewportInset = 24,
   headerDensity = "default",
   titleAccessory = null,
+  layoutPreset = "standard",
 }) {
+  const resolvedDefaultBounds = useMemo(() => {
+    const base =
+      defaultBounds && typeof defaultBounds === "object" ? { ...defaultBounds } : {};
+
+    base.minWidth = resolvePlatformModalMinWidth(layoutPreset, base.minWidth);
+
+    return base;
+  }, [defaultBounds, layoutPreset]);
+
   const layout = usePlatformModalLayout({
     modalKey,
     open,
     canCustomizeLayout,
-    defaultBounds,
+    defaultBounds: resolvedDefaultBounds,
     keepFullyVisible,
     viewportInset,
   });

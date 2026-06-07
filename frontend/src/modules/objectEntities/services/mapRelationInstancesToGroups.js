@@ -8,7 +8,7 @@ import {
   readRelationEntityFieldLabel,
   resolveSubtaskDisplayFieldKeys,
 } from "./resolveSubtasksFromRelations.js";
-import { resolveEntityTitle } from "./resolveEntityTitle";
+import { resolveEntityDisplayTitle } from "./resolveEntityDisplayTitle.js";
 
 const DEFAULT_CONCURRENCY = 4;
 
@@ -260,21 +260,11 @@ export async function mapRelationInstancesToGroups({
       rawEntity = await fetchEntity(item.entityId, item.objectTypeKey);
 
       if (rawEntity) {
-        const objectType = findCatalogObjectType(catalog, item.objectTypeKey);
-        const fields = Array.isArray(objectType?.fields) ? objectType.fields : [];
-        const titleField = fields.find((field) => field?.is_title || field?.isTitle);
-        const titleFieldKey = String(
-          titleField?.key || titleField?.field_key || "",
-        ).trim();
-
-        const values =
-          rawEntity?.values && typeof rawEntity.values === "object"
-            ? rawEntity.values
-            : {};
-
-        title =
-          resolveEntityTitle(values, titleFieldKey) ||
-          String(item.objectTypeLabel || item.objectTypeKey || "Сущность");
+        title = resolveEntityDisplayTitle({
+          entity: rawEntity,
+          catalog,
+          objectTypeKey: item.objectTypeKey,
+        });
 
         status =
           readRelationEntityFieldLabel(values, displayKeys.statusFieldKey) ||

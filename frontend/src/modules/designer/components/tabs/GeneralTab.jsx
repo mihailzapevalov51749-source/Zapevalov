@@ -5,6 +5,10 @@ import ObjectTypeColorPicker from "../../../../shared/icons/ObjectTypeColorPicke
 import { normalizeObjectTypeColor } from "../../../../shared/icons/iconFileUtils";
 import * as designerApi from "../../api/designerApi";
 import { isObjectTypeFormDirty } from "../../utils/objectTypeLifecycleState";
+import {
+  resolveShowInNavigation,
+  withShowInNavigation,
+} from "../../utils/objectTypeSettings";
 
 const EMPTY_VALUE = "Не задано";
 
@@ -83,6 +87,7 @@ export default function GeneralTab({
     icon_file_url: null,
     color: null,
     status: "active",
+    show_in_navigation: false,
   });
   const dependencyCounts = objectType?.dependency_counts || {};
   const sortOrderValue =
@@ -101,6 +106,7 @@ export default function GeneralTab({
       icon_file_url: objectType.icon_file_url ?? null,
       color: normalizeObjectTypeColor(objectType.color),
       status: objectType.status || "active",
+      show_in_navigation: resolveShowInNavigation(objectType.settings_json),
     });
   }, [objectType]);
 
@@ -117,9 +123,13 @@ export default function GeneralTab({
       icon_file_url: form.icon_file_url,
       color: normalizeObjectTypeColor(form.color),
       status: form.status,
+      settings_json: withShowInNavigation(
+        objectType?.settings_json,
+        form.show_in_navigation,
+      ),
     });
     onSaved?.(updated);
-  }, [form, objectTypeId, onSaved, tenantId]);
+  }, [form, objectType, objectTypeId, onSaved, tenantId]);
 
   useEffect(() => {
     onDirtyChange?.(isObjectTypeFormDirty(form, objectType));
@@ -217,6 +227,28 @@ export default function GeneralTab({
                     disabled
                     readOnly
                   />
+                </Field>
+              </div>
+
+              <div className="designer-object-general-row designer-object-general-row--1">
+                <Field
+                  label="Отображать в навигации"
+                  helper="Публикация объекта не добавляет его в меню автоматически. Включите этот параметр и настройте размещение через меню действий объекта."
+                >
+                  <label className="designer-object-general-toggle">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(form.show_in_navigation)}
+                      onChange={(event) =>
+                        updateField("show_in_navigation", event.target.checked)
+                      }
+                    />
+                    <span>
+                      {form.show_in_navigation
+                        ? "Объект может отображаться в левом меню после размещения"
+                        : "Объект скрыт из левого меню"}
+                    </span>
+                  </label>
                 </Field>
               </div>
 

@@ -5,12 +5,15 @@ from uuid import uuid4
 
 from app.modules.platform.designer.publish.object_view_contract import (
     OBJECT_VIEW_SCHEMA_VERSION,
+    ensure_object_view_contract_scaffold,
     merge_legacy_projection_field_keys,
     merge_object_view_projection_field_keys,
     normalize_settings_json_for_publish,
     projection_from_object_view,
+    resolve_uses_legacy_plan_fields,
     sanitize_presentation_card,
     sanitize_presentation_table,
+    sanitize_role_mapping,
     validate_object_view_for_publish,
 )
 
@@ -38,6 +41,60 @@ def test_projection_from_object_view_preserves_sort_and_fields() -> None:
     assert projection["field_order"] == ["status", "title"]
     assert projection["title_field"] == "title"
     assert projection["default_sort"] == {"field": "title", "order": "asc"}
+
+
+def test_projection_from_object_view_preserves_info_field_keys_order() -> None:
+    object_view = {
+        "schemaVersion": OBJECT_VIEW_SCHEMA_VERSION,
+        "key": "plan",
+        "viewType": "plan",
+        "projection": {
+            "fieldKeys": ["title", "city", "room", "type"],
+            "fieldOrder": ["title", "city", "room", "type"],
+            "titleFieldKey": "title",
+            "infoFieldKeys": ["type", "city", "room"],
+        },
+    }
+
+    projection = projection_from_object_view(object_view)
+
+    assert projection["info_field_keys"] == ["type", "city", "room"]
+
+
+def test_normalize_settings_json_for_publish_preserves_info_field_keys_order() -> None:
+    normalized = normalize_settings_json_for_publish(
+        {
+            "projection": {
+                "visible_fields": ["title", "city", "room", "type"],
+                "field_order": ["title", "city", "room", "type"],
+                "title_field": "title",
+                "info_field_keys": ["type", "city", "room"],
+            },
+            "objectView": {
+                "schemaVersion": OBJECT_VIEW_SCHEMA_VERSION,
+                "key": "plan",
+                "viewType": "plan",
+                "projection": {
+                    "fieldKeys": ["title", "city", "room", "type"],
+                    "fieldOrder": ["title", "city", "room", "type"],
+                    "titleFieldKey": "title",
+                    "infoFieldKeys": ["type", "city", "room"],
+                },
+                "presentation": {"plan": {}},
+            },
+        },
+        view_key="plan",
+        view_type="plan",
+        field_keys={"title", "city", "room", "type"},
+        ordered_field_keys=["title", "city", "room", "type"],
+    )
+
+    assert normalized["objectView"]["projection"]["infoFieldKeys"] == [
+        "type",
+        "city",
+        "room",
+    ]
+    assert normalized["projection"]["info_field_keys"] == ["type", "city", "room"]
 
 
 def test_normalize_settings_json_strips_system_columns_from_presentation() -> None:
@@ -474,3 +531,431 @@ def test_sanitize_presentation_card_keeps_explicit_false_visible() -> None:
 
     assert card is not None
     assert card["sections"][0]["visible"] is False
+
+
+def test_normalize_settings_json_preserves_plan_presentation() -> None:
+    settings = {
+        "objectView": {
+            "schemaVersion": OBJECT_VIEW_SCHEMA_VERSION,
+            "key": "architecture",
+            "viewType": "plan",
+            "presentation": {
+                "plan": {
+                    "hierarchyRelationKey": "parent_child",
+                    "titleFieldKey": "name",
+                    "progressMode": "status_based",
+                    "statusProgressMap": {"done": 100},
+                },
+            },
+        },
+    }
+
+    normalized = normalize_settings_json_for_publish(
+        settings,
+        view_key="architecture",
+        view_type="plan",
+        field_keys={"name"},
+    )
+
+    plan = normalized["objectView"]["presentation"]["plan"]
+    assert plan["hierarchyRelationKey"] == "parent_child"
+    assert plan["titleFieldKey"] == "name"
+    assert plan["progressMode"] == "status_based"
+    assert plan["statusProgressMap"]["done"] == 100
+    assert plan["usesLegacyPlanFields"] is True
+
+
+def test_normalize_settings_json_scaffolds_plan_object_view_without_object_view() -> None:
+    settings = {
+        "projection": {
+            "visible_fields": [],
+            "field_order": [],
+            "title_field": None,
+            "default_sort": {"field": None, "order": "desc"},
+        },
+    }
+
+    normalized = normalize_settings_json_for_publish(
+        settings,
+        view_key="architecture",
+        view_type="plan",
+        field_keys=set(),
+    )
+
+    object_view = normalized["objectView"]
+    assert object_view["schemaVersion"] == OBJECT_VIEW_SCHEMA_VERSION
+    assert object_view["key"] == "architecture"
+    assert object_view["viewType"] == "plan"
+    assert isinstance(object_view["presentation"]["plan"], dict)
+
+
+def test_normalize_settings_json_scaffolds_quick_form_presentation() -> None:
+    settings = {
+        "projection": {
+            "visible_fields": ["title"],
+            "field_order": ["title"],
+            "title_field": "title",
+            "default_sort": {"field": None, "order": "desc"},
+        },
+    }
+
+    normalized = normalize_settings_json_for_publish(
+        settings,
+        view_key="default_quick_form",
+        view_type="quick_form",
+        field_keys={"title"},
+    )
+
+    object_view = normalized["objectView"]
+    assert object_view["viewType"] == "quick_form"
+    assert isinstance(object_view["presentation"]["quickForm"], dict)
+
+
+def test_normalize_settings_json_preserves_tab_settings_menu_in_tab() -> None:
+    settings = {
+        "tabSettings": {"menuInTab": True},
+        "projection": {
+            "visible_fields": ["name"],
+            "field_order": ["name"],
+            "title_field": "name",
+            "default_sort": {"field": None, "order": "desc"},
+        },
+    }
+
+    normalized = normalize_settings_json_for_publish(
+        settings,
+        view_key="default_table",
+        view_type="table",
+        field_keys={"name"},
+    )
+
+    assert normalized["tabSettings"] == {"menuInTab": True}
+
+
+def test_preserve_object_tab_settings_keeps_false() -> None:
+    from app.modules.platform.designer.publish.object_view_contract import (
+        preserve_object_tab_settings,
+    )
+
+    assert preserve_object_tab_settings({"tabSettings": {"menuInTab": False}}) == {
+        "tabSettings": {"menuInTab": False},
+    }
+
+
+def test_ensure_object_view_contract_scaffold_adds_role_mapping() -> None:
+    scaffolded = ensure_object_view_contract_scaffold(
+        {},
+        view_key="new_tab",
+        view_type="table",
+    )
+
+    object_view = scaffolded["objectView"]
+    assert object_view["roleMapping"] == {}
+    assert object_view["projection"]["fieldKeys"] == []
+    assert isinstance(object_view["query"]["filters"]["conditions"], list)
+
+
+def test_sanitize_role_mapping_drops_keys_outside_projection() -> None:
+    sanitized = sanitize_role_mapping(
+        {"nodeTitle": "title", "nodeStatus": "status"},
+        projection_field_keys={"title"},
+    )
+
+    assert sanitized == {"nodeTitle": "title"}
+
+
+def test_sanitize_role_mapping_preserves_labels() -> None:
+    sanitized = sanitize_role_mapping(
+        {
+            "nodeTitle": "title",
+            "nodeStatus": "status",
+            "labels": {"nodeStatus": "Состояние", "nextSteps": "Действия"},
+        },
+        projection_field_keys={"title", "status"},
+    )
+
+    assert sanitized == {
+        "nodeTitle": "title",
+        "nodeStatus": "status",
+        "labels": {"nodeStatus": "Состояние", "nextSteps": "Действия"},
+    }
+
+
+def test_validate_object_view_role_mapping_not_in_projection() -> None:
+    issues = validate_object_view_for_publish(
+        view_key="plan",
+        view_type="plan",
+        settings_json={
+            "objectView": {
+                "schemaVersion": OBJECT_VIEW_SCHEMA_VERSION,
+                "key": "plan",
+                "viewType": "plan",
+                "projection": {
+                    "fieldKeys": ["title"],
+                    "fieldOrder": ["title"],
+                },
+                "roleMapping": {
+                    "nodeStatus": "status",
+                },
+            },
+        },
+        field_keys={"title", "status"},
+    )
+
+    assert any(
+        code == "object_view_role_mapping_field_not_in_projection"
+        for code, _ in issues
+    )
+
+
+def test_validate_object_view_unknown_projection_field() -> None:
+    issues = validate_object_view_for_publish(
+        view_key="main",
+        view_type="table",
+        settings_json={
+            "objectView": {
+                "schemaVersion": OBJECT_VIEW_SCHEMA_VERSION,
+                "key": "main",
+                "viewType": "table",
+                "projection": {
+                    "fieldKeys": ["title", "missing_field"],
+                    "fieldOrder": ["title", "missing_field"],
+                },
+            },
+        },
+        field_keys={"title"},
+    )
+
+    assert any(code == "object_view_unknown_projection_field" for code, _ in issues)
+
+
+def test_normalize_settings_json_preserves_valid_role_mapping() -> None:
+    settings = {
+        "objectView": {
+            "schemaVersion": OBJECT_VIEW_SCHEMA_VERSION,
+            "key": "plan",
+            "viewType": "plan",
+            "projection": {
+                "fieldKeys": ["title", "status"],
+                "fieldOrder": ["title", "status"],
+            },
+            "roleMapping": {
+                "nodeTitle": "title",
+                "nodeStatus": "status",
+            },
+            "presentation": {"plan": {}},
+        },
+    }
+
+    normalized = normalize_settings_json_for_publish(
+        settings,
+        view_key="plan",
+        view_type="plan",
+        field_keys={"title", "status"},
+    )
+
+    assert normalized["objectView"]["roleMapping"] == {
+        "nodeTitle": "title",
+        "nodeStatus": "status",
+    }
+
+
+def test_normalize_settings_json_strips_invalid_role_mapping_at_publish() -> None:
+    settings = {
+        "objectView": {
+            "schemaVersion": OBJECT_VIEW_SCHEMA_VERSION,
+            "key": "plan",
+            "viewType": "plan",
+            "projection": {
+                "fieldKeys": ["title"],
+                "fieldOrder": ["title"],
+            },
+            "roleMapping": {
+                "nodeTitle": "title",
+                "nodeStatus": "status",
+            },
+            "presentation": {"plan": {}},
+        },
+    }
+
+    normalized = normalize_settings_json_for_publish(
+        settings,
+        view_key="plan",
+        view_type="plan",
+        field_keys={"title"},
+    )
+
+    assert normalized["objectView"]["roleMapping"] == {"nodeTitle": "title"}
+
+
+def test_resolve_uses_legacy_plan_fields_new_plan_with_role_mapping() -> None:
+    assert (
+        resolve_uses_legacy_plan_fields(
+            {
+                "nodeTitle": "module_name",
+                "nodeStatus": "status",
+                "nodeDescription": "description",
+            },
+            {
+                "titleFieldKey": "title",
+                "statusFieldKey": "status",
+            },
+        )
+        is False
+    )
+
+
+def test_resolve_uses_legacy_plan_fields_old_plan_legacy_only() -> None:
+    assert (
+        resolve_uses_legacy_plan_fields(
+            {},
+            {
+                "titleFieldKey": "title",
+                "statusFieldKey": "status",
+                "descriptionFieldKey": "description",
+            },
+        )
+        is True
+    )
+
+
+def test_resolve_uses_legacy_plan_fields_mixed_role_mapping_and_legacy() -> None:
+    assert (
+        resolve_uses_legacy_plan_fields(
+            {"nodeTitle": "module_name"},
+            {
+                "statusFieldKey": "status",
+                "descriptionFieldKey": "description",
+            },
+        )
+        is True
+    )
+
+
+def test_normalize_settings_json_sets_uses_legacy_plan_fields_on_publish() -> None:
+    new_plan = normalize_settings_json_for_publish(
+        {
+            "objectView": {
+                "schemaVersion": OBJECT_VIEW_SCHEMA_VERSION,
+                "key": "plan",
+                "viewType": "plan",
+                "projection": {
+                    "fieldKeys": ["module_name", "status", "description"],
+                    "fieldOrder": ["module_name", "status", "description"],
+                },
+                "roleMapping": {
+                    "nodeTitle": "module_name",
+                    "nodeStatus": "status",
+                    "nodeDescription": "description",
+                },
+                "presentation": {"plan": {}},
+            },
+        },
+        view_key="plan",
+        view_type="plan",
+        field_keys={"module_name", "status", "description"},
+    )
+
+    legacy_plan = normalize_settings_json_for_publish(
+        {
+            "objectView": {
+                "schemaVersion": OBJECT_VIEW_SCHEMA_VERSION,
+                "key": "legacy_plan",
+                "viewType": "plan",
+                "projection": {
+                    "fieldKeys": ["title", "status", "description"],
+                    "fieldOrder": ["title", "status", "description"],
+                },
+                "roleMapping": {},
+                "presentation": {
+                    "plan": {
+                        "titleFieldKey": "title",
+                        "statusFieldKey": "status",
+                        "descriptionFieldKey": "description",
+                    },
+                },
+            },
+        },
+        view_key="legacy_plan",
+        view_type="plan",
+        field_keys={"title", "status", "description"},
+    )
+
+    new_plan_presentation = new_plan["objectView"]["presentation"]["plan"]
+    assert new_plan_presentation["usesLegacyPlanFields"] is False
+    assert "titleFieldKey" not in new_plan_presentation
+    assert "statusFieldKey" not in new_plan_presentation
+    assert "descriptionFieldKey" not in new_plan_presentation
+    assert "nextStepsFieldKey" not in new_plan_presentation
+
+    legacy_plan_presentation = legacy_plan["objectView"]["presentation"]["plan"]
+    assert legacy_plan_presentation["usesLegacyPlanFields"] is True
+    assert legacy_plan_presentation["titleFieldKey"] == "title"
+    assert legacy_plan_presentation["descriptionFieldKey"] == "description"
+
+
+def test_sanitize_presentation_plan_includes_plan_layout_defaults() -> None:
+    from app.modules.platform.designer.publish.object_view_contract import (
+        sanitize_presentation_plan,
+    )
+
+    plan = sanitize_presentation_plan(
+        {"hierarchyRelationKey": "podpunkt"},
+        role_mapping={
+            "nodeTitle": "nazvanie",
+            "nodeStatus": "status",
+            "nodeDescription": "opisanie",
+        },
+        field_keys={"priority", "deadline"},
+    )
+
+    assert "planLayout" in plan
+    assert len(plan["planLayout"]["tabs"]) == 6
+    assert plan["planLayout"]["tabs"][-1]["key"] == "checklist"
+    assert plan["planLayout"]["tabs"][-1]["showInInfo"] is False
+    assert len(plan["planLayout"]["infoSections"]) == 6
+    assert plan["planLayout"]["fields"]["order"] == []
+
+
+def test_sanitize_presentation_plan_strips_legacy_when_role_mapping_ready() -> None:
+    from app.modules.platform.designer.publish.object_view_contract import (
+        sanitize_presentation_plan,
+    )
+
+    plan = sanitize_presentation_plan(
+        {
+            "hierarchyRelationKey": "podpunkt",
+            "titleFieldKey": "nazvanie",
+            "descriptionFieldKey": "opisanie",
+            "issuesRelationKey": "problemy",
+        },
+        role_mapping={
+            "nodeTitle": "nazvanie",
+            "nodeStatus": "status",
+            "nodeDescription": "opisanie",
+        },
+    )
+
+    assert plan["usesLegacyPlanFields"] is False
+    assert plan["hierarchyRelationKey"] == "podpunkt"
+    assert plan["issuesRelationKey"] == "problemy"
+    assert "titleFieldKey" not in plan
+    assert "descriptionFieldKey" not in plan
+
+
+def test_sanitize_presentation_plan_keeps_legacy_when_still_dependent() -> None:
+    from app.modules.platform.designer.publish.object_view_contract import (
+        sanitize_presentation_plan,
+    )
+
+    plan = sanitize_presentation_plan(
+        {
+            "titleFieldKey": "nazvanie",
+            "descriptionFieldKey": "opisanie",
+        },
+        role_mapping={},
+    )
+
+    assert plan["usesLegacyPlanFields"] is True
+    assert plan["titleFieldKey"] == "nazvanie"
+    assert plan["descriptionFieldKey"] == "opisanie"

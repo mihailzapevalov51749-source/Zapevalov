@@ -944,6 +944,7 @@ export default function DesignerShell() {
       <AppShellFrame
         headerContract={designerHeaderContract}
         sidebarContract={designerSidebarContract}
+        platformZone="studio"
         onHeaderAction={handleHeaderAction}
         onSidebarItemAction={handleSidebarItemAction}
         onSidebarAction={sidebarControls.handleSidebarAction}
@@ -953,6 +954,7 @@ export default function DesignerShell() {
           <YasiiSurfaceContextProvider value={yasiiSurfaceContext}>
             <div
               className="designer-root"
+              data-platform-zone="studio"
         style={{
           flex: "1 1 auto",
           height: "100%",

@@ -1,5 +1,7 @@
 const OBJECT_VIEW_ADAPTER_LABELS = {
   table: "Таблица",
+  plan: "План",
+  quick_form: "Быстрая форма",
   board: "Канбан",
   tree: "Дерево",
   calendar: "Календарь",

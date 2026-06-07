@@ -29,6 +29,27 @@ export const panelShellStyle = {
 export const PLATFORM_MODAL_HEADER_HEIGHT_DEFAULT = 68;
 export const PLATFORM_MODAL_HEADER_HEIGHT_COMPACT = 52;
 
+/** Reserved vertical space for footer + resize grip (px). */
+export const PLATFORM_MODAL_FOOTER_RESERVE_PX = 68;
+
+/** Footer stays above body scroll; resize handles stay above footer for pointer events. */
+export const PLATFORM_MODAL_FOOTER_Z_INDEX = 10;
+export const PLATFORM_MODAL_RESIZE_HANDLE_Z_INDEX = 40;
+/** Right/bottom grip size; footer gets extra padding when resize is enabled. */
+export const PLATFORM_MODAL_RESIZE_GRIP_SIZE_PX = 16;
+
+/** Minimum modal width when footer with two actions is shown. */
+export const PLATFORM_MODAL_FOOTER_SAFE_MIN_WIDTH = 300;
+
+/**
+ * Platform standard minimum width for work modals (forms, wizards, settings).
+ * All new PlatformModal instances should use layoutPreset="standard" (default).
+ */
+export const PLATFORM_MODAL_STANDARD_MIN_WIDTH = PLATFORM_MODAL_FOOTER_SAFE_MIN_WIDTH;
+
+/** Minimum width for compact confirm/notice modals (delete, close guard). */
+export const PLATFORM_MODAL_COMPACT_MIN_WIDTH = 300;
+
 export const headerStyle = {
   flexShrink: 0,
   minHeight: PLATFORM_MODAL_HEADER_HEIGHT_DEFAULT,
@@ -97,21 +118,32 @@ export const closeButtonCompactStyle = {
 };
 
 export const contentStyle = {
-  flex: 1,
+  flex: "1 1 auto",
   minHeight: 0,
-  overflowY: "auto",
-  overflowX: "hidden",
+  overflow: "hidden",
   boxSizing: "border-box",
 };
 
+export const bodyScrollStyle = {
+  height: "100%",
+  minHeight: 0,
+  overflowX: "hidden",
+  overflowY: "auto",
+  boxSizing: "border-box",
+  WebkitOverflowScrolling: "touch",
+};
+
 export const footerShellStyle = {
+  flex: "0 0 auto",
   flexShrink: 0,
-  marginTop: "auto",
+  position: "relative",
+  zIndex: PLATFORM_MODAL_FOOTER_Z_INDEX,
   padding: "12px 16px 16px",
   background: "#FFFFFF",
   borderTop: "1px solid #E2E8F0",
   boxSizing: "border-box",
   overflow: "visible",
+  minWidth: 0,
 };
 
 export const resizeHandleEastStyle = {
@@ -121,7 +153,8 @@ export const resizeHandleEastStyle = {
   width: 8,
   height: "calc(100% - 68px)",
   cursor: "ew-resize",
-  zIndex: 2,
+  zIndex: PLATFORM_MODAL_RESIZE_HANDLE_Z_INDEX,
+  pointerEvents: "auto",
 };
 
 export const resizeHandleSouthStyle = {
@@ -131,7 +164,8 @@ export const resizeHandleSouthStyle = {
   width: "100%",
   height: 8,
   cursor: "ns-resize",
-  zIndex: 2,
+  zIndex: PLATFORM_MODAL_RESIZE_HANDLE_Z_INDEX,
+  pointerEvents: "auto",
 };
 
 export const resizeHandleSouthEastStyle = {
@@ -141,5 +175,6 @@ export const resizeHandleSouthEastStyle = {
   width: 14,
   height: 14,
   cursor: "nwse-resize",
-  zIndex: 3,
+  zIndex: PLATFORM_MODAL_RESIZE_HANDLE_Z_INDEX + 1,
+  pointerEvents: "auto",
 };

@@ -32,9 +32,12 @@ export function buildUnifiedFieldKeys(fieldOrder = [], fieldOptions = []) {
 export default function ViewPropertiesFieldsList({
   fieldOptions = [],
   visibleFields = [],
+  infoFieldKeys = [],
   fieldOrder = [],
   titleFieldKey = null,
+  showInfoColumn = false,
   onToggleVisibleField,
+  onToggleInfoField,
   onReorderField,
 }) {
   const dropPositionRef = useRef("before");
@@ -46,6 +49,7 @@ export default function ViewPropertiesFieldsList({
   );
 
   const visibleSet = new Set(visibleFields || []);
+  const infoSet = new Set(infoFieldKeys || []);
   const orderedKeys = buildUnifiedFieldKeys(fieldOrder, fieldOptions);
 
   if (!orderedKeys.length) {
@@ -53,8 +57,24 @@ export default function ViewPropertiesFieldsList({
   }
 
   return (
-    <div className="designer-view-fields-list">
-      <h6 className="designer-view-fields-list__title">Поля</h6>
+    <div
+      className={[
+        "designer-view-fields-list",
+        showInfoColumn ? "designer-view-fields-list--with-info" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      {showInfoColumn ? (
+        <div className="designer-view-fields-list__header-row" aria-hidden="true">
+          <span className="designer-view-fields-list__header-spacer" />
+          <span className="designer-view-fields-list__header-label">Поле</span>
+          <span className="designer-view-fields-list__header-info">Инфо</span>
+          <span className="designer-view-fields-list__header-visibility"> </span>
+        </div>
+      ) : (
+        <h6 className="designer-view-fields-list__title">Поля</h6>
+      )}
 
       <div className="designer-view-fields-list__items">
         {orderedKeys.map((fieldKey) => {
@@ -66,6 +86,7 @@ export default function ViewPropertiesFieldsList({
             titleFieldKey && String(titleFieldKey) === String(fieldKey);
           const isLocked = isTitleField;
           const isDragOver = dragOverFieldKey === fieldKey;
+          const isInfo = infoSet.has(fieldKey);
 
           return (
             <div
@@ -79,11 +100,11 @@ export default function ViewPropertiesFieldsList({
                 .join(" ")}
               draggable={!isLocked}
               onDragStart={(event) => {
-                const isVisibilityControl = event.target?.closest?.(
-                  "[data-view-field-visibility='true']",
+                const isControl = event.target?.closest?.(
+                  "[data-view-field-control='true']",
                 );
 
-                if (isVisibilityControl || isLocked) {
+                if (isControl || isLocked) {
                   event.preventDefault();
                   event.stopPropagation();
                   return;
@@ -159,9 +180,31 @@ export default function ViewPropertiesFieldsList({
                 ) : null}
               </span>
 
+              {showInfoColumn ? (
+                <label
+                  className="designer-view-fields-list__info-checkbox"
+                  data-view-field-control="true"
+                  title={
+                    !isVisible
+                      ? "Сначала включите поле в Projection"
+                      : isInfo
+                        ? "Скрыть из вкладки Инфо"
+                        : "Показать во вкладке Инфо"
+                  }
+                >
+                  <input
+                    type="checkbox"
+                    checked={isInfo}
+                    disabled={!isVisible || isLocked}
+                    onChange={() => onToggleInfoField?.(fieldKey)}
+                  />
+                  <span className="designer-view-fields-list__info-label">Инфо</span>
+                </label>
+              ) : null}
+
               <button
                 type="button"
-                data-view-field-visibility="true"
+                data-view-field-control="true"
                 className="designer-view-fields-list__visibility-btn"
                 disabled={isLocked}
                 onPointerDown={(event) => {

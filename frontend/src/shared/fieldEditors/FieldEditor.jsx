@@ -2,9 +2,19 @@ import { fieldDefToRendererColumn } from "../viewEngine/utils/fieldDefToRenderer
 
 import {
   FIELD_EDITOR_TYPE_CHOICE,
+  FIELD_EDITOR_TYPE_RELATION,
   getFieldEditorComponent,
   normalizeFieldEditorType,
 } from "./fieldEditorRegistry";
+import QuickCreateRelationField from "./editors/QuickCreateRelationField";
+import { resolveFieldPlaceholder } from "./resolveFieldPlaceholder";
+
+/**
+ * @typedef {Object} FieldEditorCreateContext
+ * @property {number | null} [tenantId]
+ * @property {Record<string, unknown> | null} [catalog]
+ * @property {string | null} [objectTypeKey]
+ */
 
 /**
  * Form field editor — maps catalog field def to typed editor (no UniversalTable dependency).
@@ -19,6 +29,7 @@ export default function FieldEditor({
   onCancel,
   onCommit,
   onDismiss,
+  createContext = null,
 }) {
   if (!fieldDef) {
     return null;
@@ -31,6 +42,22 @@ export default function FieldEditor({
     type: editorType === "multi_choice" ? "choice" : fieldDef.type,
     multiple: editorType === "multi_choice" || fieldDef.multiple,
   });
+  const placeholder = resolveFieldPlaceholder(fieldDef, column);
+
+  if (editorType === FIELD_EDITOR_TYPE_RELATION && createContext) {
+    return (
+      <QuickCreateRelationField
+        fieldDef={fieldDef}
+        value={value}
+        onChange={onChange}
+        tenantId={createContext.tenantId}
+        catalog={createContext.catalog}
+        objectTypeKey={createContext.objectTypeKey}
+        readOnly={readOnly}
+        placeholder={placeholder}
+      />
+    );
+  }
 
   const openOnMount =
     autoFocus &&
@@ -42,6 +69,7 @@ export default function FieldEditor({
     <Editor
       column={column}
       fieldDef={fieldDef}
+      placeholder={placeholder}
       value={value}
       onChange={onChange}
       readOnly={readOnly}

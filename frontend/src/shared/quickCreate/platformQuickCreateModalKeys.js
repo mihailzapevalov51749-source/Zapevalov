@@ -1,5 +1,9 @@
-/** Default persist key prefix; callers may suffix with object type key. */
+/** Default persist key prefix; callers suffix with object type key. */
 export const PLATFORM_QUICK_CREATE_MODAL_KEY = "platform_quick_create_v2";
+
+/** Office object table record create — stable persist key per object type. */
+export const PLATFORM_OFFICE_OBJECT_RECORD_CREATE_MODAL_KEY_PREFIX =
+  "office.objectRecord.create";
 
 export const PLATFORM_QUICK_CREATE_MODAL_VIEWPORT_INSET = 24;
 
@@ -7,7 +11,8 @@ export const PLATFORM_QUICK_CREATE_MODAL_VIEWPORT_INSET = 24;
 export const PLATFORM_QUICK_CREATE_DEFAULT_TITLE = "Новая запись";
 
 /**
- * Compact centered modal — height scales with field count (not a full entity card).
+ * Compact centered modal — height scales with field count.
+ * Width tier defaults; platform min width (300px) applies on resize via PlatformModal.
  * @param {number} fieldCount
  */
 export function getPlatformQuickCreateDefaultBounds(fieldCount = 1) {
@@ -35,4 +40,13 @@ export function getPlatformQuickCreateDefaultBounds(fieldCount = 1) {
  */
 export function formatQuickCreateObjectTypeLabel(objectTypeLabel) {
   return String(objectTypeLabel || "").trim();
+}
+
+/**
+ * Persist key for Office object table quick-create modal (per object type).
+ * @param {string} objectTypeKey
+ */
+export function buildOfficeObjectRecordCreateModalKey(objectTypeKey) {
+  const normalizedTypeKey = String(objectTypeKey || "object").trim() || "object";
+  return `${PLATFORM_OFFICE_OBJECT_RECORD_CREATE_MODAL_KEY_PREFIX}.${normalizedTypeKey}`;
 }

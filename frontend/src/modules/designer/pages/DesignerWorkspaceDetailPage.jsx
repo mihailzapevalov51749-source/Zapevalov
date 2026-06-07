@@ -11,6 +11,7 @@ import {
   listPortalPages,
   updateDesignerWorkspaceTab,
 } from "../api/designerApi";
+import { listPublishedObjectViewsForWorkspace } from "../utils/listPublishedObjectViewsForWorkspace";
 import "../styles/designerWorkspaceDetailPage.css";
 
 const TAB_TYPE_OPTIONS = [
@@ -35,6 +36,7 @@ const INITIAL_FORM = {
   page_source: "existing",
   new_page_title: "",
   object_type_id: "",
+  object_view_id: "",
   target_id: "",
   url: "",
   open_in_new_tab: false,
@@ -55,6 +57,10 @@ export default function DesignerWorkspaceDetailPage() {
   const [createForm, setCreateForm] = useState(INITIAL_FORM);
   const [editingTabId, setEditingTabId] = useState(null);
   const [editingForm, setEditingForm] = useState(INITIAL_FORM);
+  const [createObjectViews, setCreateObjectViews] = useState([]);
+  const [editingObjectViews, setEditingObjectViews] = useState([]);
+  const [createObjectViewsLoading, setCreateObjectViewsLoading] = useState(false);
+  const [editingObjectViewsLoading, setEditingObjectViewsLoading] = useState(false);
 
   const slugify = useCallback((value) => {
     const map = {
@@ -115,6 +121,10 @@ export default function DesignerWorkspaceDetailPage() {
     void loadWorkspaceData();
   }, [loadWorkspaceData]);
 
+  const objectTypeById = useMemo(
+    () => Object.fromEntries(objectTypes.map((item) => [String(item.id), item])),
+    [objectTypes],
+  );
   const objectTypeOptions = useMemo(
     () =>
       objectTypes.map((item) => ({
@@ -122,10 +132,6 @@ export default function DesignerWorkspaceDetailPage() {
         label: item.name || item.key,
       })),
     [objectTypes],
-  );
-  const objectTypeById = useMemo(
-    () => Object.fromEntries(objectTypeOptions.map((item) => [item.id, item.label])),
-    [objectTypeOptions],
   );
   const pageOptions = useMemo(
     () =>
@@ -140,6 +146,66 @@ export default function DesignerWorkspaceDetailPage() {
     () => tabs.find((tab) => tab.id === editingTabId) || null,
     [editingTabId, tabs],
   );
+
+  const loadPublishedViewsForObject = useCallback(
+    async (objectTypeId, setter, loadingSetter) => {
+      const objectType = objectTypeById[String(objectTypeId || "")];
+      if (!objectType) {
+        setter([]);
+        return;
+      }
+      loadingSetter(true);
+      try {
+        const views = await listPublishedObjectViewsForWorkspace(resolvedTenantId, objectType);
+        setter(views);
+      } catch {
+        setter([]);
+      } finally {
+        loadingSetter(false);
+      }
+    },
+    [objectTypeById, resolvedTenantId],
+  );
+
+  useEffect(() => {
+    if (createForm.tab_type !== "object" || !createForm.object_type_id) {
+      setCreateObjectViews([]);
+      return undefined;
+    }
+    let cancelled = false;
+    void loadPublishedViewsForObject(
+      createForm.object_type_id,
+      (views) => {
+        if (!cancelled) {
+          setCreateObjectViews(views);
+        }
+      },
+      setCreateObjectViewsLoading,
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [createForm.object_type_id, createForm.tab_type, loadPublishedViewsForObject]);
+
+  useEffect(() => {
+    if (editingForm.tab_type !== "object" || !editingForm.object_type_id) {
+      setEditingObjectViews([]);
+      return undefined;
+    }
+    let cancelled = false;
+    void loadPublishedViewsForObject(
+      editingForm.object_type_id,
+      (views) => {
+        if (!cancelled) {
+          setEditingObjectViews(views);
+        }
+      },
+      setEditingObjectViewsLoading,
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [editingForm.object_type_id, editingForm.tab_type, loadPublishedViewsForObject]);
 
   const handleCreateTab = useCallback(async () => {
     if (!workspace?.id || !createForm.title.trim()) {
@@ -160,6 +226,7 @@ export default function DesignerWorkspaceDetailPage() {
       };
       if (createForm.tab_type === "object") {
         payload.object_type_id = createForm.object_type_id || undefined;
+        payload.object_view_id = createForm.object_view_id || undefined;
       } else if (createForm.tab_type === "page") {
         if (createForm.page_source === "new") {
           payload.create_new_page = true;
@@ -210,6 +277,7 @@ export default function DesignerWorkspaceDetailPage() {
       page_source: "existing",
       new_page_title: "",
       object_type_id: String(tab.object_type_id || ""),
+      object_view_id: String(tab.object_view_id || ""),
       target_id: String(tab.target_id || ""),
       url: String(tab.url || ""),
       open_in_new_tab: Boolean(tab.open_in_new_tab),
@@ -233,6 +301,7 @@ export default function DesignerWorkspaceDetailPage() {
       };
       if (!targetTab.is_system && editingForm.tab_type === "object") {
         payload.object_type_id = editingForm.object_type_id;
+        payload.object_view_id = editingForm.object_view_id;
       } else if (editingForm.tab_type === "page") {
         payload.target_id = editingForm.target_id;
       } else if (editingForm.tab_type === "link") {
@@ -253,7 +322,11 @@ export default function DesignerWorkspaceDetailPage() {
   const resolveTargetLabel = useCallback(
     (tab) => {
       if (tab.tab_type === "object") {
-        return objectTypeById[String(tab.object_type_id || "")] || tab.object_type_name || "Не выбран";
+        const typeLabel =
+          tab.object_type_name ||
+          objectTypeById[String(tab.object_type_id || "")]?.name ||
+          "Не выбран";
+        return tab.object_view_name ? `${typeLabel} · ${tab.object_view_name}` : typeLabel;
       }
       if (tab.tab_type === "page") {
         return pageById[String(tab.target_id || "")] || tab.target_label || "Не выбрана";
@@ -270,7 +343,9 @@ export default function DesignerWorkspaceDetailPage() {
   );
   const isCreateValid = useMemo(() => {
     if (!createForm.title.trim()) return false;
-    if (createForm.tab_type === "object") return Boolean(createForm.object_type_id);
+    if (createForm.tab_type === "object") {
+      return Boolean(createForm.object_type_id && createForm.object_view_id);
+    }
     if (createForm.tab_type === "page") {
       if (createForm.page_source === "new") {
         return Boolean((createForm.new_page_title || createForm.title).trim());
@@ -440,6 +515,7 @@ export default function DesignerWorkspaceDetailPage() {
                       page_source: "existing",
                       new_page_title: "",
                       object_type_id: "",
+                      object_view_id: "",
                       target_id: "",
                       url: "",
                     }))
@@ -463,20 +539,57 @@ export default function DesignerWorkspaceDetailPage() {
                 />
               </label>
               {createForm.tab_type === "object" ? (
-                <label>
-                  <span>Объект*</span>
-                  <select
-                    value={createForm.object_type_id}
-                    onChange={(event) => setCreateForm((prev) => ({ ...prev, object_type_id: event.target.value }))}
-                  >
-                    <option value="">Выберите тип</option>
-                    {objectTypeOptions.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.label}
+                <>
+                  <label>
+                    <span>Объект*</span>
+                    <select
+                      value={createForm.object_type_id}
+                      onChange={(event) =>
+                        setCreateForm((prev) => ({
+                          ...prev,
+                          object_type_id: event.target.value,
+                          object_view_id: "",
+                        }))
+                      }
+                    >
+                      <option value="">Выберите тип</option>
+                      {objectTypeOptions.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Вкладка объекта*</span>
+                    <select
+                      value={createForm.object_view_id}
+                      disabled={!createForm.object_type_id || createObjectViewsLoading}
+                      onChange={(event) =>
+                        setCreateForm((prev) => ({ ...prev, object_view_id: event.target.value }))
+                      }
+                    >
+                      <option value="">
+                        {createObjectViewsLoading
+                          ? "Загрузка вкладок..."
+                          : "Выберите вкладку объекта"}
                       </option>
-                    ))}
-                  </select>
-                </label>
+                      {createObjectViews.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                    {createForm.object_type_id &&
+                    !createObjectViewsLoading &&
+                    createObjectViews.length === 0 ? (
+                      <p className="designer-workspace-settings__hint">
+                        У объекта отсутствуют опубликованные вкладки. Создайте вкладку
+                        объекта и опубликуйте её.
+                      </p>
+                    ) : null}
+                  </label>
+                </>
               ) : null}
               {createForm.tab_type === "page" ? (
                 <>
@@ -661,23 +774,62 @@ export default function DesignerWorkspaceDetailPage() {
                 />
               </label>
               {editingForm.tab_type === "object" ? (
-                <label>
-                  <span>Объект*</span>
-                  <select
-                    value={editingForm.object_type_id}
-                    disabled={Boolean(editingTab?.is_system)}
-                    onChange={(event) =>
-                      setEditingForm((prev) => ({ ...prev, object_type_id: event.target.value }))
-                    }
-                  >
-                    <option value="">{editingTab?.is_system ? "Системная вкладка" : "Выберите тип"}</option>
-                    {objectTypeOptions.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.label}
+                <>
+                  <label>
+                    <span>Объект*</span>
+                    <select
+                      value={editingForm.object_type_id}
+                      disabled={Boolean(editingTab?.is_system)}
+                      onChange={(event) =>
+                        setEditingForm((prev) => ({
+                          ...prev,
+                          object_type_id: event.target.value,
+                          object_view_id: "",
+                        }))
+                      }
+                    >
+                      <option value="">{editingTab?.is_system ? "Системная вкладка" : "Выберите тип"}</option>
+                      {objectTypeOptions.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Вкладка объекта*</span>
+                    <select
+                      value={editingForm.object_view_id}
+                      disabled={
+                        Boolean(editingTab?.is_system) ||
+                        !editingForm.object_type_id ||
+                        editingObjectViewsLoading
+                      }
+                      onChange={(event) =>
+                        setEditingForm((prev) => ({ ...prev, object_view_id: event.target.value }))
+                      }
+                    >
+                      <option value="">
+                        {editingObjectViewsLoading
+                          ? "Загрузка вкладок..."
+                          : "Выберите вкладку объекта"}
                       </option>
-                    ))}
-                  </select>
-                </label>
+                      {editingObjectViews.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                    {editingForm.object_type_id &&
+                    !editingObjectViewsLoading &&
+                    editingObjectViews.length === 0 ? (
+                      <p className="designer-workspace-settings__hint">
+                        У объекта отсутствуют опубликованные вкладки. Создайте вкладку
+                        объекта и опубликуйте её.
+                      </p>
+                    ) : null}
+                  </label>
+                </>
               ) : null}
               {editingForm.tab_type === "page" ? (
                 <label>
@@ -762,7 +914,9 @@ export default function DesignerWorkspaceDetailPage() {
                 className="designer-workspace-settings__btn designer-workspace-settings__btn--primary"
                 disabled={
                   !editingForm.title.trim() ||
-                  (!editingTab?.is_system && editingForm.tab_type === "object" && !editingForm.object_type_id) ||
+                  (!editingTab?.is_system &&
+                    editingForm.tab_type === "object" &&
+                    (!editingForm.object_type_id || !editingForm.object_view_id)) ||
                   (editingForm.tab_type === "page" && !editingForm.target_id) ||
                   (editingForm.tab_type === "link" && !editingForm.url.trim())
                 }

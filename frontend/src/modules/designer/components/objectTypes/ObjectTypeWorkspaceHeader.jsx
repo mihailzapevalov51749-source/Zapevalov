@@ -22,11 +22,12 @@ export default function ObjectTypeWorkspaceHeader({
   publishing,
   saveAvailable,
   saveDisabled,
+  showUnpublishedChanges = false,
   deleting,
   onSave,
   onPublish,
-  onManagePublication,
-  showManagePublication = false,
+  onRenameObject,
+  onDuplicateObject,
   onDeleteObject,
 }) {
   const saveVariant = lifecycle?.saveVariant ?? "neutral";
@@ -80,19 +81,24 @@ export default function ObjectTypeWorkspaceHeader({
         </div>
 
         <div className="designer-workspace-actions">
-          {lifecycle?.state === OBJECT_TYPE_LIFECYCLE_STATES.PENDING_CONTENT_UPDATE ? (
+          {showUnpublishedChanges ? (
             <span
-              title="Изменения объекта ещё не попали в опубликованный каталог"
+              title="Изменения сохранены в Studio и ещё не опубликованы в Office"
               style={{
                 fontSize: 12,
                 lineHeight: "16px",
-                color: "#b45309",
+                color:
+                  lifecycle?.state === OBJECT_TYPE_LIFECYCLE_STATES.PENDING_CONTENT_UPDATE
+                    ? "#b45309"
+                    : "#64748b",
                 alignSelf: "center",
                 marginRight: 4,
                 whiteSpace: "nowrap",
               }}
             >
-              Есть неопубликованные изменения
+              {lifecycle?.state === OBJECT_TYPE_LIFECYCLE_STATES.PENDING_CONTENT_UPDATE
+                ? "Есть неопубликованные изменения"
+                : "Черновик Studio — не опубликовано в Office"}
             </span>
           ) : null}
           <button
@@ -116,8 +122,8 @@ export default function ObjectTypeWorkspaceHeader({
           <ObjectTypeWorkspaceActionsMenu
             isSystemObject={Boolean(objectType?.is_system)}
             deleting={deleting}
-            showManagePublication={showManagePublication}
-            onManagePublication={onManagePublication}
+            onRename={onRenameObject}
+            onDuplicate={onDuplicateObject}
             onDelete={onDeleteObject}
           />
         </div>

@@ -1,7 +1,7 @@
 import {
   listHierarchySubtaskRelationKeys,
 } from "../../../shared/relation/hierarchyRelationProfile.js";
-import { resolveEntityTitle } from "./resolveEntityTitle.js";
+import { resolveEntityDisplayTitle } from "./resolveEntityDisplayTitle.js";
 
 function normalizeId(value) {
   return String(value ?? "").trim();
@@ -193,7 +193,12 @@ export async function resolveSubtasksFromRelations({
             ? childEntity.values
             : {};
 
-        title = resolveEntityTitle(values, displayKeys.titleFieldKey);
+        title = resolveEntityDisplayTitle({
+          entity: childEntity,
+          catalog,
+          objectTypeKey: ref.objectTypeKey,
+          titleFieldKey: displayKeys.titleFieldKey,
+        });
         status =
           readRelationEntityFieldLabel(values, displayKeys.statusFieldKey) ||
           String(childEntity?.status || "").trim();

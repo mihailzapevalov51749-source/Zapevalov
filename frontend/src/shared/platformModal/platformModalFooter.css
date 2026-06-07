@@ -1,0 +1,73 @@
+.platform-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  flex-wrap: wrap;
+}
+
+.platform-modal-footer__leading,
+.platform-modal-footer__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.platform-modal-footer__actions {
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.platform-modal-footer__help-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: auto;
+  padding-inline: 12px;
+  line-height: 1;
+}
+
+.platform-modal-footer__help-btn svg,
+.platform-modal-footer__help-btn img {
+  display: block;
+  flex-shrink: 0;
+}
+
+.platform-modal-footer .designer-btn {
+  flex: 1 1 auto;
+  min-width: 88px;
+  max-width: 100%;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.platform-modal-footer__actions .designer-btn--primary {
+  min-width: 96px;
+}
+
+.platform-modal-footer__actions .designer-btn--primary:disabled {
+  opacity: 1;
+  background: var(--platform-accent-muted);
+  border-color: var(--platform-accent-muted);
+  color: #fff;
+  cursor: not-allowed;
+}
+
+@media (max-width: 560px) {
+  .platform-modal-footer {
+    flex-wrap: wrap;
+  }
+
+  .platform-modal-footer__leading,
+  .platform-modal-footer__actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

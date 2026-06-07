@@ -3,13 +3,32 @@ import { useNavigate } from "react-router-dom";
 
 import { getApiErrorMessage } from "../../api/platformApiClient";
 import * as designerApi from "../../api/designerApi";
-import { syncViewSettingsFromDraftProjection } from "../../utils/syncViewSettingsProjection";
+import { resolveStudioDraftProjection } from "../../utils/resolveStudioDraftProjection";
+import { computeStudioViewDraftDirty } from "../../utils/computeStudioViewDraftDirty";
+import { saveStudioViewDraft } from "../../utils/saveStudioViewDraft";
+import { readRoleMappingFromSettings } from "../../utils/syncViewSettingsRoleMapping";
+import { readPlanSettingsFromView } from "../../utils/syncPlanViewSettings";
+import {
+  hideStudioDraftProjectionField,
+  reorderStudioDraftProjectionInfoFieldKeys,
+  toggleStudioDraftProjectionInfoField,
+} from "../../../objectViews/plan/planPreviewConstructor.js";
+import {
+  readObjectTabSettings,
+} from "../../../objectViews/services/objectTabSettings";
 import ViewPropertiesPanel from "../views/ViewPropertiesPanel";
+import CreateObjectViewModal from "../views/CreateObjectViewModal.jsx";
+import { useObjectTypePreviewTab } from "../../context/ObjectTypePreviewTabContext";
+import { usePlanViewStudio } from "../../context/PlanViewStudioContext";
 
 export default function ViewsTab({
   tenantId,
   objectTypeId,
+  objectTypeName = "",
+  objectTypeKey = "",
   onSchemaChanged = null,
+  registerSave = null,
+  onDirtyChange = null,
 }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,63 +37,60 @@ export default function ViewsTab({
   const [draft, setDraft] = useState(null);
   const [saving, setSaving] = useState(false);
   const [fields, setFields] = useState([]);
+  const [relations, setRelations] = useState([]);
+  const [planSettings, setPlanSettings] = useState(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const navigate = useNavigate();
-
-  const selected = items.find((item) => item.id === selectedId) || null;
-  const isSelectedSystemDefault = Boolean(selected?.is_system && selected?.is_default);
+  const previewTab = useObjectTypePreviewTab();
+  const planStudio = usePlanViewStudio();
 
   const fieldOptions = useMemo(() => {
     return (fields || []).map((f) => ({
+      id: f.id,
       key: f.key,
       name: f.name || f.key,
+      field_type: f.field_type || f.type,
       is_system: Boolean(f.is_system),
     }));
   }, [fields]);
 
+  const selected = items.find((item) => item.id === selectedId) || null;
+  const isPlanStudioBound =
+    selected?.view_type === "plan" &&
+    planStudio?.activeViewKey === selected?.key &&
+    Boolean(planStudio?.draft);
+  const panelDraft = isPlanStudioBound ? planStudio.draft : draft;
+  const panelPlanSettings = isPlanStudioBound ? planStudio.planSettings : planSettings;
+  const panelSetDraft = isPlanStudioBound ? planStudio.setDraft : setDraft;
+  const panelSetPlanSettings = isPlanStudioBound ? planStudio.setPlanSettings : setPlanSettings;
+  const panelFieldOptions = isPlanStudioBound
+    ? planStudio?.fieldOptions || fieldOptions
+    : fieldOptions;
+  const isSelectedSystemDefault = Boolean(selected?.is_system && selected?.is_default);
+
+  const loadRelations = useCallback(async () => {
+    try {
+      const data = await designerApi.listRelations(tenantId, objectTypeId);
+      setRelations(Array.isArray(data) ? data : []);
+    } catch {
+      setRelations([]);
+    }
+  }, [tenantId, objectTypeId]);
+
+  const relationOptions = useMemo(() => {
+    return (relations || []).map((relation) => ({
+      key: relation.key,
+      name: relation.name || relation.key,
+      relation_type: relation.relation_type,
+      source_object_type_key: relation.source_object_type_key,
+      target_object_type_key: relation.target_object_type_key,
+      settings_json: relation.settings_json || {},
+    }));
+  }, [relations]);
+
   const normalizeProjection = useCallback(
-    (rawProjection) => {
-      const keys = fieldOptions.map((f) => f.key);
-
-      const safe = rawProjection && typeof rawProjection === "object" ? rawProjection : {};
-
-      const visible_fields = Array.isArray(safe.visible_fields)
-        ? safe.visible_fields.filter((x) => typeof x === "string")
-        : keys;
-
-      const field_order = Array.isArray(safe.field_order)
-        ? safe.field_order.filter((x) => typeof x === "string")
-        : visible_fields;
-
-      // Ensure field_order is subset of visible_fields, preserve order.
-      const visibleSet = new Set(visible_fields);
-      const field_order_norm = field_order.filter((k) => visibleSet.has(k));
-
-      const title_field =
-        typeof safe.title_field === "string" ? safe.title_field : null;
-
-      const default_sort = safe.default_sort && typeof safe.default_sort === "object"
-        ? safe.default_sort
-        : {};
-
-      const order =
-        default_sort.order === "asc" || default_sort.order === "desc"
-          ? default_sort.order
-          : "desc";
-
-      const default_sort_field =
-        typeof default_sort.field === "string" ? default_sort.field : null;
-
-      return {
-        visible_fields: visible_fields,
-        field_order: field_order_norm.length ? field_order_norm : visible_fields,
-        title_field,
-        default_sort: {
-          field: default_sort_field,
-          order,
-        },
-      };
-    },
+    (settingsJson) => resolveStudioDraftProjection(settingsJson, fieldOptions),
     [fieldOptions],
   );
 
@@ -107,13 +123,22 @@ export default function ViewsTab({
 
   useEffect(() => {
     loadFields();
-  }, [loadFields]);
+    loadRelations();
+  }, [loadFields, loadRelations]);
 
   useEffect(() => {
     if (!selected) {
       setDraft(null);
+      setPlanSettings(null);
       return;
     }
+
+    if (selected.view_type === "plan") {
+      planStudio?.bindViewKey?.(selected.key);
+      return;
+    }
+
+    const settingsJson = selected.settings_json || {};
 
     setDraft({
       name: selected.name,
@@ -121,29 +146,57 @@ export default function ViewsTab({
       view_type: selected.view_type,
       is_active: selected.is_active,
       description: selected.description || "",
-      settings_json: selected.settings_json || {},
-      projection: normalizeProjection(selected.settings_json?.projection),
+      settings_json: settingsJson,
+      projection: normalizeProjection(settingsJson),
+      roleMapping: readRoleMappingFromSettings(settingsJson),
+      tabSettings: readObjectTabSettings(settingsJson),
     });
-  }, [selected, normalizeProjection]);
+    setPlanSettings(readPlanSettingsFromView(settingsJson));
+  }, [selected, normalizeProjection, planStudio]);
 
-  const handleCreate = async () => {
-    const name = window.prompt("Название вкладки", "Новая вкладка");
-    if (!name) return;
+  const isViewsDirty = useMemo(() => {
+    if (!selected || selected.view_type === "plan") {
+      return false;
+    }
 
-    const key = window.prompt("Key вкладки", "new_view");
-    if (!key) return;
+    if (!draft) {
+      return false;
+    }
 
-    try {
-      await designerApi.createView(tenantId, objectTypeId, {
-        name,
-        key,
-        view_type: "table",
-        is_active: true,
-      });
-      await loadItems();
-      await onSchemaChanged?.();
-    } catch (err) {
-      window.alert(getApiErrorMessage(err, "Не удалось создать вкладку"));
+    return computeStudioViewDraftDirty({
+      view: selected,
+      draft,
+      planSettings,
+      fieldOptions,
+    });
+  }, [selected, draft, planSettings, fieldOptions]);
+
+  useEffect(() => {
+    if (selected?.view_type === "plan") {
+      onDirtyChange?.(false);
+      return;
+    }
+
+    onDirtyChange?.(isViewsDirty);
+  }, [isViewsDirty, onDirtyChange, selected?.view_type]);
+
+  const existingViewKeys = useMemo(
+    () => items.map((item) => String(item?.key || "").trim()).filter(Boolean),
+    [items],
+  );
+
+  const handleViewCreated = async (created) => {
+    await loadItems();
+
+    const createdKey = String(created?.key || "").trim();
+    await onSchemaChanged?.({ viewKey: createdKey || null });
+    await previewTab?.reloadViews?.();
+    if (createdKey) {
+      previewTab?.selectView?.(createdKey);
+    }
+
+    if (created?.id != null) {
+      setSelectedId(created.id);
     }
   };
 
@@ -156,32 +209,50 @@ export default function ViewsTab({
     );
   };
 
-  const handleSave = async () => {
-    if (!selected || !draft) return;
+  const handleSave = useCallback(async () => {
+    const saveDraft = isPlanStudioBound ? planStudio?.draft : draft;
+    const savePlanSettings = isPlanStudioBound ? planStudio?.planSettings : planSettings;
+
+    if (!selected || !saveDraft) return;
 
     setSaving(true);
 
     try {
-      const nextSettings = syncViewSettingsFromDraftProjection(
-        draft.settings_json,
-        draft.projection,
-      );
-
-      await designerApi.updateView(tenantId, selected.id, {
-        name: draft.name,
-        view_type: draft.view_type,
-        is_active: draft.is_active,
-        description: draft.description,
-        settings_json: nextSettings,
+      await saveStudioViewDraft({
+        tenantId,
+        view: selected,
+        draft: saveDraft,
+        planSettings: savePlanSettings,
       });
+
       await loadItems();
+      await planStudio?.reloadViews?.();
       await onSchemaChanged?.();
     } catch (err) {
       window.alert(getApiErrorMessage(err, "Не удалось сохранить вкладку"));
     } finally {
       setSaving(false);
     }
-  };
+  }, [
+    selected,
+    draft,
+    planSettings,
+    isPlanStudioBound,
+    planStudio,
+    tenantId,
+    loadItems,
+    onSchemaChanged,
+  ]);
+
+  useEffect(() => {
+    if (selected?.view_type === "plan") {
+      registerSave?.(null);
+      return () => registerSave?.(null);
+    }
+
+    registerSave?.(handleSave);
+    return () => registerSave?.(null);
+  }, [handleSave, registerSave, selected?.view_type]);
 
   const handleDelete = async () => {
     if (!selected) return;
@@ -205,27 +276,20 @@ export default function ViewsTab({
   if (error) return <div className="designer-error">{error}</div>;
 
   const toggleVisibleField = (fieldKey) => {
-    setDraft((prev) => {
+    panelSetDraft((prev) => {
       if (!prev) return prev;
 
       const visible = new Set(prev.projection.visible_fields || []);
-      const fieldOrder = [...(prev.projection.field_order || [])];
 
       if (visible.has(fieldKey)) {
-        visible.delete(fieldKey);
-        const removed = new Set([fieldKey]);
-        const nextOrder = fieldOrder.filter((k) => !removed.has(k));
         return {
           ...prev,
-          projection: {
-            ...prev.projection,
-            visible_fields: [...visible],
-            field_order: nextOrder,
-          },
+          projection: hideStudioDraftProjectionField(prev.projection, fieldKey),
         };
       }
 
       visible.add(fieldKey);
+      const fieldOrder = [...(prev.projection.field_order || [])];
       const nextOrder = fieldOrder.includes(fieldKey)
         ? fieldOrder
         : [...fieldOrder, fieldKey];
@@ -241,8 +305,19 @@ export default function ViewsTab({
     });
   };
 
+  const toggleInfoField = (fieldKey) => {
+    panelSetDraft((prev) => {
+      if (!prev) return prev;
+
+      return {
+        ...prev,
+        projection: toggleStudioDraftProjectionInfoField(prev.projection, fieldKey),
+      };
+    });
+  };
+
   const reorderFieldOrder = (sourceKey, targetKey, position = "before") => {
-    setDraft((prev) => {
+    panelSetDraft((prev) => {
       if (!prev) return prev;
 
       const currentOrder = [...(prev.projection.field_order || [])];
@@ -303,7 +378,7 @@ export default function ViewsTab({
           <button
             type="button"
             className="designer-btn designer-btn--primary"
-            onClick={handleCreate}
+            onClick={() => setIsCreateModalOpen(true)}
           >
             + Создать вкладку
           </button>
@@ -353,22 +428,37 @@ export default function ViewsTab({
         </div>
       </div>
 
-      {selected && draft ? (
+      {selected && panelDraft ? (
         <ViewPropertiesPanel
-          draft={draft}
+          draft={panelDraft}
           isSelectedSystemDefault={isSelectedSystemDefault}
-          fieldOptions={fieldOptions}
+          fieldOptions={panelFieldOptions}
+          relationOptions={relationOptions}
+          objectTypeKey={objectTypeKey}
+          planSettings={panelPlanSettings}
+          onPlanSettingsChange={panelSetPlanSettings}
           saving={saving}
-          onDraftChange={setDraft}
+          onDraftChange={panelSetDraft}
           onClose={() => setSelectedId(null)}
           onSave={handleSave}
           onDelete={handleDelete}
           onOpenRuntimePreview={openRuntimePreviewForView}
-          titleFieldKey={draft.projection?.title_field}
+          titleFieldKey={panelDraft.projection?.title_field}
           onToggleVisibleField={toggleVisibleField}
+          onToggleInfoField={toggleInfoField}
           onReorderField={reorderFieldOrder}
         />
       ) : null}
+
+      <CreateObjectViewModal
+        open={isCreateModalOpen}
+        tenantId={tenantId}
+        objectTypeId={objectTypeId}
+        objectTypeName={objectTypeName}
+        existingViewKeys={existingViewKeys}
+        onClose={() => setIsCreateModalOpen(false)}
+        onCreated={handleViewCreated}
+      />
     </div>
   );
 }

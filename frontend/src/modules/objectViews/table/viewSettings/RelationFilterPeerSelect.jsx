@@ -2,29 +2,21 @@ import { useEffect, useMemo, useState } from "react";
 
 import { queryRuntimeEntities } from "../../../designer/api/runtimeQueryApi";
 import { resolveRelationFieldPeerObjectTypeKey } from "../../../objectEntities/services/resolveRelationFieldPeerObjectType";
-import { resolveEntityTitle } from "../../../objectEntities/services/resolveEntityTitle";
+import {
+  resolveEntityTitleFieldKey,
+  resolvePeerEntityLabel,
+} from "../../../objectEntities/services/resolveEntityDisplayTitle";
 import { findCatalogObjectType } from "../services/adapters/ObjectTypeTableAdapter";
 import { getRuntimeEntity } from "../../../runtimeWriteGateway/api/runtimeEntitiesApi";
 
 const UNAVAILABLE_LABEL = "Запись недоступна";
 
 function resolvePeerLabel(catalog, objectTypeKey, entity) {
-  const objectType = findCatalogObjectType(catalog, objectTypeKey);
-  const fields = Array.isArray(objectType?.fields) ? objectType.fields : [];
-  const titleField = fields.find((field) => field?.is_title || field?.isTitle);
-  const titleFieldKey = String(titleField?.key || titleField?.field_key || "").trim();
-  const values =
-    entity?.values && typeof entity.values === "object" ? entity.values : {};
-
-  return resolveEntityTitle(values, titleFieldKey) || String(entity?.id || "Запись");
+  return resolvePeerEntityLabel(catalog, objectTypeKey, entity);
 }
 
 function resolveTitleFieldKey(catalog, objectTypeKey) {
-  const objectType = findCatalogObjectType(catalog, objectTypeKey);
-  const fields = Array.isArray(objectType?.fields) ? objectType.fields : [];
-  const titleField = fields.find((field) => field?.is_title || field?.isTitle);
-
-  return String(titleField?.key || titleField?.field_key || "").trim();
+  return resolveEntityTitleFieldKey({ catalog, objectTypeKey }) || "";
 }
 
 export default function RelationFilterPeerSelect({

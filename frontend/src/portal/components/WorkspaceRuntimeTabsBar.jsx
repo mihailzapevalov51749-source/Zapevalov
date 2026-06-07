@@ -6,6 +6,8 @@ import {
   getDesignerWorkspaceBySlug,
   listDesignerWorkspaceTabs,
 } from "../../modules/designer/api/designerApi";
+import ObjectContextMenuTrigger from "../../shared/objectPlatform/objectContextMenu/ObjectContextMenuTrigger";
+import "../../shared/objectPlatform/objectContextMenu/objectContextMenu.css";
 import "./workspaceRuntimeTabsBar.css";
 
 const MODE_TOKENS = {
@@ -24,6 +26,8 @@ export default function WorkspaceRuntimeTabsBar({
   workspaceSlug,
   activeTabSlug,
   mode = "runtime",
+  activeTabMenuInTab = false,
+  objectMenuContext = null,
 }) {
   const navigate = useNavigate();
   const [workspace, setWorkspace] = useState(null);
@@ -64,6 +68,19 @@ export default function WorkspaceRuntimeTabsBar({
     return String(home?.slug || "");
   }, [normalizedActiveSlug, tabs]);
 
+  const menuContextProps = useMemo(() => {
+    if (!objectMenuContext || typeof objectMenuContext !== "object") {
+      return null;
+    }
+
+    return {
+      tenantId: objectMenuContext.tenantId ?? null,
+      objectTypeKey: objectMenuContext.objectTypeKey ?? null,
+      objectTypeId: objectMenuContext.objectTypeId ?? null,
+      objectName: objectMenuContext.objectName ?? "Объект",
+    };
+  }, [objectMenuContext]);
+
   if (!workspace || tabs.length === 0) {
     return null;
   }
@@ -81,6 +98,26 @@ export default function WorkspaceRuntimeTabsBar({
       <nav className="workspace-runtime-tabs__list" aria-label="Вкладки пространства">
         {tabs.map((tab) => {
           const isActive = String(tab.slug || "") === resolvedActiveSlug;
+          const showMenuInTab =
+            isActive && activeTabMenuInTab === true && menuContextProps != null;
+
+          if (showMenuInTab) {
+            return (
+              <div
+                key={tab.id}
+                className="workspace-runtime-tabs__tab is-active workspace-runtime-tabs__tab-with-menu"
+                aria-current="page"
+              >
+                <ObjectContextMenuTrigger
+                  className="workspace-runtime-tabs__tab-menu-trigger"
+                  variant="tab"
+                  label={tab.title}
+                  {...menuContextProps}
+                />
+              </div>
+            );
+          }
+
           return (
             <button
               key={tab.id}

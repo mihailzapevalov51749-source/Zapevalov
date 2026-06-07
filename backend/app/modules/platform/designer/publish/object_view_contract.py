@@ -55,7 +55,17 @@ def projection_from_object_view(object_view: dict[str, Any]) -> dict[str, Any]:
     if not field_order_norm and visible_fields:
         field_order_norm = list(visible_fields)
 
-    return {
+    visible_set = set(visible_fields)
+    info_raw = projection.get("infoFieldKeys") or projection.get("info_field_keys")
+    info_field_keys: list[str] | None = None
+    if isinstance(info_raw, list):
+        info_field_keys = [
+            str(key).strip()
+            for key in info_raw
+            if isinstance(key, str) and str(key).strip() and str(key).strip() in visible_set
+        ]
+
+    result: dict[str, Any] = {
         "visible_fields": visible_fields,
         "field_order": field_order_norm,
         "title_field": title_field if isinstance(title_field, str) else None,
@@ -64,6 +74,11 @@ def projection_from_object_view(object_view: dict[str, Any]) -> dict[str, Any]:
             "order": default_sort_order,
         },
     }
+
+    if info_field_keys is not None:
+        result["info_field_keys"] = info_field_keys
+
+    return result
 
 
 def sanitize_presentation_table(
@@ -117,6 +132,262 @@ def sanitize_presentation_table(
         "columnWidths": widths,
         "density": density,
     }
+
+
+PLAN_REQUIRED_ROLE_KEYS = ("nodeTitle", "nodeStatus", "nodeDescription")
+
+PLAN_LEGACY_FIELD_KEY_BY_ROLE: dict[str, str] = {
+    "nodeTitle": "titleFieldKey",
+    "nodeStatus": "statusFieldKey",
+    "nodeDescription": "descriptionFieldKey",
+    "nextSteps": "nextStepsFieldKey",
+}
+
+PLAN_LEGACY_SNAPSHOT_FIELD_KEYS = tuple(PLAN_LEGACY_FIELD_KEY_BY_ROLE.values())
+
+
+def resolve_uses_legacy_plan_fields(
+    role_mapping: dict[str, Any] | None,
+    presentation_plan: dict[str, Any] | None,
+) -> bool:
+    """
+    Publish diagnostic: True when Plan still depends on legacy presentation.plan.*FieldKey.
+
+    Snapshot-only — runtime dual-read is unchanged.
+    """
+    mapping = role_mapping if isinstance(role_mapping, dict) else {}
+    plan = presentation_plan if isinstance(presentation_plan, dict) else {}
+
+    def _optional_key(raw_key: Any) -> str:
+        return str(raw_key or "").strip()
+
+    for role_key in PLAN_REQUIRED_ROLE_KEYS:
+        if not _optional_key(mapping.get(role_key)):
+            return True
+
+    for role_key, legacy_key in PLAN_LEGACY_FIELD_KEY_BY_ROLE.items():
+        if _optional_key(mapping.get(role_key)):
+            continue
+        if _optional_key(plan.get(legacy_key)):
+            return True
+
+    return False
+
+
+def _has_required_plan_role_mapping(role_mapping: dict[str, Any] | None) -> bool:
+    mapping = role_mapping if isinstance(role_mapping, dict) else {}
+
+    def _optional_key(raw_key: Any) -> str:
+        return str(raw_key or "").strip()
+
+    return all(_optional_key(mapping.get(role_key)) for role_key in PLAN_REQUIRED_ROLE_KEYS)
+
+
+def _strip_legacy_plan_field_keys_from_snapshot(sanitized: dict[str, Any]) -> dict[str, Any]:
+    """Remove deprecated *FieldKey entries from published plan presentation only."""
+    result = dict(sanitized)
+    for key in PLAN_LEGACY_SNAPSHOT_FIELD_KEYS:
+        result.pop(key, None)
+    return result
+
+
+PLAN_LAYOUT_TAB_KEYS = ("info", "comments", "history", "files", "tasks", "checklist")
+PLAN_LAYOUT_INFO_SECTION_KEYS = (
+    "status",
+    "progress",
+    "description",
+    "checklist",
+    "fields",
+    "problems",
+)
+
+
+def _sanitize_plan_layout_items(
+    raw_items: Any,
+    *,
+    allowed_keys: tuple[str, ...],
+    default_labels: dict[str, str],
+    include_show_in_info: bool = False,
+) -> list[dict[str, Any]]:
+    defaults = {
+        key: {
+            "key": key,
+            "label": default_labels.get(key, key),
+            "visible": True,
+            "order": (index + 1) * 10,
+            "system": True,
+            **({"showInInfo": False} if include_show_in_info else {}),
+        }
+        for index, key in enumerate(allowed_keys)
+    }
+
+    if isinstance(raw_items, list):
+        for raw_item in raw_items:
+            if not isinstance(raw_item, dict):
+                continue
+            key = str(raw_item.get("key") or "").strip()
+            if not key or key not in defaults:
+                continue
+            label = str(raw_item.get("label") or defaults[key]["label"]).strip() or defaults[key]["label"]
+            order_raw = raw_item.get("order")
+            order = int(order_raw) if isinstance(order_raw, (int, float)) else defaults[key]["order"]
+            sanitized_item = {
+                "key": key,
+                "label": label,
+                "visible": raw_item.get("visible") is not False,
+                "order": order,
+                "system": raw_item.get("system") is not False,
+            }
+            if include_show_in_info:
+                sanitized_item["showInInfo"] = (
+                    key != "info" and raw_item.get("showInInfo") is True
+                )
+            defaults[key] = sanitized_item
+
+    return [defaults[key] for key in allowed_keys]
+
+
+def sanitize_plan_layout(
+    plan_layout: dict[str, Any] | None,
+    *,
+    field_keys: set[str] | None = None,
+) -> dict[str, Any]:
+    if not isinstance(plan_layout, dict):
+        plan_layout = {}
+
+    tab_labels = {
+        "info": "Инфо",
+        "comments": "Комментарии",
+        "history": "История",
+        "files": "Файлы",
+        "tasks": "Задачи",
+        "checklist": "Чек-лист",
+    }
+    section_labels = {
+        "status": "Статус",
+        "progress": "Готовность",
+        "description": "Описание",
+        "checklist": "Чек-лист",
+        "fields": "Основные поля",
+        "problems": "Проблемы",
+    }
+
+    fields_raw = plan_layout.get("fields")
+    fields_dict = fields_raw if isinstance(fields_raw, dict) else {}
+
+    def _filter_field_keys(raw_keys: Any) -> list[str]:
+        if not isinstance(raw_keys, list):
+            return []
+        result: list[str] = []
+        seen: set[str] = set()
+        for raw_key in raw_keys:
+            key = str(raw_key or "").strip()
+            if not key or key in seen:
+                continue
+            if field_keys is not None and key not in field_keys:
+                continue
+            seen.add(key)
+            result.append(key)
+        return result
+
+    return {
+        "tabs": _sanitize_plan_layout_items(
+            plan_layout.get("tabs"),
+            allowed_keys=PLAN_LAYOUT_TAB_KEYS,
+            default_labels=tab_labels,
+            include_show_in_info=True,
+        ),
+        "infoSections": _sanitize_plan_layout_items(
+            plan_layout.get("infoSections"),
+            allowed_keys=PLAN_LAYOUT_INFO_SECTION_KEYS,
+            default_labels=section_labels,
+        ),
+        "fields": {
+            "visibleFieldKeys": _filter_field_keys(fields_dict.get("visibleFieldKeys")),
+            "hiddenFieldKeys": _filter_field_keys(fields_dict.get("hiddenFieldKeys")),
+            "order": _filter_field_keys(fields_dict.get("order")),
+        },
+    }
+
+
+def sanitize_presentation_plan(
+    presentation_plan: dict[str, Any] | None,
+    *,
+    role_mapping: dict[str, Any] | None = None,
+    field_keys: set[str] | None = None,
+) -> dict[str, Any]:
+    """Sanitize plan view presentation before catalog snapshot."""
+    if not isinstance(presentation_plan, dict):
+        return {}
+
+    status_mapping_raw = presentation_plan.get("statusMapping")
+    status_progress_map_raw = presentation_plan.get("statusProgressMap")
+    status_mapping: dict[str, int] = {}
+    if isinstance(status_mapping_raw, dict):
+        for key, value in status_mapping_raw.items():
+            normalized_key = str(key or "").strip().lower()
+            if not normalized_key:
+                continue
+            try:
+                percent = int(value)
+            except (TypeError, ValueError):
+                continue
+            status_mapping[normalized_key] = max(0, min(100, percent))
+
+    status_progress_map: dict[str, int] = dict(status_mapping)
+    if isinstance(status_progress_map_raw, dict):
+        for key, value in status_progress_map_raw.items():
+            normalized_key = str(key or "").strip().lower()
+            if not normalized_key:
+                continue
+            try:
+                percent = int(value)
+            except (TypeError, ValueError):
+                continue
+            status_progress_map[normalized_key] = max(0, min(100, percent))
+
+    progress_mode_raw = presentation_plan.get("progressMode")
+    progress_mode = str(progress_mode_raw or "status_based").strip() or "status_based"
+
+    def _optional_key(raw_key: Any) -> str | None:
+        normalized = str(raw_key or "").strip()
+        return normalized or None
+
+    plan_layout_raw = presentation_plan.get("planLayout")
+    sanitized = {
+        "hierarchyRelationKey": _optional_key(presentation_plan.get("hierarchyRelationKey")),
+        # @deprecated Will be removed after migration cutoff. Use roleMapping.nodeTitle.
+        "titleFieldKey": _optional_key(presentation_plan.get("titleFieldKey")),
+        # @deprecated Will be removed after migration cutoff. Use roleMapping.nodeStatus.
+        "statusFieldKey": _optional_key(presentation_plan.get("statusFieldKey")),
+        # @deprecated Will be removed after migration cutoff. Use roleMapping.nodeDescription.
+        "descriptionFieldKey": _optional_key(presentation_plan.get("descriptionFieldKey")),
+        # @deprecated Will be removed after migration cutoff. Use roleMapping.nextSteps.
+        "nextStepsFieldKey": _optional_key(presentation_plan.get("nextStepsFieldKey")),
+        "issuesRelationKey": _optional_key(presentation_plan.get("issuesRelationKey")),
+        "progressMode": progress_mode,
+        "statusProgressMap": status_progress_map,
+        "statusMapping": status_progress_map,
+        "planLayout": sanitize_plan_layout(
+            plan_layout_raw if isinstance(plan_layout_raw, dict) else None,
+            field_keys=field_keys,
+        ),
+    }
+
+    uses_legacy_plan_fields = resolve_uses_legacy_plan_fields(
+        role_mapping,
+        sanitized,
+    )
+    sanitized["usesLegacyPlanFields"] = uses_legacy_plan_fields
+
+    if (
+        not uses_legacy_plan_fields
+        and _has_required_plan_role_mapping(role_mapping)
+    ):
+        sanitized = _strip_legacy_plan_field_keys_from_snapshot(sanitized)
+        sanitized["usesLegacyPlanFields"] = False
+
+    return sanitized
 
 
 def _normalize_card_visible_flag(value: Any) -> bool:
@@ -259,6 +530,25 @@ def sync_object_view_projection_from_legacy(
             projection["fieldKeys"] = visible
             projection["fieldOrder"] = list(visible)
 
+    legacy_info = legacy_projection.get("info_field_keys")
+    existing_info = projection.get("infoFieldKeys")
+    if _is_str_list(legacy_info) and legacy_info:
+        field_key_set = {
+            str(key).strip()
+            for key in (projection.get("fieldKeys") or [])
+            if str(key or "").strip()
+        }
+        normalized_legacy_info = [
+            str(key).strip()
+            for key in legacy_info
+            if str(key or "").strip()
+            and (not field_key_set or str(key).strip() in field_key_set)
+        ]
+        if normalized_legacy_info and not (
+            isinstance(existing_info, list) and existing_info
+        ):
+            projection["infoFieldKeys"] = normalized_legacy_info
+
     object_view["projection"] = projection
     return object_view
 
@@ -315,6 +605,16 @@ def merge_object_view_projection_field_keys(
             ),
             None,
         )
+
+    info_raw = projection.get("infoFieldKeys") or projection.get("info_field_keys") or []
+    if isinstance(info_raw, list):
+        projection["infoFieldKeys"] = [
+            str(key).strip()
+            for key in info_raw
+            if str(key or "").strip() and str(key).strip() in seen
+        ]
+    else:
+        projection["infoFieldKeys"] = []
 
     presentation = object_view.get("presentation")
     if isinstance(presentation, dict):
@@ -399,6 +699,182 @@ def merge_legacy_projection_field_keys(
     return projection
 
 
+ROLE_MAPPING_LABELS_KEY = "labels"
+
+
+def sanitize_role_mapping(
+    role_mapping: dict[str, Any] | None,
+    *,
+    projection_field_keys: set[str] | None = None,
+) -> dict[str, Any]:
+    """Normalize roleMapping; optionally drop entries outside projection.fieldKeys."""
+    if not isinstance(role_mapping, dict):
+        return {}
+
+    allowed = projection_field_keys or set()
+    result: dict[str, Any] = {}
+
+    for role, field_key in role_mapping.items():
+        normalized_role = str(role or "").strip()
+        if not normalized_role or normalized_role == ROLE_MAPPING_LABELS_KEY:
+            continue
+        if not isinstance(field_key, str):
+            continue
+        normalized_field = str(field_key or "").strip()
+        if not normalized_field:
+            continue
+        if allowed and normalized_field not in allowed:
+            continue
+        result[normalized_role] = normalized_field
+
+    labels_raw = role_mapping.get(ROLE_MAPPING_LABELS_KEY)
+    if isinstance(labels_raw, dict):
+        allowed_label_roles = set(PLAN_REQUIRED_ROLE_KEYS) | {"nextSteps"}
+        labels: dict[str, str] = {}
+        for role_key, label in labels_raw.items():
+            normalized_role = str(role_key or "").strip()
+            normalized_label = str(label or "").strip()
+            if (
+                not normalized_role
+                or not normalized_label
+                or normalized_role not in allowed_label_roles
+            ):
+                continue
+            labels[normalized_role] = normalized_label
+        if labels:
+            result[ROLE_MAPPING_LABELS_KEY] = labels
+
+    return result
+
+
+def ensure_object_view_contract_scaffold(
+    settings_json: dict[str, Any] | None,
+    *,
+    view_key: str,
+    view_type: str,
+) -> dict[str, Any]:
+    """Ensure objectView scaffold with projection, query, roleMapping, presentation."""
+    settings = dict(settings_json) if isinstance(settings_json, dict) else {}
+    normalized_view_type = str(view_type or "table").strip().lower() or "table"
+
+    object_view = settings.get("objectView")
+    if not isinstance(object_view, dict):
+        object_view = {
+            "schemaVersion": OBJECT_VIEW_SCHEMA_VERSION,
+            "key": view_key,
+            "viewType": normalized_view_type,
+        }
+
+    object_view = dict(object_view)
+    object_view.setdefault("schemaVersion", OBJECT_VIEW_SCHEMA_VERSION)
+    object_view["key"] = str(object_view.get("key") or view_key)
+    object_view["viewType"] = str(object_view.get("viewType") or normalized_view_type)
+
+    projection = object_view.get("projection")
+    if not isinstance(projection, dict):
+        projection = {}
+    else:
+        projection = dict(projection)
+
+    field_keys = projection.get("fieldKeys") or projection.get("field_keys") or []
+    field_order = projection.get("fieldOrder") or projection.get("field_order") or field_keys
+    projection.setdefault(
+        "fieldKeys",
+        [str(key) for key in field_keys if isinstance(key, str) and str(key).strip()],
+    )
+    projection.setdefault(
+        "fieldOrder",
+        [str(key) for key in field_order if isinstance(key, str) and str(key).strip()],
+    )
+    projection.setdefault("titleFieldKey", projection.get("titleFieldKey") or projection.get("title_field_key"))
+    info_raw = projection.get("infoFieldKeys") or projection.get("info_field_keys") or []
+    field_key_set = set(projection.get("fieldKeys") or [])
+    if isinstance(info_raw, list):
+        projection["infoFieldKeys"] = [
+            str(key).strip()
+            for key in info_raw
+            if str(key or "").strip() and str(key).strip() in field_key_set
+        ]
+    else:
+        projection["infoFieldKeys"] = []
+    object_view["projection"] = projection
+
+    if not isinstance(object_view.get("roleMapping"), dict):
+        object_view["roleMapping"] = {}
+
+    query = object_view.get("query")
+    if not isinstance(query, dict):
+        query = {}
+    else:
+        query = dict(query)
+
+    filters = query.get("filters")
+    if not isinstance(filters, dict):
+        filters = {}
+    else:
+        filters = dict(filters)
+
+    filters.setdefault("conditions", filters.get("conditions") or [])
+    filters.setdefault("savedFilters", filters.get("savedFilters") or [])
+    filters.setdefault("quickFilters", filters.get("quickFilters") or [])
+    filters.setdefault("defaultQuickFilterId", filters.get("defaultQuickFilterId"))
+    query["filters"] = filters
+
+    sort = query.get("sort")
+    if not isinstance(sort, dict):
+        sort = {"rules": []}
+    else:
+        sort = dict(sort)
+    sort.setdefault("rules", sort.get("rules") or [])
+    query["sort"] = sort
+
+    pagination = query.get("pagination")
+    if not isinstance(pagination, dict):
+        pagination = {"defaultPageSize": 20}
+    else:
+        pagination = dict(pagination)
+    pagination.setdefault("defaultPageSize", pagination.get("defaultPageSize") or 20)
+    query["pagination"] = pagination
+    object_view["query"] = query
+
+    presentation = object_view.get("presentation")
+    if not isinstance(presentation, dict):
+        presentation = {}
+    else:
+        presentation = dict(presentation)
+
+    if normalized_view_type == "plan":
+        plan = presentation.get("plan")
+        if not isinstance(plan, dict):
+            plan = {}
+        presentation["plan"] = plan
+
+    if normalized_view_type == "quick_form":
+        quick_form = presentation.get("quickForm")
+        if not isinstance(quick_form, dict):
+            quick_form = {}
+        presentation["quickForm"] = quick_form
+
+    object_view["presentation"] = presentation
+    settings["objectView"] = object_view
+
+    return settings
+
+
+def ensure_plan_object_view_scaffold(
+    settings_json: dict[str, Any] | None,
+    *,
+    view_key: str,
+    view_type: str,
+) -> dict[str, Any]:
+    """Ensure objectView contract scaffold (including plan presentation when applicable)."""
+    return ensure_object_view_contract_scaffold(
+        settings_json,
+        view_key=view_key,
+        view_type=view_type,
+    )
+
+
 def normalize_settings_json_for_publish(
     settings_json: dict[str, Any] | None,
     *,
@@ -415,6 +891,13 @@ def normalize_settings_json_for_publish(
     objectView keep their existing projection unchanged.
     """
     settings = dict(settings_json) if isinstance(settings_json, dict) else {}
+    menu_in_tab_input = read_menu_in_tab_from_settings(settings)
+
+    settings = ensure_object_view_contract_scaffold(
+        settings,
+        view_key=view_key,
+        view_type=view_type,
+    )
 
     object_view = settings.get("objectView")
     if isinstance(object_view, dict):
@@ -435,6 +918,19 @@ def normalize_settings_json_for_publish(
                 )
                 if sanitized_card is not None:
                     presentation["card"] = sanitized_card
+            plan = presentation.get("plan")
+            if isinstance(plan, dict):
+                presentation["plan"] = sanitize_presentation_plan(
+                    plan,
+                    role_mapping=object_view.get("roleMapping"),
+                    field_keys=field_keys,
+                )
+            elif str(view_type or "").strip().lower() == "plan":
+                presentation["plan"] = sanitize_presentation_plan(
+                    {},
+                    role_mapping=object_view.get("roleMapping"),
+                    field_keys=field_keys,
+                )
             object_view = dict(object_view)
             object_view["presentation"] = presentation
 
@@ -455,6 +951,34 @@ def normalize_settings_json_for_publish(
             object_view,
             ordered_non_system_field_keys=ordered_non_system,
         )
+
+        projection_keys = set()
+        projection_raw = object_view.get("projection")
+        if isinstance(projection_raw, dict):
+            for key in projection_raw.get("fieldKeys") or projection_raw.get("field_keys") or []:
+                normalized = str(key or "").strip()
+                if normalized:
+                    projection_keys.add(normalized)
+
+        object_view["roleMapping"] = sanitize_role_mapping(
+            object_view.get("roleMapping"),
+            projection_field_keys=projection_keys,
+        )
+
+        if str(view_type or "").strip().lower() == "plan":
+            presentation = object_view.get("presentation")
+            if isinstance(presentation, dict):
+                presentation = dict(presentation)
+                plan = presentation.get("plan")
+                if isinstance(plan, dict):
+                    presentation["plan"] = sanitize_presentation_plan(
+                        plan,
+                        role_mapping=object_view.get("roleMapping"),
+                        field_keys=projection_keys,
+                    )
+                    object_view = dict(object_view)
+                    object_view["presentation"] = presentation
+
         settings["objectView"] = object_view
 
         # objectView is the source of truth; projection is a compatibility snapshot.
@@ -495,7 +1019,42 @@ def normalize_settings_json_for_publish(
         ov["viewType"] = str(ov.get("viewType") or view_type)
         settings["objectView"] = ov
 
-    return settings
+    if menu_in_tab_input is not None:
+        settings["tabSettings"] = {"menuInTab": bool(menu_in_tab_input)}
+
+    return preserve_object_tab_settings(settings)
+
+
+def preserve_object_tab_settings(settings: dict[str, Any]) -> dict[str, Any]:
+    """Keep Object Tab Settings (menuInTab) through publish normalization."""
+    result = dict(settings)
+    menu_in_tab = read_menu_in_tab_from_settings(result)
+
+    if menu_in_tab is None:
+        return result
+
+    result["tabSettings"] = {"menuInTab": bool(menu_in_tab)}
+    return result
+
+
+def read_menu_in_tab_from_settings(settings: dict[str, Any] | None) -> bool | None:
+    if not isinstance(settings, dict):
+        return None
+
+    raw = settings.get("tabSettings")
+    if not isinstance(raw, dict):
+        raw = settings.get("objectTabSettings")
+    if not isinstance(raw, dict):
+        raw = settings.get("tab_settings")
+    if not isinstance(raw, dict):
+        return None
+
+    if "menuInTab" in raw:
+        return bool(raw["menuInTab"])
+    if "menu_in_tab" in raw:
+        return bool(raw["menu_in_tab"])
+
+    return None
 
 
 def validate_object_view_for_publish(
@@ -583,5 +1142,49 @@ def validate_object_view_for_publish(
                     "settings_json.objectView.query.filters.savedFilters должен быть массивом",
                 ),
             )
+
+    projection_raw = object_view.get("projection")
+    projection_field_keys: set[str] = set()
+    if isinstance(projection_raw, dict):
+        for key in projection_raw.get("fieldKeys") or projection_raw.get("field_keys") or []:
+            normalized = str(key or "").strip()
+            if normalized and normalized not in OBJECT_VIEW_SYSTEM_FIELD_KEYS:
+                if field_keys and normalized not in field_keys:
+                    issues.append(
+                        (
+                            "object_view_unknown_projection_field",
+                            f"projection.fieldKeys ссылается на неизвестное поле '{normalized}'",
+                        ),
+                    )
+                projection_field_keys.add(normalized)
+
+    role_mapping_raw = object_view.get("roleMapping")
+    if isinstance(role_mapping_raw, dict):
+        for role, mapped_field in role_mapping_raw.items():
+            normalized_role = str(role or "").strip()
+            if not normalized_role or normalized_role == ROLE_MAPPING_LABELS_KEY:
+                continue
+            if not isinstance(mapped_field, str):
+                continue
+            normalized_field = str(mapped_field or "").strip()
+            if not normalized_field:
+                continue
+            if projection_field_keys and normalized_field not in projection_field_keys:
+                issues.append(
+                    (
+                        "object_view_role_mapping_field_not_in_projection",
+                        (
+                            f"roleMapping.{normalized_role} ссылается на поле "
+                            f"'{normalized_field}', которое отсутствует в projection.fieldKeys"
+                        ),
+                    ),
+                )
+            elif field_keys and normalized_field not in field_keys:
+                issues.append(
+                    (
+                        "object_view_role_mapping_unknown_field",
+                        f"roleMapping.{normalized_role} ссылается на неизвестное поле '{normalized_field}'",
+                    ),
+                )
 
     return issues

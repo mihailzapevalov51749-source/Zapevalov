@@ -137,6 +137,22 @@ export default function FieldPropertiesPanel({
             />
           </div>
 
+          <div className="designer-field-form__group">
+            <label className="designer-label" htmlFor="field-prop-placeholder">
+              Подсказка
+            </label>
+            <textarea
+              id="field-prop-placeholder"
+              className="designer-textarea designer-field-form__textarea"
+              value={draft.placeholder}
+              onChange={(event) =>
+                onDraftChange?.({ ...draft, placeholder: event.target.value })
+              }
+              placeholder="Например: Кратко опишите проблему"
+              rows={3}
+            />
+          </div>
+
           {showChoiceOptions ? (
             <div className="designer-field-form__group">
               <ChoiceOptionsEditor
@@ -259,7 +275,8 @@ export default function FieldPropertiesPanel({
               Быстрая форма
             </label>
             <p className="designer-field-form__hint">
-              Показывать поле в быстрой форме создания записи
+              Устарело: настраивайте состав полей во вкладке «Быстрая форма».
+              Флаг сохранён для совместимости до Phase 2.
             </p>
           </div>
         </div>

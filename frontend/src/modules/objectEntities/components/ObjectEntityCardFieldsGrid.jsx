@@ -392,6 +392,8 @@ export default function ObjectEntityCardFieldsGrid({
               catalog={catalog}
               readOnly={readOnly}
               isCreate={isCreate}
+              value={formValues[field.key]}
+              onFieldChange={onFieldChange}
               onOpenRelatedEntity={onOpenRelatedEntity}
             />
           ) : (

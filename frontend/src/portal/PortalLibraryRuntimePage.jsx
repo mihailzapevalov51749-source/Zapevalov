@@ -26,7 +26,7 @@ import { useHeaderSearchContext } from "../shared/search/useHeaderSearchContext"
 
 import { useHeaderSearchController } from "../shared/search/useHeaderSearchController";
 
-import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../modules/designer/utils/navigationReload";
+import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../shared/navigation/navigationReload";
 
 
 

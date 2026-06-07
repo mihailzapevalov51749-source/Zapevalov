@@ -1,4 +1,6 @@
 import { DEFAULT_TABLE_PRESENTATION } from "./objectViewContract";
+import { normalizePlanPresentation } from "../plan/planViewContract.js";
+import { sanitizeRoleMapping } from "./objectViewRoleMapping.js";
 import {
   ensureTableRowNumberPresentationFieldKey,
   excludeTableDedicatedRecordNumberFieldKeys,
@@ -181,6 +183,10 @@ export function applyContractGuards(contract) {
     ...contract,
     schemaVersion: contract.schemaVersion ?? 1,
     viewType: String(contract.viewType || "table"),
+    roleMapping: sanitizeRoleMapping(
+      contract.roleMapping,
+      projectionFieldKeys,
+    ),
     query: {
       ...contract.query,
       filters: {
@@ -207,6 +213,7 @@ export function applyContractGuards(contract) {
         presentationNormalizeOptions(contract),
       ),
       card: normalizePresentationCard(contract.presentation?.card),
+      plan: normalizePlanPresentation(contract.presentation?.plan),
     },
   };
 }

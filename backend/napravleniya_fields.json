@@ -1,0 +1,47 @@
+﻿{
+  "key": "prioritet",
+  "name": "╧ЁшюЁшЄхЄ",
+  "options": [
+    {
+      "key": "option_1780780528553",
+      "color": "#0ea5e9",
+      "label": "═шчъшщ"
+    },
+    {
+      "key": "option_1780780538153",
+      "color": "#f59e0b",
+      "label": "╤Ёхфэшщ"
+    },
+    {
+      "key": "option_1780780545569",
+      "color": "#ef4444",
+      "label": "┬√ёюъшщ"
+    }
+  ]
+}
+{
+  "key": "status",
+  "name": "╤ЄрЄєё√",
+  "options": [
+    {
+      "key": "option_1780804579046",
+      "color": "#64748b",
+      "label": "═х эрўрЄю"
+    },
+    {
+      "key": "option_1780780345087",
+      "color": "#3b82f6",
+      "label": "└ъЄштэюх"
+    },
+    {
+      "key": "option_1780780377117",
+      "color": "#06b6d4",
+      "label": "═р ярєчх"
+    },
+    {
+      "key": "option_1780780394820",
+      "color": "#84cc16",
+      "label": "╟ръЁ√Єю"
+    }
+  ]
+}

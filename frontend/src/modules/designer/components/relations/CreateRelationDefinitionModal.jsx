@@ -13,11 +13,23 @@ import {
 } from "./createRelationDefinitionFormUtils";
 import {
   CREATE_RELATION_DEFINITION_MODAL_KEY,
+  CREATE_RELATION_DEFINITION_MODAL_MIN_HEIGHT,
   CREATE_RELATION_DEFINITION_MODAL_SIZE,
   CREATE_RELATION_DEFINITION_MODAL_VIEWPORT_INSET,
 } from "./createRelationDefinitionModalKeys";
 
 import "./createRelationDefinitionModal.css";
+
+const CREATE_RELATION_MODAL_CONTENT_STYLE = {
+  flex: 1,
+  padding: 0,
+  display: "flex",
+  flexDirection: "column",
+  minHeight: 0,
+  overflow: "hidden",
+  overflowY: "hidden",
+  overflowX: "hidden",
+};
 
 function RelationFormField({
   label,
@@ -207,9 +219,12 @@ export default function CreateRelationDefinitionModal({
     () => ({
       width: CREATE_RELATION_DEFINITION_MODAL_SIZE.width,
       height: CREATE_RELATION_DEFINITION_MODAL_SIZE.height,
+      minHeight: CREATE_RELATION_DEFINITION_MODAL_MIN_HEIGHT,
     }),
     [],
   );
+
+  const submitLabel = isSubmitting ? "Создание..." : "Создать связь";
 
   return (
     <PlatformModal
@@ -223,36 +238,32 @@ export default function CreateRelationDefinitionModal({
       viewportInset={CREATE_RELATION_DEFINITION_MODAL_VIEWPORT_INSET}
       defaultBounds={defaultBounds}
       ariaLabel="Создание связи"
-      contentStyle={{
-        flex: 1,
-        padding: 0,
-        display: "flex",
-        flexDirection: "column",
-        minHeight: 0,
-        overflow: "hidden",
-      }}
+      contentStyle={CREATE_RELATION_MODAL_CONTENT_STYLE}
       footer={
         <div
-          className="designer-create-relation-definition-modal__footer"
+          className="platform-modal-footer"
           data-platform-modal-no-drag
         >
-          <button
-            type="button"
-            className="designer-btn designer-create-relation-definition-modal__btn-cancel"
-            onClick={handleClose}
-            disabled={isSubmitting}
-          >
-            Отмена
-          </button>
-          <button
-            type="button"
-            className="designer-btn designer-btn--primary designer-create-relation-definition-modal__btn-create"
-            disabled={!canSubmit || isSubmitting}
-            aria-disabled={!canSubmit || isSubmitting}
-            onClick={handleSubmit}
-          >
-            {isSubmitting ? "Создание..." : "Создать"}
-          </button>
+          <div className="platform-modal-footer__leading" />
+          <div className="platform-modal-footer__actions">
+            <button
+              type="button"
+              className="designer-btn designer-create-relation-definition-modal__btn-cancel"
+              onClick={handleClose}
+              disabled={isSubmitting}
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              form="designer-create-relation-definition-form"
+              className="designer-btn designer-btn--primary designer-create-relation-definition-modal__btn-create"
+              disabled={!canSubmit || isSubmitting}
+              aria-disabled={!canSubmit || isSubmitting}
+            >
+              {submitLabel}
+            </button>
+          </div>
         </div>
       }
     >

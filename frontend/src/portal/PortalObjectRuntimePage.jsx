@@ -17,7 +17,7 @@ import {
   parsePortalObjectRoute,
   resolvePortalObjectNavigationPath,
 } from "./utils/portalObjectRoutes";
-import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../modules/designer/utils/navigationReload";
+import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../shared/navigation/navigationReload";
 import { PORTAL_OBJECT_VIEW_HEADER_EVENT } from "./utils/portalObjectViewHeaderBridge";
 import {
   buildBreadcrumbsFromNavigationChain,

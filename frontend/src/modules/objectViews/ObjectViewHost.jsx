@@ -9,11 +9,13 @@ import useObjectTableUserViewPersistence from "./hooks/useObjectTableUserViewPer
 import useObjectViewPersistence from "./hooks/useObjectViewPersistence";
 import useObjectViewQuery from "./hooks/useObjectViewQuery";
 import useObjectViewSession from "./hooks/useObjectViewSession";
+import useObjectRuntimeContextActions from "./hooks/useObjectRuntimeContextActions";
 import {
   resolveObjectTabDisplayLabel,
   resolveObjectTabRouteKey,
 } from "./services/resolveObjectTabDisplayLabel";
 import { syncObjectViewContractWithCatalog } from "./services/syncProjectionWithCatalogFields";
+import { normalizeObjectViewDefinition } from "./services/normalizeObjectViewDefinition";
 import {
   resolveDesignerTableViewActions,
   resolveOfficeTableViewActions,
@@ -27,6 +29,9 @@ import {
   TABLE_BASE_STATE_KEY,
 } from "./table/preferences/tableBaseState";
 import ObjectTableView from "./table/ObjectTableView";
+import ObjectPlanView from "./plan/ObjectPlanView.jsx";
+import ObjectQuickFormView from "./quickForm/ObjectQuickFormView.jsx";
+import { useObjectTypePreviewTab } from "../designer/context/ObjectTypePreviewTabContext.jsx";
 
 const UNSUPPORTED_VIEW_PLACEHOLDER_STYLE = {
   padding: 24,
@@ -72,9 +77,16 @@ export default function ObjectViewHost({
   showRowNumberColumn = true,
   onActiveViewContextChange = null,
   onSchemaChanged = null,
+  studioViewDraftSettingsJson = null,
+  planPreviewEditor: planPreviewEditorProp = null,
+  studioPreviewCatalog = null,
 }) {
   const [publishedViewRaw, setPublishedViewRaw] = useState(null);
   const [runtimeCatalog, setRuntimeCatalog] = useState(null);
+  const previewTabContext = useObjectTypePreviewTab();
+  const planPreviewEditor =
+    planPreviewEditorProp ??
+    (mode === "studio-preview" ? previewTabContext?.planPreviewEditor ?? null : null);
 
   const isOfficeRuntime = source === "portal";
   const resolvedObjectTabKey = objectTabKey ?? viewKey;
@@ -105,6 +117,7 @@ export default function ObjectViewHost({
     objectTypeKey,
     requestedRepresentationKey: isOfficeRuntime ? requestedRepresentationKey : null,
     requestedViewKey: isOfficeRuntime ? null : resolvedObjectTabKey,
+    requestedObjectTabKey: isOfficeRuntime ? resolvedObjectTabKey : null,
     pageSize,
     mode,
     source,
@@ -134,19 +147,51 @@ export default function ObjectViewHost({
     definitions.activeViewKey,
   ]);
 
+  const effectiveQueryPageSize = Math.min(Math.max(Number(pageSize) || 20, 1), 200);
+
+  const draftAwareResolvedContract = useMemo(() => {
+    if (
+      mode !== "studio-preview" ||
+      !studioViewDraftSettingsJson ||
+      !definitions.activeView?.raw
+    ) {
+      return definitions.resolvedContract;
+    }
+
+    const syntheticRaw = {
+      ...definitions.activeView.raw,
+      settings_json: studioViewDraftSettingsJson,
+    };
+
+    return normalizeObjectViewDefinition(syntheticRaw, {
+      viewKey: definitions.activeView.contract?.key,
+      pageSize: effectiveQueryPageSize,
+    });
+  }, [
+    mode,
+    studioViewDraftSettingsJson,
+    definitions.activeView,
+    definitions.resolvedContract,
+    effectiveQueryPageSize,
+  ]);
+
   const catalogSyncedResolvedContract = useMemo(
     () =>
       syncObjectViewContractWithCatalog(
-        definitions.resolvedContract,
+        draftAwareResolvedContract,
         runtimeCatalog,
         objectTypeKey,
-        { publishedViewKey: definitions.publishedTableViewKey },
+        {
+          publishedViewKey: definitions.publishedTableViewKey,
+          studioPreviewMode: mode === "studio-preview",
+        },
       ),
     [
-      definitions.resolvedContract,
+      draftAwareResolvedContract,
       runtimeCatalog,
       objectTypeKey,
       definitions.publishedTableViewKey,
+      mode,
     ],
   );
 
@@ -165,7 +210,10 @@ export default function ObjectViewHost({
       }),
       runtimeCatalog,
       objectTypeKey,
-      { publishedViewKey: definitions.publishedTableViewKey },
+      {
+        publishedViewKey: definitions.publishedTableViewKey,
+        studioPreviewMode: mode === "studio-preview",
+      },
     );
   }, [
     isBaseStateActive,
@@ -211,14 +259,24 @@ export default function ObjectViewHost({
     };
   }, [session.isDirty]);
 
+  const resolvedViewTypeForQuery = String(
+    viewType ||
+      definitions.resolvedContract?.viewType ||
+      definitions.viewType ||
+      "table",
+  )
+    .trim()
+    .toLowerCase();
+
   const query = useObjectViewQuery({
     tenantId,
     objectTypeKey,
     viewKey: runtimeQueryViewKey,
-    pageSize,
+    pageSize: effectiveQueryPageSize,
     effectiveContract: session.effectiveContract,
     sessionState: session.sessionState,
     previewMode: mode === "studio-preview",
+    previewCatalogOverride: mode === "studio-preview" ? studioPreviewCatalog : null,
   });
 
   useEffect(() => {
@@ -275,6 +333,21 @@ export default function ObjectViewHost({
       viewLabel,
     ],
   );
+
+  useObjectRuntimeContextActions({
+    tenantId,
+    objectTypeKey,
+    objectName: activeObjectTabLabel || viewLabel || "Объект",
+    query,
+    resolvedContract: catalogSyncedResolvedContract,
+    effectiveContract: session.effectiveContract,
+    viewKey: definitions.activeViewKey,
+    publishedTableViewKey: definitions.publishedTableViewKey,
+    isTableBaseStateActive: isBaseStateActive,
+    previewMode: mode === "studio-preview",
+    enabled: Boolean(objectTypeKey) && !definitions.loading,
+    sessionActiveQuickFilterId: session.activeQuickFilterId,
+  });
 
   useEffect(() => {
     if (typeof onActiveViewContextChange !== "function") {
@@ -578,6 +651,53 @@ export default function ObjectViewHost({
   const rootClassName = ["object-view-host", className]
     .filter(Boolean)
     .join(" ");
+
+  if (resolvedViewType === "plan") {
+    return (
+      <div
+        className={rootClassName}
+        data-object-view-host="plan"
+        data-runtime-source={source || undefined}
+        style={OBJECT_VIEW_HOST_TABLE_LAYOUT_STYLE}
+      >
+        <ObjectPlanView
+          tenantId={tenantId}
+          objectTypeId={objectTypeId}
+          mode={mode}
+          query={query}
+          resolvedContract={catalogSyncedResolvedContract}
+          objectTypeKey={objectTypeKey}
+          minHeight={minHeight}
+          planPreviewEditor={planPreviewEditor}
+        />
+      </div>
+    );
+  }
+
+  if (resolvedViewType === "quick_form") {
+    const previewCatalog =
+      mode === "studio-preview" && studioPreviewCatalog
+        ? studioPreviewCatalog
+        : runtimeCatalog;
+
+    return (
+      <div
+        className={rootClassName}
+        data-object-view-host="quick_form"
+        data-runtime-source={source || undefined}
+        style={OBJECT_VIEW_HOST_TABLE_LAYOUT_STYLE}
+      >
+        <ObjectQuickFormView
+          tenantId={tenantId}
+          objectTypeKey={objectTypeKey}
+          catalog={previewCatalog}
+          resolvedContract={catalogSyncedResolvedContract}
+          mode={mode}
+          minHeight={minHeight}
+        />
+      </div>
+    );
+  }
 
   if (resolvedViewType === "table") {
     return (

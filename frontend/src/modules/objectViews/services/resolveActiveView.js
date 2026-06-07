@@ -33,10 +33,33 @@ export function getViewIdentity(view) {
 }
 
 /**
+ * Resolve any object tab view (table, plan, card, …) by stable tab key.
+ *
+ * @param {Array<{ contract?: import('./objectViewContract').ObjectViewContract, raw?: Record<string, unknown> }>} tabViews
+ * @param {string | null | undefined} requestedViewKey
+ */
+export function resolveActiveObjectTabView(tabViews, requestedViewKey) {
+  const views = Array.isArray(tabViews) ? tabViews : [];
+  const normalizedRequested = String(requestedViewKey || "").trim();
+
+  if (!normalizedRequested || !views.length) {
+    return null;
+  }
+
+  return (
+    views.find((item) => {
+      const contractKey = String(item?.contract?.key || item?.raw?.key || "").trim();
+      return contractKey === normalizedRequested;
+    }) || null
+  );
+}
+
+/**
  * @param {Array<{ contract: import('./objectViewContract').ObjectViewContract, raw?: Record<string, unknown> }>} tableViews
  * @param {string | null | undefined} requestedViewKey
  */
-export function resolveActiveTableView(tableViews, requestedViewKey) {  const views = Array.isArray(tableViews) ? tableViews : [];
+export function resolveActiveTableView(tableViews, requestedViewKey) {
+  const views = Array.isArray(tableViews) ? tableViews : [];
 
   if (!views.length) {
     return null;

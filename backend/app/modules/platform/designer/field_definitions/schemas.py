@@ -25,6 +25,7 @@ class FieldDefinitionCreate(BaseModel):
     key: str = Field(..., min_length=3, max_length=FIELD_DEFINITION_KEY_MAX_LENGTH)
     name: str = Field(..., min_length=1, max_length=FIELD_DEFINITION_NAME_MAX_LENGTH)
     description: str | None = None
+    placeholder: str | None = None
     field_type: FieldType
     sort_order: int = 0
     is_required: bool = False
@@ -77,6 +78,7 @@ class FieldDefinitionUpdate(BaseModel):
     key: str | None = None
     name: str | None = None
     description: str | None = None
+    placeholder: str | None = None
     field_type: FieldType | None = None
     sort_order: int | None = None
     is_required: bool | None = None
@@ -116,6 +118,7 @@ class FieldDefinitionRead(BaseModel):
     key: str
     name: str
     description: str | None = None
+    placeholder: str | None = None
     field_type: str
     sort_order: int
     is_required: bool
@@ -142,6 +145,7 @@ class FieldDefinitionListItem(BaseModel):
     key: str
     name: str
     description: str | None = None
+    placeholder: str | None = None
     field_type: str
     sort_order: int
     is_required: bool

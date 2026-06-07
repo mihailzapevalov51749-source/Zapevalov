@@ -185,11 +185,20 @@ export function mergeProjectionWithCatalogFields(projection, catalogFields, opti
       null;
   }
 
-  return {
+  const fieldKeySet = new Set(fieldKeys);
+  const nextProjection = {
     fieldKeys,
     fieldOrder,
     titleFieldKey,
   };
+
+  if (Array.isArray(source.infoFieldKeys)) {
+    nextProjection.infoFieldKeys = source.infoFieldKeys
+      .map((key) => String(key || "").trim())
+      .filter((key) => key && fieldKeySet.has(key));
+  }
+
+  return nextProjection;
 }
 
 /**
@@ -228,6 +237,10 @@ export function syncObjectViewContractWithCatalog(
   options = {},
 ) {
   if (!contract) {
+    return contract;
+  }
+
+  if (options.studioPreviewMode) {
     return contract;
   }
 
@@ -270,6 +283,7 @@ export function syncObjectViewContractWithCatalog(
           columnOrder: ensureTableRowNumberPresentationFieldKey([...fieldKeys]),
         },
         card: contract.presentation?.card ?? null,
+        plan: contract.presentation?.plan ?? null,
       },
     };
   }
@@ -314,6 +328,13 @@ export function syncObjectViewContractWithCatalog(
     return contract;
   }
 
+  const fieldKeySet = new Set(syncedProjection.fieldKeys || []);
+  const syncedInfoFieldKeys = Array.isArray(contract.projection?.infoFieldKeys)
+    ? contract.projection.infoFieldKeys
+        .map((key) => String(key || "").trim())
+        .filter((key) => key && fieldKeySet.has(key))
+    : null;
+
   const table = contract.presentation?.table || {};
 
   const presentationTable = normalizePresentationTable(
@@ -333,11 +354,15 @@ export function syncObjectViewContractWithCatalog(
 
   return {
     ...contract,
-    projection: syncedProjection,
+    projection: {
+      ...syncedProjection,
+      ...(syncedInfoFieldKeys != null ? { infoFieldKeys: syncedInfoFieldKeys } : {}),
+    },
     presentation: {
       ...contract.presentation,
       table: presentationTable,
       card: contract.presentation?.card ?? null,
+      plan: contract.presentation?.plan ?? null,
     },
   };
 }

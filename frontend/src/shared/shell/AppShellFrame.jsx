@@ -12,6 +12,7 @@ export default function AppShellFrame({
   onSidebarAction,
   sidebarTransition = "all 0.2s ease",
   workspaceTransition = "all 0.2s ease",
+  platformZone = undefined,
 }) {
   const { sidebarCollapsed, toggleSidebarCollapsed } = useShellSidebarState();
   const sidebarWidth = resolveAppSidebarWidth(sidebarCollapsed);
@@ -19,6 +20,7 @@ export default function AppShellFrame({
 
   return (
     <div
+      data-platform-zone={platformZone || undefined}
       style={{
         width: "100vw",
         height: "100vh",

@@ -2,12 +2,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { createRelation } from "../../../api/runtimeRelationsApi";
 import { getApiErrorMessage } from "../../designer/api/platformApiClient";
-import { getQuickCreateFields } from "../../objectViews/entity/getQuickCreateFields";
+import { resolveRuntimeQuickCreateFields } from "../../objectViews/entity/resolveActiveQuickFormView";
+import { buildOfficeObjectRecordCreateModalKey } from "../../../shared/quickCreate/platformQuickCreateModalKeys";
 import { findCatalogObjectType } from "../../objectViews/table/services/adapters/ObjectTypeTableAdapter";
 import {
   buildCreateEntityPayload,
   buildInitialCreateFormValues,
 } from "../../objectViews/entity/buildCreateEntityPayload";
+import {
+  formatRelationLinkFailuresMessage,
+  submitPendingRelationLinks,
+} from "../../objectViews/entity/submitPendingRelationLinks";
 import { getRuntimeEntity } from "../../runtimeWriteGateway/api/runtimeEntitiesApi";
 import { runtimeWriteGateway } from "../../runtimeWriteGateway";
 import {
@@ -65,7 +70,7 @@ export default function useObjectEntityCard({
       return [];
     }
 
-    return getQuickCreateFields(catalog, objectTypeKey);
+    return resolveRuntimeQuickCreateFields(catalog, objectTypeKey);
   }, [catalog, objectTypeKey, enabled]);
 
   const canCreate = Boolean(
@@ -478,8 +483,16 @@ export default function useObjectEntityCard({
         return { ok: false };
       }
 
+      const relationFailures = await submitPendingRelationLinks({
+        tenantId,
+        entityId: normalizedId,
+        fields: quickCreateFields,
+        formValues: quickCreateFormValues,
+      });
+
       const pendingSubtaskLink = pendingSubtaskLinkRef.current;
       let subtaskLinkFailed = false;
+      let subtaskLinkError = "";
 
       if (pendingSubtaskLink?.parentEntityId && pendingSubtaskLink?.relationKey) {
         try {
@@ -490,11 +503,9 @@ export default function useObjectEntityCard({
           setSubtasksReloadToken((value) => value + 1);
         } catch (linkError) {
           subtaskLinkFailed = true;
-          setQuickCreateSubmitError(
-            getApiErrorMessage(
-              linkError,
-              "Запись создана, но не удалось связать её как подзадачу",
-            ),
+          subtaskLinkError = getApiErrorMessage(
+            linkError,
+            "Запись создана, но не удалось связать её как подзадачу",
           );
         } finally {
           pendingSubtaskLinkRef.current = null;
@@ -503,10 +514,21 @@ export default function useObjectEntityCard({
         pendingSubtaskLinkRef.current = null;
       }
 
-      if (!subtaskLinkFailed) {
+      const partialFailureMessage = [
+        relationFailures.length > 0
+          ? formatRelationLinkFailuresMessage(relationFailures)
+          : "",
+        subtaskLinkFailed ? subtaskLinkError : "",
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      if (!partialFailureMessage) {
         setQuickCreateSubmitError("");
         setQuickCreateFieldErrors({});
         setQuickCreateFormValues(buildInitialCreateFormValues(quickCreateFields));
+      } else {
+        setQuickCreateSubmitError(partialFailureMessage);
       }
 
       setQuickCreateOpen(false);
@@ -516,10 +538,16 @@ export default function useObjectEntityCard({
         quickCreate: true,
         subtaskLinked: Boolean(pendingSubtaskLink && !subtaskLinkFailed),
         subtaskLinkFailed,
+        relationLinkFailures: relationFailures,
         parentEntityId: pendingSubtaskLink?.parentEntityId || null,
       });
 
-      return { ok: true, entity, subtaskLinkFailed };
+      return {
+        ok: true,
+        entity,
+        subtaskLinkFailed,
+        relationLinkFailures: relationFailures,
+      };
     } catch (error) {
       setQuickCreateSubmitError(
         getApiErrorMessage(error, "Не удалось создать запись"),
@@ -608,7 +636,10 @@ export default function useObjectEntityCard({
       fieldErrors: quickCreateFieldErrors,
       submitError: quickCreateSubmitError,
       submitting: createSubmitting,
-      modalKey: `platform_quick_create_v2_${String(objectTypeKey || "object")}`,
+      modalKey: buildOfficeObjectRecordCreateModalKey(objectTypeKey),
+      tenantId,
+      catalog,
+      objectTypeKey,
       close: closeQuickCreate,
       setFieldValue: setQuickCreateFieldValue,
       submit: submitQuickCreate,

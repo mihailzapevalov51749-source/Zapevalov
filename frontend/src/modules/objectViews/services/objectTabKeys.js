@@ -62,6 +62,21 @@ export function resolveInitialOfficeSelectedViewKey({
 }
 
 /**
+ * Maps published object tab route key to internal selected view key (Office).
+ *
+ * @param {string | null | undefined} objectTabKey
+ */
+export function resolveOfficeObjectTabSelectionKey(objectTabKey) {
+  const normalized = String(objectTabKey || "").trim();
+
+  if (!normalized || normalized === "default_table") {
+    return TABLE_BASE_STATE_KEY;
+  }
+
+  return normalized;
+}
+
+/**
  * Whether requestedRepresentationKey effect should apply selection.
  *
  * @param {{

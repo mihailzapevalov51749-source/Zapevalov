@@ -1,5 +1,8 @@
 /** @typedef {'asc' | 'desc'} ObjectViewSortOrder */
 
+import { DEFAULT_PLAN_PRESENTATION } from "../plan/planViewContract.js";
+import { DEFAULT_ROLE_MAPPING } from "./objectViewRoleMapping.js";
+
 /**
  * @typedef {Object} ObjectViewSortRule
  * @property {string} field
@@ -11,7 +14,12 @@
  * @property {string[]} fieldKeys
  * @property {string[]} fieldOrder
  * @property {string | null} titleFieldKey
+ * @property {string[]} [infoFieldKeys] Plan Info tab fields (subset of fieldKeys)
  */
+
+/** @typedef {import('../plan/planViewContract.js').PlanViewPresentation} PlanViewPresentation */
+
+/** @typedef {Record<string, string>} ObjectViewRoleMapping */
 
 /**
  * @typedef {Object} ObjectViewContract
@@ -20,6 +28,7 @@
  * @property {string} key
  * @property {string} name
  * @property {ObjectViewProjection} projection
+ * @property {ObjectViewRoleMapping} roleMapping
  * @property {{
  *   filters: {
  *     conditions: Array<Record<string, unknown>>,
@@ -42,6 +51,8 @@
  *     tabs: Array<{ id: string, visible?: boolean, order?: number }>,
  *     hiddenFieldKeys: string[],
  *   } | null,
+ *   plan?: PlanViewPresentation | null,
+ *   quickForm?: Record<string, unknown> | null,
  * }} presentation
  * @property {{
  *   canFilter: boolean,
@@ -105,7 +116,9 @@ export function createEmptyObjectViewContract(overrides = {}) {
       fieldKeys: [],
       fieldOrder: [],
       titleFieldKey: null,
+      infoFieldKeys: [],
     },
+    roleMapping: { ...DEFAULT_ROLE_MAPPING },
     query: {
       ...DEFAULT_OBJECT_VIEW_QUERY,
       filters: { ...DEFAULT_OBJECT_VIEW_QUERY.filters },
@@ -117,6 +130,7 @@ export function createEmptyObjectViewContract(overrides = {}) {
     presentation: {
       table: { ...DEFAULT_TABLE_PRESENTATION },
       card: null,
+      plan: { ...DEFAULT_PLAN_PRESENTATION },
     },
     capabilities: { ...DEFAULT_OBJECT_VIEW_CAPABILITIES },
     meta: {

@@ -189,3 +189,15 @@ class ObjectTypeListItem(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ObjectTypeDeleteUsageGroup(BaseModel):
+    category: str
+    label: str
+    items: list[str] = Field(default_factory=list)
+
+
+class ObjectTypeDeletePreviewRead(BaseModel):
+    name: str
+    groups: list[ObjectTypeDeleteUsageGroup] = Field(default_factory=list)
+    has_usage: bool = False

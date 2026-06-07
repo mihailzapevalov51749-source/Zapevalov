@@ -167,10 +167,6 @@ export default function RelationsTab({
           </button>
         </div>
 
-        <div className="designer-card" style={{ marginBottom: 12, fontSize: 13, color: "#64748b" }}>
-          Граф связей в MVP отключён. Источник: <code>{objectType?.key}</code>
-        </div>
-
         <div className="designer-table-wrap">
           <table className="designer-table">
             <thead>

@@ -5,3 +5,8 @@ export { default as useObjectEntityUpdate } from "./hooks/useObjectEntityUpdate"
 export { mapRuntimeEntityToCardModel } from "./services/mapRuntimeEntityToCardModel";
 export { buildEntityUpdatePayload } from "./services/buildEntityUpdatePayload";
 export { resolveEntityTitle } from "./services/resolveEntityTitle";
+export {
+  resolveEntityDisplayTitle,
+  resolveEntityTitleFieldKey,
+  resolvePeerEntityLabel,
+} from "./services/resolveEntityDisplayTitle";

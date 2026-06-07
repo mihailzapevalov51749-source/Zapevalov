@@ -9,7 +9,7 @@ import {
   getEntityCardRelatedRowStyle,
 } from "../../../shared/entityCardShell/styles/entityCardSubtasksStyles";
 import { resolveSubtaskDisplayFieldKeys } from "../services/resolveSubtasksFromRelations";
-import { resolveEntityTitle } from "../services/resolveEntityTitle";
+import { resolveEntityDisplayTitle } from "../services/resolveEntityDisplayTitle.js";
 
 const groupHeaderStyle = {
   padding: "8px 12px 4px",
@@ -108,12 +108,13 @@ const addMenuStyle = {
 
 function resolvePeerEntityLabel(catalog, objectTypeKey, entity) {
   const displayKeys = resolveSubtaskDisplayFieldKeys(catalog, objectTypeKey);
-  const values =
-    entity?.values && typeof entity.values === "object" ? entity.values : {};
 
-  const title = resolveEntityTitle(values, displayKeys.titleFieldKey);
-
-  return title || String(entity?.id || "Запись");
+  return resolveEntityDisplayTitle({
+    entity,
+    catalog,
+    objectTypeKey,
+    titleFieldKey: displayKeys.titleFieldKey,
+  });
 }
 
 function AddExistingHierarchyChildForm({

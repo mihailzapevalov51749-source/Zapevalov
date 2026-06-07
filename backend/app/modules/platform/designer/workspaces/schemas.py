@@ -76,6 +76,7 @@ class WorkspaceTabCreate(BaseModel):
     is_visible: bool = True
     tab_type: WorkspaceTabType = "object"
     object_type_id: UUID | None = None
+    object_view_id: UUID | None = None
     target_type: str | None = None
     target_id: str | None = None
     url: str | None = None
@@ -93,6 +94,7 @@ class WorkspaceTabUpdate(BaseModel):
     is_visible: bool | None = None
     object_type_id: UUID | None = None
     tab_type: WorkspaceTabType | None = None
+    object_view_id: UUID | None = None
     target_type: str | None = None
     target_id: str | None = None
     url: str | None = None
@@ -115,6 +117,9 @@ class WorkspaceTabRead(BaseModel):
     object_type_id: UUID | None
     object_type_key: str | None = None
     object_type_name: str | None = None
+    object_view_id: UUID | None = None
+    object_view_key: str | None = None
+    object_view_name: str | None = None
     target_type: str | None = None
     target_id: str | None = None
     target_label: str | None = None

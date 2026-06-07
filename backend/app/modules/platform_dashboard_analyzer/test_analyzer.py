@@ -6,6 +6,8 @@ from app.modules.platform_dashboard_analyzer.stage_works import (
     STAGE_CANONICAL,
     _library_deep_link_supports_document_opening,
     _object_context_menu_complete,
+    _object_tab_menu_in_tab_complete,
+    _object_type_workspace_actions_menu_complete,
     _object_table_excel_export_complete,
     _object_table_excel_import_complete,
     _object_table_selection_tree_toggle_ux_complete,
@@ -16,6 +18,20 @@ from app.modules.platform_dashboard_analyzer.stage_works import (
     _studio_preview_demo_data_toolbar_badge_complete,
     _studio_object_type_header_icon_parity_complete,
     _object_table_title_hierarchy_number_ux_complete,
+    _platform_modal_footer_layout_complete,
+    _platform_modal_resize_handles_complete,
+    _platform_accent_zones_complete,
+    _platform_modal_help_complete,
+    _platform_modal_standard_min_width_complete,
+    _studio_object_view_draft_preview_sync_complete,
+    _plan_view_renderer_routing_complete,
+    _plan_view_publish_runtime_complete,
+    _plan_self_relation_universal_complete,
+    _office_plan_object_tab_contract_complete,
+    _office_plan_view_hooks_complete,
+    _plan_view_orphan_records_complete,
+    _plan_view_target_ui_complete,
+    _office_object_record_create_modal_resize_complete,
     evaluate_stage_work_status,
     resolve_stage_works,
     split_stage_works,
@@ -237,6 +253,16 @@ def test_object_table_ut_parity_checklist_in_card_complete():
 def test_object_context_menu_complete():
     ctx = build_scan_context()
     assert _object_context_menu_complete(ctx) is True
+
+
+def test_object_tab_menu_in_tab_complete():
+    ctx = build_scan_context()
+    assert _object_tab_menu_in_tab_complete(ctx) is True
+
+
+def test_object_type_workspace_actions_menu_complete():
+    ctx = build_scan_context()
+    assert _object_type_workspace_actions_menu_complete(ctx) is True
 
 
 def test_object_table_title_hierarchy_number_ux_complete():
@@ -487,6 +513,98 @@ def test_relation_field_type_tree_view_work_item_completed():
     )
     assert "listRelationInstancesByKey" in ctx.frontend.file_contents.get(
         "api/runtimeRelationsApi.js",
+        "",
+    )
+
+
+def test_platform_modal_footer_layout_complete():
+    ctx = build_scan_context()
+    assert _platform_modal_footer_layout_complete(ctx) is True
+
+
+def test_platform_modal_resize_handles_complete():
+    ctx = build_scan_context()
+    assert _platform_modal_resize_handles_complete(ctx) is True
+
+
+def test_platform_modal_standard_min_width_complete():
+    ctx = build_scan_context()
+    assert _platform_modal_standard_min_width_complete(ctx) is True
+
+
+def test_platform_accent_zones_complete():
+    ctx = build_scan_context()
+    assert _platform_accent_zones_complete(ctx) is True
+
+
+def test_platform_modal_help_complete():
+    ctx = build_scan_context()
+    assert _platform_modal_help_complete(ctx) is True
+
+
+def test_studio_object_view_draft_preview_sync_complete():
+    ctx = build_scan_context()
+    assert _studio_object_view_draft_preview_sync_complete(ctx) is True
+
+
+def test_plan_view_renderer_routing_complete():
+    ctx = build_scan_context()
+    assert _plan_view_renderer_routing_complete(ctx) is True
+
+
+def test_plan_view_publish_runtime_complete():
+    ctx = build_scan_context()
+    assert _plan_view_publish_runtime_complete(ctx) is True
+
+
+def test_plan_self_relation_universal_complete():
+    ctx = build_scan_context()
+    assert _plan_self_relation_universal_complete(ctx) is True
+
+
+def test_office_plan_object_tab_contract_complete():
+    ctx = build_scan_context()
+    assert _office_plan_object_tab_contract_complete(ctx) is True
+
+
+def test_office_plan_view_hooks_complete():
+    ctx = build_scan_context()
+    assert _office_plan_view_hooks_complete(ctx) is True
+
+
+def test_plan_view_orphan_records_complete():
+    ctx = build_scan_context()
+    assert _plan_view_orphan_records_complete(ctx) is True
+
+
+def test_plan_view_target_ui_complete():
+    ctx = build_scan_context()
+    assert _plan_view_target_ui_complete(ctx) is True
+
+
+def test_office_object_record_create_modal_resize_complete():
+    ctx = build_scan_context()
+    assert _office_object_record_create_modal_resize_complete(ctx) is True
+
+
+def test_object_plan_view_work_item_completed():
+    ctx = build_scan_context()
+    phase_doc = ctx.docs.migration_phases.get("relation-field-type", {})
+    works = resolve_stage_works("relation-field-type", phase_doc)
+
+    plan_work = next(
+        work for work in works if "план" in work.lower() and "представлен" in work.lower()
+    )
+
+    status = evaluate_stage_work_status("relation-field-type", plan_work, ctx)
+
+    assert status == "done"
+    assert ctx.frontend.file_contents.get(
+        "modules/objectViews/plan/ObjectPlanView.jsx",
+        "",
+    )
+    assert 'resolvedViewType === "plan"' in ctx.frontend.file_contents.get(
+        "modules/objectViews/ObjectViewHost.jsx",
         "",
     )
 

@@ -24,6 +24,7 @@ export default function NavigationDeleteNoticeModal({
       canCustomizeLayout
       keepFullyVisible
       viewportInset={NAVIGATION_DELETE_MODAL_VIEWPORT_INSET}
+      layoutPreset="compact"
       defaultBounds={NAVIGATION_DELETE_NOTICE_DEFAULT_BOUNDS}
       ariaLabel="Удаление недоступно"
       contentStyle={{

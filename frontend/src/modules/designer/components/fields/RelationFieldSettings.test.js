@@ -16,8 +16,10 @@ describe("RelationFieldSettings UX", () => {
     assert.match(source, /CreateRelationDefinitionModal/);
   });
 
-  it("shows inactive-only message and relations management action", () => {
-    assert.match(source, /только неактивные связи/);
-    assert.match(source, /Управление связями/);
+  it("shows read-only role and cardinality instead of manual selects", () => {
+    assert.match(source, /Роль текущего объекта/);
+    assert.match(source, /Кардинальность поля/);
+    assert.doesNotMatch(source, /Выберите роль/);
+    assert.doesNotMatch(source, /Выберите кардинальность/);
   });
 });

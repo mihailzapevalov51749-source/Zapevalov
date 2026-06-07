@@ -9,6 +9,20 @@
   box-sizing: border-box;
 }
 
+.portal-object-runtime-header--menu-in-tab {
+  display: block;
+  flex-wrap: nowrap;
+  gap: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.portal-object-runtime-header--menu-in-tab .portal-object-runtime-header__tabs {
+  flex: none;
+  width: 100%;
+}
+
 .portal-object-runtime-header__identity {
   display: inline-flex;
   align-items: center;
@@ -53,10 +67,32 @@
   justify-content: flex-start;
 }
 
+.portal-object-runtime-header__tab-with-menu {
+  cursor: default;
+}
+
+.portal-object-runtime-header__tab-context-trigger {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  height: 100%;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
 @media (max-width: 900px) {
   .portal-object-runtime-header {
     flex-wrap: wrap;
     row-gap: 8px;
+  }
+
+  .portal-object-runtime-header--menu-in-tab {
+    flex-wrap: nowrap;
+    row-gap: 0;
+  }
+
+  .portal-object-runtime-header--menu-in-tab .portal-object-runtime-header__tabs {
+    flex-basis: auto;
   }
 
   .portal-object-runtime-header__identity {

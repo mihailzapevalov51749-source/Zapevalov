@@ -41,6 +41,8 @@ export function catalogFieldToFieldDef(field) {
     type,
     rawFieldType: rawType,
     label: String(field.name || field.label || key),
+    description: field.description != null ? String(field.description) : "",
+    placeholder: field.placeholder != null ? String(field.placeholder) : "",
     settings,
     options,
     align: typeof settings.align === "string" ? settings.align : "left",

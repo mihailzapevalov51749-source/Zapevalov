@@ -1,0 +1,463 @@
+{
+  "simulation": {
+    "path": "Office ObjectPlanView → useObjectViewQuery(limit=20) → buildPlanTree",
+    "tenantId": 1,
+    "objectTypeKey": "napravleniya",
+    "viewKey": "arhitektura",
+    "queryLimit": 20,
+    "querySort": "created_at desc",
+    "queryTotal": 53,
+    "queryItemsReturned": 20,
+    "hierarchyRelationKey": "podpunkt",
+    "hierarchyInstanceCount": 50,
+    "actionEngineTreeNodeCount": 49
+  },
+  "titleFieldKey_at_tree_build": "nazvanie",
+  "contract_projection_titleFieldKey": "nazvanie",
+  "buildPlanTree_stub_stats_action_engine_subtree": {
+    "real_entity": 20,
+    "fallback_id_only": 29,
+    "total": 49
+  },
+  "target_node": {
+    "label": "TARGET 300d9128",
+    "entityId": "300d9128-2428-4691-9542-8a53e309ced1",
+    "entitiesById_get": {
+      "id": "300d9128-2428-4691-9542-8a53e309ced1",
+      "tenant_id": 1,
+      "object_type_key": "napravleniya",
+      "object_type_id": "03584bf5-0f8a-44a3-b894-173a57558ad4",
+      "catalog_version": 92,
+      "status": "active",
+      "values": {
+        "status": "option_1780804579046",
+        "nazvanie": "Интеграция с BPMN",
+        "__system_id": "300d9128-2428-4691-9542-8a53e309ced1",
+        "__system_record_number": 48,
+        "__system_created_by": null,
+        "__system_created_at": "2026-06-07T20:00:46.385836+00:00",
+        "__system_updated_by": null,
+        "__system_updated_at": "2026-06-07T20:00:46.385836+00:00",
+        "__system_record_version": 1
+      },
+      "created_by": null,
+      "updated_by": null,
+      "record_version": 1,
+      "record_number": 48,
+      "recordNumber": 48,
+      "system_number": 48,
+      "created_at": "2026-06-07T20:00:46.385836Z",
+      "updated_at": "2026-06-07T20:00:46.385836Z",
+      "deleted_at": null
+    },
+    "entitiesById_fallback_used": false,
+    "buildPlanTree_entity_resolved": {
+      "id": "300d9128-2428-4691-9542-8a53e309ced1",
+      "tenant_id": 1,
+      "object_type_key": "napravleniya",
+      "object_type_id": "03584bf5-0f8a-44a3-b894-173a57558ad4",
+      "catalog_version": 92,
+      "status": "active",
+      "values": {
+        "status": "option_1780804579046",
+        "nazvanie": "Интеграция с BPMN",
+        "__system_id": "300d9128-2428-4691-9542-8a53e309ced1",
+        "__system_record_number": 48,
+        "__system_created_by": null,
+        "__system_created_at": "2026-06-07T20:00:46.385836+00:00",
+        "__system_updated_by": null,
+        "__system_updated_at": "2026-06-07T20:00:46.385836+00:00",
+        "__system_record_version": 1
+      },
+      "created_by": null,
+      "updated_by": null,
+      "record_version": 1,
+      "record_number": 48,
+      "recordNumber": 48,
+      "system_number": 48,
+      "created_at": "2026-06-07T20:00:46.385836Z",
+      "updated_at": "2026-06-07T20:00:46.385836Z",
+      "deleted_at": null
+    },
+    "query_listResult_item": {
+      "id": "300d9128-2428-4691-9542-8a53e309ced1",
+      "tenant_id": 1,
+      "object_type_key": "napravleniya",
+      "object_type_id": "03584bf5-0f8a-44a3-b894-173a57558ad4",
+      "catalog_version": 92,
+      "status": "active",
+      "values": {
+        "status": "option_1780804579046",
+        "nazvanie": "Интеграция с BPMN",
+        "__system_id": "300d9128-2428-4691-9542-8a53e309ced1",
+        "__system_record_number": 48,
+        "__system_created_by": null,
+        "__system_created_at": "2026-06-07T20:00:46.385836+00:00",
+        "__system_updated_by": null,
+        "__system_updated_at": "2026-06-07T20:00:46.385836+00:00",
+        "__system_record_version": 1
+      },
+      "created_by": null,
+      "updated_by": null,
+      "record_version": 1,
+      "record_number": 48,
+      "recordNumber": 48,
+      "system_number": 48,
+      "created_at": "2026-06-07T20:00:46.385836Z",
+      "updated_at": "2026-06-07T20:00:46.385836Z",
+      "deleted_at": null
+    },
+    "titleFieldKey_at_tree_build": "nazvanie",
+    "resolveEntityTitle_result": "Интеграция с BPMN",
+    "resolveEntityDisplayTitle_result": "Интеграция с BPMN",
+    "titleFieldValue": "Интеграция с BPMN",
+    "hasEntity": true,
+    "renderedTitle": "Интеграция с BPMN"
+  },
+  "direction_nodes_3_1_3_2_3_3": {
+    "3.1": {
+      "label": "direction 3.1",
+      "entityId": "9634094c-86d8-4cc4-8219-248ef2929c55",
+      "entitiesById_get": null,
+      "entitiesById_fallback_used": true,
+      "buildPlanTree_entity_resolved": {
+        "id": "9634094c-86d8-4cc4-8219-248ef2929c55"
+      },
+      "query_listResult_item": null,
+      "titleFieldKey_at_tree_build": "nazvanie",
+      "resolveEntityTitle_result": "",
+      "resolveEntityDisplayTitle_result": "[9634094c-86d8-4cc4-8219-248ef2929c55]",
+      "titleFieldValue": null,
+      "hasEntity": false,
+      "renderedTitle": "[9634094c-86d8-4cc4-8219-248ef2929c55]"
+    },
+    "3.2": {
+      "label": "direction 3.2",
+      "entityId": "b297c474-09ea-46b2-956e-107c6926c8c8",
+      "entitiesById_get": null,
+      "entitiesById_fallback_used": true,
+      "buildPlanTree_entity_resolved": {
+        "id": "b297c474-09ea-46b2-956e-107c6926c8c8"
+      },
+      "query_listResult_item": null,
+      "titleFieldKey_at_tree_build": "nazvanie",
+      "resolveEntityTitle_result": "",
+      "resolveEntityDisplayTitle_result": "[b297c474-09ea-46b2-956e-107c6926c8c8]",
+      "titleFieldValue": null,
+      "hasEntity": false,
+      "renderedTitle": "[b297c474-09ea-46b2-956e-107c6926c8c8]"
+    },
+    "3.3": {
+      "label": "direction 3.3",
+      "entityId": "7983b714-d3ff-4037-b4e7-fbb0422256ee",
+      "entitiesById_get": null,
+      "entitiesById_fallback_used": true,
+      "buildPlanTree_entity_resolved": {
+        "id": "7983b714-d3ff-4037-b4e7-fbb0422256ee"
+      },
+      "query_listResult_item": null,
+      "titleFieldKey_at_tree_build": "nazvanie",
+      "resolveEntityTitle_result": "",
+      "resolveEntityDisplayTitle_result": "[7983b714-d3ff-4037-b4e7-fbb0422256ee]",
+      "titleFieldValue": null,
+      "hasEntity": false,
+      "renderedTitle": "[7983b714-d3ff-4037-b4e7-fbb0422256ee]"
+    }
+  },
+  "table_action_engine_subtree": [
+    {
+      "entityId": "0ad46310-2cf1-4f94-a9e4-dee28841cc2e",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[0ad46310-2cf1-4f94-a9e4-dee28841cc2e]"
+    },
+    {
+      "entityId": "0b428b2a-6a18-4381-8751-f678eed52361",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[0b428b2a-6a18-4381-8751-f678eed52361]"
+    },
+    {
+      "entityId": "0e343671-fe2f-4e75-90de-91870eb536d4",
+      "hasEntity": true,
+      "titleFieldValue": "Operation Registry",
+      "renderedTitle": "Operation Registry"
+    },
+    {
+      "entityId": "0ec6b622-eea1-4862-8e8b-e0d777aa1595",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[0ec6b622-eea1-4862-8e8b-e0d777aa1595]"
+    },
+    {
+      "entityId": "1e79d71b-d2ea-4616-8772-033c9ed68f34",
+      "hasEntity": true,
+      "titleFieldValue": "Action Context",
+      "renderedTitle": "Action Context"
+    },
+    {
+      "entityId": "300d9128-2428-4691-9542-8a53e309ced1",
+      "hasEntity": true,
+      "titleFieldValue": "Интеграция с BPMN",
+      "renderedTitle": "Интеграция с BPMN"
+    },
+    {
+      "entityId": "38962281-eeaf-4a93-9d23-944bd602f497",
+      "hasEntity": true,
+      "titleFieldValue": "Complete Task",
+      "renderedTitle": "Complete Task"
+    },
+    {
+      "entityId": "3febc835-4998-4eae-8e3d-e1e9e93636ea",
+      "hasEntity": true,
+      "titleFieldValue": "Runtime Events",
+      "renderedTitle": "Runtime Events"
+    },
+    {
+      "entityId": "4df469a1-2eff-44c3-9572-b3a9e496feaa",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[4df469a1-2eff-44c3-9572-b3a9e496feaa]"
+    },
+    {
+      "entityId": "507e41c3-da92-4e49-9be8-927687ad140f",
+      "hasEntity": true,
+      "titleFieldValue": "Capability проверки",
+      "renderedTitle": "Capability проверки"
+    },
+    {
+      "entityId": "58fd1753-acce-42a3-ac70-62e6f3110127",
+      "hasEntity": true,
+      "titleFieldValue": "Audit",
+      "renderedTitle": "Audit"
+    },
+    {
+      "entityId": "6081f975-9b6f-4e0e-8b68-ff81cb88bb37",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[6081f975-9b6f-4e0e-8b68-ff81cb88bb37]"
+    },
+    {
+      "entityId": "63594173-b0f1-4e17-82f6-f687c1b8b2f7",
+      "hasEntity": true,
+      "titleFieldValue": "Permissions",
+      "renderedTitle": "Permissions"
+    },
+    {
+      "entityId": "698c4889-8561-4ee5-b33c-07af505e919f",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[698c4889-8561-4ee5-b33c-07af505e919f]"
+    },
+    {
+      "entityId": "6c46fb8d-440e-4231-a071-7820fb49a4da",
+      "hasEntity": true,
+      "titleFieldValue": "Runtime validation",
+      "renderedTitle": "Runtime validation"
+    },
+    {
+      "entityId": "754127d8-6516-4f8e-896f-035705e1ae5e",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[754127d8-6516-4f8e-896f-035705e1ae5e]"
+    },
+    {
+      "entityId": "7983b714-d3ff-4037-b4e7-fbb0422256ee",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[7983b714-d3ff-4037-b4e7-fbb0422256ee]"
+    },
+    {
+      "entityId": "81997cdf-a72d-41ca-8933-3405275fcc71",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[81997cdf-a72d-41ca-8933-3405275fcc71]"
+    },
+    {
+      "entityId": "877ade9f-5e35-465d-ae1f-b73447a1dc16",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[877ade9f-5e35-465d-ae1f-b73447a1dc16]"
+    },
+    {
+      "entityId": "89a3e553-7551-42ba-aa40-78662c026cf8",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[89a3e553-7551-42ba-aa40-78662c026cf8]"
+    },
+    {
+      "entityId": "8b283375-ec83-4af7-9429-803c93b91f25",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[8b283375-ec83-4af7-9429-803c93b91f25]"
+    },
+    {
+      "entityId": "8fc62d6f-8271-4088-b584-5995abb9c38c",
+      "hasEntity": true,
+      "titleFieldValue": "Action Executor",
+      "renderedTitle": "Action Executor"
+    },
+    {
+      "entityId": "9634094c-86d8-4cc4-8219-248ef2929c55",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[9634094c-86d8-4cc4-8219-248ef2929c55]"
+    },
+    {
+      "entityId": "a941d5d6-33b3-426d-9859-ef3e7877c374",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[a941d5d6-33b3-426d-9859-ef3e7877c374]"
+    },
+    {
+      "entityId": "ace6087a-6a54-4288-8cbf-0ba12b5d9038",
+      "hasEntity": true,
+      "titleFieldValue": "Approve",
+      "renderedTitle": "Approve"
+    },
+    {
+      "entityId": "aed8041c-49e5-4707-b025-6ed5ff1ff7ca",
+      "hasEntity": true,
+      "titleFieldValue": "Логи действий",
+      "renderedTitle": "Логи действий"
+    },
+    {
+      "entityId": "b297c474-09ea-46b2-956e-107c6926c8c8",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[b297c474-09ea-46b2-956e-107c6926c8c8]"
+    },
+    {
+      "entityId": "b54a0d20-9e44-4ee6-acb4-aeb8eed016c5",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[b54a0d20-9e44-4ee6-acb4-aeb8eed016c5]"
+    },
+    {
+      "entityId": "b66ff40f-124c-40bf-b211-ae6f0d2fabf4",
+      "hasEntity": true,
+      "titleFieldValue": "Ошибки",
+      "renderedTitle": "Ошибки"
+    },
+    {
+      "entityId": "bea6ee63-b865-4f92-8d1c-d7c2f08e8aab",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[bea6ee63-b865-4f92-8d1c-d7c2f08e8aab]"
+    },
+    {
+      "entityId": "c0918c59-0942-4300-a7df-e822ac233a1b",
+      "hasEntity": true,
+      "titleFieldValue": "Reject",
+      "renderedTitle": "Reject"
+    },
+    {
+      "entityId": "c58f85e0-8ae5-4a97-b1e3-10d05fd3b2db",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[c58f85e0-8ae5-4a97-b1e3-10d05fd3b2db]"
+    },
+    {
+      "entityId": "cd639817-714b-410d-82e3-1bbfbd7f1971",
+      "hasEntity": true,
+      "titleFieldValue": "User Task Actions",
+      "renderedTitle": "User Task Actions"
+    },
+    {
+      "entityId": "d1c160dd-db41-4730-a711-42a2757998f2",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[d1c160dd-db41-4730-a711-42a2757998f2]"
+    },
+    {
+      "entityId": "d2a20d54-c783-436c-92cd-6ec140533c68",
+      "hasEntity": true,
+      "titleFieldValue": "Ограничения",
+      "renderedTitle": "Ограничения"
+    },
+    {
+      "entityId": "d71d912a-9609-47fa-9a71-865170ce5d56",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[d71d912a-9609-47fa-9a71-865170ce5d56]"
+    },
+    {
+      "entityId": "d727fcef-71aa-401d-8eb4-b7b6d18fff92",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[d727fcef-71aa-401d-8eb4-b7b6d18fff92]"
+    },
+    {
+      "entityId": "d8fafa44-5345-41b4-a398-c654c7059ae3",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[d8fafa44-5345-41b4-a398-c654c7059ae3]"
+    },
+    {
+      "entityId": "dc94d8cb-87d9-41f6-8252-1255c08489e8",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[dc94d8cb-87d9-41f6-8252-1255c08489e8]"
+    },
+    {
+      "entityId": "e3de37fe-e6d8-4268-a5ce-79581181d4d5",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[e3de37fe-e6d8-4268-a5ce-79581181d4d5]"
+    },
+    {
+      "entityId": "e7c5044e-1851-4f1b-80e1-1f72ebee1cb8",
+      "hasEntity": true,
+      "titleFieldValue": "История выполнения",
+      "renderedTitle": "История выполнения"
+    },
+    {
+      "entityId": "e944c963-dd2d-44a1-8222-ee6b0a29f3f5",
+      "hasEntity": true,
+      "titleFieldValue": "Start Process",
+      "renderedTitle": "Start Process"
+    },
+    {
+      "entityId": "ea1c4686-7d30-42a7-a7db-098e04db0ab3",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[ea1c4686-7d30-42a7-a7db-098e04db0ab3]"
+    },
+    {
+      "entityId": "ec53a3a5-5a87-4368-b4df-329134f1b103",
+      "hasEntity": true,
+      "titleFieldValue": "Аналитика",
+      "renderedTitle": "Аналитика"
+    },
+    {
+      "entityId": "f2ef5538-5f20-45fd-a165-4af40127646f",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[f2ef5538-5f20-45fd-a165-4af40127646f]"
+    },
+    {
+      "entityId": "f78e7620-f31c-40f0-974c-4ed795ced928",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[f78e7620-f31c-40f0-974c-4ed795ced928]"
+    },
+    {
+      "entityId": "f83fdeeb-9562-49fd-ad17-bc0eaf5de43f",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[f83fdeeb-9562-49fd-ad17-bc0eaf5de43f]"
+    },
+    {
+      "entityId": "fc543259-1940-4743-8fbe-1e59eaa296bb",
+      "hasEntity": true,
+      "titleFieldValue": "Роли действий",
+      "renderedTitle": "Роли действий"
+    },
+    {
+      "entityId": "ff1b7d9a-3a08-405b-b7ce-8ddec49912f2",
+      "hasEntity": false,
+      "titleFieldValue": null,
+      "renderedTitle": "[ff1b7d9a-3a08-405b-b7ce-8ddec49912f2]"
+    }
+  ]
+}

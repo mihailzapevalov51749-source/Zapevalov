@@ -26,6 +26,8 @@ import {
   isRelationFieldType,
   normalizeRelationSettingsFromField,
   validateRelationFieldDraft,
+  formatRelationFieldApiError,
+  resolveRelationFieldSettingsPayload,
 } from "../fields/relationFieldFormUtils";
 
 export default function FieldsTab({
@@ -124,6 +126,7 @@ export default function FieldsTab({
       is_unique: selected.is_unique,
       quick_create: Boolean(selected.quick_create),
       description: selected.description || "",
+      placeholder: selected.placeholder || "",
       choice_options,
       choice_multiple: isChoiceMultipleFromField(
         selected.field_type,
@@ -161,7 +164,11 @@ export default function FieldsTab({
       await loadItems();
       await onSchemaChanged?.();
     } catch (err) {
-      setCreateError(getApiErrorMessage(err, "Не удалось создать поле"));
+      setCreateError(
+        formatRelationFieldApiError(
+          getApiErrorMessage(err, "Не удалось создать поле"),
+        ),
+      );
       throw err;
     } finally {
       setIsCreating(false);
@@ -184,6 +191,7 @@ export default function FieldsTab({
       is_unique: Boolean(draft.is_unique),
       quick_create: Boolean(draft.quick_create),
       description: String(draft.description || "").trim(),
+      placeholder: String(draft.placeholder || "").trim(),
     };
 
     if (isChoiceFieldType(draft.field_type)) {
@@ -216,11 +224,14 @@ export default function FieldsTab({
     }
 
     if (isRelationFieldType(draft.field_type)) {
-      const relationErrors = validateRelationFieldDraft({
-        relation_key: draft.relation_key,
-        role: draft.relation_role,
-        cardinality: draft.relation_cardinality,
-      });
+      const relationErrors = validateRelationFieldDraft(
+        {
+          relation_key: draft.relation_key,
+          role: draft.relation_role,
+          cardinality: draft.relation_cardinality,
+        },
+        { objectTypeId, relationDefinitions },
+      );
 
       if (Object.keys(relationErrors).length > 0) {
         setDraft((current) =>
@@ -233,15 +244,28 @@ export default function FieldsTab({
               }
             : current,
         );
-        setSaveError("Заполните настройки поля «Связи»");
+        setSaveError(
+          relationErrors.relation_key ||
+            relationErrors.role ||
+            relationErrors.cardinality ||
+            "Заполните настройки поля «Связи»",
+        );
         return;
       }
 
-      payload.settings_json = buildRelationSettingsPayload({
+      const relationSettings = resolveRelationFieldSettingsPayload({
+        objectTypeId,
+        relationDefinitions,
         relation_key: draft.relation_key,
-        role: draft.relation_role,
-        cardinality: draft.relation_cardinality,
       });
+
+      payload.settings_json =
+        relationSettings ||
+        buildRelationSettingsPayload({
+          relation_key: draft.relation_key,
+          role: draft.relation_role,
+          cardinality: draft.relation_cardinality,
+        });
     }
 
     const defaultValueError = validateDefaultValueDraft(draft.default_value, draft.field_type, {
@@ -278,7 +302,11 @@ export default function FieldsTab({
       await loadItems();
       await onSchemaChanged?.();
     } catch (err) {
-      setSaveError(getApiErrorMessage(err, "Не удалось сохранить поле"));
+      setSaveError(
+        formatRelationFieldApiError(
+          getApiErrorMessage(err, "Не удалось сохранить поле"),
+        ),
+      );
     } finally {
       setSaving(false);
     }

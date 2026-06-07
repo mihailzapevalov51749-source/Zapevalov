@@ -23,21 +23,24 @@ describe("CreateRelationDefinitionModal platform UI", () => {
     assert.match(modalSource, /CREATE_RELATION_DEFINITION_MODAL_KEY/);
   });
 
-  it("defines product width near 600px", () => {
+  it("defines product width near 600px and v3 persist key", () => {
     assert.match(keysSource, /width:\s*600/);
-    assert.match(keysSource, /modal_v2/);
+    assert.match(keysSource, /modal_v3/);
+    assert.match(keysSource, /CREATE_RELATION_DEFINITION_MODAL_MIN_HEIGHT/);
   });
 
   it("separates footer actions from scrollable body", () => {
     assert.match(modalSource, /designer-create-relation-definition-modal__footer/);
     assert.match(modalSource, /designer-create-relation-definition-modal__body/);
-    assert.match(modalSource, /Создать/);
+    assert.match(modalSource, /Создать связь/);
   });
 
   it("always renders Cancel and Create in footer without conditional hide", () => {
     assert.match(modalSource, /Отмена/);
     assert.match(modalSource, /designer-create-relation-definition-modal__btn-create/);
-    assert.doesNotMatch(modalSource, /canSubmit\s*&&/);
+    assert.match(modalSource, /type="submit"/);
+    assert.match(modalSource, /form="designer-create-relation-definition-form"/);
+    assert.doesNotMatch(modalSource, /canSubmit\s*&&\s*\(/);
   });
 
   it("allows selecting current object type as relation target (self-relation)", () => {
@@ -46,7 +49,7 @@ describe("CreateRelationDefinitionModal platform UI", () => {
   });
 
   it("keeps scroll in body and reserves platform footer for actions", () => {
-    assert.match(modalSource, /overflow:\s*"hidden"/);
+    assert.match(modalSource, /overflowY:\s*"hidden"/);
     assert.match(modalSource, /footer=\{/);
     assert.doesNotMatch(modalSource, /designer-create-relation-definition-modal__actions/);
   });

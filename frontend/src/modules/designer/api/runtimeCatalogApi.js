@@ -7,9 +7,16 @@ export async function getCatalogVersion(tenantId) {
   return data;
 }
 
-export async function getPublishedCatalog(tenantId) {
+export async function getPublishedCatalog(tenantId, options = {}) {
+  const params = {};
+
+  if (options.cacheBust) {
+    params._t = Date.now();
+  }
+
   const { data } = await platformApiClient.get(
     `/runtime/platform-metadata/tenants/${tenantId}/catalog`,
+    { params },
   );
   return data;
 }

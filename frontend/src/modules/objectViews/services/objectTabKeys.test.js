@@ -7,6 +7,7 @@ import {
   isExplicitRepresentationRequestKey,
   isObjectTabKey,
   resolveInitialOfficeSelectedViewKey,
+  resolveOfficeObjectTabSelectionKey,
   shouldApplyRequestedRepresentationSelection,
 } from "./objectTabKeys";
 
@@ -32,6 +33,11 @@ describe("object tab key vs representation key", () => {
         requestedRepresentationKey: "default_table",
       }),
     ).toBe(TABLE_BASE_STATE_KEY);
+  });
+
+  it("resolveOfficeObjectTabSelectionKey keeps plan tab keys", () => {
+    expect(resolveOfficeObjectTabSelectionKey("architecture")).toBe("architecture");
+    expect(resolveOfficeObjectTabSelectionKey("default_table")).toBe(TABLE_BASE_STATE_KEY);
   });
 
   it("user representation key is explicit and applies selection", () => {

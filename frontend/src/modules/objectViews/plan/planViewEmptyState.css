@@ -1,0 +1,32 @@
+.object-plan-view--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.object-plan-view__empty {
+  max-width: 420px;
+  text-align: center;
+}
+
+.object-plan-view__empty-title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.object-plan-view__empty-text {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #64748b;
+  white-space: pre-line;
+}
+
+.object-plan-view__empty-action {
+  display: inline-flex;
+  text-decoration: none;
+}

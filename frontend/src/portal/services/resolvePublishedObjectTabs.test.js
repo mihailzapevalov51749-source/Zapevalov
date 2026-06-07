@@ -32,6 +32,36 @@ describe("resolvePublishedObjectTabs", () => {
       expect.objectContaining({ key: "card", name: "Карточка" }),
     ]);
   });
+
+  it("returns menuInTab from published view settings_json", () => {
+    const tabs = resolvePublishedObjectTabs({
+      views: [
+        {
+          key: "card",
+          name: "Карточка",
+          view_type: "card",
+          settings_json: { tabSettings: { menuInTab: true } },
+        },
+      ],
+    });
+
+    expect(tabs[0].menuInTab).toBe(true);
+  });
+
+  it("returns menuInTab when settings_json is a JSON string", () => {
+    const tabs = resolvePublishedObjectTabs({
+      views: [
+        {
+          key: "plan",
+          name: "План",
+          view_type: "plan",
+          settings_json: JSON.stringify({ tabSettings: { menuInTab: true } }),
+        },
+      ],
+    });
+
+    expect(tabs[0].menuInTab).toBe(true);
+  });
 });
 
 describe("resolveDefaultPublishedObjectTabKey", () => {

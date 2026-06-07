@@ -39,7 +39,7 @@ import LegacyStorageSystemRouteView from "../shared/legacy/components/LegacyStor
 
 import PortalLayout from "../layouts/PortalLayout";
 import { resolvePortalObjectNavigationPath } from "./utils/portalObjectRoutes";
-import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../modules/designer/utils/navigationReload";
+import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../shared/navigation/navigationReload";
 
 import WorkspaceTopBar from "./components/WorkspaceTopBar";
 import WorkspaceRuntimeTabsBar from "./components/WorkspaceRuntimeTabsBar";

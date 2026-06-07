@@ -1,8 +1,8 @@
 .designer-root {
-  --designer-accent: #7c3aed;
-  --designer-accent-hover: #6d28d9;
-  --designer-accent-soft: #f5f3ff;
-  --designer-accent-border: #ddd6fe;
+  --designer-accent: var(--platform-accent, #7c3aed);
+  --designer-accent-hover: var(--platform-accent-hover, #6d28d9);
+  --designer-accent-soft: var(--platform-accent-soft, #f5f3ff);
+  --designer-accent-border: var(--platform-accent-border, #ddd6fe);
   --designer-bg: #f8fafc;
   --designer-panel: #ffffff;
   --designer-border: #e2e8f0;
@@ -311,6 +311,64 @@
   line-height: 1;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.18);
   pointer-events: none;
+}
+
+.designer-object-type-actions-menu__panel {
+  position: fixed;
+  width: 220px;
+  z-index: 2200;
+}
+
+.designer-object-type-delete-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.designer-object-type-delete-modal__section-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.designer-object-type-delete-modal__target-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.designer-object-type-delete-modal__target + .designer-object-type-delete-modal__usage,
+.designer-object-type-delete-modal__target + .designer-object-type-delete-modal__muted {
+  margin-top: 16px;
+}
+
+.designer-object-type-delete-modal__usage-label {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.designer-object-type-delete-modal__usage-group + .designer-object-type-delete-modal__usage-group {
+  margin-top: 12px;
+}
+
+.designer-object-type-delete-modal__usage-group ul {
+  margin: 0;
+  padding-left: 18px;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.designer-object-type-delete-modal__muted {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
 }
 
 .designer-input,

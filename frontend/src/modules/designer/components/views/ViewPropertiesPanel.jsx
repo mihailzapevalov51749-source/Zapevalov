@@ -1,8 +1,20 @@
-import ViewPropertiesFieldsList from "./ViewPropertiesFieldsList";
+import ObjectProjectionPanel from "./ObjectProjectionPanel";
+
+import PlanLayoutSettingsSection from "./PlanLayoutSettingsSection.jsx";
+
+import PlanViewSettingsPanel, {
+  resolveStudioViewTypeLabel,
+  STUDIO_VIEW_TYPES,
+} from "./PlanViewSettingsPanel";
+
+import { normalizePlanLayoutSettings } from "../../../objectViews/plan/planLayoutSettings.js";
+
+import {
+  mergeObjectTabSettingsIntoViewSettings,
+  readObjectTabSettings,
+} from "../../../objectViews/services/objectTabSettings";
 
 import "./viewPropertiesPanel.css";
-
-const VIEW_TYPES = ["table", "form", "card", "list"];
 
 export default function ViewPropertiesPanel({
   draft,
@@ -16,7 +28,12 @@ export default function ViewPropertiesPanel({
   onOpenRuntimePreview,
   titleFieldKey = null,
   onToggleVisibleField,
+  onToggleInfoField,
   onReorderField,
+  relationOptions = [],
+  planSettings = null,
+  onPlanSettingsChange,
+  objectTypeKey = "",
 }) {
   if (!draft) {
     return null;
@@ -24,6 +41,16 @@ export default function ViewPropertiesPanel({
 
   const resolvedTitleFieldKey =
     titleFieldKey ?? draft.projection?.title_field ?? null;
+
+  const isPlanView = draft.view_type === "plan";
+  const isTableView = draft.view_type === "table";
+
+  const handleProjectionChange = (nextProjection) => {
+    onDraftChange?.({
+      ...draft,
+      projection: nextProjection,
+    });
+  };
 
   return (
     <aside className="designer-properties-panel designer-view-properties-panel">
@@ -69,9 +96,9 @@ export default function ViewPropertiesPanel({
                   onDraftChange?.({ ...draft, view_type: event.target.value })
                 }
               >
-                {VIEW_TYPES.map((type) => (
+                {STUDIO_VIEW_TYPES.map((type) => (
                   <option key={type} value={type}>
-                    {type}
+                    {resolveStudioViewTypeLabel(type)}
                   </option>
                 ))}
               </select>
@@ -106,6 +133,32 @@ export default function ViewPropertiesPanel({
             Активное представление
           </label>
 
+          <label className="designer-view-form__checkbox">
+            <input
+              type="checkbox"
+              checked={Boolean(draft.tabSettings?.menuInTab)}
+              onChange={(event) => {
+                const nextTabSettings = {
+                  ...(draft.tabSettings || readObjectTabSettings(draft.settings_json)),
+                  menuInTab: event.target.checked,
+                };
+
+                onDraftChange?.({
+                  ...draft,
+                  tabSettings: nextTabSettings,
+                  settings_json: mergeObjectTabSettingsIntoViewSettings(
+                    draft.settings_json,
+                    nextTabSettings,
+                  ),
+                });
+              }}
+            />
+            Меню во вкладке
+          </label>
+          <p className="designer-view-form__hint">
+            Показывать меню действий в названии вкладки вместо заголовка объекта.
+          </p>
+
           <div className="designer-view-form__group">
             <label className="designer-label" htmlFor="view-prop-description">
               Описание
@@ -123,111 +176,59 @@ export default function ViewPropertiesPanel({
           <section className="designer-view-form__section" aria-label="Настройки представления">
             <h5 className="designer-view-form__section-title">Настройки представления</h5>
 
-            <div className="designer-view-form__section-body">
-              <div className="designer-view-form__section-toolbar">
-                <span className="designer-view-form__subsection-title">Projection</span>
-                <button
-                  type="button"
-                  className="designer-btn"
-                  onClick={onOpenRuntimePreview}
-                >
-                  Открыть предпросмотр
-                </button>
-              </div>
+            <ObjectProjectionPanel
+              projection={draft.projection}
+              fieldOptions={fieldOptions}
+              titleFieldKey={resolvedTitleFieldKey}
+              onProjectionChange={handleProjectionChange}
+              onToggleVisibleField={onToggleVisibleField}
+              onToggleInfoField={onToggleInfoField}
+              onReorderField={onReorderField}
+              showInfoColumn={isPlanView}
+              showDefaultSort={isTableView}
+              showRuntimePreview={isTableView}
+              onOpenRuntimePreview={onOpenRuntimePreview}
+              hint={
+                isPlanView
+                  ? "Глаз — поле используется в Плане. Чекбокс «Инфо» — показ во вкладке Инфо."
+                  : "Предпросмотр обновится после публикации каталога."
+              }
+            />
 
-              <ViewPropertiesFieldsList
-                fieldOptions={fieldOptions}
-                visibleFields={draft.projection.visible_fields || []}
-                fieldOrder={draft.projection.field_order || []}
-                titleFieldKey={resolvedTitleFieldKey}
-                onToggleVisibleField={onToggleVisibleField}
-                onReorderField={onReorderField}
-              />
+            {isPlanView ? (
+              <>
+                <hr className="designer-view-form__section-divider" />
 
-              <div className="designer-view-form__group">
-                <label className="designer-label" htmlFor="view-prop-title-field">
-                  Title field
-                </label>
-                <select
-                  id="view-prop-title-field"
-                  className="designer-select"
-                  value={draft.projection.title_field || ""}
-                  onChange={(event) => {
-                    const value = event.target.value;
+                <h6 className="designer-view-form__subsection-title">Настройки Плана</h6>
+                <p className="designer-view-form__hint">
+                  Иерархия определяет связь, по которой строится дерево.
+                </p>
 
-                    onDraftChange?.({
-                      ...draft,
-                      projection: {
-                        ...draft.projection,
-                        title_field: value ? value : null,
-                      },
-                    });
-                  }}
-                >
-                  <option value="">null</option>
-                  {fieldOptions.map((field) => (
-                    <option key={field.key} value={field.key}>
-                      {field.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                <PlanViewSettingsPanel
+                  planSettings={planSettings}
+                  relationOptions={relationOptions}
+                  objectTypeKey={objectTypeKey}
+                  onChange={onPlanSettingsChange}
+                />
 
-              <div className="designer-view-form__group">
-                <label className="designer-label">Default sort</label>
-                <div className="designer-view-form__sort-row">
-                  <select
-                    className="designer-select"
-                    value={draft.projection.default_sort.field || ""}
-                    onChange={(event) => {
-                      const value = event.target.value;
+                <hr className="designer-view-form__section-divider" />
 
-                      onDraftChange?.({
-                        ...draft,
-                        projection: {
-                          ...draft.projection,
-                          default_sort: {
-                            ...draft.projection.default_sort,
-                            field: value ? value : null,
-                          },
-                        },
-                      });
-                    }}
-                  >
-                    <option value="">created_at</option>
-                    {fieldOptions.map((field) => (
-                      <option key={field.key} value={field.key}>
-                        {field.name}
-                      </option>
-                    ))}
-                  </select>
+                <h6 className="designer-view-form__subsection-title">Вкладки</h6>
+                <p className="designer-view-form__hint">
+                  Видимость, порядок и названия вкладок рабочей области Плана.
+                </p>
 
-                  <select
-                    className="designer-select"
-                    value={draft.projection.default_sort.order || "desc"}
-                    onChange={(event) => {
-                      onDraftChange?.({
-                        ...draft,
-                        projection: {
-                          ...draft.projection,
-                          default_sort: {
-                            ...draft.projection.default_sort,
-                            order: event.target.value,
-                          },
-                        },
-                      });
-                    }}
-                  >
-                    <option value="asc">asc</option>
-                    <option value="desc">desc</option>
-                  </select>
-                </div>
-              </div>
-
-              <p className="designer-view-form__hint">
-                Предпросмотр обновится после публикации каталога.
-              </p>
-            </div>
+                <PlanLayoutSettingsSection
+                  planLayout={normalizePlanLayoutSettings(planSettings?.planLayout)}
+                  onChange={(nextLayout) =>
+                    onPlanSettingsChange?.({
+                      ...(planSettings || {}),
+                      planLayout: nextLayout,
+                    })
+                  }
+                />
+              </>
+            ) : null}
           </section>
         </div>
       </div>

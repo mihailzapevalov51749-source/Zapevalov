@@ -1,0 +1,241 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { describe, it } from "node:test";
+
+import { buildPlanTree } from "./buildPlanTree.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const CATALOG = {
+  relations: [
+    {
+      key: "podpunkt",
+      source_object_type_key: "napravleniya",
+      target_object_type_key: "napravleniya",
+      settings_json: {},
+    },
+  ],
+};
+
+const PRESENTATION = {
+  hierarchyRelationKey: "podpunkt",
+};
+
+const STATUS_FIELD = {
+  key: "status",
+  field_type: "status",
+  settings_json: {
+    options: [
+      { key: "option_1780780345", label: "Не начато", color: "#94A3B8" },
+      { key: "option_active", label: "Активное", color: "#3B82F6" },
+      { key: "option_not_started", label: "Не начато", color: "#94A3B8" },
+    ],
+  },
+};
+
+function buildTreeOptions(overrides = {}) {
+  return {
+    titleFieldKey: "title",
+    statusFieldKey: overrides.statusFieldKey ?? null,
+    statusField: overrides.statusField ?? null,
+    ...overrides,
+  };
+}
+
+function entity(id, title) {
+  return { id, entity_id: id, title, values: { title } };
+}
+
+describe("buildPlanTree", () => {
+  it("shows orphan records as root nodes when no relation instances exist", () => {
+    const items = [entity("e1", "Движок действий")];
+
+    const tree = buildPlanTree({
+      items,
+      hierarchyInstances: [],
+      catalog: CATALOG,
+      planPresentation: PRESENTATION,
+      ...buildTreeOptions(),
+    });
+
+    assert.equal(tree.roots.length, 1);
+    assert.equal(tree.roots[0]?.title, "Движок действий");
+    assert.equal(tree.roots[0]?.children?.length, 0);
+  });
+
+  it("nests child under parent via relation instances (source=parent, target=child)", () => {
+    const items = [
+      entity("parent", "Движок действий"),
+      entity("child", "Кнопки действий"),
+    ];
+
+    const tree = buildPlanTree({
+      items,
+      hierarchyInstances: [
+        {
+          relation_key: "podpunkt",
+          source_entity_id: "parent",
+          target_entity_id: "child",
+        },
+      ],
+      catalog: CATALOG,
+      planPresentation: PRESENTATION,
+      ...buildTreeOptions(),
+    });
+
+    assert.equal(tree.roots.length, 1);
+    assert.equal(tree.roots[0]?.id, "parent");
+    assert.equal(tree.roots[0]?.children?.length, 1);
+    assert.equal(tree.roots[0]?.children[0]?.id, "child");
+  });
+
+  it("shows linked tree and separate orphan roots", () => {
+    const items = [
+      entity("parent", "Движок действий"),
+      entity("child", "Кнопки действий"),
+      entity("orphan", "Права доступа"),
+    ];
+
+    const tree = buildPlanTree({
+      items,
+      hierarchyInstances: [
+        {
+          relation_key: "podpunkt",
+          source_entity_id: "parent",
+          target_entity_id: "child",
+        },
+      ],
+      catalog: CATALOG,
+      planPresentation: PRESENTATION,
+      ...buildTreeOptions(),
+    });
+
+    assert.equal(tree.roots.length, 2);
+    const rootIds = tree.roots.map((node) => node.id).sort();
+    assert.deepEqual(rootIds, ["orphan", "parent"]);
+  });
+
+  it("returns empty roots when no items and no instances", () => {
+    const tree = buildPlanTree({
+      items: [],
+      hierarchyInstances: [],
+      catalog: CATALOG,
+      planPresentation: PRESENTATION,
+      ...buildTreeOptions(),
+    });
+
+    assert.equal(tree.roots.length, 0);
+  });
+
+  it("rolls up parent status category from children without replacing own status label", () => {
+    const items = [
+      { id: "parent", values: { title: "Parent", status: "Завершено" } },
+      { id: "child", values: { title: "Child", status: "Просрочено" } },
+    ];
+
+    const tree = buildPlanTree({
+      items,
+      hierarchyInstances: [
+        {
+          relation_key: "podpunkt",
+          source_entity_id: "parent",
+          target_entity_id: "child",
+        },
+      ],
+      catalog: CATALOG,
+      planPresentation: PRESENTATION,
+      titleFieldKey: "title",
+      statusFieldKey: "status",
+    });
+
+    assert.equal(tree.roots[0]?.statusCategory, "overdue");
+    assert.equal(tree.roots[0]?.statusLabel, "Завершено");
+    assert.equal(tree.roots[0]?.ownStatusLabel, "Завершено");
+    assert.equal(tree.roots[0]?.rollupStatusCategory, "overdue");
+    assert.equal(tree.roots[0]?.readiness, 0);
+  });
+
+  it("resolves raw option key to display label via field settings", () => {
+    const items = [
+      {
+        id: "child",
+        values: { title: "Кнопки действий", status: "option_1780780345" },
+      },
+    ];
+
+    const tree = buildPlanTree({
+      items,
+      hierarchyInstances: [],
+      catalog: CATALOG,
+      planPresentation: PRESENTATION,
+      ...buildTreeOptions({ statusFieldKey: "status", statusField: STATUS_FIELD }),
+    });
+
+    assert.equal(tree.roots[0]?.statusLabel, "Не начато");
+    assert.equal(tree.roots[0]?.statusColor, "#94A3B8");
+  });
+
+  it("keeps parent own status label when child has different status", () => {
+    const items = [
+      {
+        id: "parent",
+        values: { title: "Движок действий", status: "option_active" },
+      },
+      {
+        id: "child",
+        values: { title: "Кнопки действий", status: "option_not_started" },
+      },
+    ];
+
+    const tree = buildPlanTree({
+      items,
+      hierarchyInstances: [
+        {
+          relation_key: "podpunkt",
+          source_entity_id: "parent",
+          target_entity_id: "child",
+        },
+      ],
+      catalog: CATALOG,
+      planPresentation: PRESENTATION,
+      ...buildTreeOptions({ statusFieldKey: "status", statusField: STATUS_FIELD }),
+    });
+
+    assert.equal(tree.roots[0]?.statusLabel, "Активное");
+    assert.equal(tree.roots[0]?.children[0]?.statusLabel, "Не начато");
+    assert.equal(tree.roots[0]?.rollupStatusCategory, "not_started");
+  });
+
+  it("falls back to raw value when field definition is absent", () => {
+    const items = [
+      {
+        id: "child",
+        values: { title: "Кнопки действий", status: "option_1780780345" },
+      },
+    ];
+
+    const tree = buildPlanTree({
+      items,
+      hierarchyInstances: [],
+      catalog: CATALOG,
+      planPresentation: PRESENTATION,
+      titleFieldKey: "title",
+      statusFieldKey: "status",
+    });
+
+    assert.equal(tree.roots[0]?.statusLabel, "option_1780780345");
+  });
+});
+
+describe("Plan empty state contract", () => {
+  it("ObjectPlanView keeps plan shell and root create when data is empty", () => {
+    const source = readFileSync(join(__dirname, "ObjectPlanView.jsx"), "utf8");
+
+    assert.match(source, /planEntityCount === 0/);
+    assert.match(source, /handleCreateRootRecord/);
+    assert.match(source, /openCreateCard/);
+    assert.doesNotMatch(source, /PlanViewDataEmptyState/);
+  });
+});

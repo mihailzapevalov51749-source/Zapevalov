@@ -28,6 +28,7 @@ export default function NavigationDeleteConfirmModal({
       canCustomizeLayout
       keepFullyVisible
       viewportInset={NAVIGATION_DELETE_MODAL_VIEWPORT_INSET}
+      layoutPreset="compact"
       defaultBounds={NAVIGATION_DELETE_CONFIRM_DEFAULT_BOUNDS}
       ariaLabel="Удалить пункт меню"
       contentStyle={{

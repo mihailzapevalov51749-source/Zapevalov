@@ -23,6 +23,14 @@ export function syncViewSettingsFromDraftProjection(settingsJson, draftProjectio
     ? projection.field_order.map((key) => String(key || "").trim()).filter(Boolean)
     : visibleFields;
   const titleField = String(projection.title_field || "").trim() || null;
+  const infoFieldKeys = Array.isArray(projection.info_field_keys)
+    ? projection.info_field_keys.map((key) => String(key || "").trim()).filter(Boolean)
+    : [];
+  const visibleSet = new Set(visibleFields);
+  const orderedVisibleKeys = (fieldOrder.length ? fieldOrder : visibleFields).filter((key) =>
+    visibleSet.has(key),
+  );
+  const resolvedFieldKeys = orderedVisibleKeys.length ? orderedVisibleKeys : visibleFields;
 
   const nextSettings = {
     ...settings,
@@ -44,9 +52,10 @@ export function syncViewSettingsFromDraftProjection(settingsJson, draftProjectio
     ...objectView,
     projection: {
       ...ovProjection,
-      fieldKeys: fieldOrder.length ? fieldOrder : visibleFields,
-      fieldOrder: fieldOrder.length ? fieldOrder : visibleFields,
+      fieldKeys: resolvedFieldKeys,
+      fieldOrder: resolvedFieldKeys,
       titleFieldKey: titleField,
+      infoFieldKeys: infoFieldKeys.filter((key) => visibleSet.has(key)),
     },
   };
 

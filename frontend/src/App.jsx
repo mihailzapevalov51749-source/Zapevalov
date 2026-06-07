@@ -19,6 +19,7 @@ import {
   saveLastDesignerPath,
   saveLastRuntimePath,
 } from "./shared/appMode/appModeStorage";
+import PlatformZoneTracker from "./shared/platformAccent/PlatformZoneTracker";
 import {
   startTodayActiveTimePolling,
   stopTodayActiveTimePolling,
@@ -130,6 +131,7 @@ export default function App() {
   return (
     <YasiiAssistantProvider>
       <ModePathTracker />
+      <PlatformZoneTracker />
       <UserActivityBootstrap />
       <YasiiFloatingButton />
       <Routes>

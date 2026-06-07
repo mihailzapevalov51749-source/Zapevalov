@@ -133,6 +133,8 @@ AI-ориентированная объектно-центричная бизн
 - ENTITY_MODEL — объектная модель
 - STATE_MODEL — управление состоянием
 - VIEW_ENGINE_MODEL — отображение данных
+- **OBJECT_VIEW_ARCHITECTURE** — единая модель Projection + Query + View Settings для вкладок объекта (аудит, целевая архитектура, roadmap)
+- **OBJECT_VIEW_CONTRACT** — контракт представлений: projection, query, roleMapping, presentation, validation
 - RUNTIME_DESIGNER_MODEL — разделение Runtime/Designer
 - RUNTIME_PERSONALIZATION_MODEL — персонализация Runtime пользователями
 - RELATION_ENGINE_MODEL — связи объектов
@@ -232,13 +234,14 @@ Runtime Entity is the business source of truth.
 2. YASNOPRO_ENTITY_MODEL.md
 3. YASNOPRO_STATE_MODEL.md
 4. YASNOPRO_VIEW_ENGINE_MODEL.md
-5. YASNOPRO_RUNTIME_DESIGNER_MODEL.md
-6. YASNOPRO_RUNTIME_PERSONALIZATION_MODEL.md
-7. YASNOPRO_RELATION_ENGINE_MODEL.md
-8. YASNOPRO_EVENT_ENGINE_MODEL.md
-9. YASNOPRO_AI_CONTEXT_MODEL.md
-10. YASNOPRO_PLATFORM_IMPLEMENTATION_ROADMAP.md
-11. YASNOPRO_TECHNICAL_ARCHITECTURE.md
+5. OBJECT_VIEW_ARCHITECTURE.md
+6. YASNOPRO_RUNTIME_DESIGNER_MODEL.md
+7. YASNOPRO_RUNTIME_PERSONALIZATION_MODEL.md
+8. YASNOPRO_RELATION_ENGINE_MODEL.md
+9. YASNOPRO_EVENT_ENGINE_MODEL.md
+10. YASNOPRO_AI_CONTEXT_MODEL.md
+11. YASNOPRO_PLATFORM_IMPLEMENTATION_ROADMAP.md
+12. YASNOPRO_TECHNICAL_ARCHITECTURE.md
 
 ---
 

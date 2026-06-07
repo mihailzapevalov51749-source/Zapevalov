@@ -30,6 +30,7 @@ export const MVP_CREATABLE_FIELD_TYPES = [
   FIELD_EDITOR_TYPE_MULTI_CHOICE,
   FIELD_EDITOR_TYPE_USER,
   FIELD_EDITOR_TYPE_LINK,
+  FIELD_EDITOR_TYPE_RELATION,
 ];
 
 const fieldEditorRegistry = {
@@ -74,10 +75,6 @@ export function getFieldEditorComponent(type) {
  */
 export function isCreatableFieldType(type) {
   const normalized = String(type || "").trim().toLowerCase();
-
-  if (normalized === FIELD_EDITOR_TYPE_RELATION) {
-    return false;
-  }
 
   return MVP_CREATABLE_FIELD_TYPES.includes(normalizeFieldEditorType(type));
 }

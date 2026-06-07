@@ -1,36 +1,14 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MoreHorizontal } from "lucide-react";
 
-const MENU_SECTIONS = [
-  {
-    id: "object",
-    label: "Object",
-    items: [
-      { id: "duplicate", label: "Дублировать объект" },
-      { id: "save-as-template", label: "Сохранить как шаблон" },
-      { id: "export-config", label: "Экспортировать конфигурацию" },
-    ],
-  },
-  {
-    id: "runtime",
-    label: "Runtime",
-    items: [
-      { id: "open-runtime-preview", label: "Открыть предпросмотр" },
-      { id: "manage-publication", label: "Управление публикацией" },
-      { id: "publish-history", label: "История публикаций" },
-    ],
-  },
-  {
-    id: "governance",
-    label: "Governance",
-    items: [
-      { id: "access-rights", label: "Права доступа" },
-      { id: "archive", label: "Архивировать объект" },
-    ],
-  },
+const MENU_ITEMS = [
+  { id: "rename", label: "Переименовать" },
+  { id: "duplicate", label: "Дублировать" },
 ];
 
-const DANGER_ITEM = { id: "delete", label: "Удалить объект" };
+const PANEL_WIDTH = 220;
+const PANEL_HEIGHT = 148;
 
 function notifySoon(actionId) {
   console.info(`[Designer] Soon: ${actionId}`);
@@ -39,14 +17,38 @@ function notifySoon(actionId) {
 export default function ObjectTypeWorkspaceActionsMenu({
   isSystemObject = false,
   deleting = false,
-  showManagePublication = false,
-  onManagePublication,
+  onRename,
+  onDuplicate,
   onDelete,
 }) {
   const menuId = useId();
   const rootRef = useRef(null);
+  const panelRef = useRef(null);
+  const triggerRef = useRef(null);
   const [open, setOpen] = useState(false);
+  const [panelPosition, setPanelPosition] = useState({ top: 0, left: 0 });
   const [soonVisible, setSoonVisible] = useState(false);
+
+  const updatePanelPosition = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) {
+      return;
+    }
+
+    const rect = trigger.getBoundingClientRect();
+    const viewportPadding = 10;
+    const availableBottom = window.innerHeight - rect.bottom;
+    const preferTop = availableBottom < PANEL_HEIGHT;
+    const top = preferTop
+      ? Math.max(viewportPadding, rect.top - PANEL_HEIGHT - 8)
+      : Math.min(window.innerHeight - PANEL_HEIGHT - viewportPadding, rect.bottom + 8);
+    const left = Math.min(
+      window.innerWidth - PANEL_WIDTH - viewportPadding,
+      Math.max(viewportPadding, rect.right - PANEL_WIDTH),
+    );
+
+    setPanelPosition({ top, left });
+  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -54,7 +56,9 @@ export default function ObjectTypeWorkspaceActionsMenu({
     }
 
     const handlePointerDown = (event) => {
-      if (!rootRef.current?.contains(event.target)) {
+      const insideTrigger = rootRef.current?.contains(event.target);
+      const insidePanel = panelRef.current?.contains(event.target);
+      if (!insideTrigger && !insidePanel) {
         setOpen(false);
       }
     };
@@ -65,14 +69,19 @@ export default function ObjectTypeWorkspaceActionsMenu({
       }
     };
 
+    updatePanelPosition();
     document.addEventListener("mousedown", handlePointerDown);
     document.addEventListener("keydown", handleEscape);
+    window.addEventListener("resize", updatePanelPosition);
+    window.addEventListener("scroll", updatePanelPosition, true);
 
     return () => {
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("resize", updatePanelPosition);
+      window.removeEventListener("scroll", updatePanelPosition, true);
     };
-  }, [open]);
+  }, [open, updatePanelPosition]);
 
   useEffect(() => {
     if (!soonVisible) {
@@ -83,15 +92,19 @@ export default function ObjectTypeWorkspaceActionsMenu({
     return () => window.clearTimeout(timer);
   }, [soonVisible]);
 
-  const handleStubAction = (actionId) => {
-    notifySoon(actionId);
-    setSoonVisible(true);
+  const closeAndRun = (action) => {
     setOpen(false);
+    action?.();
   };
 
-  const handleDeleteClick = () => {
+  const handleDuplicateClick = () => {
+    if (onDuplicate) {
+      closeAndRun(onDuplicate);
+      return;
+    }
+    notifySoon("duplicate");
+    setSoonVisible(true);
     setOpen(false);
-    onDelete?.();
   };
 
   return (
@@ -103,61 +116,69 @@ export default function ObjectTypeWorkspaceActionsMenu({
         aria-expanded={open}
         aria-controls={menuId}
         title="Действия"
-        onClick={() => setOpen((prev) => !prev)}
+        ref={triggerRef}
+        onClick={(event) => {
+          event.stopPropagation();
+          setOpen((prev) => !prev);
+        }}
       >
         <MoreHorizontal size={16} strokeWidth={1.75} />
       </button>
 
-      {open ? (
-        <div
-          id={menuId}
-          className="designer-workspace-menu__panel"
-          role="menu"
-          aria-label="Действия объекта"
-        >
-          {MENU_SECTIONS.map((section) => (
-            <div key={section.id} className="designer-workspace-menu__section">
-              <div className="designer-workspace-menu__section-label" role="presentation">
-                {section.label}
-              </div>
-              {section.items.map((item) => {
-                if (item.id === "manage-publication" && !showManagePublication) {
-                  return null;
-                }
-
-                return (
+      {open
+        ? createPortal(
+            <div
+              id={menuId}
+              className="designer-workspace-menu__panel designer-object-type-actions-menu__panel"
+              ref={panelRef}
+              style={{ top: panelPosition.top, left: panelPosition.left }}
+              role="menu"
+              aria-label="Действия объекта"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="designer-workspace-menu__section">
+                <div className="designer-workspace-menu__section-label" role="presentation">
+                  Управление объектом
+                </div>
+                {MENU_ITEMS.map((item) => (
                   <button
                     key={item.id}
                     type="button"
                     role="menuitem"
                     className="designer-workspace-menu__item"
-                    onClick={() => handleStubAction(item.id)}
+                    onClick={() => {
+                      if (item.id === "rename") {
+                        closeAndRun(onRename);
+                        return;
+                      }
+                      handleDuplicateClick();
+                    }}
                   >
                     {item.label}
                   </button>
-                );
-              })}
-            </div>
-          ))}
+                ))}
+              </div>
 
-          <div className="designer-workspace-menu__danger-zone">
-            <button
-              type="button"
-              role="menuitem"
-              className="designer-workspace-menu__item designer-workspace-menu__item--danger"
-              onClick={handleDeleteClick}
-              disabled={deleting || isSystemObject}
-              title={
-                isSystemObject
-                  ? "Системный объект нельзя удалить"
-                  : "Удалить объект"
-              }
-            >
-              {deleting ? "Удаление..." : DANGER_ITEM.label}
-            </button>
-          </div>
-        </div>
-      ) : null}
+              <div className="designer-workspace-menu__danger-zone">
+                <button
+                  type="button"
+                  role="menuitem"
+                  className="designer-workspace-menu__item designer-workspace-menu__item--danger"
+                  onClick={() => closeAndRun(onDelete)}
+                  disabled={deleting || isSystemObject}
+                  title={
+                    isSystemObject
+                      ? "Системный объект нельзя удалить"
+                      : "Удалить объект"
+                  }
+                >
+                  {deleting ? "Удаление..." : "Удалить"}
+                </button>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
 
       {soonVisible ? (
         <div className="designer-workspace-menu__soon" role="status" aria-live="polite">

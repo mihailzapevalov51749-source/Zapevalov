@@ -22,6 +22,12 @@ def _normalize_key(value: Any) -> str:
     return str(value or "").strip()
 
 
+def is_self_relation_definition(relation: dict[str, Any] | None) -> bool:
+    source_key = _normalize_key(relation.get("source_object_type_key") if relation else None)
+    target_key = _normalize_key(relation.get("target_object_type_key") if relation else None)
+    return bool(source_key and target_key and source_key == target_key)
+
+
 def is_hierarchy_semantic_profile(profile: str) -> bool:
     normalized = _normalize_key(profile)
     if not normalized:
@@ -39,6 +45,16 @@ def is_hierarchy_relation_definition(
     if not relation or not current_key:
         return False
 
+    source_key = _normalize_key(relation.get("source_object_type_key"))
+    target_key = _normalize_key(relation.get("target_object_type_key"))
+
+    if (
+        is_self_relation_definition(relation)
+        and current_key == source_key
+        and current_key == target_key
+    ):
+        return True
+
     settings = relation.get("settings_json")
     if not isinstance(settings, dict):
         settings = {}
@@ -55,8 +71,6 @@ def is_hierarchy_relation_definition(
     if not marked_hierarchy:
         return False
 
-    source_key = _normalize_key(relation.get("source_object_type_key"))
-    target_key = _normalize_key(relation.get("target_object_type_key"))
     return current_key == source_key or current_key == target_key
 
 

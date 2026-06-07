@@ -10,10 +10,16 @@ from app.modules.platform.designer.publish import repository as publish_reposito
 from app.modules.platform.shared.enums import PublishStatus
 from app.modules.navigation.models import NavigationItem
 from app.modules.platform.designer.object_types.models import DesignerObjectType
+from app.modules.platform.designer.object_types.navigation_visibility import (
+    sync_object_type_navigation_visibility,
+)
+from app.modules.platform.shared.object_type_settings import default_object_type_settings
 from app.modules.platform.designer.view_definitions import service as view_service
 from app.modules.platform.designer.object_types.schemas import (
     DependencyCounts,
     ObjectTypeCreate,
+    ObjectTypeDeletePreviewRead,
+    ObjectTypeDeleteUsageGroup,
     ObjectTypeListItem,
     ObjectTypeRead,
     ObjectTypeUpdate,
@@ -163,6 +169,10 @@ def create_object_type(
 
     user_id = _actor_user_id(current_user)
 
+    settings_json = dict(payload.settings_json or {})
+    for key, value in default_object_type_settings().items():
+        settings_json.setdefault(key, value)
+
     entity = DesignerObjectType(
         tenant_id=tenant_id,
         key=payload.key,
@@ -176,7 +186,7 @@ def create_object_type(
         status=payload.status.value,
         is_system=False,
         is_default_entity=payload.is_default_entity,
-        settings_json=payload.settings_json,
+        settings_json=settings_json,
         governance_json=payload.governance_json,
         created_by=user_id,
         updated_by=user_id,
@@ -290,7 +300,160 @@ def update_object_type(
             detail="ObjectType с таким key уже существует в tenant",
         ) from exc
 
+    if "settings_json" in updates:
+        sync_object_type_navigation_visibility(
+            db,
+            tenant_id=tenant_id,
+            object_type_id=entity.id,
+        )
+
     return _to_read(entity, db)
+
+
+def get_object_type_delete_preview(
+    db: Session,
+    tenant_id: int,
+    object_type_id: UUID,
+) -> ObjectTypeDeletePreviewRead:
+    from sqlalchemy import or_
+
+    from app.modules.platform.designer.relation_definitions.models import (
+        DesignerRelationDefinition,
+    )
+    from app.modules.platform.designer.view_definitions.models import DesignerViewDefinition
+    from app.modules.platform.designer.workspaces.models import (
+        DesignerWorkspace,
+        DesignerWorkspaceTab,
+    )
+
+    entity = repository.get_object_type(db, tenant_id, object_type_id)
+    if not entity:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="ObjectType не найден",
+        )
+
+    groups: list[ObjectTypeDeleteUsageGroup] = []
+
+    view_rows = (
+        db.query(DesignerViewDefinition)
+        .filter(
+            DesignerViewDefinition.tenant_id == tenant_id,
+            DesignerViewDefinition.object_type_id == object_type_id,
+            DesignerViewDefinition.deleted_at.is_(None),
+        )
+        .order_by(DesignerViewDefinition.name.asc())
+        .all()
+    )
+    if view_rows:
+        groups.append(
+            ObjectTypeDeleteUsageGroup(
+                category="views",
+                label="В представлениях",
+                items=[view.name for view in view_rows],
+            ),
+        )
+
+    relation_rows = (
+        db.query(DesignerRelationDefinition)
+        .filter(
+            DesignerRelationDefinition.tenant_id == tenant_id,
+            DesignerRelationDefinition.deleted_at.is_(None),
+            or_(
+                DesignerRelationDefinition.source_object_type_id == object_type_id,
+                DesignerRelationDefinition.target_object_type_id == object_type_id,
+            ),
+        )
+        .order_by(DesignerRelationDefinition.name.asc())
+        .all()
+    )
+    if relation_rows:
+        groups.append(
+            ObjectTypeDeleteUsageGroup(
+                category="relations",
+                label="В связях",
+                items=[f'Связь «{relation.name}»' for relation in relation_rows],
+            ),
+        )
+
+    tab_rows = (
+        db.query(DesignerWorkspaceTab, DesignerWorkspace)
+        .join(
+            DesignerWorkspace,
+            DesignerWorkspace.id == DesignerWorkspaceTab.workspace_id,
+        )
+        .filter(
+            DesignerWorkspaceTab.tenant_id == tenant_id,
+            DesignerWorkspaceTab.deleted_at.is_(None),
+            DesignerWorkspace.deleted_at.is_(None),
+            DesignerWorkspaceTab.object_type_id == object_type_id,
+        )
+        .order_by(DesignerWorkspace.title.asc(), DesignerWorkspaceTab.title.asc())
+        .all()
+    )
+    if tab_rows:
+        groups.append(
+            ObjectTypeDeleteUsageGroup(
+                category="workspace_tabs",
+                label="Во вкладках",
+                items=[
+                    f'Пространство «{workspace.title}» → вкладка «{tab.title}»'
+                    for tab, workspace in tab_rows
+                ],
+            ),
+        )
+
+    workspace_titles = sorted(
+        {
+            workspace.title
+            for _, workspace in tab_rows
+            if workspace.title
+        },
+    )
+    if workspace_titles:
+        groups.append(
+            ObjectTypeDeleteUsageGroup(
+                category="spaces",
+                label="В пространствах",
+                items=[f'Пространство «{title}»' for title in workspace_titles],
+            ),
+        )
+
+    nav_rows = (
+        db.query(NavigationItem)
+        .filter(
+            NavigationItem.portal_id == tenant_id,
+            NavigationItem.object_type_id == object_type_id,
+            NavigationItem.deleted_at.is_(None),
+        )
+        .order_by(NavigationItem.title.asc())
+        .all()
+    )
+    if nav_rows:
+        groups.append(
+            ObjectTypeDeleteUsageGroup(
+                category="navigation",
+                label="В навигации",
+                items=[nav.title for nav in nav_rows],
+            ),
+        )
+
+    governance = entity.governance_json if isinstance(entity.governance_json, dict) else {}
+    access_rules = governance.get("access_rules") or governance.get("permissions") or []
+    if isinstance(access_rules, list) and access_rules:
+        groups.append(
+            ObjectTypeDeleteUsageGroup(
+                category="rights",
+                label="В правах",
+                items=[str(rule.get("label") or rule.get("name") or rule) for rule in access_rules],
+            ),
+        )
+
+    return ObjectTypeDeletePreviewRead(
+        name=entity.name,
+        groups=groups,
+        has_usage=bool(groups),
+    )
 
 
 def delete_object_type(

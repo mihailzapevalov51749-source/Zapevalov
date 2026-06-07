@@ -72,6 +72,7 @@ export default function DateFieldEditor({
   autoFocus = false,
   inline = false,
   includeTime = false,
+  placeholder = "",
   onCancel,
   onDismiss,
 }) {
@@ -155,6 +156,7 @@ export default function DateFieldEditor({
         readOnly={readOnly}
         disabled={readOnly}
         autoFocus={autoFocus}
+        placeholder={placeholder || undefined}
         onChange={handleChange}
         onClick={(event) => {
           event.stopPropagation();

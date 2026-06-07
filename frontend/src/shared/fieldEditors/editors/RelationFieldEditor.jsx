@@ -26,6 +26,7 @@ export default function RelationFieldEditor({
   onLinkTarget = null,
   onUnlinkTarget = null,
   readOnly = false,
+  placeholder = "",
 }) {
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [deletingEntityId, setDeletingEntityId] = useState(null);
@@ -77,7 +78,7 @@ export default function RelationFieldEditor({
         items={items}
         cardinality={cardinality}
         loading={loading}
-        emptyLabel="Нет связи"
+        emptyLabel={placeholder || "Нет связи"}
         onOpenLinkedEntity={onOpenLinkedEntity}
         onDeleteLink={(targetEntityId) => void handleDelete(targetEntityId)}
         deletingEntityId={deletingEntityId}
@@ -108,6 +109,7 @@ export default function RelationFieldEditor({
           catalog={catalog}
           peerObjectTypeKey={peerObjectTypeKey}
           submitting={mutating}
+          placeholder={placeholder}
           onSubmit={handleSubmit}
           onCancel={() => setSelectorOpen(false)}
         />

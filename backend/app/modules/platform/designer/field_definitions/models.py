@@ -41,6 +41,7 @@ class DesignerFieldDefinition(Base):
     key = Column(String(64), nullable=False)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
+    placeholder = Column(Text, nullable=True)
 
     field_type = Column(String(32), nullable=False)
 
@@ -48,7 +49,13 @@ class DesignerFieldDefinition(Base):
 
     is_required = Column(Boolean, nullable=False, default=False, server_default="false")
     is_unique = Column(Boolean, nullable=False, default=False, server_default="false")
-    quick_create = Column(Boolean, nullable=False, default=False, server_default="false")
+    quick_create = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="false",
+        comment="Deprecated: use quick_form Object View projection instead.",
+    )
     is_system = Column(Boolean, nullable=False, default=False, server_default="false")
 
     default_value_json = Column(JSONB, nullable=True)

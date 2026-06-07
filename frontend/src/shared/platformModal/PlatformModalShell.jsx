@@ -1,10 +1,12 @@
 import { createPortal } from "react-dom";
 
 import closeIcon from "../../assets/icons/x.svg";
+import usePlatformZone from "../platformAccent/usePlatformZone";
 
 import {
   closeButtonCompactStyle,
   closeButtonStyle,
+  bodyScrollStyle,
   contentStyle,
   footerShellStyle,
   headerCompactStyle,
@@ -13,6 +15,7 @@ import {
   panelShellStyle,
   PLATFORM_MODAL_HEADER_HEIGHT_COMPACT,
   PLATFORM_MODAL_HEADER_HEIGHT_DEFAULT,
+  PLATFORM_MODAL_RESIZE_GRIP_SIZE_PX,
   resizeHandleEastStyle,
   resizeHandleSouthEastStyle,
   resizeHandleSouthStyle,
@@ -20,6 +23,8 @@ import {
   titleCompactStyle,
   titleStyle,
 } from "./platformModalStyles";
+
+import "./platformModalFooter.css";
 
 /**
  * @param {{
@@ -61,6 +66,8 @@ export default function PlatformModalShell({
   headerDensity = "default",
   titleAccessory = null,
 }) {
+  const platformZone = usePlatformZone();
+
   if (!open) {
     return null;
   }
@@ -74,6 +81,26 @@ export default function PlatformModalShell({
   const headerHeightPx = isCompactHeader
     ? PLATFORM_MODAL_HEADER_HEIGHT_COMPACT
     : PLATFORM_MODAL_HEADER_HEIGHT_DEFAULT;
+  const resizeEastTopPx = hideHeader ? 0 : headerHeightPx;
+  const resizeEastHeight = hideHeader
+    ? "100%"
+    : `calc(100% - ${headerHeightPx}px)`;
+
+  const footerStyle = {
+    ...footerShellStyle,
+    ...(canCustomizeLayout && footer
+      ? { paddingRight: 12 + PLATFORM_MODAL_RESIZE_GRIP_SIZE_PX }
+      : null),
+  };
+
+  const mergedBodyStyle = {
+    ...contentStyle,
+    ...(contentStyleOverride && typeof contentStyleOverride === "object"
+      ? contentStyleOverride
+      : {}),
+  };
+
+  const usesCustomBodyLayout = mergedBodyStyle.display === "flex";
 
   const panelStyle = {
     ...panelShellStyle,
@@ -108,12 +135,14 @@ export default function PlatformModalShell({
             }
       }
       role="presentation"
+      data-platform-zone={platformZone}
       data-platform-modal-overlay
       data-platform-modal-key={modalKey || undefined}
     >
       <aside
         style={{ ...panelStyle, pointerEvents: "auto", position: "fixed" }}
         aria-label={ariaLabel || title || "Модальное окно"}
+        data-platform-zone={platformZone}
         data-platform-modal-panel
         data-platform-modal-key={modalKey || undefined}
       >
@@ -158,39 +187,44 @@ export default function PlatformModalShell({
           </div>
         )}
 
-        <div style={{ ...contentStyle, ...contentStyleOverride }}>{children}</div>
+        <div style={mergedBodyStyle} data-platform-modal-body>
+          {usesCustomBodyLayout ? (
+            children
+          ) : (
+            <div style={bodyScrollStyle} data-platform-modal-body-scroll>
+              {children}
+            </div>
+          )}
+        </div>
 
-        {footer ? <div style={footerShellStyle}>{footer}</div> : null}
+        {footer ? (
+          <div style={footerStyle} data-platform-modal-footer>
+            {footer}
+          </div>
+        ) : null}
 
         {canCustomizeLayout ? (
           <>
             <div
               style={{
                 ...resizeHandleEastStyle,
-                top: hideHeader ? 0 : headerHeightPx,
-                height: hideHeader ? "100%" : `calc(100% - ${headerHeightPx}px)`,
-                zIndex: 20,
-                pointerEvents: "auto",
+                top: resizeEastTopPx,
+                height: resizeEastHeight,
               }}
               onMouseDown={(event) => startResize?.("e", event)}
+              data-platform-modal-resize-handle="e"
               aria-hidden
             />
             <div
-              style={{
-                ...resizeHandleSouthStyle,
-                zIndex: 20,
-                pointerEvents: "auto",
-              }}
+              style={resizeHandleSouthStyle}
               onMouseDown={(event) => startResize?.("s", event)}
+              data-platform-modal-resize-handle="s"
               aria-hidden
             />
             <div
-              style={{
-                ...resizeHandleSouthEastStyle,
-                zIndex: 21,
-                pointerEvents: "auto",
-              }}
+              style={resizeHandleSouthEastStyle}
               onMouseDown={(event) => startResize?.("se", event)}
+              data-platform-modal-resize-handle="se"
               aria-hidden
             />
           </>

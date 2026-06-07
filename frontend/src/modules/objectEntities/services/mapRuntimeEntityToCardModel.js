@@ -4,7 +4,7 @@ import { getEntityCardLayoutFields } from "../../objectViews/entity/getEntityCar
 import { getReadableSystemFields } from "../../objectViews/entity/getReadableSystemFields";
 import { findCatalogObjectType } from "../../objectViews/table/services/adapters/ObjectTypeTableAdapter";
 import { buildInitialFormValuesFromEntity } from "./buildEntityUpdatePayload";
-import { resolveEntityTitle } from "./resolveEntityTitle";
+import { resolveEntityDisplayTitle } from "./resolveEntityDisplayTitle.js";
 
 function formatTimestamp(value) {
   if (value == null || value === "") {
@@ -76,9 +76,12 @@ export function mapRuntimeEntityToCardModel({
   const creatableFields = getCreatableFields(catalog, objectTypeKey);
   const readOnlyFields = getReadableSystemFields(catalog, objectTypeKey);
 
-  const title =
-    resolveEntityTitle(entityValues, titleFieldKey) ||
-    String(objectTypeKey || "Объект");
+  const title = resolveEntityDisplayTitle({
+    entity,
+    catalog,
+    objectTypeKey,
+    titleFieldKey,
+  });
 
   const entityId = String(entity?.id || "");
   const status = String(entity?.status || "—");

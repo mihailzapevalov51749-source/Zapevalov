@@ -1,0 +1,72 @@
+/**
+ * Platform accent zones — single source of truth for Studio vs Office accents.
+ * Studio = purple (#7c3aed), Office = blue (#2563ff).
+ *
+ * Applied via data-platform-zone on document.body and portaled modals.
+ */
+
+[data-platform-zone="studio"] {
+  --platform-accent: #7c3aed;
+  --platform-accent-hover: #6d28d9;
+  --platform-accent-soft: #f5f3ff;
+  --platform-accent-border: #ddd6fe;
+  --platform-accent-muted: #c4b5fd;
+  --platform-accent-on-soft: #5b21b6;
+  --platform-accent-active-bg: #f5f3ff;
+  --platform-accent-active-text: #5b21b6;
+  --platform-accent-focus-ring: rgba(124, 58, 237, 0.22);
+}
+
+[data-platform-zone="office"] {
+  --platform-accent: #2563ff;
+  --platform-accent-hover: #1d4ed8;
+  --platform-accent-soft: #eff6ff;
+  --platform-accent-border: #bfdbfe;
+  --platform-accent-muted: #93c5fd;
+  --platform-accent-on-soft: #1e40af;
+  --platform-accent-active-bg: #e0f2fe;
+  --platform-accent-active-text: #0c4a6e;
+  --platform-accent-focus-ring: rgba(37, 99, 255, 0.22);
+}
+
+[data-platform-zone] {
+  --designer-accent: var(--platform-accent);
+  --designer-accent-hover: var(--platform-accent-hover);
+  --designer-accent-soft: var(--platform-accent-soft);
+  --designer-accent-border: var(--platform-accent-border);
+}
+
+[data-platform-zone] .designer-btn--primary {
+  background: var(--platform-accent);
+  border-color: var(--platform-accent);
+}
+
+[data-platform-zone] .designer-btn--primary:hover:not(:disabled) {
+  background: var(--platform-accent-hover);
+  border-color: var(--platform-accent-hover);
+}
+
+[data-platform-zone] .designer-input:focus,
+[data-platform-zone] .designer-input:focus-visible,
+[data-platform-zone] .designer-select:focus,
+[data-platform-zone] .designer-select:focus-visible,
+[data-platform-zone] .designer-textarea:focus,
+[data-platform-zone] .designer-textarea:focus-visible {
+  outline: none;
+  border-color: var(--platform-accent);
+  box-shadow: 0 0 0 3px var(--platform-accent-focus-ring);
+}
+
+[data-platform-zone] .designer-view-form__checkbox input[type="checkbox"] {
+  accent-color: var(--platform-accent);
+}
+
+[data-platform-zone] .platform-quick-create-modal__btn--primary {
+  background: var(--platform-accent);
+  border-color: var(--platform-accent);
+}
+
+[data-platform-zone] .platform-quick-create-modal__btn--primary:hover:not(:disabled) {
+  background: var(--platform-accent-hover);
+  border-color: var(--platform-accent-hover);
+}

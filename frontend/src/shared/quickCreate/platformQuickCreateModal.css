@@ -90,8 +90,8 @@
 .platform-quick-create-modal__control select.field-editor-input:focus,
 .platform-quick-create-modal__control textarea.field-editor-input:focus {
   outline: none;
-  border-color: #94a3b8;
-  box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.25);
+  border-color: var(--platform-accent);
+  box-shadow: 0 0 0 2px var(--platform-accent-focus-ring);
 }
 
 .platform-quick-create-modal__control textarea.field-editor-input {
@@ -125,25 +125,9 @@
   color: #94a3b8;
 }
 
-.platform-quick-create-modal__footer {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  width: 100%;
-  min-height: 44px;
-  margin: -12px -16px -16px;
-  padding: 12px 18px 14px;
-  background: #ffffff;
-  border-top: 1px solid #e2e8f0;
-  box-sizing: border-box;
-}
-
 .platform-quick-create-modal__btn {
-  flex: 0 0 auto;
-  min-width: 100px;
+  flex: 1 1 auto;
+  min-width: 88px;
   min-height: 36px;
   padding: 8px 14px;
   border-radius: 8px;
@@ -185,20 +169,20 @@
 }
 
 .platform-quick-create-modal__btn--primary {
-  min-width: 120px;
-  background: #7c3aed;
-  border-color: #7c3aed;
+  min-width: 96px;
+  background: var(--platform-accent);
+  border-color: var(--platform-accent);
   color: #ffffff;
 }
 
 .platform-quick-create-modal__btn--primary:hover:not(:disabled) {
-  background: #6d28d9;
-  border-color: #6d28d9;
+  background: var(--platform-accent-hover);
+  border-color: var(--platform-accent-hover);
 }
 
 .platform-quick-create-modal__btn--primary:disabled {
   opacity: 1;
-  background: #c4b5fd;
-  border-color: #c4b5fd;
+  background: var(--platform-accent-muted);
+  border-color: var(--platform-accent-muted);
   color: #ffffff;
 }

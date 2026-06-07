@@ -13,6 +13,8 @@ describe("getQuickCreateFields", () => {
     assert.match(source, /resolveTitleFieldKey/);
     assert.match(source, /includeTitle/);
     assert.match(source, /quick_create/);
+    assert.match(source, /isCreatableFieldType/);
+    assert.doesNotMatch(source, /rawType === "relation"/);
     assert.match(source, /isTitleField/);
     assert.match(source, /isRequired: includeTitle \? true/);
   });

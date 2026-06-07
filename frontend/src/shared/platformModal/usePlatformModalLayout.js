@@ -6,13 +6,21 @@ import {
   CARD_SETTINGS_MODAL_KEY,
   debugCardSettingsModal,
 } from "./cardSettingsModalDebug";
+import { PLATFORM_MODAL_COMPACT_MIN_WIDTH, PLATFORM_MODAL_STANDARD_MIN_WIDTH } from "./platformModalStyles";
 import { loadModalBounds, saveModalBounds } from "./modalUiPreferences";
+
+export {
+  PLATFORM_MODAL_FOOTER_SAFE_MIN_WIDTH,
+  PLATFORM_MODAL_STANDARD_MIN_WIDTH,
+  PLATFORM_MODAL_COMPACT_MIN_WIDTH,
+} from "./platformModalStyles";
 
 function isCardSettingsModalKey(modalKey) {
   return String(modalKey || "").trim() === CARD_SETTINGS_MODAL_KEY;
 }
 
-export const PLATFORM_MODAL_MIN_WIDTH = 320;
+/** @deprecated use PLATFORM_MODAL_STANDARD_MIN_WIDTH */
+export const PLATFORM_MODAL_MIN_WIDTH = PLATFORM_MODAL_STANDARD_MIN_WIDTH;
 export const PLATFORM_MODAL_MIN_HEIGHT = 300;
 /** Viewport margin: 12px top + 12px bottom (and left/right for max size). */
 export const PLATFORM_MODAL_EDGE_INSET_PX = 12;
@@ -37,7 +45,7 @@ export function getViewportMetrics() {
   const viewportMargin = edge * 2;
 
   const maxWidth = Math.max(
-    PLATFORM_MODAL_MIN_WIDTH,
+    PLATFORM_MODAL_COMPACT_MIN_WIDTH,
     viewportWidth - viewportMargin,
   );
   const maxHeight = Math.max(
@@ -46,7 +54,7 @@ export function getViewportMetrics() {
   );
 
   const workspaceWidth = Math.max(
-    PLATFORM_MODAL_MIN_WIDTH,
+    PLATFORM_MODAL_COMPACT_MIN_WIDTH,
     viewportWidth - YASII_FLOATING_SAFE_RIGHT_PX,
   );
   const workspaceHeight = maxHeight;
@@ -72,19 +80,24 @@ export function clampModalBounds(
   metrics = getViewportMetrics(),
   options = {},
 ) {
-  const { keepFullyVisible = false, viewportInset } = options;
+  const { keepFullyVisible = false, viewportInset, minHeight: minHeightOverride, minWidth: minWidthOverride } = options;
   const edge = viewportInset ?? metrics.edgeInset ?? PLATFORM_MODAL_EDGE_INSET_PX;
+  const floorHeight = readBoundNumber(minHeightOverride, metrics.minHeight);
+  const floorWidth = readBoundNumber(
+    minWidthOverride,
+    metrics.minWidth,
+  );
 
   const width = Math.min(
-    Math.max(bounds.width, metrics.minWidth),
+    Math.max(bounds.width, floorWidth),
     keepFullyVisible
       ? Math.max(metrics.minWidth, metrics.maxWidth - edge * 2)
       : metrics.maxWidth,
   );
   const height = Math.min(
-    Math.max(bounds.height, metrics.minHeight),
+    Math.max(bounds.height, floorHeight),
     keepFullyVisible
-      ? Math.max(metrics.minHeight, metrics.maxHeight - edge * 2)
+      ? Math.max(floorHeight, metrics.maxHeight - edge * 2)
       : metrics.maxHeight,
   );
 
@@ -218,6 +231,26 @@ function resolveInitialModalBounds(
  *   viewportInset?: number,
  * }} params
  */
+/**
+ * Resolves platform minWidth for PlatformModal bounds.
+ * @param {"standard" | "compact"} layoutPreset
+ * @param {number | undefined} explicitMinWidth
+ */
+export function resolvePlatformModalMinWidth(layoutPreset = "standard", explicitMinWidth) {
+  const explicit = Number(explicitMinWidth);
+
+  if (layoutPreset === "compact") {
+    return Number.isFinite(explicit) && explicit > 0
+      ? explicit
+      : PLATFORM_MODAL_COMPACT_MIN_WIDTH;
+  }
+
+  return Math.max(
+    Number.isFinite(explicit) && explicit > 0 ? explicit : 0,
+    PLATFORM_MODAL_STANDARD_MIN_WIDTH,
+  );
+}
+
 export default function usePlatformModalLayout({
   modalKey,
   open,
@@ -241,7 +274,12 @@ export default function usePlatformModalLayout({
   const canCustomizeRef = useRef(canCustomizeLayout);
   const modalKeyRef = useRef(modalKey);
 
-  clampOptionsRef.current = { keepFullyVisible, viewportInset };
+  clampOptionsRef.current = {
+    keepFullyVisible,
+    viewportInset,
+    minHeight: readBoundNumber(defaultBoundsRef.current?.minHeight, undefined),
+    minWidth: readBoundNumber(defaultBoundsRef.current?.minWidth, undefined),
+  };
   defaultBoundsRef.current = defaultBounds;
   canCustomizeRef.current = canCustomizeLayout;
   modalKeyRef.current = modalKey;

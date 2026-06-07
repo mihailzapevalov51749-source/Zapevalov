@@ -12,6 +12,7 @@ export default function TextFieldEditor({
   autoFocus = false,
   inline = false,
   multiline = false,
+  placeholder = "",
   onCancel,
   onCommit,
 }) {
@@ -45,6 +46,7 @@ export default function TextFieldEditor({
         disabled={readOnly}
         autoFocus={autoFocus}
         rows={3}
+        placeholder={placeholder || undefined}
         onChange={(event) => onChange?.(event.target.value)}
         onKeyDown={handleKeyDown}
         style={style}
@@ -60,6 +62,7 @@ export default function TextFieldEditor({
       readOnly={readOnly}
       disabled={readOnly}
       autoFocus={autoFocus}
+      placeholder={placeholder || undefined}
       onChange={(event) => onChange?.(event.target.value)}
       onKeyDown={handleKeyDown}
       style={style}

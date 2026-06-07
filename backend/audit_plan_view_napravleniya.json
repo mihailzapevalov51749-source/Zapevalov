@@ -1,0 +1,7 @@
+﻿python : View napravleniya not found
+C:\Users\MSI\AppData\Local\Temp\ps-script-e4c99d10-b02c-4e80-976d-29901d9d6d20.ps1:100 знак:1
++ python "E:\ЯсноПро\Консалтинг\Моя компания\Конструктор порталов в2\po ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (View napravleniya not found:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

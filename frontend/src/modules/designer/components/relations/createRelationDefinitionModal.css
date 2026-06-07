@@ -1,10 +1,11 @@
 .designer-create-relation-definition-modal__body {
   box-sizing: border-box;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   padding: 24px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .designer-create-relation-definition-modal__form {
@@ -76,37 +77,6 @@
   padding-top: 4px;
 }
 
-.designer-create-relation-definition-modal__footer {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  width: 100%;
-  min-height: 44px;
-  flex-shrink: 0;
-  box-sizing: border-box;
-  overflow: visible;
-}
-
-.designer-create-relation-definition-modal__footer .designer-btn {
-  flex: 0 0 auto;
-  min-width: 120px;
-  min-height: 40px;
-  justify-content: center;
-  text-align: center;
-  white-space: nowrap;
-}
-
 .designer-create-relation-definition-modal__btn-create {
   visibility: visible;
-}
-
-.designer-create-relation-definition-modal__footer .designer-btn--primary:disabled {
-  opacity: 1;
-  background: #93c5fd;
-  border-color: #93c5fd;
-  color: #fff;
-  cursor: not-allowed;
 }

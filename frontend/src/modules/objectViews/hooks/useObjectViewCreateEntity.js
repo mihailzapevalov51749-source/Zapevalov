@@ -7,6 +7,10 @@ import {
   buildInitialCreateFormValues,
 } from "../entity/buildCreateEntityPayload";
 import { getCreatableFields } from "../entity/getCreatableFields";
+import {
+  formatRelationLinkFailuresMessage,
+  submitPendingRelationLinks,
+} from "../entity/submitPendingRelationLinks";
 
 /**
  * Runtime entity create orchestration (Entity Layer — not table rows).
@@ -107,9 +111,27 @@ export default function useObjectViewCreateEntity({
         values,
       });
 
+      const normalizedId = String(entity?.id || "").trim();
+      let relationFailures = [];
+
+      if (normalizedId) {
+        relationFailures = await submitPendingRelationLinks({
+          tenantId,
+          entityId: normalizedId,
+          fields: creatableFields,
+          formValues,
+        });
+      }
+
+      if (relationFailures.length > 0) {
+        setSubmitError(formatRelationLinkFailuresMessage(relationFailures));
+      } else {
+        setSubmitError("");
+      }
+
       setIsDialogOpen(false);
-      await onCreated?.(entity);
-      return { ok: true, entity };
+      await onCreated?.(entity, { relationLinkFailures: relationFailures });
+      return { ok: true, entity, relationLinkFailures: relationFailures };
     } catch (error) {
       setSubmitError(
         getApiErrorMessage(error, "Не удалось создать объект"),

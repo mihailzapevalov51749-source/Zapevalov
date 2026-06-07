@@ -37,6 +37,7 @@ def _to_read(entity: DesignerFieldDefinition) -> FieldDefinitionRead:
         key=entity.key,
         name=entity.name,
         description=entity.description,
+        placeholder=entity.placeholder,
         field_type=entity.field_type,
         sort_order=entity.sort_order,
         is_required=entity.is_required,
@@ -177,6 +178,7 @@ def create_field(
         key=payload.key,
         name=payload.name,
         description=payload.description,
+        placeholder=payload.placeholder,
         field_type=payload.field_type.value,
         sort_order=payload.sort_order,
         is_required=payload.is_required,
@@ -297,6 +299,8 @@ def update_field(
         entity.name = updates["name"]
     if "description" in updates:
         entity.description = updates["description"]
+    if "placeholder" in updates:
+        entity.placeholder = updates["placeholder"]
     if "field_type" in updates:
         entity.field_type = updates["field_type"].value
     if "sort_order" in updates:

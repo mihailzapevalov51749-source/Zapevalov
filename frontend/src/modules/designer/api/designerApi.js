@@ -39,6 +39,13 @@ export async function deleteObjectType(tenantId, objectTypeId) {
   return data;
 }
 
+export async function getObjectTypeDeletePreview(tenantId, objectTypeId) {
+  const { data } = await platformApiClient.get(
+    `${tenantBase(tenantId)}/object-types/${objectTypeId}/delete-preview`,
+  );
+  return data;
+}
+
 export async function publishMenuPlacements(tenantId, objectTypeId, payload) {
   const { data } = await platformApiClient.post(
     `${tenantBase(tenantId)}/object-types/${objectTypeId}/menu-placements`,

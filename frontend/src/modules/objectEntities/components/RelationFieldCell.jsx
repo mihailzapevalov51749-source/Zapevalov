@@ -1,3 +1,4 @@
+import QuickCreateRelationField from "../../../shared/fieldEditors/editors/QuickCreateRelationField";
 import useRelationFieldState from "../hooks/useRelationFieldState";
 import { resolveRelationFieldPeerObjectTypeKey } from "../services/resolveRelationFieldPeerObjectType";
 import RelationFieldEditor from "../../../shared/fieldEditors/editors/RelationFieldEditor";
@@ -14,12 +15,6 @@ import {
   entityCardFieldValueStyle,
 } from "../../../shared/entityCardShell/styles/entityCardFieldsGridStyles";
 
-const pendingStyle = {
-  fontSize: 12,
-  color: "#64748B",
-  fontWeight: 500,
-};
-
 export default function RelationFieldCell({
   field,
   tenantId = null,
@@ -28,6 +23,8 @@ export default function RelationFieldCell({
   catalog = null,
   readOnly = false,
   isCreate = false,
+  value = [],
+  onFieldChange = null,
   onOpenRelatedEntity = null,
 }) {
   const fieldKey = String(field?.key || "").trim();
@@ -66,9 +63,16 @@ export default function RelationFieldCell({
 
         <div style={entityCardFieldValueStyle}>
           {isCreate ? (
-            <div style={pendingStyle}>
-              Сохраните запись, чтобы добавить связь
-            </div>
+            <QuickCreateRelationField
+              fieldDef={field}
+              value={value}
+              onChange={(nextValue) => onFieldChange?.(fieldKey, nextValue)}
+              tenantId={tenantId}
+              catalog={catalog}
+              objectTypeKey={objectTypeKey}
+              readOnly={readOnly}
+              placeholder={field?.placeholder || ""}
+            />
           ) : (
             <RelationFieldEditor
               items={relationState.items}
@@ -80,6 +84,7 @@ export default function RelationFieldCell({
               entityId={entityId}
               catalog={catalog}
               peerObjectTypeKey={peerObjectTypeKey}
+              placeholder={field?.placeholder || ""}
               onOpenLinkedEntity={handleOpenLinkedEntity}
               onLinkTarget={relationState.linkTarget}
               onUnlinkTarget={relationState.unlinkTarget}

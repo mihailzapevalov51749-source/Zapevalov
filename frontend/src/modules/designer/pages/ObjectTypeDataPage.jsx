@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { getApiErrorMessage } from "../api/platformApiClient";
 import * as designerApi from "../api/designerApi";
@@ -26,6 +26,7 @@ const DEFAULT_VIEW_LABEL = "Таблица";
 
 export default function ObjectTypeDataPage() {
   const { tenantId } = useDesignerShell();
+  const navigate = useNavigate();
   const { objectTypeId } = useParams();
 
   const [objectType, setObjectType] = useState(null);
@@ -101,6 +102,8 @@ export default function ObjectTypeDataPage() {
     setPublishing(true);
     setMenuPublishMessage("");
 
+    const hadPublishedBefore = Boolean(objectType?.last_published_at || objectType?.lastPublishedAt);
+
     try {
       const publishResult = await designerApi.publishCatalog(tenantId);
       const nextCatalogVersion = publishResult?.catalog_version ?? null;
@@ -113,23 +116,24 @@ export default function ObjectTypeDataPage() {
       dispatchPortalNavigationReload();
 
       setMenuPublishMessage(
-        "Публикация обновлена. Карточка и представления синхронизированы с Office.",
+        hadPublishedBefore
+          ? "Публикация обновлена. Карточка и представления синхронизированы с Office."
+          : "Каталог опубликован. Объект доступен в Runtime, связях, вкладках пространств и на страницах.",
       );
     } catch (err) {
       window.alert(getApiErrorMessage(err, "Не удалось обновить публикацию"));
     } finally {
       setPublishing(false);
     }
-  }, [objectTypeId, tenantId]);
+  }, [objectType, objectTypeId, tenantId]);
 
   const handlePublish = useCallback(() => {
-    if (lifecycle.publishAction === "update-catalog") {
+    if (
+      lifecycle.publishAction === "update-catalog" ||
+      lifecycle.publishAction === "publish-catalog"
+    ) {
       void handleUpdatePublication();
-      return;
     }
-
-    setMenuPublishMessage("");
-    setMenuDialogOpen(true);
   }, [handleUpdatePublication, lifecycle.publishAction]);
 
   const handleMenuPlacementSuccess = useCallback(
@@ -263,9 +267,9 @@ export default function ObjectTypeDataPage() {
           deleting={false}
           onSave={() => {}}
           onPublish={handlePublish}
-          onManagePublication={() => setMenuDialogOpen(true)}
-          showManagePublication={Boolean(hasMenuPlacement)}
-          onDeleteObject={() => {}}
+          onRenameObject={() => navigate(settingsPath)}
+          onDuplicateObject={() => window.alert("Дублирование объекта будет доступно в следующем релизе.")}
+          onDeleteObject={() => navigate(settingsPath)}
         />
       ) : null}
 

@@ -14,6 +14,7 @@ export default function UserFieldEditor({
   readOnly = false,
   autoFocus = false,
   inline = false,
+  placeholder = "",
   onDismiss,
 }) {
   const [users, setUsers] = useState([]);
@@ -96,7 +97,7 @@ export default function UserFieldEditor({
       autoFocus={autoFocus}
       inline={inline}
       isLoading={isLoading}
-      placeholder="Выберите пользователя"
+      placeholder={placeholder || "Выберите пользователя"}
       onDismiss={onDismiss}
     />
   );

@@ -36,7 +36,9 @@ class ViewType(StrEnum):
     TIMELINE = "timeline"
     GALLERY = "gallery"
     FORM = "form"
+    QUICK_FORM = "quick_form"
     COMPOSITE = "composite"
+    PLAN = "plan"
 
 
 class PublishStatus(StrEnum):

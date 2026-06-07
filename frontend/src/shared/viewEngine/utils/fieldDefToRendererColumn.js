@@ -22,6 +22,7 @@ export function fieldDefToRendererColumn(fieldDef) {
     type: fieldDef.type,
     title: fieldDef.label,
     label: fieldDef.label,
+    placeholder: fieldDef.placeholder || "",
     options: fieldDef.options || fieldDef.settings?.options || [],
     settings: fieldDef.settings || {},
     align: fieldDef.align,

@@ -8,7 +8,7 @@ import {
   renameLegacyStorageForPage,
 } from "../../../shared/legacy/adapters/legacyStorageAdapter";
 import { navigationService } from "../../../modules/navigation/services/navigationService";
-import { dispatchPageStatusNavigationRefresh } from "../../../modules/designer/utils/navigationReload";
+import { dispatchPageStatusNavigationRefresh } from "../../navigation/navigationReload";
 import {
   patchDesignerSystemMenuSettings,
   resolveDesignerSystemItemKey,

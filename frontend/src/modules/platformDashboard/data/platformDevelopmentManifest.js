@@ -1,5 +1,5 @@
 export const platformDevelopmentManifest = {
-  updatedAt: "2026-06-06T22:00:00",
+  updatedAt: "2026-06-08T18:00:00",
 
   title: "Развитие платформы ЯсноПро",
 
@@ -11,26 +11,26 @@ export const platformDevelopmentManifest = {
     strategicDecision:
       "Старые таблицы не переносим в новую модель. Новые данные создаются только через объектную платформу.",
     targetFlow:
-      "Тип объекта → Публикация → Запись → Таблица → Карточка объекта",
+      "Тип объекта → Публикация (Runtime) → [Навигация / вкладки пространства] → Запись → Вкладка объекта",
   },
 
   readiness: {
-    targetPlatformPercent: 39,
-    currentPhasePercent: 68,
+    targetPlatformPercent: 40,
+    currentPhasePercent: 69,
     capabilities: [
       {
         name: "Модель объектов",
         status: "ready",
-        percent: 88,
+        percent: 90,
         businessMeaning:
-          "Можно описывать типы объектов, задавать значения по умолчанию полей, публиковать и работать с записями.",
+          "Публикация объекта отделена от навигации; пространства открывают конкретные вкладки объекта.",
       },
       {
         name: "Представления",
         status: "ready",
-        percent: 80,
+        percent: 85,
         businessMeaning:
-          "Табличный вид над объектами, фильтры и персональные представления.",
+          "Табличный вид, фильтры, персональные представления и вкладка «План» над объектами.",
       },
       {
         name: "Карточка объекта",
@@ -68,7 +68,7 @@ export const platformDevelopmentManifest = {
       number: 1,
       name: "Независимость объектной платформы",
       status: "in_progress",
-      percent: 67,
+      percent: 68,
       meaning:
         "Новая объектная платформа перестаёт зависеть от старых таблиц.",
     },
@@ -129,12 +129,78 @@ export const platformDevelopmentManifest = {
       { label: "Notification legacy cleanup", status: "planned" },
       {
         label: 'Тип поля "Связи" — этап 1. Контракт поля',
+        status: "planned",
+      },
+      {
+        label: "Архитектура представлений — этап 2: Projection UI",
+        status: "done",
+      },
+      {
+        label: "Архитектура представлений — этап 4: Runtime dual-read",
+        status: "done",
+      },
+      {
+        label: "Архитектура представлений — этап 5: Очистка legacy",
         status: "next",
       },
     ],
   },
 
   achievements: [
+    {
+      date: "2026-06-07",
+      text:
+        "Платформенное ядро: утверждена целевая модель Object Tab = Projection + Query + View Settings для Table/Plan/Card/Kanban/Calendar/Tree/Diagram; матрица отклонений и roadmap этапов 0–6 в docs/architecture/OBJECT_VIEW_ARCHITECTURE.md v1.1.",
+    },
+    {
+      date: "2026-06-08",
+      text:
+        "Платформенное ядро: этап 1 — контракт представлений: roleMapping в ObjectViewContract (draft/save/publish/catalog); publish validation; dual-read adapter для Plan; docs/architecture/OBJECT_VIEW_CONTRACT.md.",
+    },
+    {
+      date: "2026-06-08",
+      text:
+        "Платформенное ядро: этап 2 — единый Projection UI (ObjectProjectionPanel) для Table/Plan/Form/Card/List в Studio; Plan получил блок Projection над настройками Плана.",
+    },
+    {
+      date: "2026-06-08",
+      text:
+        "Платформенное ядро: этап 3 — универсальный ObjectRoleMappingPanel; Plan: Role Mapping UI (nodeTitle/nodeStatus/nodeDescription/nextSteps); legacy *FieldKey сохранены; runtime без изменений.",
+    },
+    {
+      date: "2026-06-08",
+      text:
+        "Платформенное ядро: этап 4 — Plan runtime dual-read: resolvePlanRoleMappingDualRead в ObjectPlanView/buildPlanTree; приоритет roleMapping → legacy → fallback; обратная совместимость сохранена.",
+    },
+    {
+      date: "2026-06-08",
+      text:
+        "Plan Tree Visual Polish: контрастные заголовки колонок, глобальное раскрытие/сворачивание (Chevron в шапке), удалён GripVertical, единый gap 8px в строке; логика дерева без изменений.",
+    },
+    {
+      date: "2026-06-07",
+      text: 'Object Platform: представление «План» (view_type=plan) — иерархия экземпляров по relation, дерево + детали, готовность по статусам, следующие шаги, опциональные проблемы; Studio → Object Type → Tabs → План; Office → вкладка План; Preview на mock-данных.',
+    },
+    {
+      date: "2026-06-07",
+      text: "Object Actions Menu: меню «…» в шапке типа объекта (Studio → Object Type) снова открывается; пункты Переименовать / Дублировать / Удалить; удаление через модалку с delete-preview (вкладки, представления, связи, навигация, пространства).",
+    },
+    {
+      date: "2026-06-07",
+      text: "Create Relation Modal UX: фиксированный footer PlatformModal [Отмена][Создать связь], scroll только в body, minHeight 480px; Studio → Object Type → Relations → Создать связь.",
+    },
+    {
+      date: "2026-06-07",
+      text: "Create Field Modal: «Значение по умолчанию» доступно при создании поля — переиспользован DefaultValueEditor и default_value_json сохраняется сразу; Studio → Object Type → Fields → Добавить поле.",
+    },
+    {
+      date: "2026-06-07",
+      text: "Object Publish vs Navigation: публикация объекта больше не добавляет его в меню автоматически; флаг «Отображать в навигации» (default Нет) + миграция для существующих объектов в navigation_items.",
+    },
+    {
+      date: "2026-06-07",
+      text: "Workspace Object View Tab: вкладка пространства типа «Объект» ссылается на object_type_id + object_view_id; runtime открывает конкретную опубликованную вкладку объекта без tab-bar объекта.",
+    },
     {
       date: "2026-06-06",
       text: "Excel Import Default Values: обязательные поля на шаге «Колонки» — источник «Колонка Excel» или «Значение по умолчанию» (пользователь, статус, список, текст, число, дата); Office → Object → Импорт Excel.",
@@ -286,6 +352,70 @@ export const platformDevelopmentManifest = {
   ],
 
   platformChangelog: [
+    {
+      date: "2026-06-07",
+      version: null,
+      title: "Bugfix: поле «Связь» — auto role/cardinality",
+      summary:
+        "Create Field Modal: роль и кардинальность relation field определяются автоматически по relation definition; убран ручной выбор роли; 422 settings_json.role больше не воспроизводится через UI.",
+      nextStage: "Проверить self-relation и many_to_many на двух полях одного объекта",
+    },
+    {
+      date: "2026-06-07",
+      version: null,
+      title: "Studio Relations: убран технический блок про граф",
+      summary:
+        "Со страницы «Связи» удалено сообщение «Граф связей в MVP отключён. Источник: …» — остаются заголовок, счётчик, кнопка «Добавить связь» и таблица.",
+      nextStage: "Relation graph — отдельная фича без MVP-заглушки в UI",
+    },
+    {
+      date: "2026-06-07",
+      version: null,
+      title: "Create Relation Modal: footer [Отмена][Создать связь]",
+      summary:
+        "Модалка создания связи: фиксированный footer PlatformModal, scroll в body, minHeight 480px, сброс persist key v3; кнопка «Создать связь» всегда видна справа от «Отмена».",
+      nextStage: "Проверить на маленьком экране и после resize модалки",
+    },
+    {
+      date: "2026-06-07",
+      version: null,
+      title: "Create Field Modal: значение по умолчанию при создании",
+      summary:
+        "Модалка «Добавить поле» переиспользует DefaultValueEditor; default_value_json сохраняется вместе с полем без повторного открытия панели свойств.",
+      nextStage: "Проверить сценарии список/статус/число и смену типа поля",
+    },
+    {
+      date: "2026-06-07",
+      version: null,
+      title: "Bugfix: workspace «Разработка» — миграция object_view_id",
+      summary:
+        "ensure-tabs падал с UndefinedColumn: колонка object_view_id отсутствовала (миграция 20260607_0017 не применена). Исправлен backfill JOIN (varchar object_type_id → ::uuid).",
+      nextStage: "Перезапустить backend после alembic upgrade head",
+    },
+    {
+      date: "2026-06-07",
+      version: null,
+      title: "Bugfix: backend startup (NavigationItemResponse import)",
+      summary:
+        "В navigation/enrichment.py добавлен импорт NavigationItemResponse из schemas — backend снова стартует после доработки show_in_navigation.",
+      nextStage: "Проверить login и /users/me после перезапуска backend",
+    },
+    {
+      date: "2026-06-07",
+      version: null,
+      title: "Публикация объекта и навигация разделены",
+      summary:
+        "Новый флаг «Отображать в навигации» в настройках типа объекта; публикация переносит объект в Runtime без автоматического пункта меню; размещение в меню — отдельный сценарий «Разместить в меню».",
+      nextStage: "Проверить сценарий «Разработка» с объектами без навигации",
+    },
+    {
+      date: "2026-06-07",
+      version: null,
+      title: "Вкладки пространства → вкладки объекта",
+      summary:
+        "Вкладка пространства типа «Объект» хранит object_view_id; Studio показывает выбор опубликованной вкладки объекта; миграция backfill для существующих object-вкладок.",
+      nextStage: "Kanban/board представления для сценария «Карта платформы»",
+    },
     {
       date: "2026-06-06",
       version: null,
@@ -500,12 +630,555 @@ export const platformDevelopmentManifest = {
   ],
 
   nextStep: {
-    title: 'Тип поля "Связи" — этап 1. Контракт поля',
-    titleLabel: "Активный подэтап программы relation field",
+    title: "Архитектура представлений — этап 6: Финальная унификация",
+    titleLabel: "Активная программа платформенного ядра",
     description:
-      "Добавить FieldType.RELATION, validation, settings_json, publish validation и runtime contract. Реализация не начата (0%).",
+      "Runtime adapters для board/calendar/tree; единый ObjectViewHost; Studio gate для неготовых view types.",
     expectedResult:
-      "Поле relation существует в контракте платформы.",
+      "Все целевые представления следуют Projection + Query + View Settings.",
+  },
+
+  objectViewArchitectureProgram: {
+    title: "Архитектура представлений объектов",
+    parentStage: "Платформенное ядро",
+    status: "IN_PROGRESS",
+    readiness: 99,
+    doc: "docs/architecture/OBJECT_VIEW_CONTRACT.md",
+    docVersion: "1.0",
+    activeSubPhaseKey: "object-view-architecture-unification",
+    currentStatus:
+      "Plan UI: дерево компактное — контрастные заголовки колонок, глобальное раскрытие, единый gap 8px.",
+    nextStage: "Этап 6 — Финальная унификация",
+    planLegacyDeprecationMetrics: {
+      title: "Plan Views",
+      viaRoleMapping: "usesLegacyPlanFields: false",
+      viaLegacy: "usesLegacyPlanFields: true",
+      diagnosticFlag: "presentation.plan.usesLegacyPlanFields",
+      note:
+        "Диагностический флаг при publish; runtime dual-read не изменён. Метрика готовности к отключению legacy.",
+    },
+    planLegacyUsageAudit: {
+      title: "Plan Legacy Usage",
+      auditedAt: "2026-06-07T09:51:17+00:00",
+      catalogVersion: 69,
+      auditScript: "backend/scripts/audit_plan_legacy_usage.py",
+      publishScript: "backend/scripts/publish_tenant_catalog_cli.py",
+      migrationAssistant: "generatePlanRoleMappingFromLegacy + Studio кнопка",
+      total: 1,
+      roleMappingReady: 1,
+      legacyDependent: 0,
+      viaRoleMapping: 1,
+      viaLegacy: 0,
+      mixedPlans: 0,
+      legacyKeysInSnapshot: 0,
+      mixed: 0,
+      legacyOnly: 0,
+      fallbackOnly: 0,
+      duplicateRoleMappingAndLegacy: 0,
+      highRisk: 0,
+      mediumRisk: 0,
+      lowRisk: 1,
+      legacyPercent: 0,
+      removalReadinessPercent: 100,
+      stage5BRecommendation: "Этап 5B завершён",
+      stage5CRecommendation: "Этап 5C.2 завершён",
+      stage5DRecommendation: "Этап 5D.2 завершён",
+      stage5ERecommendation: "Этап 5E завершён",
+      stage5FRecommendation: "Этап 5F завершён",
+    },
+    planUiCleanup: {
+      title: "Plan Settings UI Cleanup",
+      completedAt: "2026-06-07T14:00:00+00:00",
+      catalogVersion: 69,
+      legacyControlsVisible: 0,
+      migrationControlsVisible: 0,
+      planSettingsSimplified: true,
+      removedFromStudioUi: [
+        "titleFieldKey picker",
+        "statusFieldKey picker",
+        "descriptionFieldKey picker",
+        "nextStepsFieldKey picker",
+        "Legacy field markers",
+        "Legacy / dual-read / Migration user-facing copy",
+      ],
+      preservedInDraft: [
+        "titleFieldKey",
+        "statusFieldKey",
+        "descriptionFieldKey",
+        "nextStepsFieldKey",
+      ],
+      planSettingsRemaining: [
+        "hierarchyRelationKey",
+        "issuesRelationKey",
+      ],
+      migrationAssistant: {
+        utility: "shouldShowPlanRoleMappingMigrationAssistant",
+        visibleWhen: "roleMapping empty AND legacy draft keys present",
+        hiddenWhen: "roleMapping filled",
+        codePreserved: "generatePlanRoleMappingFromLegacy",
+      },
+      projectionTitleFieldRecommendation: "keep — object-type entity display layer; nodeTitle is Plan-view role",
+    },
+    planTreeVisualPolish: {
+      title: "Plan Tree Visual Polish",
+      completedAt: "2026-06-08T18:00:00+00:00",
+      catalogVersion: 69,
+      columnHeaders: {
+        contrast: "#0f172a",
+        fontSizePreserved: "10px uppercase",
+      },
+      globalExpandCollapse: {
+        control: "ChevronRight / ChevronDown in column header",
+        position: "left of Название",
+        wiring: "handleToggleExpandAll via existing expand/collapse handlers",
+      },
+      rowLayout: {
+        removedElement: "GripVertical drag handle icon",
+        uniformGap: "8px",
+        structure: "toggle → icon → number → title",
+        verticalAlign: "align-items: center on row and columns",
+      },
+      dataLogicUnchanged: true,
+    },
+    planUiReferenceLayout: {
+      title: "Plan UI — Reference Layout",
+      completedAt: "2026-06-07T16:00:00+00:00",
+      referenceDriven: true,
+      layout: "tree + resizable work area",
+      treeFeatures: [
+        "hierarchy numbering (1, 1.1, 1.2)",
+        "compact columns: Название / Готовность / Статус",
+        "context menu (ПКМ)",
+        "resize handle 280-600px with localStorage",
+      ],
+      workAreaTabs: [
+        "Инфо",
+        "Комментарии",
+        "История",
+        "Файлы",
+        "Задачи",
+      ],
+      infoTab: "Projection + Role Mapping + Runtime Entity fields",
+      dataArchitecture: "unchanged — no new tables/API",
+      components: [
+        "PlanViewShell",
+        "PlanTreePanel",
+        "PlanWorkArea",
+        "PlanInfoTab",
+        "PlanTreeContextMenu",
+      ],
+    },
+    planStatusDisplayBugfix: {
+      title: "Plan status display uses object field settings",
+      completedAt: "2026-06-07T15:00:00+00:00",
+      resolver: "resolvePlanFieldDisplayValue",
+      choiceResolver: "normalizeChoiceValue (choiceUtils)",
+      fieldSource: "catalog object type field settings_json.options",
+      statusFieldKey: "roleMapping.nodeStatus → status",
+      fixedSymptoms: [
+        "option_1780780345... shown instead of Не начато",
+        "parent Активное replaced by rollup Не начато",
+      ],
+      ownStatusLabelSeparatedFromRollup: true,
+      rollupPreservedFor: ["readiness", "statusCategory", "rollupStatusCategory"],
+      tests: [
+        "planFieldUtils.test.js",
+        "buildPlanTree.test.js — option key → label, parent label preserved",
+      ],
+    },
+    entityTitleArchitecture: {
+      title: "Entity Title Architecture",
+      completedAt: "2026-06-07T13:33:00+00:00",
+      resolver: "resolveEntityDisplayTitle",
+      titleFieldResolver: "resolveEntityTitleFieldKey",
+      auditScript: "frontend/scripts/auditEntityTitleFallbacks.mjs",
+      runtimeTitleFallbacks: 0,
+      entityTitleResolverCoverage: "object-platform-runtime",
+      componentsMigrated: 9,
+      removedFallbacks: ["F7 resolvePlanEntityTitle", "title||name entity chain"],
+      migratedComponents: [
+        "ObjectPlanView Issues Panel",
+        "RelationFieldPeerSelect",
+        "RelationFilterPeerSelect",
+        "ObjectEntityRelatedEntities",
+        "HierarchyChildRelationsGroup",
+        "mapRelationInstancesToGroups",
+        "mapRuntimeEntityToCardModel",
+        "resolveParentContextFromRelations",
+        "resolveSubtasksFromRelations",
+      ],
+      resolutionChain: "Projection.titleFieldKey → Object Type Title Field → [id]",
+      remainingOutOfScope: [
+        "shared/shell/header (portal navigation)",
+        "modules/universalTable (legacy)",
+        "backend platform search API",
+      ],
+    },
+    planLegacyDualReadRemoval: {
+      title: "Plan Legacy Dual-Read Removal",
+      completedAt: "2026-06-07T13:25:00+00:00",
+      catalogVersion: 69,
+      legacyDualReadTier: "removed",
+      planRuntimeSource: "roleMapping only",
+      runtimeLegacyReferences: 0,
+      resolver: "resolvePlanRoleMapping",
+      deprecatedAlias: "resolvePlanRoleMappingDualRead",
+      buildPlanTreeF8: "EMPTY_PLAN_ROLE_MAPPING when planRoleMapping omitted",
+      studioLegacyPreserved: true,
+      migrationAssistantPreserved: true,
+      publishDiagnosticPreserved: true,
+      issuesPanelF7Preserved: true,
+    },
+    planLegacyDualReadAudit: {
+      title: "Plan Legacy Dual-Read Audit",
+      auditedAt: "2026-06-07T10:17:32+00:00",
+      catalogVersion: 69,
+      auditScript: "backend/scripts/audit_plan_legacy_dual_read_usage.py",
+      publishedLegacyPlans: 0,
+      legacyKeysInSnapshot: 0,
+      publishedPlansWithoutRoleMapping: 0,
+      runtimeLegacyReferences: 5,
+      testsDependingOnLegacy: 2,
+      draftPlanCount: 1,
+      draftWithLegacyKeys: 1,
+      draftRuntimeDependency: false,
+      studioPreviewUsesLegacyTier: false,
+      canRemoveLegacyTier: "yes_after_tests",
+      recommendationCategory: "B",
+      recommendation:
+        "Да, runtime не использует legacy tier; legacy tier — тесты и F8 safety path",
+      usageTable: [
+        {
+          area: "Published Runtime",
+          usesLegacyTier: false,
+          canRemove: true,
+          comment: "Office → published catalog v69; roleMapping-only",
+        },
+        {
+          area: "Studio Preview",
+          usesLegacyTier: false,
+          canRemove: true,
+          comment: "buildPlanPreviewMock(); дерево не читает dual-read",
+        },
+        {
+          area: "Draft",
+          usesLegacyTier: true,
+          canRemove: true,
+          comment: "Legacy keys в Studio draft; Office runtime draft не читает",
+        },
+        {
+          area: "Tests",
+          usesLegacyTier: true,
+          canRemove: true,
+          comment: "resolvePlanRoleMapping.test.js + buildPlanTree.test.js",
+        },
+        {
+          area: "Dev scripts",
+          usesLegacyTier: true,
+          canRemove: true,
+          comment: "Migration assistant; не Office runtime",
+        },
+      ],
+      draftLegacyPreserved: {
+        titleFieldKey: "nazvanie",
+        descriptionFieldKey: "opisanie",
+      },
+    },
+    planRuntimeFallbackAudit: {
+      title: "Plan Runtime Fallback Audit",
+      auditedAt: "2026-06-08T12:00:00+00:00",
+      completedAt: "2026-06-07T13:10:00+00:00",
+      catalogVersion: 69,
+      planTreeFallbackCount: 0,
+      planTreeRuntimeSource: "roleMapping only",
+      totalFallbackMechanisms: 2,
+      roleMappingChainFallbacks: 0,
+      removedIn5C2: ["F1", "F2", "F3", "F4", "F5", "F6"],
+      usedInPublishedPlanTree: 0,
+      usedInStudioPreview: 0,
+      usedInUnitTests: 0,
+      usedInIssuesPanel: 1,
+      remainingFallbacks: ["F8"],
+      cannotRemoveWithoutAdr: ["buildPlanTree safety path (EMPTY_PLAN_ROLE_MAPPING)"],
+      stage5C2Status: "DONE",
+      stage5C2Result:
+        "F1–F6 удалены; dual-read roleMapping → legacy; Issues panel F7 сохранён",
+      registry: [
+        {
+          id: "F8",
+          name: "buildPlanTree internal dual-read",
+          file: "buildPlanTree.js",
+          category: "B",
+          publishedRuntime: false,
+          note: "Safety path when planRoleMapping omitted; legacy tier, not field fallback",
+        },
+      ],
+      publishedSnapshotConfirmed: {
+        roleMapping: {
+          nodeTitle: "nazvanie",
+          nodeStatus: "status",
+          nodeDescription: "opisanie",
+        },
+        usesLegacyPlanFields: false,
+        legacyInSnapshot: {},
+      },
+      draftLegacyPreserved: {
+        titleFieldKey: "nazvanie",
+        descriptionFieldKey: "opisanie",
+      },
+      registry: [
+        {
+          id: "463d34a1-9a4b-43e0-81e7-81c923173051",
+          workspace: "Разработка",
+          object: "Направления (napravleniya)",
+          tab: "Архитектура (arhitektura)",
+          usesLegacyPlanFields: false,
+          roleMapping: {
+            nodeTitle: "nazvanie",
+            nodeStatus: "status",
+            nodeDescription: "opisanie",
+          },
+          legacy: {},
+          category: "roleMapping",
+          risk: "low",
+        },
+      ],
+    },
+    risks: [
+      "Plan: legacy titleFieldKey/statusFieldKey/descriptionFieldKey дублируют Projection",
+      "Card: sections.fieldKeys без обязательной привязки к projection",
+      "Studio: нерабочие view types (board, calendar, tree, card tab)",
+      "legacy universalTable title/name (вне object platform)",
+      "Две модели иерархии: Table tree-mode vs Plan",
+    ],
+    stages: [
+      {
+        key: "object-view-architecture-docs",
+        number: 0,
+        title: "Документация",
+        status: "DONE",
+        readiness: 100,
+        steps: [
+          "Аудит всех представлений",
+          "Матрица Projection / Query / View Settings",
+          "Утверждённая целевая архитектура v1.1",
+          "Roadmap этапов 0–6",
+        ],
+        completionCriterion:
+          "OBJECT_VIEW_ARCHITECTURE.md содержит матрицу, отклонения, legacy, roadmap.",
+      },
+      {
+        key: "object-view-architecture-contract",
+        number: 1,
+        title: "Контракт представлений",
+        status: "DONE",
+        readiness: 100,
+        steps: [
+          "roleMapping в ObjectViewContract (draft/save/publish/catalog)",
+          "Publish validation: projection + roleMapping ⊆ projection",
+          "Dual-read adapter resolvePlanRoleMappingDualRead",
+          "OBJECT_VIEW_CONTRACT.md",
+        ],
+        completionCriterion:
+          "Контракт хранит roleMapping; publish валидирует; legacy keys сохранены; runtime не изменён.",
+      },
+      {
+        key: "object-view-architecture-projection",
+        number: 2,
+        title: "Projection для всех view types",
+        status: "DONE",
+        readiness: 100,
+        steps: [
+          "ObjectProjectionPanel — единый UI для всех Studio view types",
+          "Plan: Projection над настройками Плана",
+          "resolveStudioDraftProjection + scaffold для form/card/list",
+        ],
+        completionCriterion:
+          "Table/Plan/Form/Card/List используют единый Projection UI; fieldKeys сохраняются в контракт.",
+      },
+      {
+        key: "object-view-architecture-role-mapping",
+        number: 3,
+        title: "Role Mapping",
+        status: "DONE",
+        readiness: 100,
+        steps: [
+          "ObjectRoleMappingPanel — универсальный компонент платформы",
+          "Plan: nodeTitle/nodeStatus/nodeDescription/nextSteps pickers",
+          "syncViewSettingsRoleMapping + Studio validation",
+        ],
+        completionCriterion:
+          "Role Mapping настраивается в Studio и публикуется; legacy *FieldKey сохранены; runtime не изменён.",
+      },
+      {
+        key: "object-view-architecture-dual-read",
+        number: 4,
+        title: "Runtime dual-read",
+        status: "DONE",
+        readiness: 100,
+        steps: [
+          "resolvePlanRoleMappingDualRead в ObjectPlanView",
+          "buildPlanTree/usePlanHierarchy через planRoleMapping",
+          "Приоритет roleMapping → legacy",
+        ],
+        completionCriterion:
+          "Plan runtime читает единый planRoleMapping; старые вкладки работают через legacy.",
+      },
+      {
+        key: "object-view-architecture-legacy-deprecation",
+        number: "5A",
+        title: "Plan Legacy Deprecation",
+        status: "DONE",
+        readiness: 100,
+        steps: [
+          "presentation.plan.*FieldKey @deprecated (frontend + backend + docs)",
+          "publish snapshot: usesLegacyPlanFields",
+          "Plan debug: planViewDebug (import.meta.env.DEV), без window.__*",
+        ],
+        completionCriterion:
+          "Legacy помечен deprecated; диагностический флаг в snapshot; dual-read и fallback сохранены.",
+      },
+      {
+        key: "object-view-architecture-legacy-usage-audit",
+        number: "5A.1",
+        title: "Legacy Usage Audit",
+        status: "DONE",
+        readiness: 100,
+        steps: [
+          "audit_plan_legacy_usage.py — read-only аудит published catalog",
+          "Реестр Plan: roleMapping / legacy / risk",
+          "Dashboard: Plan Legacy Usage + removalReadinessPercent",
+        ],
+        completionCriterion:
+          "Фактическая картина legacy зафиксирована; рекомендация по этапу 5B определена.",
+      },
+      {
+        key: "object-view-architecture-legacy-removal",
+        number: "5B",
+        title: "Очистка legacy из snapshot",
+        status: "DONE",
+        readiness: 100,
+        steps: [
+          "sanitize_presentation_plan: strip *FieldKey при usesLegacyPlanFields=false",
+          "Publish v69: snapshot без legacy keys",
+          "Draft/Studio: legacy сохранены",
+        ],
+        completionCriterion:
+          "Published snapshot без *FieldKey; Mixed=0; draft/Studio/dual-read без изменений.",
+      },
+      {
+        key: "object-view-architecture-fallback-audit",
+        number: "5C.1",
+        title: "Runtime Fallback Audit",
+        status: "DONE",
+        readiness: 100,
+        steps: [
+          "Карта F1–F8 fallback в Plan runtime",
+          "Проверка Published / Preview / Tests",
+          "planRuntimeFallbackAudit в Dashboard",
+        ],
+        completionCriterion:
+          "Реестр fallback; Published Plan v69 не использует role-mapping fallback.",
+      },
+      {
+        key: "object-view-architecture-fallback-removal",
+        number: "5C.2",
+        title: "Fallback Removal",
+        status: "DONE",
+        readiness: 100,
+        steps: [
+          "Удалить F1–F6 из resolvePlanRoleMapping/buildPlanTree/planEntityUtils",
+          "Обновить тесты scenario 3 (null keys, source=legacy)",
+          "Сохранить F7 (Issues) и F8 (buildPlanTree safety)",
+        ],
+        completionCriterion:
+          "Plan Tree Fallback Count = 0; runtime source roleMapping + legacy.",
+      },
+      {
+        key: "object-view-architecture-legacy-dual-read-audit",
+        number: "5D.1",
+        title: "Legacy Dual-Read Usage Audit",
+        status: "DONE",
+        readiness: 100,
+        steps: [
+          "audit_plan_legacy_dual_read_usage.py",
+          "Published / Draft / Studio Preview / Tests",
+          "planLegacyDualReadAudit в Dashboard",
+        ],
+        completionCriterion:
+          "Реестр legacy tier; published runtime не использует legacy; рекомендация 5D.2.",
+      },
+      {
+        key: "object-view-architecture-legacy-dual-read-removal",
+        number: "5D.2",
+        title: "Legacy Dual-Read Removal",
+        status: "DONE",
+        readiness: 100,
+        steps: [
+          "resolvePlanRoleMapping — roleMapping only",
+          "buildPlanTree: EMPTY_PLAN_ROLE_MAPPING, без legacy F8",
+          "Тесты + Studio draft legacy сохранены",
+        ],
+        completionCriterion:
+          "Plan runtime roleMapping only; Runtime Legacy References = 0.",
+      },
+      {
+        key: "object-view-architecture-entity-title-unification",
+        number: "5E",
+        title: "Entity Title Resolution",
+        status: "DONE",
+        readiness: 100,
+        steps: [
+          "resolveEntityDisplayTitle + resolveEntityTitleFieldKey",
+          "Issues Panel / Related / Lookup → единый resolver",
+          "Удалить F7 resolvePlanEntityTitle",
+        ],
+        completionCriterion:
+          "Runtime Title Fallbacks = 0 в object platform; Projection → Title Field → [id].",
+      },
+      {
+        key: "object-view-architecture-plan-ui-cleanup",
+        number: "5F",
+        title: "UI Cleanup Plan Settings",
+        status: "DONE",
+        readiness: 100,
+        steps: [
+          "Удалить legacy *FieldKey controls из PlanViewSettingsPanel",
+          "Скрыть Migration Assistant при заполненном roleMapping",
+          "Убрать Legacy / dual-read / Migration copy из Studio UI",
+        ],
+        completionCriterion:
+          "Legacy Controls Visible = 0; Migration Controls Visible = 0; Plan Settings Simplified = true.",
+      },
+      {
+        key: "object-view-architecture-plan-tree-visual-polish",
+        number: "5G",
+        title: "Plan Tree Visual Polish",
+        status: "DONE",
+        readiness: 100,
+        steps: [
+          "Контрастные заголовки колонок (#0f172a)",
+          "Глобальное раскрытие Chevron слева от «Название»",
+          "Удалить GripVertical; единый gap 8px в строке",
+        ],
+        completionCriterion:
+          "Дерево компактное и единообразное; логика дерева/статусов/готовности без изменений.",
+      },
+      {
+        key: "object-view-architecture-unification",
+        number: 6,
+        title: "Финальная унификация",
+        status: "PLANNED",
+        readiness: 0,
+        steps: [
+          "Runtime adapters: board, calendar, tree, diagram",
+          "Единый ObjectViewHost",
+          "Studio gate для неготовых types",
+        ],
+        completionCriterion:
+          "Все целевые представления следуют Projection + Query + View Settings.",
+      },
+    ],
   },
 
   relationFieldTypeProgram: {
@@ -635,8 +1308,17 @@ export const platformDevelopmentManifest = {
         "Центральный контур управления объектной моделью платформы: от описания типов до работы с записями.",
       status: "in_progress",
       readiness: 73,
+      objectViewArchitectureProgramReadiness: 99,
+      objectViewArchitectureProgramStatus: "IN_PROGRESS",
+      objectViewArchitectureNextStage: "Этап 6 — Финальная унификация",
       dependencies: ["Object Type", "Publish", "Runtime Entity"],
-      risks: ["Legacy-зависимости", "Разрыв между Studio и Runtime"],
+      risks: [
+        "Legacy-зависимости",
+        "Разрыв между Studio и Runtime",
+        "Plan legacy *FieldKey vs Projection",
+        "Нерабочие view types в Studio",
+        "Plan/Table hierarchy из каталога, не из settings",
+      ],
     },
     {
       key: "object-type",
@@ -1758,6 +2440,45 @@ export const platformDevelopmentManifest = {
       impact:
         "Studio → Тип объекта → Поля → Свойства поля → блок «Значение по умолчанию»; Office/Quick Create и runtime create подставляют defaults для новых записей без изменения существующих.",
       relatedContours: ["Object Platform", "Designer Foundation", "Runtime Entity"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "object-type-actions-menu-restore",
+      date: "2026-06-07",
+      title: "Восстановлено меню действий типа объекта в Studio",
+      type: "quality",
+      description:
+        "Меню «…» в ObjectTypeWorkspaceHeader рендерится через portal с fixed-позиционированием (не обрезается overflow shell). Минимальный состав: Переименовать, Дублировать, Удалить. Удаление открывает ObjectTypeDeleteConfirmModal с GET /object-types/{id}/delete-preview.",
+      impact:
+        "Studio → Object Type → любой объект: пользователь снова может удалить объект и увидеть использование во вкладках, представлениях, связях, навигации и пространствах независимо от show_in_navigation.",
+      relatedContours: ["Object Platform", "Designer Foundation", "Object Lifecycle"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "object-publish-navigation-decoupling",
+      date: "2026-06-07",
+      title: "Разделение публикации объекта и навигации",
+      type: "architecture",
+      description:
+        "Публикация типа объекта переносит его в Runtime-каталог без автоматического пункта меню. В settings_json добавлен show_in_navigation (default false); enrichment скрывает объект в навигации при false; миграция выставляет true для объектов, уже присутствующих в navigation_items.",
+      impact:
+        "Служебные справочники и внутренние объекты можно публиковать для связей и вкладок пространств, не засоряя левое меню; «Разместить в меню» — отдельный шаг после включения «Отображать в навигации».",
+      relatedContours: ["Object Platform", "Publish", "Designer Foundation"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "workspace-object-view-tab-binding",
+      date: "2026-06-07",
+      title: "Вкладки пространства привязаны к вкладкам объекта",
+      type: "milestone",
+      description:
+        "designer_workspace_tabs получил object_view_id; вкладка пространства типа object всегда открывает конкретную опубликованную вкладку объекта (object_view_key в runtime). Studio: поля «Объект» + «Вкладка объекта» с фильтром по published views.",
+      impact:
+        "Пространство «Разработка» может показывать «Карта платформы» и «Все направления» как разные вкладки одного объекта «Направления»; объект-контейнер не открывается напрямую.",
+      relatedContours: ["Object Platform", "Publish", "Designer Foundation"],
       relatedDebt: [],
       relatedAdr: null,
     },

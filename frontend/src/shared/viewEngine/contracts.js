@@ -17,6 +17,7 @@
  * @property {string} key
  * @property {string} type - normalized field type (text, choice, date, …)
  * @property {string} label
+ * @property {string} [placeholder] - input hint shown when value is empty
  * @property {Record<string, unknown>} settings - Studio settings_json
  * @property {Array<unknown>} [options] - alias for settings.options (renderer compat)
  * @property {string} [align]

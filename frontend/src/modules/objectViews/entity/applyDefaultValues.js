@@ -16,6 +16,7 @@ import {
 import { normalizeDefaultValueFromField } from "../../designer/components/fields/defaultValue/defaultValueFormUtils";
 import { getCurrentUserId } from "../../../shared/communication/domain/messageItemUtils";
 import { normalizeFieldEditorType } from "../../../shared/fieldEditors/fieldEditorRegistry";
+import { isRelationFieldType } from "../../designer/components/fields/relationFieldFormUtils";
 
 function addDaysIsoDate(days, baseDate = new Date()) {
   const next = new Date(baseDate);
@@ -158,6 +159,13 @@ export function buildInitialCreateFormValuesWithDefaults(fields = [], context = 
     }
 
     const editorType = normalizeFieldEditorType(field.rawFieldType || field.type);
+    const rawFieldType = String(field.rawFieldType || field.field_type || field.type || "").trim();
+
+    if (isRelationFieldType(rawFieldType)) {
+      values[key] = [];
+      continue;
+    }
+
     const resolved = resolveFieldDefaultForForm(field, context);
 
     if (resolved !== undefined) {

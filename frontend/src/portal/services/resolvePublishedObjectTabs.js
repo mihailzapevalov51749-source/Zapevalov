@@ -3,6 +3,7 @@
  * Excludes table user representations and internal base-state keys.
  */
 
+import { readObjectTabSettings, readViewSettingsJsonFromPublishedView } from "../../modules/objectViews/services/objectTabSettings";
 import { INTERNAL_OBJECT_TAB_DISPLAY_KEYS } from "../../modules/objectViews/services/resolveObjectTabDisplayLabel";
 
 function readTabLabel(view) {
@@ -27,7 +28,7 @@ function readTabKey(view) {
 
 /**
  * @param {object | null | undefined} objectType Published catalog object type row.
- * @returns {Array<{ key: string, name: string, viewType: string, isDefault: boolean, sortOrder: number }>}
+ * @returns {Array<{ key: string, name: string, viewType: string, isDefault: boolean, sortOrder: number, menuInTab: boolean }>}
  */
 export function resolvePublishedObjectTabs(objectType) {
   const views = Array.isArray(objectType?.views) ? objectType.views : [];
@@ -46,6 +47,9 @@ export function resolvePublishedObjectTabs(objectType) {
         return null;
       }
 
+      const viewSettingsJson = readViewSettingsJsonFromPublishedView(view);
+      const menuInTab = readObjectTabSettings(viewSettingsJson).menuInTab;
+
       return {
         key,
         name,
@@ -55,6 +59,7 @@ export function resolvePublishedObjectTabs(objectType) {
         isDefault: Boolean(view?.is_default ?? view?.isDefault),
         sortOrder: Number(view?.sort_order ?? view?.sortOrder ?? 0),
         isActive: view?.is_active !== false && view?.isActive !== false,
+        menuInTab,
       };
     })
     .filter(Boolean)

@@ -1,0 +1,58 @@
+.designer-object-role-mapping-panel {
+  margin-top: 4px;
+}
+
+.designer-object-role-mapping-panel .designer-view-form__subsection-title {
+  margin-bottom: 6px;
+}
+
+.designer-role-mapping-table-wrap {
+  overflow-x: auto;
+}
+
+.designer-role-mapping-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.designer-role-mapping-table th,
+.designer-role-mapping-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.designer-role-mapping-table th {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.designer-role-mapping-table__role-key {
+  font-size: 11px;
+  color: #475569;
+}
+
+.designer-role-mapping-table__label-input {
+  width: 100%;
+  min-width: 120px;
+}
+
+.designer-view-form__legacy-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}

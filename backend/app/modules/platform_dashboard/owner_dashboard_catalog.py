@@ -220,6 +220,337 @@ def _platform_stages() -> tuple[OwnerStageDefinition, ...]:
                     kind=OwnerSourceKind.PLATFORM_COMPONENT,
                     source_key="object-platform",
                 ),
+                _step(
+                    "pc-field-placeholder-support",
+                    "Field placeholder (Подсказка поля)",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="object-platform",
+                    description=(
+                        "Field placeholder support added: field hints can now be configured in Studio "
+                        "and displayed in create/edit forms and runtime inputs."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-architecture",
+                    "Архитектура представлений объектов",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_ARCHITECTURE",
+                    description=(
+                        "Утверждённая модель Object Tab = Projection + Query + View Settings; "
+                        "матрица Table/Plan/Card/Kanban/Calendar/Tree/Diagram; roadmap этапов 0–6."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-contract",
+                    "Контракт представлений (этап 1)",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_CONTRACT",
+                    description=(
+                        "roleMapping в ObjectViewContract; publish validation; "
+                        "dual-read adapter для Plan; docs/architecture/OBJECT_VIEW_CONTRACT.md."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-projection-ui",
+                    "Projection UI (этап 2)",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_CONTRACT",
+                    description=(
+                        "ObjectProjectionPanel для Table/Plan/Form/Card/List; "
+                        "Plan — Projection над настройками Плана; runtime без изменений."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-role-mapping-ui",
+                    "Role Mapping UI (этап 3)",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_CONTRACT",
+                    description=(
+                        "ObjectRoleMappingPanel — универсальный компонент; Plan role pickers; "
+                        "roleMapping в draft/save/publish; legacy *FieldKey сохранены."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-dual-read",
+                    "Runtime dual-read (этап 4)",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_CONTRACT",
+                    description=(
+                        "Plan runtime: resolvePlanRoleMappingDualRead; "
+                        "roleMapping → legacy → fallback; обратная совместимость."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-legacy-deprecation",
+                    "Plan Legacy Deprecation (этап 5A)",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_CONTRACT",
+                    description=(
+                        "presentation.plan.*FieldKey @deprecated; publish snapshot "
+                        "usesLegacyPlanFields; Plan debug без window globals."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-legacy-usage-audit",
+                    "Plan Legacy Usage Audit (этап 5A.1)",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_ARCHITECTURE",
+                    description=(
+                        "Read-only аудит published Plan: roleMapping vs legacy; "
+                        "Dashboard planLegacyUsageAudit; removalReadinessPercent."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-legacy-snapshot-cleanup",
+                    "Plan Legacy Snapshot Cleanup (этап 5B)",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_CONTRACT",
+                    description=(
+                        "sanitize_presentation_plan: strip *FieldKey из publish snapshot "
+                        "при usesLegacyPlanFields=false; Mixed=0; draft/Studio сохранены."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-fallback-audit",
+                    "Plan Runtime Fallback Audit (этап 5C.1)",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_ARCHITECTURE",
+                    description=(
+                        "Runtime Fallback Audit: F1–F8; Published Plan v69 не в fallback; "
+                        "5C.2 — удаление F1–F6 после тестов."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-fallback-removal",
+                    "Plan Fallback Removal (этап 5C.2)",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_ARCHITECTURE",
+                    description=(
+                        "Удалены F1–F6 из Plan tree runtime; dual-read roleMapping → legacy; "
+                        "F7 Issues и F8 buildPlanTree safety сохранены; Plan Tree Fallback Count = 0."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-legacy-dual-read-audit",
+                    "Plan Legacy Dual-Read Audit (этап 5D.1)",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_ARCHITECTURE",
+                    description=(
+                        "Legacy dual-read audit: published v69 roleMapping-only; "
+                        "draft legacy keys не в Office runtime; рекомендация 5D.2."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-legacy-dual-read-removal",
+                    "Plan Legacy Dual-Read Removal (этап 5D.2)",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_ARCHITECTURE",
+                    description=(
+                        "resolvePlanRoleMapping — roleMapping only; legacy tier удалён; "
+                        "Studio draft/Migration Assistant/publish diagnostic сохранены."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-entity-title-unification",
+                    "Entity Title Resolution (этап 5E)",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_ARCHITECTURE",
+                    description=(
+                        "resolveEntityDisplayTitle; F7 удалён; Issues/Related/Lookup на Title Field; "
+                        "Runtime Title Fallbacks = 0 в object platform."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-plan-ui-cleanup",
+                    "UI Cleanup Plan Settings (этап 5F)",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_ARCHITECTURE",
+                    description=(
+                        "Удалены legacy *FieldKey controls из Studio; Migration Assistant скрыт при "
+                        "заполненном roleMapping; Legacy Controls Visible = 0; Plan Settings Simplified."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-plan-ui-reference-layout",
+                    "Plan UI — Reference Layout",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_ARCHITECTURE",
+                    description=(
+                        "Композиция по референсу: дерево с нумерацией, resize 280-600px, "
+                        "вкладки справа (Инфо/Комментарии/…), ПКМ-меню; данные без изменений."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-plan-status-display-bugfix",
+                    "Plan status display uses object field settings",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_ARCHITECTURE",
+                    description=(
+                        "resolvePlanFieldDisplayValue + normalizeChoiceValue; Plan status labels match "
+                        "Table; ownStatusLabel отделён от rollup; option key → label."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-plan-tree-visual-polish",
+                    "Plan Tree Visual Polish",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_ARCHITECTURE",
+                    description=(
+                        "Контрастные заголовки колонок; глобальное раскрытие Chevron в шапке; "
+                        "удалён GripVertical; единый gap 8px; логика дерева без изменений."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-plan-layout-settings",
+                    "Plan View Settings — tabs layout",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_ARCHITECTURE",
+                    description=(
+                        "planLayout в presentation.plan: вкладки (видимость, порядок, название); "
+                        "поля вкладки Инфо задаются через projection.infoFieldKeys."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-plan-properties-simplification",
+                    "Plan properties panel simplification",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_ARCHITECTURE",
+                    description=(
+                        "Projection: столбец «Инфо» + видимость; Title Field для дерева и карточки; "
+                        "убраны Role Mapping, связь с проблемами и секции Инфо; вкладки настраиваются отдельно."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-plan-tabs-show-in-info",
+                    "Plan tabs — checklist & showInInfo",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_ARCHITECTURE",
+                    description=(
+                        "planLayout.tabs: вкладка «Чек-лист»; showInInfo для встраивания содержимого "
+                        "вкладок во вкладку Инфо; глаз и чекбокс «Инфо» независимы."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-plan-tabs-header-filter-bugfix",
+                    "Bugfix: showInInfo tabs excluded from header",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_ARCHITECTURE",
+                    description=(
+                        "Вкладки с showInInfo=true не попадают в шапку Плана; "
+                        "отображаются только как embedded-блоки внутри «Инфо»."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-plan-preview-constructor",
+                    "Plan Preview visual constructor",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_ARCHITECTURE",
+                    description=(
+                        "Preview Плана: ПКМ и drag & drop для полей Инфо и вкладок; "
+                        "изменения projection, field definitions и planLayout.tabs "
+                        "с синхронизацией с панелью свойств."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-quick-form-architecture",
+                    "Представление «Быстрая форма» — Архитектура",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_ARCHITECTURE",
+                    description=(
+                        "quick_form как Object View: Projection + presentation.quickForm; "
+                        "отдельный тип от зарезервированного form."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-quick-form-backend",
+                    "Представление «Быстрая форма» — Backend",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_CONTRACT",
+                    description=(
+                        "ViewType.quick_form; publish scaffold presentation.quickForm; "
+                        "миграция default_quick_form из field.quick_create."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-quick-form-studio",
+                    "Представление «Быстрая форма» — Studio",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_CONTRACT",
+                    description=(
+                        "Тип «Быстрая форма» в Studio; Projection через ObjectProjectionPanel; "
+                        "без отдельного UI настроек."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-quick-form-preview",
+                    "Представление «Быстрая форма» — Preview",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_ARCHITECTURE",
+                    description=(
+                        "ObjectQuickFormView в Studio Preview: inline форма создания "
+                        "без модального окна; порядок из projection.fieldOrder."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-quick-form-migration",
+                    "Представление «Быстрая форма» — Migration",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_CONTRACT",
+                    description=(
+                        "Alembic 20260607_0019: системное default_quick_form "
+                        "из quick_create + title field."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-quick-form-runtime",
+                    "Представление «Быстрая форма» — Runtime",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_CONTRACT",
+                    description=(
+                        "resolveQuickFormFields + ObjectViewHost; "
+                        "PlatformQuickCreateForm читает projection quick_form."
+                    ),
+                ),
+                _step(
+                    "pc-object-view-quick-form-legacy-compat",
+                    "Представление «Быстрая форма» — Legacy Compatibility",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="OBJECT_VIEW_CONTRACT",
+                    description=(
+                        "resolveActiveQuickFormView fallback на field.quick_create; "
+                        "getQuickCreateFields помечен @deprecated."
+                    ),
+                ),
             ),
             meta={"primary_components": ("object-platform",)},
         ),

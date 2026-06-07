@@ -11,6 +11,8 @@ import {
  */
 export default function ObjectContextMenuTrigger({
   objectName = "Объект",
+  label = null,
+  variant = "header",
   tenantId = null,
   objectTypeKey = null,
   objectTypeId = null,
@@ -19,6 +21,7 @@ export default function ObjectContextMenuTrigger({
 }) {
   const triggerRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
+  const displayLabel = String(label ?? objectName).trim() || "Объект";
 
   const menuContext = useMemo(
     () => ({
@@ -39,6 +42,8 @@ export default function ObjectContextMenuTrigger({
   }, [actions, menuContext]);
 
   const hasMenu = resolvedActions.some((action) => action && !action.disabled);
+  const variantClass =
+    variant === "tab" ? " object-context-menu-trigger--tab" : "";
 
   const handleToggle = () => {
     if (!hasMenu) {
@@ -57,14 +62,18 @@ export default function ObjectContextMenuTrigger({
       <button
         ref={triggerRef}
         type="button"
-        className={`object-context-menu-trigger${className ? ` ${className}` : ""}`}
+        className={`object-context-menu-trigger${variantClass}${className ? ` ${className}` : ""}`}
         onClick={handleToggle}
         aria-haspopup="menu"
         aria-expanded={isOpen}
-        aria-label={`Меню объекта: ${menuContext.objectName}`}
+        aria-label={
+          variant === "tab"
+            ? `Меню вкладки: ${displayLabel}`
+            : `Меню объекта: ${menuContext.objectName}`
+        }
         disabled={!hasMenu}
       >
-        <span className="object-context-menu-trigger__label">{menuContext.objectName}</span>
+        <span className="object-context-menu-trigger__label">{displayLabel}</span>
         <span className="object-context-menu-trigger__chevron" aria-hidden="true">
           ▾
         </span>

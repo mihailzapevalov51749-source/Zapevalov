@@ -14,7 +14,7 @@ import ObjectEntityCardSettingsPanel from "./components/ObjectEntityCardSettings
 
 import ObjectEntityComments from "./components/ObjectEntityComments";
 
-import { getQuickCreateFields } from "../objectViews/entity/getQuickCreateFields";
+import { resolveRuntimeQuickCreateFields } from "../objectViews/entity/resolveActiveQuickFormView";
 
 import { getFileFieldsFromCatalog } from "./services/getFileFieldsFromCatalog";
 
@@ -89,7 +89,7 @@ export default function ObjectEntityCardView({
   const isCreate = mode === "create" || Boolean(cardModel?.isCreate);
 
   const canSaveEntity = useMemo(
-    () => getQuickCreateFields(catalog, cardModel?.objectTypeKey).length > 0,
+    () => resolveRuntimeQuickCreateFields(catalog, cardModel?.objectTypeKey).length > 0,
     [catalog, cardModel?.objectTypeKey],
   );
 

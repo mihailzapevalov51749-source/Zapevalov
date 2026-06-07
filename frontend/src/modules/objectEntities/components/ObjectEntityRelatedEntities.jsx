@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { queryRuntimeEntities } from "../../designer/api/runtimeQueryApi";
 import { findCatalogObjectType } from "../../objectViews/table/services/adapters/ObjectTypeTableAdapter";
 import HierarchyChildRelationsGroup from "./HierarchyChildRelationsGroup";
-import { resolveEntityTitle } from "../services/resolveEntityTitle";
+import { resolvePeerEntityLabel } from "../services/resolveEntityDisplayTitle";
 import {
   entityCardSubtasksEmptyStyle,
   entityCardSubtasksListStyle,
@@ -110,20 +110,8 @@ function DirectionLabel({ direction }) {
   return "";
 }
 
-function resolvePeerEntityLabel(catalog, objectTypeKey, entity) {
-  const objectType = findCatalogObjectType(catalog, objectTypeKey);
-  const fields = Array.isArray(objectType?.fields) ? objectType.fields : [];
-  const titleField = fields.find((field) => field?.is_title || field?.isTitle);
-  const titleFieldKey = String(titleField?.key || titleField?.field_key || "").trim();
-  const values =
-    entity?.values && typeof entity.values === "object" ? entity.values : {};
-  const title = resolveEntityTitle(values, titleFieldKey);
-
-  if (title) {
-    return title;
-  }
-
-  return String(entity?.id || "Запись");
+function resolveRelatedEntityLabel(catalog, objectTypeKey, entity) {
+  return resolvePeerEntityLabel(catalog, objectTypeKey, entity);
 }
 
 function AddRelationForm({

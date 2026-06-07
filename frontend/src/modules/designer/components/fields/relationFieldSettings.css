@@ -52,3 +52,27 @@
   color: #94a3b8;
   cursor: not-allowed;
 }
+
+.designer-relation-field-settings__readonly {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.designer-relation-field-settings__readonly-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.designer-relation-field-settings__readonly-value {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--designer-border, #e5e7eb);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+  color: #0f172a;
+}

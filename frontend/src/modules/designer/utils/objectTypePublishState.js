@@ -94,27 +94,32 @@ export function treeHasObjectTypeMenuPlacement(items, objectTypeId) {
  */
 export function computeObjectTypePublishFlags(objectType, context = {}) {
   const hasCatalog = context.catalogVersion != null && context.catalogVersion !== "";
-  const hasMenuPlacement = Boolean(context.hasMenuPlacement);
-  const hasPublishedBaseline = hasMenuPlacement && hasCatalog;
+  const lastPublishedAt = readObjectTypeTimestamp(
+    objectType,
+    "last_published_at",
+    "lastPublishedAt",
+  );
+  const hasPublishedBaseline = hasCatalog && lastPublishedAt != null;
   const needsContentSync =
     hasPublishedBaseline && hasUnpublishedObjectTypeChanges(objectType);
-  const needsMenuPlacement = !hasMenuPlacement;
+  const needsInitialPublish = Boolean(objectType) && !hasPublishedBaseline;
 
   let publishAction = "none";
 
-  if (needsMenuPlacement) {
-    publishAction = "wizard";
+  if (needsInitialPublish) {
+    publishAction = "publish-catalog";
   } else if (needsContentSync) {
     publishAction = "update-catalog";
   }
 
   return {
     hasCatalog,
-    hasMenuPlacement,
+    hasMenuPlacement: Boolean(context.hasMenuPlacement),
     hasPublishedBaseline,
-    needsPublish: needsMenuPlacement || needsContentSync,
+    needsPublish: needsInitialPublish || needsContentSync,
     needsContentSync,
-    needsMenuPlacement,
+    needsInitialPublish,
+    needsMenuPlacement: false,
     publishAction,
   };
 }

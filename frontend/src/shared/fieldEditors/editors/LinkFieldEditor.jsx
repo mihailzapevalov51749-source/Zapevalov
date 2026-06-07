@@ -14,6 +14,7 @@ export default function LinkFieldEditor({
   readOnly = false,
   autoFocus = false,
   inline = false,
+  placeholder = "",
   onCancel,
   onCommit,
 }) {
@@ -45,7 +46,7 @@ export default function LinkFieldEditor({
       readOnly={readOnly}
       disabled={readOnly}
       autoFocus={autoFocus}
-      placeholder="https://example.com"
+      placeholder={placeholder || "https://example.com"}
       onChange={handleChange}
       onKeyDown={handleKeyDown}
       onClick={(event) => event.stopPropagation()}

@@ -1,4 +1,5 @@
 import { normalizeObjectTypeColor } from "../../../shared/icons/iconFileUtils";
+import { resolveShowInNavigation } from "./objectTypeSettings";
 import { computeObjectTypePublishFlags } from "./objectTypePublishState";
 
 /**
@@ -43,16 +44,18 @@ export function resolveObjectTypeLifecycleState({
     };
   }
 
-  if (flags.publishAction === "update-catalog") {
+  if (flags.publishAction === "update-catalog" || flags.publishAction === "publish-catalog") {
     return {
       ...flags,
-      state: OBJECT_TYPE_LIFECYCLE_STATES.PENDING_CONTENT_UPDATE,
+      state: flags.publishAction === "update-catalog"
+        ? OBJECT_TYPE_LIFECYCLE_STATES.PENDING_CONTENT_UPDATE
+        : OBJECT_TYPE_LIFECYCLE_STATES.SAVED_UNPUBLISHED,
       saveVariant: "outline",
-      publishVariant: "warning",
-      publishLabel: "Обновить публикацию",
+      publishVariant: flags.publishAction === "update-catalog" ? "warning" : "primary",
+      publishLabel: flags.publishAction === "update-catalog" ? "Обновить публикацию" : "Опубликовать",
       saveDisabled: false,
       publishDisabled: false,
-      publishAction: "update-catalog",
+      publishAction: flags.publishAction,
     };
   }
 
@@ -65,7 +68,7 @@ export function resolveObjectTypeLifecycleState({
       publishLabel: "Опубликовать",
       saveDisabled: false,
       publishDisabled: false,
-      publishAction: "wizard",
+      publishAction: "publish-catalog",
     };
   }
 
@@ -106,6 +109,7 @@ export function getObjectTypeFormSnapshot(objectType) {
     icon_file_url: objectType.icon_file_url ?? null,
     color: normalizeObjectTypeColor(objectType.color),
     status: objectType.status || "active",
+    show_in_navigation: resolveShowInNavigation(objectType.settings_json),
   };
 }
 
@@ -121,6 +125,7 @@ export function isObjectTypeFormDirty(form, objectType) {
     form.icon_type !== snapshot.icon_type ||
     form.icon_file_url !== snapshot.icon_file_url ||
     form.color !== snapshot.color ||
-    form.status !== snapshot.status
+    form.status !== snapshot.status ||
+    Boolean(form.show_in_navigation) !== Boolean(snapshot.show_in_navigation)
   );
 }

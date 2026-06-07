@@ -5,6 +5,10 @@ import {
   buildInitialCreateFormValuesWithDefaults,
   getDefaultValueResolveContext,
 } from "./applyDefaultValues";
+import {
+  normalizeRelationFormValue,
+  validateRequiredRelationFormValue,
+} from "./relationFormValueUtils";
 
 /**
  * @param {Array<{ key: string, rawFieldType?: string, isRequired?: boolean }>} fields
@@ -56,13 +60,19 @@ export function buildCreateEntityPayload(formValues, fields = []) {
     }
 
     const rawFieldType = String(field.rawFieldType || field.type || "").trim();
+    const rawValue = formValues[key];
 
     if (isRelationFieldType(rawFieldType)) {
+      const requiredError = validateRequiredRelationFormValue(field, rawValue);
+
+      if (requiredError) {
+        fieldErrors[key] = requiredError;
+      }
+
       continue;
     }
 
     const editorType = normalizeFieldEditorType(field.rawFieldType);
-    const rawValue = formValues[key];
     const empty = isEmptyValue(editorType, rawValue);
 
     if (empty) {

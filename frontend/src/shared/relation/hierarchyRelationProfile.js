@@ -18,6 +18,18 @@ function normalizeKey(value) {
   return String(value ?? "").trim();
 }
 
+/**
+ * Self-relation: same object type on source and target sides (by published catalog keys).
+ *
+ * @param {Record<string, unknown> | null | undefined} relation
+ */
+export function isSelfRelationDefinition(relation) {
+  const sourceKey = normalizeKey(relation?.source_object_type_key);
+  const targetKey = normalizeKey(relation?.target_object_type_key);
+
+  return Boolean(sourceKey && targetKey && sourceKey === targetKey);
+}
+
 export function isHierarchySemanticProfile(profile) {
   const normalized = normalizeKey(profile);
 
@@ -45,6 +57,17 @@ export function isHierarchyRelationDefinition(relation, currentObjectTypeKey) {
     return false;
   }
 
+  const sourceKey = normalizeKey(relation.source_object_type_key);
+  const targetKey = normalizeKey(relation.target_object_type_key);
+
+  if (
+    isSelfRelationDefinition(relation) &&
+    currentKey === sourceKey &&
+    currentKey === targetKey
+  ) {
+    return true;
+  }
+
   const settings =
     relation.settings_json && typeof relation.settings_json === "object"
       ? relation.settings_json
@@ -63,10 +86,17 @@ export function isHierarchyRelationDefinition(relation, currentObjectTypeKey) {
     return false;
   }
 
-  const sourceKey = normalizeKey(relation.source_object_type_key);
-  const targetKey = normalizeKey(relation.target_object_type_key);
-
   return currentKey === sourceKey || currentKey === targetKey;
+}
+
+/**
+ * Relation eligible for Plan hierarchy picker (self-relation on current type or marked hierarchy).
+ *
+ * @param {Record<string, unknown> | null | undefined} relation
+ * @param {string | null | undefined} currentObjectTypeKey
+ */
+export function isPlanHierarchyRelationCandidate(relation, currentObjectTypeKey) {
+  return isHierarchyRelationDefinition(relation, currentObjectTypeKey);
 }
 
 /**

@@ -33,6 +33,7 @@ export default function useObjectViewQuery({
   effectiveContract = null,
   sessionState = null,
   previewMode = false,
+  previewCatalogOverride = null,
 }) {
   const limit = previewMode ? 7 : pageSize;
 
@@ -245,10 +246,17 @@ export default function useObjectViewQuery({
       }
 
       try {
-        const catalogResponse = await getPublishedCatalog(tenantId);
-        if (!cancelled) {
-          setCatalog(catalogResponse);
-          catalogRef.current = catalogResponse;
+        if (previewCatalogOverride) {
+          if (!cancelled) {
+            setCatalog(previewCatalogOverride);
+            catalogRef.current = previewCatalogOverride;
+          }
+        } else {
+          const catalogResponse = await getPublishedCatalog(tenantId);
+          if (!cancelled) {
+            setCatalog(catalogResponse);
+            catalogRef.current = catalogResponse;
+          }
         }
       } catch {
         if (!cancelled) {
@@ -276,7 +284,16 @@ export default function useObjectViewQuery({
     return () => {
       cancelled = true;
     };
-  }, [tenantId, objectTypeKey, viewKey, loadRows, previewMode]);
+  }, [tenantId, objectTypeKey, viewKey, loadRows, previewMode, previewCatalogOverride]);
+
+  useEffect(() => {
+    if (!previewMode || !previewCatalogOverride) {
+      return;
+    }
+
+    setCatalog(previewCatalogOverride);
+    catalogRef.current = previewCatalogOverride;
+  }, [previewMode, previewCatalogOverride]);
 
   useEffect(() => {
     if (!previewMode || !metaReady || !objectTypeKey) {
@@ -292,6 +309,7 @@ export default function useObjectViewQuery({
     sortSignature,
     loadPreviewRows,
     effectiveContract,
+    previewCatalogOverride,
   ]);
 
   useEffect(() => {

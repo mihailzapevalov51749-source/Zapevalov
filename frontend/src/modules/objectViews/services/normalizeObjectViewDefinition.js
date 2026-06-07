@@ -4,6 +4,8 @@ import {
   OBJECT_VIEW_CONTRACT_SCHEMA_VERSION,
 } from "./objectViewContract";
 import { applyContractGuards, normalizePresentationTable } from "./contractGuards";
+import { normalizePlanPresentation } from "../plan/planViewContract.js";
+import { normalizeRoleMapping } from "./objectViewRoleMapping.js";
 import { mergeTablePresentationWithColumnsSettings } from "./columnVisibilitySettings";
 import { syncObjectViewContractWithCatalog } from "./syncProjectionWithCatalogFields";
 import { normalizeSortRulesArray } from "./sortRulesUtils";
@@ -48,10 +50,15 @@ export function legacyProjectionToFieldKeys(projection) {
       ? projection.title_field.trim()
       : null;
 
+  const infoFieldKeys = Array.isArray(projection.info_field_keys)
+    ? projection.info_field_keys.map((key) => String(key || "").trim()).filter(Boolean)
+    : [];
+
   return {
     fieldKeys,
     fieldOrder: fieldOrder.length ? fieldOrder : fieldKeys,
     titleFieldKey,
+    infoFieldKeys,
   };
 }
 
@@ -273,6 +280,7 @@ export function normalizeObjectViewDefinition(rawView, fallback = {}) {
       key: viewKey,
       name: String(rawView?.name || objectView?.name || viewKey),
       projection: legacyProjection,
+      roleMapping: normalizeRoleMapping(objectView?.roleMapping),
       query: {
         ...DEFAULT_OBJECT_VIEW_QUERY,
         filters: {
@@ -299,6 +307,12 @@ export function normalizeObjectViewDefinition(rawView, fallback = {}) {
           { preserveExactColumnOrder: true },
         ),
         card: objectView?.presentation?.card || null,
+        plan: normalizePlanPresentation(objectView?.presentation?.plan),
+        quickForm:
+          objectView?.presentation?.quickForm &&
+          typeof objectView.presentation.quickForm === "object"
+            ? { ...objectView.presentation.quickForm }
+            : null,
       },
       meta: {
         isSystem: Boolean(rawView?.is_system ?? rawView?.isSystem),
@@ -328,12 +342,46 @@ function mergeObjectViewContract(base, objectView, rawView, fallback = {}) {
     projection.fieldKeys = runtimeProjection.fieldKeys;
     projection.fieldOrder = runtimeProjection.fieldOrder;
     projection.titleFieldKey = runtimeProjection.titleFieldKey;
+    if (!Array.isArray(projection.infoFieldKeys)) {
+      projection.infoFieldKeys = runtimeProjection.infoFieldKeys;
+    }
+  }
+
+  const legacySettingsProjection = legacyProjectionToFieldKeys(settings.projection);
+
+  let infoFieldKeys = [];
+
+  if (Array.isArray(projection.infoFieldKeys)) {
+    infoFieldKeys = projection.infoFieldKeys
+      .map((key) => String(key || "").trim())
+      .filter(Boolean);
+  } else if (Array.isArray(settings.projection?.info_field_keys)) {
+    infoFieldKeys = settings.projection.info_field_keys
+      .map((key) => String(key || "").trim())
+      .filter(Boolean);
+  } else if (legacySettingsProjection.infoFieldKeys.length) {
+    infoFieldKeys = legacySettingsProjection.infoFieldKeys;
+  }
+
+  const fieldKeySet = new Set(
+    (Array.isArray(projection.fieldKeys) ? projection.fieldKeys : [])
+      .map((key) => String(key || "").trim())
+      .filter(Boolean),
+  );
+
+  if (infoFieldKeys.length && fieldKeySet.size) {
+    infoFieldKeys = infoFieldKeys.filter((key) => fieldKeySet.has(key));
   }
 
   return {
     ...base,
     schemaVersion: OBJECT_VIEW_CONTRACT_SCHEMA_VERSION,
-    viewType: String(objectView.viewType || base.viewType),
+    viewType: String(
+      objectView.viewType ||
+        rawView?.view_type ||
+        rawView?.viewType ||
+        base.viewType,
+    ),
     key: String(objectView.key || rawView?.key || base.key),
     // ViewDefinition.name is source of truth for tab/breadcrumb label.
     name: String(rawView?.name || objectView.name || base.name),
@@ -346,7 +394,9 @@ function mergeObjectViewContract(base, objectView, rawView, fallback = {}) {
         typeof projection.titleFieldKey === "string"
           ? projection.titleFieldKey
           : null,
+      infoFieldKeys,
     },
+    roleMapping: normalizeRoleMapping(objectView.roleMapping ?? base.roleMapping),
     query: {
       filters: {
         conditions:
@@ -387,6 +437,14 @@ function mergeObjectViewContract(base, objectView, rawView, fallback = {}) {
         { preserveExactColumnOrder: true },
       ),
       card: objectView.presentation?.card || base.presentation?.card || null,
+      plan: normalizePlanPresentation(
+        objectView.presentation?.plan ?? base.presentation?.plan,
+      ),
+      quickForm:
+        objectView.presentation?.quickForm &&
+        typeof objectView.presentation.quickForm === "object"
+          ? { ...objectView.presentation.quickForm }
+          : base.presentation?.quickForm || null,
     },
     capabilities: {
       ...base.capabilities,

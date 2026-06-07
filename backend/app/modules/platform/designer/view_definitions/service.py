@@ -8,6 +8,11 @@ from sqlalchemy.orm import Session
 from app.modules.platform.designer.field_definitions.models import DesignerFieldDefinition
 from app.modules.platform.designer.object_types import repository as object_type_repository
 from app.modules.platform.designer.object_types.models import DesignerObjectType
+from app.modules.platform.designer.publish.object_view_contract import (
+    ensure_plan_object_view_scaffold,
+    preserve_object_tab_settings,
+    read_menu_in_tab_from_settings,
+)
 from app.modules.platform.designer.view_definitions import repository
 from app.modules.platform.designer.view_definitions.models import DesignerViewDefinition
 from app.modules.platform.designer.view_definitions.schemas import (
@@ -60,6 +65,7 @@ def _validate_projection_metadata(
     field_order = projection.get("field_order", None)
     title_field = projection.get("title_field", None)
     default_sort = projection.get("default_sort", None)
+    info_field_keys = projection.get("info_field_keys", None)
 
     if visible_fields is None:
         visible_fields_norm: list[str] = []
@@ -122,6 +128,18 @@ def _validate_projection_metadata(
 
         default_sort_norm = {"field": sort_field, "order": sort_order}
 
+    if info_field_keys is None:
+        info_field_keys_norm: list[str] | None = None
+    else:
+        if not isinstance(info_field_keys, list) or not all(
+            isinstance(x, str) for x in info_field_keys
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"{context}: info_field_keys должен быть list[str]",
+            )
+        info_field_keys_norm = info_field_keys
+
     # Fallback defaults (saved projection stays consistent with the contract)
     if not field_order_norm and visible_fields_norm:
         field_order_norm = list(visible_fields_norm)
@@ -132,6 +150,12 @@ def _validate_projection_metadata(
         "title_field": title_field_norm,
         "default_sort": default_sort_norm,
     }
+
+    if info_field_keys_norm is not None:
+        visible_set = set(visible_fields_norm)
+        normalized_projection["info_field_keys"] = [
+            key for key in info_field_keys_norm if key in visible_set
+        ]
 
     result = dict(settings_json)
     result["projection"] = normalized_projection
@@ -354,6 +378,11 @@ def create_view(
         settings_json=payload.settings_json or {},
         context=f"create_view({tenant_id}/{object_type_id})",
     )
+    settings_json = ensure_plan_object_view_scaffold(
+        settings_json,
+        view_key=payload.key,
+        view_type=payload.view_type.value,
+    )
 
     if repository.get_by_key(db, tenant_id, object_type_id, payload.key):
         raise HTTPException(
@@ -465,10 +494,27 @@ def update_view(
     if "sort_order" in updates:
         entity.sort_order = updates["sort_order"]
     if "settings_json" in updates:
-        entity.settings_json = _validate_projection_metadata(
-            settings_json=updates["settings_json"] or {},
-            context=f"update_view({tenant_id}/{view_id})",
+        next_settings = updates["settings_json"] or {}
+        if not isinstance(next_settings, dict):
+            next_settings = {}
+
+        menu_in_tab_input = read_menu_in_tab_from_settings(next_settings)
+        normalized_settings = ensure_plan_object_view_scaffold(
+            _validate_projection_metadata(
+                settings_json=next_settings,
+                context=f"update_view({tenant_id}/{view_id})",
+            ),
+            view_key=str(entity.key or ""),
+            view_type=str(entity.view_type or ""),
         )
+
+        if menu_in_tab_input is not None:
+            normalized_settings = {
+                **normalized_settings,
+                "tabSettings": {"menuInTab": bool(menu_in_tab_input)},
+            }
+
+        entity.settings_json = preserve_object_tab_settings(normalized_settings)
     if "layout_json" in updates:
         entity.layout_json = updates["layout_json"]
     if "filters_json" in updates:

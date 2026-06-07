@@ -5,11 +5,13 @@ import { getPublishedCatalog } from "../../designer/api/runtimeCatalogApi";
 import { getApiErrorMessage } from "../../designer/api/platformApiClient";
 import { buildObjectViewPayload } from "../services/buildObjectViewPayload";
 import { generateViewKey } from "../services/generateViewKey";
+import { logPlanDebug } from "../plan/planViewDebug.js";
 import { normalizeObjectViewDefinition } from "../services/normalizeObjectViewDefinition";
 import { normalizePresentationCard } from "../services/contractGuards";
 import { hasUsableCardLayout } from "../../objectEntities/services/resolveEntityCardPresentationLayout";
 import {
   isTableViewDefinition,
+  resolveActiveObjectTabView,
   resolveActiveTableView,
 } from "../services/resolveActiveView";
 import { mergePublishedAndUserTableViews } from "../table/preferences/mergePublishedAndUserTableViews";
@@ -26,6 +28,7 @@ import {
   canApplyOfficeDefaultUserView,
   hasExplicitOfficeRepresentationRequest,
   resolveInitialOfficeSelectedViewKey,
+  resolveOfficeObjectTabSelectionKey,
   shouldApplyRequestedRepresentationSelection,
 } from "../services/objectTabKeys";
 import {
@@ -112,6 +115,8 @@ export default function useObjectViewDefinitions({
   requestedViewKey = null,
   /** Office: explicit user representation key from route/UI (never object tab key) */
   requestedRepresentationKey = null,
+  /** Office/Portal: published object tab key (e.g. architecture plan tab) */
+  requestedObjectTabKey = null,
   pageSize = 20,
   mode = "data",
   source = null,
@@ -146,9 +151,13 @@ export default function useObjectViewDefinitions({
   const initialDefaultAppliedRef = useRef(false);
   const [selectedViewKey, setSelectedViewKey] = useState(() => {
     if (isOfficeUserViews && objectTypeKey && tenantId) {
-      return resolveInitialOfficeSelectedViewKey({
-        requestedRepresentationKey,
-      });
+      if (hasExplicitOfficeRepresentationRequest(requestedRepresentationKey)) {
+        return resolveInitialOfficeSelectedViewKey({
+          requestedRepresentationKey,
+        });
+      }
+
+      return resolveOfficeObjectTabSelectionKey(requestedObjectTabKey);
     }
 
     const normalized = String(requestedViewKey || "").trim();
@@ -209,6 +218,21 @@ export default function useObjectViewDefinitions({
 
       setTabLookupViews(publishedObjectTabViews);
       setPublishedTableViewKey(resolvePublishedTableViewKey(list));
+
+      for (const item of publishedObjectTabViews) {
+        const raw = item.raw;
+        if (String(raw?.view_type || "").trim().toLowerCase() !== "plan") {
+          continue;
+        }
+
+        logPlanDebug("PLAN_PUBLISH_CONTRACT", {
+          view_type: raw?.view_type,
+          view_key: raw?.key,
+          objectView_plan: raw?.settings_json?.objectView?.presentation?.plan ?? null,
+          hierarchyRelationKey:
+            item.contract?.presentation?.plan?.hierarchyRelationKey ?? null,
+        });
+      }
 
       let tableViews = publishedObjectTabViews.filter((item) =>
         isTableViewDefinition(item.raw),
@@ -273,6 +297,27 @@ export default function useObjectViewDefinitions({
     userManuallySelectedViewRef.current = true;
     setSelectedViewKey(normalized);
   }, [requestedViewKey, isOfficeUserViews]);
+
+  useEffect(() => {
+    if (!isOfficeUserViews) {
+      return;
+    }
+
+    if (hasExplicitOfficeRepresentationRequest(requestedRepresentationKey)) {
+      return;
+    }
+
+    const nextTabSelection = resolveOfficeObjectTabSelectionKey(requestedObjectTabKey);
+
+    setSelectedViewKey((current) => {
+      if (current === nextTabSelection) {
+        return current;
+      }
+
+      userManuallySelectedViewRef.current = !isTableBaseStateKey(nextTabSelection);
+      return nextTabSelection;
+    });
+  }, [isOfficeUserViews, requestedObjectTabKey, requestedRepresentationKey]);
 
   useEffect(() => {
     if (
@@ -360,8 +405,15 @@ export default function useObjectViewDefinitions({
       return null;
     }
 
-    // Office user views live in merged `views`, not in published-only tabLookupViews.
-    const lookupViews = fallbackViews.length ? fallbackViews : tabLookupViews;
+    const tabLookupSource = tabLookupViews.length ? tabLookupViews : fallbackViews;
+    const tabMatch = resolveActiveObjectTabView(tabLookupViews, selectedViewKey);
+
+    if (tabMatch) {
+      return tabMatch;
+    }
+
+    // Office user table representations live in merged `views`, not only tabLookupViews.
+    const lookupViews = fallbackViews.length ? fallbackViews : tabLookupSource;
 
     return resolveActiveTableView(lookupViews, selectedViewKey);
   }, [fallbackViews, tabLookupViews, selectedViewKey]);

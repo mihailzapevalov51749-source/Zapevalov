@@ -11,6 +11,7 @@ from app.modules.navigation.models import NavigationItem
 from app.modules.pages.models import Page
 from app.modules.sections.models import Section
 from app.modules.platform.designer.object_types.models import DesignerObjectType
+from app.modules.platform.designer.view_definitions.models import DesignerViewDefinition
 from app.modules.platform.designer.workspaces.models import DesignerWorkspace, DesignerWorkspaceTab
 from app.modules.platform.designer.workspaces.schemas import (
     DesignerWorkspaceCreate,
@@ -171,9 +172,62 @@ def _resolve_object_type_or_422(
     return object_type
 
 
+def _resolve_object_view_or_422(
+    db: Session,
+    *,
+    tenant_id: int,
+    object_type_id,
+    object_view_id,
+) -> DesignerViewDefinition:
+    view = (
+        db.query(DesignerViewDefinition)
+        .filter(
+            DesignerViewDefinition.id == object_view_id,
+            DesignerViewDefinition.tenant_id == tenant_id,
+            DesignerViewDefinition.object_type_id == object_type_id,
+            DesignerViewDefinition.deleted_at.is_(None),
+            DesignerViewDefinition.is_active.is_(True),
+        )
+        .first()
+    )
+    if view is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Вкладка объекта не найдена, неактивна или не принадлежит выбранному типу объекта",
+        )
+    return view
+
+
+def _resolve_object_tab_binding_or_422(
+    db: Session,
+    *,
+    tenant_id: int,
+    object_type_id,
+    object_view_id,
+) -> tuple[DesignerObjectType, DesignerViewDefinition]:
+    object_type = _resolve_object_type_or_422(
+        db,
+        tenant_id=tenant_id,
+        object_type_id=object_type_id,
+    )
+    if object_view_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Для вкладки типа object требуется object_view_id",
+        )
+    object_view = _resolve_object_view_or_422(
+        db,
+        tenant_id=tenant_id,
+        object_type_id=object_type.id,
+        object_view_id=object_view_id,
+    )
+    return object_type, object_view
+
+
 def _tab_to_read(
     tab: DesignerWorkspaceTab,
     object_type: DesignerObjectType | None = None,
+    object_view: DesignerViewDefinition | None = None,
     target_label: str | None = None,
 ) -> WorkspaceTabRead:
     return WorkspaceTabRead(
@@ -192,6 +246,9 @@ def _tab_to_read(
         object_type_id=tab.object_type_id,
         object_type_key=object_type.key if object_type is not None else None,
         object_type_name=object_type.name if object_type is not None else None,
+        object_view_id=tab.object_view_id,
+        object_view_key=object_view.key if object_view is not None else None,
+        object_view_name=object_view.name if object_view is not None else None,
         target_type=tab.target_type,
         target_id=tab.target_id,
         target_label=target_label,
@@ -234,14 +291,35 @@ def _build_workspace_tab_reads(
         for page in db.query(Page).filter(Page.id.in_(page_ids)).all():
             page_titles[str(page.id)] = page.title
 
+    view_ids = {tab.object_view_id for tab, _ in rows if tab.object_view_id is not None}
+    views_by_id: dict = {}
+    if view_ids:
+        for view in (
+            db.query(DesignerViewDefinition)
+            .filter(DesignerViewDefinition.id.in_(view_ids))
+            .all()
+        ):
+            views_by_id[view.id] = view
+
     result: list[WorkspaceTabRead] = []
     for tab, obj in rows:
         target_label = None
         if str(tab.tab_type or "") == "object":
-            target_label = obj.name if obj is not None else None
+            view = views_by_id.get(tab.object_view_id)
+            if view is not None:
+                target_label = f"{obj.name if obj is not None else 'Объект'} · {view.name}"
+            else:
+                target_label = obj.name if obj is not None else None
         elif str(tab.tab_type or "") == "page":
             target_label = page_titles.get(str(tab.target_id or ""))
-        result.append(_tab_to_read(tab, obj, target_label))
+        result.append(
+            _tab_to_read(
+                tab,
+                obj,
+                views_by_id.get(tab.object_view_id),
+                target_label,
+            )
+        )
     return result
 
 
@@ -879,21 +957,24 @@ def create_workspace_tab(
         target_label = None
 
         object_type_id = None
+        object_view_id = None
         if tab_type == "object":
             if payload.object_type_id is None:
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     detail="Для вкладки типа object требуется object_type_id",
                 )
-            object_type = _resolve_object_type_or_422(
+            object_type, object_view = _resolve_object_tab_binding_or_422(
                 db,
                 tenant_id=tenant_id,
                 object_type_id=payload.object_type_id,
+                object_view_id=payload.object_view_id,
             )
-            object_type_id = payload.object_type_id
+            object_type_id = object_type.id
+            object_view_id = object_view.id
             target_type = "object"
-            target_id = str(object_type.id)
-            target_label = object_type.name
+            target_id = str(object_view.id)
+            target_label = f"{object_type.name} · {object_view.name}"
         elif tab_type == "page":
             if payload.create_new_page:
                 new_page_title = (payload.new_page_title or payload.title or "").strip()
@@ -945,6 +1026,7 @@ def create_workspace_tab(
             is_system=False,
             is_visible=payload.is_visible,
             object_type_id=object_type_id,
+            object_view_id=object_view_id,
             tab_type=tab_type,
             target_type=target_type,
             target_id=target_id,
@@ -954,7 +1036,14 @@ def create_workspace_tab(
         db.add(tab)
         db.commit()
         db.refresh(tab)
-        return _tab_to_read(tab, object_type, target_label)
+        object_view = (
+            db.query(DesignerViewDefinition)
+            .filter(DesignerViewDefinition.id == tab.object_view_id)
+            .first()
+            if tab.object_view_id is not None
+            else None
+        )
+        return _tab_to_read(tab, object_type, object_view, target_label)
     except Exception:
         db.rollback()
         raise
@@ -1007,21 +1096,33 @@ def update_workspace_tab(
     tab.tab_type = next_tab_type
 
     next_object_type_id = tab.object_type_id
+    next_object_view_id = tab.object_view_id
     next_target_type = payload.target_type if payload.target_type is not None else tab.target_type
     next_target_id = (payload.target_id if payload.target_id is not None else tab.target_id) or None
     next_url = (payload.url if payload.url is not None else tab.url) or None
     next_open_in_new_tab = bool(payload.open_in_new_tab) if payload.open_in_new_tab is not None else bool(tab.open_in_new_tab)
 
     if next_tab_type == "object":
-        if payload.object_type_id is not None:
-            object_type = _resolve_object_type_or_422(db, tenant_id=tenant_id, object_type_id=payload.object_type_id)
-            next_object_type_id = object_type.id
-            next_target_id = str(object_type.id)
-        elif next_object_type_id is None:
+        resolved_object_type_id = (
+            payload.object_type_id if payload.object_type_id is not None else next_object_type_id
+        )
+        resolved_object_view_id = (
+            payload.object_view_id if payload.object_view_id is not None else next_object_view_id
+        )
+        if resolved_object_type_id is None:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Для вкладки типа object требуется object_type_id",
             )
+        object_type, object_view = _resolve_object_tab_binding_or_422(
+            db,
+            tenant_id=tenant_id,
+            object_type_id=resolved_object_type_id,
+            object_view_id=resolved_object_view_id,
+        )
+        next_object_type_id = object_type.id
+        next_object_view_id = object_view.id
+        next_target_id = str(object_view.id)
         next_target_type = "object"
         next_url = None
     elif next_tab_type == "page":
@@ -1032,23 +1133,28 @@ def update_workspace_tab(
             )
         _resolve_page_or_422(db, tenant_id=tenant_id, page_id=int(str(next_target_id)))
         next_object_type_id = None
+        next_object_view_id = None
         next_target_type = "page"
         next_url = None
     elif next_tab_type == "link":
         next_object_type_id = None
+        next_object_view_id = None
         next_target_id = None
         next_target_type = "url"
         next_url = _normalize_link_url(str(next_url or ""))
     elif next_tab_type == "group":
         next_object_type_id = None
+        next_object_view_id = None
         next_target_id = None
         next_target_type = "group"
         next_url = None
     else:
         next_object_type_id = None
+        next_object_view_id = None
         next_target_type = next_target_type or next_tab_type
 
     tab.object_type_id = next_object_type_id
+    tab.object_view_id = next_object_view_id
     tab.target_type = next_target_type
     tab.target_id = str(next_target_id) if next_target_id is not None else None
     tab.url = next_url
@@ -1057,6 +1163,7 @@ def update_workspace_tab(
     db.commit()
     db.refresh(tab)
     object_type = None
+    object_view = None
     if tab.object_type_id is not None:
         object_type = (
             db.query(DesignerObjectType)
@@ -1066,13 +1173,22 @@ def update_workspace_tab(
             )
             .first()
         )
+    if tab.object_view_id is not None:
+        object_view = (
+            db.query(DesignerViewDefinition)
+            .filter(DesignerViewDefinition.id == tab.object_view_id)
+            .first()
+        )
     target_label = None
     if tab.tab_type == "object":
-        target_label = object_type.name if object_type is not None else None
+        if object_type is not None and object_view is not None:
+            target_label = f"{object_type.name} · {object_view.name}"
+        else:
+            target_label = object_type.name if object_type is not None else None
     elif tab.tab_type == "page" and str(tab.target_id or "").isdigit():
         page = db.query(Page).filter(Page.id == int(str(tab.target_id))).first()
         target_label = page.title if page is not None else None
-    return _tab_to_read(tab, object_type, target_label)
+    return _tab_to_read(tab, object_type, object_view, target_label)
 
 
 def delete_workspace_tab(

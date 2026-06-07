@@ -1,7 +1,7 @@
 import { isFileFieldType } from "../../../shared/files/attachments/utils/attachmentFileTypes.js";
 import { isCreatableFieldType } from "../../../shared/fieldEditors/fieldEditorRegistry.js";
-import { catalogFieldToFieldDef } from "../table/services/adapters/catalogFieldToFieldDef.js";
 import { findCatalogObjectType } from "../table/services/adapters/ObjectTypeTableAdapter.js";
+import { mapFieldForCreateForm } from "./mapFieldForCreateForm.js";
 import { resolveTitleFieldKey } from "./resolveTitleFieldKey.js";
 
 function normalizeKey(value) {
@@ -9,6 +9,9 @@ function normalizeKey(value) {
 }
 
 /**
+ * @deprecated Use resolveQuickFormFields() with resolveActiveQuickFormView().
+ * Legacy fallback during quick_form migration — reads field.quick_create.
+ *
  * Fields for Platform Quick Create Form (title field always included).
  *
  * @param {Record<string, unknown> | null | undefined} catalog
@@ -42,7 +45,7 @@ export function getQuickCreateFields(catalog, objectTypeKey) {
 
     const rawType = String(field.field_type || field.type || "").trim().toLowerCase();
 
-    if (isFileFieldType(rawType) || rawType === "relation") {
+    if (isFileFieldType(rawType)) {
       continue;
     }
 
@@ -57,21 +60,16 @@ export function getQuickCreateFields(catalog, objectTypeKey) {
       continue;
     }
 
-    const fieldDef = catalogFieldToFieldDef(field);
+    const mappedField = mapFieldForCreateForm(field, {
+      isRequired: includeTitle ? true : Boolean(field.is_required ?? field.isRequired),
+      isTitleField: includeTitle,
+    });
 
-    if (!fieldDef) {
+    if (!mappedField) {
       continue;
     }
 
-    selected.set(key, {
-      ...fieldDef,
-      rawFieldType: rawType,
-      type:
-        rawType === "multi_choice" ? "choice" : fieldDef.type,
-      multiple: rawType === "multi_choice" || fieldDef.multiple,
-      isRequired: includeTitle ? true : fieldDef.isRequired,
-      isTitleField: includeTitle,
-    });
+    selected.set(key, mappedField);
   }
 
   const ordered = [...selected.values()];

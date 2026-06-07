@@ -1,5 +1,7 @@
 import hashlib
 import json
+import logging
+import os
 from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
@@ -7,7 +9,16 @@ from uuid import UUID
 from app.modules.platform.designer.publish.draft_loader import TenantDraftCatalog
 from app.modules.platform.designer.publish.object_view_contract import (
     normalize_settings_json_for_publish,
+    preserve_object_tab_settings,
 )
+
+logger = logging.getLogger(__name__)
+
+_MENU_IN_TAB_DEBUG = os.environ.get("YASNOPRO_DEBUG_MENU_IN_TAB", "").lower() in {
+    "1",
+    "true",
+    "yes",
+}
 
 
 SCHEMA_VERSION = 1
@@ -19,6 +30,7 @@ def _serialize_field(field) -> dict[str, Any]:
         "key": field.key,
         "name": field.name,
         "description": field.description,
+        "placeholder": field.placeholder,
         "field_type": field.field_type,
         "sort_order": field.sort_order,
         "is_required": field.is_required,
@@ -46,6 +58,28 @@ def _serialize_view(
             view_type=str(view.view_type or ""),
             field_keys=field_keys,
             ordered_field_keys=ordered_field_keys,
+        )
+    else:
+        settings_json = preserve_object_tab_settings(
+            settings_json if isinstance(settings_json, dict) else {},
+        )
+
+    if _MENU_IN_TAB_DEBUG:
+        tab_settings = (
+            settings_json.get("tabSettings")
+            if isinstance(settings_json, dict)
+            else None
+        )
+        menu_in_tab = (
+            tab_settings.get("menuInTab")
+            if isinstance(tab_settings, dict)
+            else None
+        )
+        logger.warning(
+            "MENU_IN_TAB_PUBLISH_CONTRACT view_key=%s menuInTab=%s tabSettings=%s",
+            view.key,
+            menu_in_tab,
+            tab_settings,
         )
 
     return {

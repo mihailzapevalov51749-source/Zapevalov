@@ -169,6 +169,7 @@ export default function PortalLayout({
       <AppShellFrame
         headerContract={headerContract}
         sidebarContract={runtimeSidebarContract}
+        platformZone="office"
         sidebarCollapsed={sidebarCollapsed}
         onToggleSidebarCollapse={toggleSidebarCollapsed}
         workspace={workspace}

@@ -250,6 +250,16 @@
   gap: 8px;
 }
 
+.designer-view-form__section-divider {
+  margin: 16px 0;
+  border: 0;
+  border-top: 1px solid var(--designer-border, #e2e8f0);
+}
+
+.designer-object-projection-panel + .designer-view-form__section-divider {
+  margin-top: 12px;
+}
+
 .designer-view-properties-panel__footer-actions {
   display: flex;
   align-items: center;

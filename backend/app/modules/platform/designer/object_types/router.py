@@ -13,6 +13,7 @@ from app.modules.platform.designer.object_types.menu_placements.router import (
 )
 from app.modules.platform.designer.object_types.schemas import (
     ObjectTypeCreate,
+    ObjectTypeDeletePreviewRead,
     ObjectTypeListItem,
     ObjectTypeRead,
     ObjectTypeUpdate,
@@ -60,6 +61,15 @@ def get_object_type(
     db: Session = Depends(get_db),
 ):
     return service.get_object_type(db, tenant_id, object_type_id)
+
+
+@router.get("/{object_type_id}/delete-preview", response_model=ObjectTypeDeletePreviewRead)
+def get_object_type_delete_preview(
+    tenant_id: TenantIdPath,
+    object_type_id: UUID,
+    db: Session = Depends(get_db),
+):
+    return service.get_object_type_delete_preview(db, tenant_id, object_type_id)
 
 
 @router.patch("/{object_type_id}", response_model=ObjectTypeRead)

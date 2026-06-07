@@ -4,12 +4,13 @@ from sqlalchemy.orm import Session
 
 from app.modules.platform.designer.object_types.models import DesignerObjectType
 from app.modules.navigation.models import NavigationItem
+from app.modules.navigation.schemas import NavigationItemResponse, NavigationTreeItem
 from app.modules.navigation.page_navigation_visibility import (
     effective_navigation_is_visible,
     load_page_status_map_for_items,
     page_status_for_navigation_item,
 )
-from app.modules.navigation.schemas import NavigationItemResponse, NavigationTreeItem
+from app.modules.platform.shared.object_type_settings import resolve_show_in_navigation
 
 OBJECT_TYPE_NAV_TYPE = "object_type"
 METADATA_FIELDS_BLOCKED_ON_OBJECT_TYPE = frozenset(
@@ -67,6 +68,8 @@ def enrich_navigation_item(
         payload.display_icon_type = object_type.icon_type
         payload.display_icon_file_url = object_type.icon_file_url
         payload.display_color = object_type.color
+        if not resolve_show_in_navigation(object_type.settings_json):
+            payload.is_visible = False
 
     return payload
 

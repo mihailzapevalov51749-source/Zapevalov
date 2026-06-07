@@ -123,11 +123,22 @@ STAGE_CANONICAL: dict[str, dict[str, list[str]]] = {
             "Понятная граница Studio и runtime",
             "Управление жизненным циклом типа объекта",
             "UI Framework: единый стандарт модальных окон (PlatformModal)",
+            "Studio/Office: цветовые зоны акцента (purple/blue)",
             "Корзина платформы: soft delete, восстановление и окончательное удаление",
             "Runtime-контракт статусов страниц (draft/published/hidden)",
             "Места публикации страниц и скрытие hidden в пользовательских меню",
             "Единый источник истины видимости страниц (pages.status)",
             "Нормализация существующих страниц под новый контракт публикации",
+            "Разделение публикации объекта и отображения в навигации (show_in_navigation)",
+            "Привязка вкладок пространства к конкретным вкладкам объекта (object_view_id)",
+            "Значение по умолчанию в модалке создания поля (CreateFieldModal + DefaultValueEditor)",
+            "Подсказка поля (placeholder): настройка в Studio и отображение в формах ввода",
+            "Create Relation Modal: фиксированный footer и кнопка «Создать связь»",
+            "PlatformModalHelp: всплывающая справка в footer модалок",
+            "Studio Preview: синхронизация draft-вкладок после создания",
+            "Plan view: единый renderer в Preview и Office",
+            "Relation field create: auto role/cardinality без 422",
+            "Object Tab: настройка «Меню во вкладке» (menuInTab)",
         ],
         "completion_criteria": [
             "Studio — единая точка настройки object platform",
@@ -166,6 +177,7 @@ STAGE_CANONICAL: dict[str, dict[str, list[str]]] = {
             "Аналитика связей",
             "Миграция UT parent_row_id",
             "Tree View для Object Platform",
+            'Реализовать представление объекта "План"',
             "Безопасное удаление с подзадачами (Object Table)",
             "ViewEngineRowMenu (строковое меню Object Table)",
             "Терминология иерархической связи (Studio + Object Table)",
@@ -477,6 +489,679 @@ def _page_publication_places_complete(ctx: ScanContext) -> bool:
         and "filter_navigation_for_user_menu" in nav_service_text
         and "Места публикации" in pages_panel_text
         and "collectPublicationPaths" in pages_utils_text
+    )
+
+
+def _object_type_publish_navigation_decoupling_complete(ctx: ScanContext) -> bool:
+    settings_text = _backend_evidence_text(ctx, "modules/platform/shared/object_type_settings.py")
+    enrichment_text = _backend_evidence_text(ctx, "modules/navigation/enrichment.py")
+    publish_text = _frontend_evidence_text(ctx, "modules/designer/utils/objectTypePublishState.js")
+    general_tab_text = _frontend_evidence_text(ctx, "modules/designer/components/tabs/GeneralTab.jsx")
+    if not settings_text or not enrichment_text or not publish_text or not general_tab_text:
+        return False
+    return (
+        "resolve_show_in_navigation" in settings_text
+        and "show_in_navigation" in enrichment_text
+        and "publish-catalog" in publish_text
+        and "Отображать в навигации" in general_tab_text
+    )
+
+
+def _workspace_object_view_tab_binding_complete(ctx: ScanContext) -> bool:
+    model_text = _backend_evidence_text(ctx, "modules/platform/designer/workspaces/models.py")
+    service_text = _backend_evidence_text(ctx, "modules/platform/designer/workspaces/service.py")
+    workspace_ui_text = _frontend_evidence_text(
+        ctx,
+        "modules/designer/pages/DesignerWorkspaceDetailPage.jsx",
+    )
+    runtime_text = _frontend_evidence_text(ctx, "portal/PortalWorkspaceRuntimePage.jsx")
+    if not model_text or not service_text or not workspace_ui_text or not runtime_text:
+        return False
+    return (
+        "object_view_id" in model_text
+        and "_resolve_object_view_or_422" in service_text
+        and "listPublishedObjectViewsForWorkspace" in workspace_ui_text
+        and "object_view_key" in runtime_text
+    )
+
+
+def _create_field_modal_default_value_complete(ctx: ScanContext) -> bool:
+    modal_text = _frontend_evidence_text(ctx, "modules/designer/components/fields/CreateFieldModal.jsx")
+    editor_text = _frontend_evidence_text(
+        ctx,
+        "modules/designer/components/fields/defaultValue/DefaultValueEditor.jsx",
+    )
+    if not modal_text or not editor_text:
+        return False
+    return (
+        "DefaultValueEditor" in modal_text
+        and "buildDefaultValuePayload" in modal_text
+        and "emptyDefaultValue" in modal_text
+        and "Значение по умолчанию" in editor_text
+    )
+
+
+def _field_placeholder_support_complete(ctx: ScanContext) -> bool:
+    panel_text = _frontend_evidence_text(
+        ctx,
+        "modules/designer/components/fields/FieldPropertiesPanel.jsx",
+    )
+    adapter_text = _frontend_evidence_text(
+        ctx,
+        "modules/objectViews/table/services/adapters/catalogFieldToFieldDef.js",
+    )
+    field_editor_text = _frontend_evidence_text(ctx, "shared/fieldEditors/FieldEditor.jsx")
+    text_editor_text = _frontend_evidence_text(
+        ctx,
+        "shared/fieldEditors/editors/TextFieldEditor.jsx",
+    )
+    model_text = _backend_evidence_text(
+        ctx,
+        "modules/platform/designer/field_definitions/models.py",
+    )
+    snapshot_text = _backend_evidence_text(
+        ctx,
+        "modules/platform/designer/publish/snapshot_builder.py",
+    )
+    if (
+        not panel_text
+        or not adapter_text
+        or not field_editor_text
+        or not text_editor_text
+        or not model_text
+        or not snapshot_text
+    ):
+        return False
+    return (
+        "field-prop-placeholder" in panel_text
+        and "Подсказка" in panel_text
+        and "placeholder" in adapter_text
+        and "resolveFieldPlaceholder" in field_editor_text
+        and "placeholder={placeholder" in text_editor_text
+        and "placeholder = Column" in model_text
+        and '"placeholder": field.placeholder' in snapshot_text
+    )
+
+
+def _platform_modal_footer_layout_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    shell = frontend / "shared" / "platformModal" / "PlatformModalShell.jsx"
+    styles = frontend / "shared" / "platformModal" / "platformModalStyles.js"
+    footer_css = frontend / "shared" / "platformModal" / "platformModalFooter.css"
+    layout = frontend / "shared" / "platformModal" / "usePlatformModalLayout.js"
+    modal = frontend / "shared" / "platformModal" / "PlatformModal.jsx"
+
+    if not all(path.is_file() for path in (shell, styles, footer_css, layout, modal)):
+        return False
+
+    shell_text = shell.read_text(encoding="utf-8", errors="ignore")
+    styles_text = styles.read_text(encoding="utf-8", errors="ignore")
+    footer_css_text = footer_css.read_text(encoding="utf-8", errors="ignore")
+    layout_text = layout.read_text(encoding="utf-8", errors="ignore")
+    modal_text = modal.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "data-platform-modal-footer" in shell_text
+        and "data-platform-modal-body" in shell_text
+        and "PLATFORM_MODAL_FOOTER_RESERVE_PX" in styles_text
+        and "PLATFORM_MODAL_FOOTER_SAFE_MIN_WIDTH" in styles_text
+        and "PLATFORM_MODAL_RESIZE_HANDLE_Z_INDEX" in styles_text
+        and "data-platform-modal-resize-handle" in shell_text
+        and "platform-modal-footer__actions" in footer_css_text
+        and "platform-modal-footer__help-btn" in footer_css_text
+        and "minWidth: readBoundNumber(defaultBoundsRef.current?.minWidth" in layout_text
+        and "PLATFORM_MODAL_FOOTER_SAFE_MIN_WIDTH" in modal_text
+    )
+
+
+def _platform_modal_resize_handles_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    shell = frontend / "shared" / "platformModal" / "PlatformModalShell.jsx"
+    styles = frontend / "shared" / "platformModal" / "platformModalStyles.js"
+    layout = frontend / "shared" / "platformModal" / "usePlatformModalLayout.js"
+    shell_test = frontend / "shared" / "platformModal" / "platformModalShell.test.js"
+
+    if not all(path.is_file() for path in (shell, styles, layout, shell_test)):
+        return False
+
+    shell_text = shell.read_text(encoding="utf-8", errors="ignore")
+    styles_text = styles.read_text(encoding="utf-8", errors="ignore")
+    layout_text = layout.read_text(encoding="utf-8", errors="ignore")
+    test_text = shell_test.read_text(encoding="utf-8", errors="ignore")
+
+    footer_z = styles_text.find("PLATFORM_MODAL_FOOTER_Z_INDEX = ")
+    resize_z = styles_text.find("PLATFORM_MODAL_RESIZE_HANDLE_Z_INDEX = ")
+    if footer_z < 0 or resize_z < 0:
+        return False
+
+    footer_value = int(
+        styles_text[footer_z:]
+        .split("PLATFORM_MODAL_FOOTER_Z_INDEX = ", 1)[1]
+        .split("\n", 1)[0]
+        .strip()
+        .rstrip(";")
+    )
+    resize_value = int(
+        styles_text[resize_z:]
+        .split("PLATFORM_MODAL_RESIZE_HANDLE_Z_INDEX = ", 1)[1]
+        .split("\n", 1)[0]
+        .strip()
+        .rstrip(";")
+    )
+
+    return (
+        resize_value > footer_value
+        and "data-platform-modal-resize-handle" in shell_text
+        and "startResize" in layout_text
+        and "resize handle z-index above footer" in test_text
+        and "footerReservePx" not in shell_text
+        and "PLATFORM_MODAL_RESIZE_GRIP_SIZE_PX" in styles_text
+    )
+
+
+def _office_object_record_create_modal_resize_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    quick_create = frontend / "shared" / "quickCreate" / "PlatformQuickCreateForm.jsx"
+    keys = frontend / "shared" / "quickCreate" / "platformQuickCreateModalKeys.js"
+    entity_card = frontend / "modules" / "objectEntities" / "hooks" / "useObjectEntityCard.js"
+    table_view = frontend / "modules" / "objectViews" / "table" / "ObjectTableView.jsx"
+    quick_test = frontend / "shared" / "quickCreate" / "platformQuickCreateModal.test.js"
+
+    if not all(path.is_file() for path in (quick_create, keys, entity_card, table_view, quick_test)):
+        return False
+
+    quick_text = quick_create.read_text(encoding="utf-8", errors="ignore")
+    keys_text = keys.read_text(encoding="utf-8", errors="ignore")
+    entity_text = entity_card.read_text(encoding="utf-8", errors="ignore")
+    table_text = table_view.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "platform-modal-footer" in quick_text
+        and "canCustomizeLayout" in quick_text
+        and "buildOfficeObjectRecordCreateModalKey" in keys_text
+        and "buildOfficeObjectRecordCreateModalKey" in entity_text
+        and "canCustomizeLayout" in table_text
+        and "PlatformQuickCreateForm" in table_text
+    )
+
+
+def _platform_accent_zones_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    tokens = frontend / "shared" / "platformAccent" / "platformAccentTokens.css"
+    zone_js = frontend / "shared" / "platformAccent" / "platformZone.js"
+    tracker = frontend / "shared" / "platformAccent" / "PlatformZoneTracker.jsx"
+    shell = frontend / "shared" / "platformModal" / "PlatformModalShell.jsx"
+    footer_css = frontend / "shared" / "platformModal" / "platformModalFooter.css"
+    create_view_css = (
+        frontend
+        / "modules"
+        / "designer"
+        / "components"
+        / "views"
+        / "createObjectViewModal.css"
+    )
+    quick_create_css = frontend / "shared" / "quickCreate" / "platformQuickCreateModal.css"
+    app = frontend / "App.jsx"
+
+    if not all(
+        path.is_file()
+        for path in (tokens, zone_js, tracker, shell, footer_css, create_view_css, quick_create_css, app)
+    ):
+        return False
+
+    tokens_text = tokens.read_text(encoding="utf-8", errors="ignore")
+    zone_text = zone_js.read_text(encoding="utf-8", errors="ignore")
+    tracker_text = tracker.read_text(encoding="utf-8", errors="ignore")
+    shell_text = shell.read_text(encoding="utf-8", errors="ignore")
+    footer_css_text = footer_css.read_text(encoding="utf-8", errors="ignore")
+    create_view_css_text = create_view_css.read_text(encoding="utf-8", errors="ignore")
+    quick_create_css_text = quick_create_css.read_text(encoding="utf-8", errors="ignore")
+    app_text = app.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        '[data-platform-zone="studio"]' in tokens_text
+        and '[data-platform-zone="office"]' in tokens_text
+        and "--platform-accent:" in tokens_text
+        and "resolvePlatformZoneFromPathname" in zone_text
+        and "PlatformZoneTracker" in tracker_text
+        and "PlatformZoneTracker" in app_text
+        and "data-platform-zone={platformZone}" in shell_text
+        and "var(--platform-accent-muted)" in footer_css_text
+        and "var(--platform-accent-active-bg)" in create_view_css_text
+        and "var(--platform-accent)" in quick_create_css_text
+        and "#7c3aed" not in quick_create_css_text
+    )
+
+
+def _platform_modal_standard_min_width_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    styles = frontend / "shared" / "platformModal" / "platformModalStyles.js"
+    layout = frontend / "shared" / "platformModal" / "usePlatformModalLayout.js"
+    modal = frontend / "shared" / "platformModal" / "PlatformModal.jsx"
+    min_width_test = frontend / "shared" / "platformModal" / "platformModalMinWidth.test.js"
+    quick_keys = frontend / "shared" / "quickCreate" / "platformQuickCreateModalKeys.js"
+
+    if not all(path.is_file() for path in (styles, layout, modal, min_width_test, quick_keys)):
+        return False
+
+    styles_text = styles.read_text(encoding="utf-8", errors="ignore")
+    layout_text = layout.read_text(encoding="utf-8", errors="ignore")
+    modal_text = modal.read_text(encoding="utf-8", errors="ignore")
+    quick_text = quick_keys.read_text(encoding="utf-8", errors="ignore")
+
+    standard_value = None
+    for line in styles_text.splitlines():
+        if "PLATFORM_MODAL_STANDARD_MIN_WIDTH" in line and "=" in line:
+            token = line.split("=", 1)[1].strip().rstrip(";")
+            if token.isdigit():
+                standard_value = int(token)
+                break
+            if "FOOTER_SAFE" in token:
+                standard_value = 300
+                break
+
+    return (
+        standard_value == 300
+        and "resolvePlatformModalMinWidth" in layout_text
+        and 'layoutPreset = "standard"' in modal_text
+        and "layoutPreset=\"compact\"" in (
+            frontend / "modules" / "objectViews" / "table" / "components" / "ObjectEntityDeleteModalBase.jsx"
+        ).read_text(encoding="utf-8", errors="ignore")
+        and "PLATFORM_MODAL_FOOTER_SAFE_MIN_WIDTH = 300" in styles_text
+    )
+
+
+def _platform_modal_help_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    help_component = frontend / "shared" / "platformModal" / "PlatformModalHelp.jsx"
+    help_css = frontend / "shared" / "platformModal" / "platformModalHelp.css"
+    modal_index = frontend / "shared" / "platformModal" / "index.js"
+    create_view_modal = (
+        frontend / "modules" / "designer" / "components" / "views" / "CreateObjectViewModal.jsx"
+    )
+    modal_standard = ctx.repo_root / "docs" / "architecture" / "YASNOPRO_PLATFORM_MODAL_STANDARD.md"
+
+    if not all(
+        path.is_file()
+        for path in (help_component, help_css, modal_index, create_view_modal, modal_standard)
+    ):
+        return False
+
+    help_text = help_component.read_text(encoding="utf-8", errors="ignore")
+    help_css_text = help_css.read_text(encoding="utf-8", errors="ignore")
+    index_text = modal_index.read_text(encoding="utf-8", errors="ignore")
+    create_view_text = create_view_modal.read_text(encoding="utf-8", errors="ignore")
+    standard_text = modal_standard.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "PlatformModalHelp" in help_text
+        and 'role="tooltip"' in help_text
+        and "onMouseEnter={show}" in help_text
+        and 'event.key !== "Escape"' in help_text
+        and "platform-modal-help__card" in help_css_text
+        and "PlatformModalHelp" in index_text
+        and "<PlatformModalHelp" in create_view_text
+        and "window.alert" not in create_view_text
+        and "Footer help" in standard_text
+        and "PlatformModalHelp" in standard_text
+    )
+
+
+def _studio_object_view_draft_preview_sync_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    schema_changed = (
+        frontend / "modules" / "designer" / "utils" / "designerObjectSchemaChanged.js"
+    )
+    preview_context = (
+        frontend / "modules" / "designer" / "context" / "ObjectTypePreviewTabContext.jsx"
+    )
+    views_tab = frontend / "modules" / "designer" / "components" / "tabs" / "ViewsTab.jsx"
+    workspace = frontend / "modules" / "designer" / "pages" / "ObjectTypeWorkspacePage.jsx"
+
+    if not all(path.is_file() for path in (schema_changed, preview_context, views_tab, workspace)):
+        return False
+
+    schema_text = schema_changed.read_text(encoding="utf-8", errors="ignore")
+    preview_text = preview_context.read_text(encoding="utf-8", errors="ignore")
+    views_text = views_tab.read_text(encoding="utf-8", errors="ignore")
+    workspace_text = workspace.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "dispatchDesignerObjectSchemaChanged" in schema_text
+        and "DESIGNER_OBJECT_SCHEMA_CHANGED_EVENT" in preview_text
+        and "onSchemaChanged?.({ viewKey" in views_text
+        and "previewTab?.selectView" in views_text
+        and "schemaRevision" in workspace_text
+        and "hasStudioUnpublishedChanges" in workspace_text
+    )
+
+
+def _plan_view_renderer_routing_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    resolve_active = frontend / "modules" / "objectViews" / "services" / "resolveActiveView.js"
+    definitions = frontend / "modules" / "objectViews" / "hooks" / "useObjectViewDefinitions.js"
+    host = frontend / "modules" / "objectViews" / "ObjectViewHost.jsx"
+    preview = frontend / "modules" / "designer" / "components" / "tabs" / "RuntimePreviewTab.jsx"
+    plan_view = frontend / "modules" / "objectViews" / "plan" / "ObjectPlanView.jsx"
+    empty_state = frontend / "modules" / "objectViews" / "plan" / "PlanViewEmptyState.jsx"
+
+    if not all(
+        path.is_file()
+        for path in (resolve_active, definitions, host, preview, plan_view, empty_state)
+    ):
+        return False
+
+    resolve_text = resolve_active.read_text(encoding="utf-8", errors="ignore")
+    definitions_text = definitions.read_text(encoding="utf-8", errors="ignore")
+    host_text = host.read_text(encoding="utf-8", errors="ignore")
+    preview_text = preview.read_text(encoding="utf-8", errors="ignore")
+    plan_text = plan_view.read_text(encoding="utf-8", errors="ignore")
+    empty_text = empty_state.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "resolveActiveObjectTabView" in resolve_text
+        and "resolveActiveObjectTabView" in definitions_text
+        and "Math.max(pageSize, 1000)" not in host_text
+        and "viewType={selectedView?.view_type" in preview_text
+        and "PlanViewEmptyState" in plan_text
+        and "Настройте представление «План»" in empty_text
+    )
+
+
+def _plan_view_publish_runtime_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    backend = ctx.repo_root / "backend" / "app" / "modules" / "platform" / "designer"
+
+    sync_plan = frontend / "modules" / "designer" / "utils" / "syncPlanViewSettings.js"
+    create_utils = (
+        frontend / "modules" / "designer" / "components" / "views" / "createObjectViewModalUtils.js"
+    )
+    payload = frontend / "modules" / "objectViews" / "services" / "buildObjectViewPayload.js"
+    views_tab = frontend / "modules" / "designer" / "components" / "tabs" / "ViewsTab.jsx"
+    workspace = frontend / "modules" / "designer" / "pages" / "ObjectTypeWorkspacePage.jsx"
+    contract = backend / "publish" / "object_view_contract.py"
+    view_service = backend / "view_definitions" / "service.py"
+
+    if not all(
+        path.is_file()
+        for path in (
+            sync_plan,
+            create_utils,
+            payload,
+            views_tab,
+            workspace,
+            contract,
+            view_service,
+        )
+    ):
+        return False
+
+    sync_text = sync_plan.read_text(encoding="utf-8", errors="ignore")
+    create_text = create_utils.read_text(encoding="utf-8", errors="ignore")
+    payload_text = payload.read_text(encoding="utf-8", errors="ignore")
+    views_text = views_tab.read_text(encoding="utf-8", errors="ignore")
+    workspace_text = workspace.read_text(encoding="utf-8", errors="ignore")
+    contract_text = contract.read_text(encoding="utf-8", errors="ignore")
+    service_text = view_service.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "buildPlanViewInitialSettingsJson" in sync_text
+        and "buildPlanViewInitialSettingsJson" in create_text
+        and "presentation?.plan" in payload_text
+        and "isViewsDirty" in views_text
+        and "viewsSaveRef" in workspace_text
+        and "ensure_plan_object_view_scaffold" in contract_text
+        and "ensure_plan_object_view_scaffold" in service_text
+    )
+
+
+def _plan_self_relation_universal_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    profile = frontend / "shared" / "relation" / "hierarchyRelationProfile.js"
+    plan_relation = frontend / "modules" / "objectViews" / "plan" / "planHierarchyRelation.js"
+    plan_view = frontend / "modules" / "objectViews" / "plan" / "ObjectPlanView.jsx"
+    data_empty = frontend / "modules" / "objectViews" / "plan" / "PlanViewDataEmptyState.jsx"
+    backend_profile = (
+        ctx.repo_root
+        / "backend"
+        / "app"
+        / "modules"
+        / "platform"
+        / "shared"
+        / "hierarchy_relation_profile.py"
+    )
+
+    if not all(
+        path.is_file()
+        for path in (profile, plan_relation, plan_view, data_empty, backend_profile)
+    ):
+        return False
+
+    profile_text = profile.read_text(encoding="utf-8", errors="ignore")
+    plan_text = plan_view.read_text(encoding="utf-8", errors="ignore")
+    backend_text = backend_profile.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "isSelfRelationDefinition" in profile_text
+        and "isPlanHierarchyRelationCandidate" in profile_text
+        and "PlanViewDataEmptyState" in plan_text
+        and "hierarchyInstanceCount" in plan_text
+        and "is_self_relation_definition" in backend_text
+    )
+
+
+def _office_plan_object_tab_contract_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    definitions = frontend / "modules" / "objectViews" / "hooks" / "useObjectViewDefinitions.js"
+    host = frontend / "modules" / "objectViews" / "ObjectViewHost.jsx"
+    object_tab_keys = frontend / "modules" / "objectViews" / "services" / "objectTabKeys.js"
+    plan_view = frontend / "modules" / "objectViews" / "plan" / "ObjectPlanView.jsx"
+    data_empty = frontend / "modules" / "objectViews" / "plan" / "PlanViewDataEmptyState.jsx"
+
+    if not all(
+        path.is_file()
+        for path in (definitions, host, object_tab_keys, plan_view, data_empty)
+    ):
+        return False
+
+    definitions_text = definitions.read_text(encoding="utf-8", errors="ignore")
+    host_text = host.read_text(encoding="utf-8", errors="ignore")
+    keys_text = object_tab_keys.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "requestedObjectTabKey" in definitions_text
+        and "requestedObjectTabKey" in host_text
+        and "resolveOfficeObjectTabSelectionKey" in keys_text
+    )
+
+
+def _office_plan_view_hooks_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    plan_view = frontend / "modules" / "objectViews" / "plan" / "ObjectPlanView.jsx"
+    hierarchy_hook = frontend / "modules" / "objectViews" / "plan" / "usePlanHierarchy.js"
+    plan_debug = frontend / "modules" / "objectViews" / "plan" / "planViewDebug.js"
+
+    if not all(path.is_file() for path in (plan_view, hierarchy_hook, plan_debug)):
+        return False
+
+    plan_text = plan_view.read_text(encoding="utf-8", errors="ignore")
+    hierarchy_text = hierarchy_hook.read_text(encoding="utf-8", errors="ignore")
+    debug_text = plan_debug.read_text(encoding="utf-8", errors="ignore")
+
+    configured_start = plan_text.find("function ObjectPlanViewConfigured")
+    if configured_start < 0:
+        return False
+
+    configured_text = plan_text[configured_start:]
+    first_return = configured_text.find("return ")
+    first_use_state = configured_text.find("useState(")
+
+    return (
+        "enabled: hierarchyEnabled" in plan_text
+        and "relationsLoading" in plan_text
+        and "enabled = true" in hierarchy_text
+        and "EMPTY_PLAN_TREE" in hierarchy_text
+        and first_use_state >= 0
+        and (first_return < 0 or first_use_state < first_return)
+        and "import.meta.env.DEV" in debug_text
+        and "SHOW_PLAN_DEBUG" in debug_text
+        and "__YASNOPRO_DEBUG_PLAN__" not in debug_text
+    )
+
+
+def _plan_view_orphan_records_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    plan_view = frontend / "modules" / "objectViews" / "plan" / "ObjectPlanView.jsx"
+    plan_tree = frontend / "modules" / "objectViews" / "plan" / "buildPlanTree.js"
+    hierarchy = frontend / "modules" / "objectViews" / "plan" / "usePlanHierarchy.js"
+    data_empty = frontend / "modules" / "objectViews" / "plan" / "PlanViewDataEmptyState.jsx"
+    tree_test = frontend / "modules" / "objectViews" / "plan" / "buildPlanTree.test.js"
+
+    if not all(path.is_file() for path in (plan_view, plan_tree, hierarchy, data_empty, tree_test)):
+        return False
+
+    plan_text = plan_view.read_text(encoding="utf-8", errors="ignore")
+    tree_text = plan_tree.read_text(encoding="utf-8", errors="ignore")
+    hierarchy_text = hierarchy.read_text(encoding="utf-8", errors="ignore")
+    empty_text = data_empty.read_text(encoding="utf-8", errors="ignore")
+    test_text = tree_test.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "planEntityCount === 0" in plan_text
+        and "planEntityCount" in hierarchy_text
+        and "hierarchyInstanceCount === 0" not in plan_text
+        and "orphan records as root" in test_text
+        and "Создайте первую запись" in empty_text
+        and "rootIds" in tree_text
+        and "entitiesById" in tree_text
+    )
+
+
+def _plan_view_target_ui_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    plan_view = frontend / "modules" / "objectViews" / "plan" / "ObjectPlanView.jsx"
+    plan_shell = frontend / "modules" / "objectViews" / "plan" / "PlanViewShell.jsx"
+    plan_bottom = frontend / "modules" / "objectViews" / "plan" / "PlanBottomPanel.jsx"
+    plan_tree = frontend / "modules" / "objectViews" / "plan" / "PlanTreePanel.jsx"
+    plan_move = frontend / "modules" / "objectViews" / "plan" / "planHierarchyMove.js"
+    plan_status = frontend / "modules" / "objectViews" / "plan" / "planStatusUtils.js"
+    plan_css = frontend / "modules" / "objectViews" / "plan" / "objectPlanView.css"
+    status_test = frontend / "modules" / "objectViews" / "plan" / "planStatusUtils.test.js"
+
+    if not all(
+        path.is_file()
+        for path in (
+            plan_view,
+            plan_shell,
+            plan_bottom,
+            plan_tree,
+            plan_move,
+            plan_status,
+            plan_css,
+            status_test,
+        )
+    ):
+        return False
+
+    shell_text = plan_shell.read_text(encoding="utf-8", errors="ignore")
+    plan_text = plan_view.read_text(encoding="utf-8", errors="ignore")
+    tree_text = plan_tree.read_text(encoding="utf-8", errors="ignore")
+    bottom_text = plan_bottom.read_text(encoding="utf-8", errors="ignore")
+    move_text = plan_move.read_text(encoding="utf-8", errors="ignore")
+    css_text = plan_css.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "bottomPanel" in shell_text
+        and "PlanBottomPanel" in plan_text
+        and "onReparentNode" in tree_text
+        and "reparentPlanNode" in plan_text
+        and "deleteRelation" in move_text
+        and "createRelation" in move_text
+        and "Активности" in bottom_text
+        and "grid-template-columns: minmax(280px, 35%)" in css_text
+        and "flex: 0 0 30%" in css_text
+    )
+
+
+def _create_relation_definition_modal_footer_complete(ctx: ScanContext) -> bool:
+    modal_text = _frontend_evidence_text(
+        ctx,
+        "modules/designer/components/relations/CreateRelationDefinitionModal.jsx",
+    )
+    keys_text = _frontend_evidence_text(
+        ctx,
+        "modules/designer/components/relations/createRelationDefinitionModalKeys.js",
+    )
+    if not modal_text or not keys_text:
+        return False
+    return (
+        "PlatformModal" in modal_text
+        and "Создать связь" in modal_text
+        and "platform-modal-footer" in modal_text
+        and "modal_v3" in keys_text
+        and "CREATE_RELATION_DEFINITION_MODAL_MIN_HEIGHT" in keys_text
+    )
+
+
+def _relation_field_auto_role_complete(ctx: ScanContext) -> bool:
+    utils_text = _frontend_evidence_text(
+        ctx,
+        "modules/designer/components/fields/relationFieldFormUtils.js",
+    )
+    settings_text = _frontend_evidence_text(
+        ctx,
+        "modules/designer/components/fields/RelationFieldSettings.jsx",
+    )
+    if not utils_text or not settings_text:
+        return False
+    return (
+        "resolveRelationFieldBinding" in utils_text
+        and "suggestRelationFieldCardinality" in utils_text
+        and "formatRelationFieldApiError" in utils_text
+        and "Роль текущего объекта" in settings_text
+        and "filterRelationDefinitionsForObjectType" in settings_text
     )
 
 
@@ -857,13 +1542,165 @@ def evaluate_stage_work_status(slug: str, work: str, ctx: ScanContext) -> str:
         if "platformmodal" in lower.replace(" ", "") or (
             "ui framework" in lower and "модальн" in lower
         ):
-            return "done" if _frontend_has(ctx, "PlatformModal") else "in_progress"
+            return (
+                "done"
+                if _platform_modal_footer_layout_complete(ctx)
+                and _platform_modal_resize_handles_complete(ctx)
+                and _platform_modal_standard_min_width_complete(ctx)
+                and _platform_accent_zones_complete(ctx)
+                and _platform_modal_help_complete(ctx)
+                else "in_progress"
+            )
+        if "resize" in lower and "platformmodal" in lower.replace(" ", ""):
+            return (
+                "done"
+                if _platform_modal_resize_handles_complete(ctx)
+                else "in_progress"
+            )
+        if ("новая запись" in lower or "object record" in lower or (
+            "quick create" in lower and "office" in lower
+        )):
+            return (
+                "done"
+                if _office_object_record_create_modal_resize_complete(ctx)
+                and _platform_modal_resize_handles_complete(ctx)
+                else "in_progress"
+            )
+        if "platformmodalhelp" in lower.replace(" ", "") or (
+            "справк" in lower and "модальн" in lower
+        ):
+            return "done" if _platform_modal_help_complete(ctx) else "in_progress"
+        if ("цветов" in lower or "акцент" in lower) and (
+            "studio" in lower or "office" in lower
+        ):
+            return (
+                "done" if _platform_accent_zones_complete(ctx) else "in_progress"
+            )
+        if ("draft" in lower and "вклад" in lower) or (
+            "studio preview" in lower and "синхрон" in lower
+        ):
+            return (
+                "done"
+                if _studio_object_view_draft_preview_sync_complete(ctx)
+                else "in_progress"
+            )
+        if "меню во вкладке" in lower or "menuintab" in lower.replace(" ", ""):
+            return (
+                "done"
+                if _object_tab_menu_in_tab_complete(ctx)
+                else "in_progress"
+            )
+        if "plan view" in lower or ("plan" in lower and "renderer" in lower):
+            return (
+                "done" if _plan_view_renderer_routing_complete(ctx) else "in_progress"
+            )
+        if ("plan" in lower and "publish" in lower) or (
+            "plan" in lower and "runtime" in lower and "настрой" in lower
+        ):
+            return (
+                "done"
+                if _plan_view_publish_runtime_complete(ctx)
+                else "in_progress"
+            )
+        if ("self-relation" in lower or "self relation" in lower) and "plan" in lower:
+            return (
+                "done"
+                if _plan_self_relation_universal_complete(ctx)
+                else "in_progress"
+            )
+        if ("plan" in lower and "target ui" in lower) or (
+            "plan" in lower and "drag" in lower and "drop" in lower
+        ):
+            return (
+                "done" if _plan_view_target_ui_complete(ctx) else "in_progress"
+            )
+        if ("podpunkt" in lower or (
+            "plan" in lower and "empty state" in lower
+        )) or ("plan" in lower and "orphan" in lower):
+            return (
+                "done"
+                if _plan_self_relation_universal_complete(ctx)
+                and _office_plan_object_tab_contract_complete(ctx)
+                and _plan_view_orphan_records_complete(ctx)
+                else "in_progress"
+            )
+        if ("office" in lower and "plan" in lower) or (
+            "plan" in lower and "object tab" in lower
+        ):
+            return (
+                "done"
+                if _office_plan_object_tab_contract_complete(ctx)
+                and _office_plan_view_hooks_complete(ctx)
+                else "in_progress"
+            )
+        if ("hooks" in lower and "plan" in lower) or (
+            "plan" in lower and "rendered fewer hooks" in lower
+        ):
+            return (
+                "done"
+                if _office_plan_view_hooks_complete(ctx)
+                else "in_progress"
+            )
         if "preview" in lower:
             return (
                 "done"
                 if _studio_preview_tab_selector_ux_complete(ctx)
                 and _studio_preview_mock_data_complete(ctx)
                 and _studio_preview_demo_data_toolbar_badge_complete(ctx)
+                else "in_progress"
+            )
+        if "show_in_navigation" in lower or (
+            "навигац" in lower and "публика" in lower and "объект" in lower
+        ):
+            return (
+                "done"
+                if _object_type_publish_navigation_decoupling_complete(ctx)
+                else "in_progress"
+            )
+        if "object_view_id" in lower or (
+            "вкладк" in lower and "пространств" in lower and "объект" in lower
+        ):
+            return (
+                "done"
+                if _workspace_object_view_tab_binding_complete(ctx)
+                else "in_progress"
+            )
+        if "createfieldmodal" in lower.replace(" ", "") or (
+            "модалк" in lower and "создан" in lower and "пол" in lower and "default" in lower
+        ) or ("значение по умолчанию" in lower and "создан" in lower and "пол" in lower):
+            return (
+                "done"
+                if _create_field_modal_default_value_complete(ctx)
+                else "in_progress"
+            )
+        if "placeholder" in lower or ("подсказк" in lower and "пол" in lower):
+            return (
+                "done"
+                if _field_placeholder_support_complete(ctx)
+                else "in_progress"
+            )
+        if "create relation modal" in lower or (
+            "модалк" in lower and "создан" in lower and "связ" in lower
+        ) or ("создать связь" in lower and "footer" in lower):
+            return (
+                "done"
+                if _create_relation_definition_modal_footer_complete(ctx)
+                else "in_progress"
+            )
+        if "relation field" in lower and "auto" in lower and "role" in lower:
+            return (
+                "done"
+                if _relation_field_auto_role_complete(ctx)
+                else "in_progress"
+            )
+        if (
+            "object actions menu" in lower
+            or ("меню действий" in lower and "объект" in lower)
+            or ("object type" in lower and "actions menu" in lower)
+        ):
+            return (
+                "done"
+                if _object_type_workspace_actions_menu_complete(ctx)
                 else "in_progress"
             )
         if "публика" in lower:
@@ -942,6 +1779,12 @@ def evaluate_stage_work_status(slug: str, work: str, ctx: ScanContext) -> str:
             return (
                 "done"
                 if _relation_field_object_table_tree_view_complete(ctx)
+                else "planned"
+            )
+        if "представлен" in lower and "план" in lower:
+            return (
+                "done"
+                if _object_plan_view_complete(ctx)
                 else "planned"
             )
         if "фильтрац" in lower and "связ" in lower:
@@ -1078,6 +1921,60 @@ def _object_context_menu_complete(ctx: ScanContext) -> bool:
         and "IMPORT_EXCEL" in actions
         and "EXPORT_EXCEL" in actions
         and "ObjectContextMenuTrigger" in header
+    )
+
+
+def _object_tab_menu_in_tab_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    root = ctx.repo_root
+    paths = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "objectViews"
+        / "services"
+        / "objectTabSettings.js",
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "designer"
+        / "components"
+        / "views"
+        / "ViewPropertiesPanel.jsx",
+        root
+        / "frontend"
+        / "src"
+        / "portal"
+        / "services"
+        / "resolvePublishedObjectTabs.js",
+        root
+        / "frontend"
+        / "src"
+        / "portal"
+        / "components"
+        / "PortalObjectRuntimeHeader.jsx",
+    )
+
+    if not all(path.is_file() for path in paths):
+        return False
+
+    tab_settings = paths[0].read_text(encoding="utf-8", errors="ignore")
+    panel = paths[1].read_text(encoding="utf-8", errors="ignore")
+    resolver = paths[2].read_text(encoding="utf-8", errors="ignore")
+    header = paths[3].read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "menuInTab" in tab_settings
+        and "readObjectTabSettings" in tab_settings
+        and "Меню во вкладке" in panel
+        and "readObjectTabSettings" in resolver
+        and "menuInTab" in resolver
+        and "menuInActiveTab" in header
+        and "portal-object-runtime-header__tab-with-menu" in header
     )
 
 
@@ -2047,6 +2944,71 @@ def _studio_preview_business_context_ux_complete(ctx: ScanContext) -> bool:
     return _studio_preview_tab_selector_ux_complete(ctx)
 
 
+def _object_type_workspace_actions_menu_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    root = ctx.repo_root
+    menu = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "designer"
+        / "components"
+        / "objectTypes"
+        / "ObjectTypeWorkspaceActionsMenu.jsx"
+    )
+    delete_modal = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "designer"
+        / "components"
+        / "objectTypes"
+        / "ObjectTypeDeleteConfirmModal.jsx"
+    )
+    workspace_page = (
+        root
+        / "frontend"
+        / "src"
+        / "modules"
+        / "designer"
+        / "pages"
+        / "ObjectTypeWorkspacePage.jsx"
+    )
+    delete_preview = (
+        root
+        / "backend"
+        / "app"
+        / "modules"
+        / "platform"
+        / "designer"
+        / "object_types"
+        / "router.py"
+    )
+
+    if not all(path.is_file() for path in (menu, delete_modal, workspace_page, delete_preview)):
+        return False
+
+    menu_text = menu.read_text(encoding="utf-8", errors="ignore")
+    delete_modal_text = delete_modal.read_text(encoding="utf-8", errors="ignore")
+    workspace_page_text = workspace_page.read_text(encoding="utf-8", errors="ignore")
+    delete_preview_text = delete_preview.read_text(encoding="utf-8", errors="ignore")
+
+    return (
+        "createPortal" in menu_text
+        and "Переименовать" in menu_text
+        and "Дублировать" in menu_text
+        and "Удалить" in menu_text
+        and "ObjectTypeDeleteConfirmModal" in delete_modal_text
+        and "ObjectTypeDeleteConfirmModal" in workspace_page_text
+        and "getObjectTypeDeletePreview" in workspace_page_text
+        and "/delete-preview" in delete_preview_text
+    )
+
+
 def _studio_object_type_header_icon_parity_complete(ctx: ScanContext) -> bool:
     if ctx.repo_root is None:
         return False
@@ -2558,6 +3520,141 @@ def _object_engine_safe_hierarchy_delete_complete(ctx: ScanContext) -> bool:
         and "beginDelete" in hook_text
         and "onBeginDeleteEntity" in table_text
         and "ObjectEntityDeleteScenarioModal" in table_text
+    )
+
+
+def _object_plan_view_complete(ctx: ScanContext) -> bool:
+    if ctx.repo_root is None:
+        return False
+
+    frontend = ctx.repo_root / "frontend" / "src"
+    plan_view = frontend / "modules" / "objectViews" / "plan" / "ObjectPlanView.jsx"
+    plan_contract = frontend / "modules" / "objectViews" / "plan" / "planViewContract.js"
+    plan_tree = frontend / "modules" / "objectViews" / "plan" / "buildPlanTree.js"
+    plan_progress = frontend / "modules" / "objectViews" / "plan" / "planProgressUtils.js"
+    plan_hierarchy = frontend / "modules" / "objectViews" / "plan" / "usePlanHierarchy.js"
+    plan_progress_test = (
+        frontend / "modules" / "objectViews" / "plan" / "planProgressUtils.test.js"
+    )
+    view_host = frontend / "modules" / "objectViews" / "ObjectViewHost.jsx"
+    studio_settings = (
+        frontend / "modules" / "designer" / "components" / "views" / "PlanViewSettingsPanel.jsx"
+    )
+    view_properties = (
+        frontend / "modules" / "designer" / "components" / "views" / "ViewPropertiesPanel.jsx"
+    )
+    resolve_plan_projection = (
+        frontend / "modules" / "objectViews" / "plan" / "resolvePlanProjectionFields.js"
+    )
+    view_fields_list = (
+        frontend / "modules" / "designer" / "components" / "views" / "ViewPropertiesFieldsList.jsx"
+    )
+    enums = ctx.repo_root / "backend" / "app" / "modules" / "platform" / "shared" / "enums.py"
+
+    if not all(
+        path.is_file()
+        for path in (
+            plan_view,
+            plan_contract,
+            plan_tree,
+            plan_progress,
+            plan_hierarchy,
+            plan_progress_test,
+            view_host,
+            studio_settings,
+            view_properties,
+            resolve_plan_projection,
+            view_fields_list,
+            enums,
+        )
+    ):
+        return False
+
+    host_text = view_host.read_text(encoding="utf-8", errors="ignore")
+    plan_view_text = plan_view.read_text(encoding="utf-8", errors="ignore")
+    hierarchy_text = plan_hierarchy.read_text(encoding="utf-8", errors="ignore")
+    contract_text = plan_contract.read_text(encoding="utf-8", errors="ignore")
+    studio_text = studio_settings.read_text(encoding="utf-8", errors="ignore")
+    view_properties_text = view_properties.read_text(encoding="utf-8", errors="ignore")
+    resolve_plan_text = resolve_plan_projection.read_text(encoding="utf-8", errors="ignore")
+    view_fields_text = view_fields_list.read_text(encoding="utf-8", errors="ignore")
+    enums_text = enums.read_text(encoding="utf-8", errors="ignore")
+
+    plan_layout_settings = (
+        frontend / "modules" / "objectViews" / "plan" / "planLayoutSettings.js"
+    )
+    plan_work_area = frontend / "modules" / "objectViews" / "plan" / "PlanWorkArea.jsx"
+    plan_info_tab = frontend / "modules" / "objectViews" / "plan" / "PlanInfoTab.jsx"
+    plan_tab_panel = frontend / "modules" / "objectViews" / "plan" / "PlanTabPanel.jsx"
+    plan_layout_order_list = (
+        frontend / "modules" / "designer" / "components" / "views" / "PlanLayoutOrderList.jsx"
+    )
+    plan_preview_constructor = (
+        frontend / "modules" / "objectViews" / "plan" / "planPreviewConstructor.js"
+    )
+    views_tab = frontend / "modules" / "designer" / "components" / "tabs" / "ViewsTab.jsx"
+    plan_view_studio_context = (
+        frontend / "modules" / "designer" / "context" / "PlanViewStudioContext.jsx"
+    )
+
+    if not all(
+        path.is_file()
+        for path in (
+            plan_layout_settings,
+            plan_work_area,
+            plan_info_tab,
+            plan_tab_panel,
+            plan_layout_order_list,
+            plan_preview_constructor,
+            plan_view_studio_context,
+        )
+    ):
+        return False
+
+    plan_layout_text = plan_layout_settings.read_text(encoding="utf-8", errors="ignore")
+    plan_work_area_text = plan_work_area.read_text(encoding="utf-8", errors="ignore")
+    plan_info_tab_text = plan_info_tab.read_text(encoding="utf-8", errors="ignore")
+    plan_tab_panel_text = plan_tab_panel.read_text(encoding="utf-8", errors="ignore")
+    plan_layout_order_list_text = plan_layout_order_list.read_text(
+        encoding="utf-8", errors="ignore"
+    )
+    plan_preview_constructor_text = plan_preview_constructor.read_text(
+        encoding="utf-8", errors="ignore"
+    )
+    plan_view_studio_context_text = plan_view_studio_context.read_text(
+        encoding="utf-8", errors="ignore"
+    )
+
+    return (
+        'resolvedViewType === "plan"' in host_text
+        and "ObjectPlanView" in host_text
+        and "usePlanHierarchy" in plan_view_text
+        and "buildPlanPreviewMock" in hierarchy_text
+        and "hierarchyRelationKey" in contract_text
+        and "planLayout" in contract_text
+        and "getVisiblePlanTabs" in plan_layout_text
+        and "getInfoEmbeddedPlanTabs" in plan_layout_text
+        and "showInInfo !== true" in plan_layout_text
+        and "showInInfo" in plan_layout_text
+        and '"checklist"' in plan_layout_text
+        and "infoFieldKeys" in resolve_plan_text
+        and "getInfoEmbeddedPlanTabs" in plan_work_area_text
+        and "planPreviewEditor" in plan_work_area_text
+        and "embeddedTabs" in plan_info_tab_text
+        and "planPreviewEditor" in plan_info_tab_text
+        and "buildPlanInfoFieldContextMenuActions" in plan_preview_constructor_text
+        and "setPlanPreviewEditor" in plan_view_studio_context_text
+        and "PlanViewStudioProvider" in plan_view_studio_context_text
+        and "ObjectEntityChecklist" in plan_tab_panel_text
+        and "showInInfoColumn" in plan_layout_order_list_text
+        and "Связь с проблемами" not in studio_text
+        and "showInfoColumn" in view_properties_text
+        and "ObjectRoleMappingPanel" not in view_properties_text
+        and "showInfoColumn" in view_fields_text
+        and "resolvePlanTitleFieldKey" in resolve_plan_text
+        and 'plan: "План"' in studio_text
+        and 'PLAN = "plan"' in enums_text
+        and _plan_view_target_ui_complete(ctx)
     )
 
 

@@ -223,6 +223,9 @@ export default function CommentsPanel({
   entityId,
   fileId = null,
   initialContext = null,
+  initialFilter = "all",
+  showComposer = true,
+  headerTitle = "Комментарии",
 }) {
   const {
     rootComments,
@@ -248,7 +251,7 @@ export default function CommentsPanel({
   const isFirstLoadRef = useRef(true);
   const deepNavigationDoneRef = useRef(false);
 
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState(initialFilter);
 
   const [
     highlightedCommentId,
@@ -546,32 +549,34 @@ export default function CommentsPanel({
     <div style={panelStyle}>
       <div style={headerStyle}>
         <div style={titleStyle}>
-          <span>Комментарии</span>
+          <span>{headerTitle}</span>
 
           <span style={countStyle}>
-            {rootComments.length}
+            {filteredComments.length}
           </span>
         </div>
 
-        <select
-          value={filter}
-          style={filterStyle}
-          onChange={handleFilterChange}
-        >
-          <option value="all">Все</option>
+        {showComposer ? (
+          <select
+            value={filter}
+            style={filterStyle}
+            onChange={handleFilterChange}
+          >
+            <option value="all">Все</option>
 
-          <option value="user">
-            Пользовательские
-          </option>
+            <option value="user">
+              Пользовательские
+            </option>
 
-          <option value="system">
-            Системные
-          </option>
+            <option value="system">
+              Системные
+            </option>
 
-          <option value="attachments">
-            С вложениями
-          </option>
-        </select>
+            <option value="attachments">
+              С вложениями
+            </option>
+          </select>
+        ) : null}
       </div>
 
       <div ref={bodyRef} style={bodyStyle}>
@@ -611,11 +616,13 @@ export default function CommentsPanel({
           ))}
       </div>
 
-      <div style={composerWrapperStyle}>
-        <CommentComposer
-          onSubmit={handleSubmit}
-        />
-      </div>
+      {showComposer ? (
+        <div style={composerWrapperStyle}>
+          <CommentComposer
+            onSubmit={handleSubmit}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

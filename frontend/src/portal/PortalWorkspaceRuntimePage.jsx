@@ -18,6 +18,9 @@ import PortalObjectDataPage from "./pages/PortalObjectDataPage";
 import SystemMessage from "../system/SystemMessage";
 import PortalPageRuntimeContent from "./components/PortalPageRuntimeContent";
 import { resolvePortalObjectNavigationPath } from "./utils/portalObjectRoutes";
+import {
+  PORTAL_OBJECT_VIEW_HEADER_EVENT,
+} from "./utils/portalObjectViewHeaderBridge";
 
 const WORKSPACE_HOME_DEBUG = import.meta.env?.DEV === true;
 
@@ -42,6 +45,7 @@ export default function PortalWorkspaceRuntimePage() {
     return saved ? Number(saved) : 1;
   });
   const [runtimeHeaderModel, setRuntimeHeaderModel] = useState(null);
+  const [objectViewHeaderBridge, setObjectViewHeaderBridge] = useState(null);
   const { navigation, reloadNavigation } = useNavigationTree(portalId, {
     scope: "runtime",
   });
@@ -207,6 +211,36 @@ export default function PortalWorkspaceRuntimePage() {
   }, [activeTab, activeTabType]);
 
   useEffect(() => {
+    const handleObjectViewHeader = (event) => {
+      setObjectViewHeaderBridge(event?.detail ?? null);
+    };
+
+    window.addEventListener(PORTAL_OBJECT_VIEW_HEADER_EVENT, handleObjectViewHeader);
+
+    return () => {
+      window.removeEventListener(PORTAL_OBJECT_VIEW_HEADER_EVENT, handleObjectViewHeader);
+      setObjectViewHeaderBridge(null);
+    };
+  }, []);
+
+  const workspaceTabMenuContext = useMemo(() => {
+    if (activeTabType !== "object") {
+      return null;
+    }
+
+    if (!objectViewHeaderBridge?.menuInTab || !objectViewHeaderBridge?.hideObjectTabBar) {
+      return null;
+    }
+
+    return {
+      tenantId: objectViewHeaderBridge.tenantId ?? portalId,
+      objectTypeKey: objectViewHeaderBridge.objectTypeKey ?? null,
+      objectTypeId: objectViewHeaderBridge.objectTypeId ?? null,
+      objectName: objectViewHeaderBridge.objectName ?? "Объект",
+    };
+  }, [activeTabType, objectViewHeaderBridge, portalId]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function checkPage() {
@@ -316,11 +350,13 @@ export default function PortalWorkspaceRuntimePage() {
       if (!activeObjectRef) return <SystemMessage>Объект не найден</SystemMessage>;
       return (
         <PortalObjectDataPage
-          key={`${workspace?.id ?? "ws"}-${activeTab.id}-${activeObjectRef}`}
+          key={`${workspace?.id ?? "ws"}-${activeTab.id}-${activeObjectRef}-${activeTab.object_view_key || "view"}`}
           tenantId={portalId}
           objectTypeRef={activeObjectRef}
           source="portal"
           navigationAppearance={activeTab}
+          fixedObjectTabKey={activeTab.object_view_key || null}
+          hideObjectTabBar={Boolean(activeTab.object_view_key)}
           syncObjectTabRoute={false}
         />
       );
@@ -419,6 +455,8 @@ export default function PortalWorkspaceRuntimePage() {
             workspaceSlug={workspaceSlug}
             activeTabSlug={String(tabSlug || "")}
             mode="runtime"
+            activeTabMenuInTab={Boolean(workspaceTabMenuContext)}
+            objectMenuContext={workspaceTabMenuContext}
           />
         ) : null}
         <div

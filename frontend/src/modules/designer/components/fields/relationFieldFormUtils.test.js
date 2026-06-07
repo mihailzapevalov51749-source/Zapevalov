@@ -4,8 +4,13 @@ import { isCreatableFieldType } from "../../../../shared/fieldEditors/fieldEdito
 import { getCreatableFields } from "../../../objectViews/entity/getCreatableFields";
 import {
   buildRelationSettingsPayload,
+  filterRelationDefinitionsForObjectType,
+  formatRelationFieldApiError,
   isRelationFieldType,
   resolveRelationDefinitionsAvailability,
+  resolveRelationFieldBinding,
+  resolveRelationFieldSettingsPayload,
+  suggestRelationFieldCardinality,
   suggestRelationRoleForObjectType,
   validateRelationFieldDraft,
 } from "./relationFieldFormUtils";
@@ -22,19 +27,120 @@ describe("relationFieldFormUtils", () => {
   });
 
   it("validates required relation settings", () => {
-    expect(validateRelationFieldDraft({})).toMatchObject({
+    expect(
+      validateRelationFieldDraft({}, { objectTypeId: "ot-source", relationDefinitions: [] }),
+    ).toMatchObject({
       relation_key: expect.any(String),
-      role: expect.any(String),
-      cardinality: expect.any(String),
     });
 
+    const relationDefinitions = [
+      {
+        key: "task_project",
+        is_active: true,
+        source_object_type_id: "ot-source",
+        target_object_type_id: "ot-target",
+        relation_type: "one_to_many",
+      },
+    ];
+
     expect(
-      validateRelationFieldDraft({
-        relation_key: "task_project",
-        role: "source",
-        cardinality: "one",
-      }),
+      validateRelationFieldDraft(
+        {
+          relation_key: "task_project",
+          role: "source",
+          cardinality: "one",
+        },
+        { objectTypeId: "ot-source", relationDefinitions },
+      ),
     ).toEqual({});
+  });
+
+  it("rejects wrong role for current object type", () => {
+    const relationDefinitions = [
+      {
+        key: "task_project",
+        is_active: true,
+        source_object_type_id: "ot-source",
+        target_object_type_id: "ot-target",
+        relation_type: "one_to_many",
+      },
+    ];
+
+    expect(
+      validateRelationFieldDraft(
+        {
+          relation_key: "task_project",
+          role: "target",
+          cardinality: "one",
+        },
+        { objectTypeId: "ot-source", relationDefinitions },
+      ),
+    ).toMatchObject({
+      relation_key: expect.stringContaining("не соответствует"),
+    });
+  });
+
+  it("suggests cardinality from relation type and role", () => {
+    const relation = { relation_type: "one_to_many" };
+
+    expect(suggestRelationFieldCardinality(relation, "source")).toBe("one");
+    expect(suggestRelationFieldCardinality(relation, "target")).toBe("many");
+    expect(suggestRelationFieldCardinality({ relation_type: "many_to_many" }, "source")).toBe(
+      "many",
+    );
+    expect(suggestRelationFieldCardinality({ relation_type: "one_to_one" }, "target")).toBe("one");
+  });
+
+  it("filters relation definitions for current object type", () => {
+    expect(
+      filterRelationDefinitionsForObjectType(
+        [
+          {
+            key: "a",
+            is_active: true,
+            source_object_type_id: "ot-a",
+            target_object_type_id: "ot-b",
+          },
+          {
+            key: "b",
+            is_active: true,
+            source_object_type_id: "ot-x",
+            target_object_type_id: "ot-y",
+          },
+        ],
+        "ot-a",
+      ).map((item) => item.key),
+    ).toEqual(["a"]);
+  });
+
+  it("builds resolved settings payload", () => {
+    expect(
+      resolveRelationFieldSettingsPayload({
+        objectTypeId: "ot-target",
+        relationDefinitions: [
+          {
+            key: "task_project",
+            is_active: true,
+            source_object_type_id: "ot-source",
+            target_object_type_id: "ot-target",
+            relation_type: "one_to_many",
+          },
+        ],
+        relation_key: "task_project",
+      }),
+    ).toEqual({
+      relation_key: "task_project",
+      role: "target",
+      cardinality: "many",
+    });
+  });
+
+  it("maps relation field api errors to user-friendly text", () => {
+    expect(
+      formatRelationFieldApiError(
+        "settings_json.role=target не соответствует target object type relation definition",
+      ),
+    ).toBe("Выбранная связь не соответствует текущему объекту. Проверьте настройки связи.");
   });
 
   it("builds settings_json payload", () => {
@@ -92,12 +198,12 @@ describe("relationFieldFormUtils", () => {
 });
 
 describe("relation field runtime create eligibility", () => {
-  it("is not creatable in Office create form", () => {
+  it("is creatable in Office create form", () => {
     expect(isRelationFieldType("relation")).toBe(true);
-    expect(isCreatableFieldType("relation")).toBe(false);
+    expect(isCreatableFieldType("relation")).toBe(true);
   });
 
-  it("is excluded from getCreatableFields", () => {
+  it("is included in getCreatableFields", () => {
     const catalog = {
       object_types: [
         {
@@ -120,6 +226,6 @@ describe("relation field runtime create eligibility", () => {
     };
 
     const fields = getCreatableFields(catalog, "task");
-    expect(fields.map((field) => field.key)).toEqual(["title"]);
+    expect(fields.map((field) => field.key)).toEqual(["title", "project"]);
   });
 });

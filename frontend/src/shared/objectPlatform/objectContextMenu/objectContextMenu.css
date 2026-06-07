@@ -33,6 +33,21 @@
   color: #94a3b8;
 }
 
+.object-context-menu-trigger--tab {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--workspace-tabs-accent, #2563eb);
+}
+
+.object-context-menu-trigger--tab .object-context-menu-trigger__chevron {
+  font-size: 10px;
+}
+
+.object-context-menu-trigger--tab:disabled {
+  color: var(--workspace-tabs-accent, #2563eb);
+}
+
 .object-context-menu-trigger:hover:not(:disabled) .object-context-menu-trigger__chevron,
 .object-context-menu-trigger[aria-expanded="true"] .object-context-menu-trigger__chevron {
   color: #64748b;

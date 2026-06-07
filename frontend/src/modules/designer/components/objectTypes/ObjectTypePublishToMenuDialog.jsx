@@ -39,7 +39,7 @@ export default function ObjectTypePublishToMenuDialog({
   onBeforePublish,
   onPublishingChange,
 }) {
-  const [publishToStudio, setPublishToStudio] = useState(true);
+  const [publishToStudio, setPublishToStudio] = useState(false);
   const [publishToOffice, setPublishToOffice] = useState(false);
   const [designerParentId, setDesignerParentId] = useState("");
   const [runtimeParentId, setRuntimeParentId] = useState("");
@@ -232,8 +232,9 @@ export default function ObjectTypePublishToMenuDialog({
           Разместить в меню
         </h2>
         <p className="designer-publish-dialog__subtitle">
-          Сначала публикуется каталог. Затем объект размещается в выбранных меню.
-          Название, иконка и цвет пункта берутся из объекта.
+          Публикация каталога не добавляет объект в меню автоматически. Включите
+          «Отображать в навигации» в настройках объекта и выберите размещение
+          в меню Студии и/или Офиса.
         </p>
 
         <div className="designer-publish-dialog__preview">

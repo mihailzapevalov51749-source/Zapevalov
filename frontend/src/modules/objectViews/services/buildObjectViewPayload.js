@@ -36,6 +36,7 @@ function buildSettingsJson(contract) {
       key: contract.key,
       name: contract.name,
       projection: contract.projection,
+      roleMapping: contract.roleMapping || {},
       query: contract.query,
       presentation: contract.presentation,
       capabilities: contract.capabilities,
@@ -122,6 +123,10 @@ export function buildObjectViewPayload(contract, options = {}) {
         overrides.presentation?.card !== undefined
           ? overrides.presentation.card
           : contract.presentation?.card ?? null,
+      plan:
+        overrides.presentation?.plan !== undefined
+          ? overrides.presentation.plan
+          : contract.presentation?.plan ?? null,
     },
     meta: {
       ...contract.meta,
@@ -144,7 +149,7 @@ export function buildObjectViewPayload(contract, options = {}) {
     return {
       key: merged.key,
       name: merged.name,
-      view_type: "table",
+      view_type: merged.viewType || "table",
       description: null,
       is_default: Boolean(merged.meta.isDefault),
       is_active: true,

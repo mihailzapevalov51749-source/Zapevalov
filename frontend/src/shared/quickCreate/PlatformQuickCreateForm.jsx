@@ -10,6 +10,7 @@ import {
   PLATFORM_QUICK_CREATE_MODAL_VIEWPORT_INSET,
 } from "./platformQuickCreateModalKeys";
 
+import "../platformModal/platformModalFooter.css";
 import "./platformQuickCreateModal.css";
 
 function QuickCreateTitleAccessory({ label }) {
@@ -22,7 +23,7 @@ function QuickCreateTitleAccessory({ label }) {
   );
 }
 
-function QuickCreateField({ field, value, onChange, readOnly, autoFocus, error }) {
+function QuickCreateField({ field, value, onChange, readOnly, autoFocus, error, createContext }) {
   return (
     <div className="platform-quick-create-modal__field">
       <span className="platform-quick-create-modal__label">
@@ -41,6 +42,7 @@ function QuickCreateField({ field, value, onChange, readOnly, autoFocus, error }
           onChange={onChange}
           readOnly={readOnly}
           autoFocus={autoFocus}
+          createContext={createContext}
         />
       </div>
 
@@ -55,6 +57,7 @@ function QuickCreateField({ field, value, onChange, readOnly, autoFocus, error }
 
 /**
  * Platform-wide quick create form (Platform Modal Standard).
+ * Office object tables: drag/resize/persist via PlatformModal + canCustomizeLayout.
  */
 export default function PlatformQuickCreateForm({
   open = false,
@@ -72,8 +75,23 @@ export default function PlatformQuickCreateForm({
   submitError = "",
   submitLabel = "Создать",
   canCustomizeLayout = true,
+  tenantId = null,
+  catalog = null,
+  objectTypeKey = null,
 }) {
   const fieldCount = fields.length;
+
+  const createContext = useMemo(
+    () =>
+      tenantId && objectTypeKey
+        ? {
+            tenantId,
+            catalog,
+            objectTypeKey,
+          }
+        : null,
+    [catalog, objectTypeKey, tenantId],
+  );
 
   const defaultBounds = useMemo(
     () => getPlatformQuickCreateDefaultBounds(fieldCount),
@@ -123,26 +141,26 @@ export default function PlatformQuickCreateForm({
         background: "#ffffff",
       }}
       footer={
-        <div
-          className="platform-quick-create-modal__footer"
-          data-platform-modal-no-drag
-        >
-          <button
-            type="button"
-            className="platform-quick-create-modal__btn platform-quick-create-modal__btn--ghost"
-            onClick={() => onClose?.("cancel")}
-            disabled={submitting}
-          >
-            Отмена
-          </button>
-          <button
-            type="submit"
-            form="platform-quick-create-form"
-            className="platform-quick-create-modal__btn platform-quick-create-modal__btn--primary"
-            disabled={submitting || fieldCount === 0}
-          >
-            {submitting ? "Создание…" : submitLabel}
-          </button>
+        <div className="platform-modal-footer" data-platform-modal-no-drag>
+          <div className="platform-modal-footer__leading" />
+          <div className="platform-modal-footer__actions">
+            <button
+              type="button"
+              className="platform-quick-create-modal__btn platform-quick-create-modal__btn--ghost"
+              onClick={() => onClose?.("cancel")}
+              disabled={submitting}
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              form="platform-quick-create-form"
+              className="platform-quick-create-modal__btn platform-quick-create-modal__btn--primary"
+              disabled={submitting || fieldCount === 0}
+            >
+              {submitting ? "Создание…" : submitLabel}
+            </button>
+          </div>
         </div>
       }
     >
@@ -168,6 +186,7 @@ export default function PlatformQuickCreateForm({
                   readOnly={submitting}
                   autoFocus={index === 0}
                   error={fieldErrors[field.key]}
+                  createContext={createContext}
                 />
               ))}
             </div>

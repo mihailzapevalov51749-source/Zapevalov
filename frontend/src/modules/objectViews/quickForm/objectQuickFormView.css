@@ -1,0 +1,82 @@
+.object-quick-form-view {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  padding: 24px;
+  background: #f8fafc;
+}
+
+.object-quick-form-view__panel {
+  width: min(100%, 560px);
+  margin: 0 auto;
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.object-quick-form-view__title {
+  margin: 0 0 20px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.object-quick-form-view__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.object-quick-form-view__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.object-quick-form-view__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.object-quick-form-view__required {
+  margin-left: 4px;
+  color: #dc2626;
+}
+
+.object-quick-form-view__control {
+  min-width: 0;
+}
+
+.object-quick-form-view__actions {
+  margin-top: 24px;
+}
+
+.object-quick-form-view__submit {
+  appearance: none;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  background: #2563eb;
+}
+
+.object-quick-form-view__submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.object-quick-form-view__empty,
+.object-quick-form-view__hint {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.object-quick-form-view__hint {
+  margin-top: 16px;
+}

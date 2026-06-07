@@ -6,6 +6,8 @@ import {
   isHierarchyRelationField,
   isHierarchyRelationFieldForCard,
   isHierarchyRelationFieldForTable,
+  isPlanHierarchyRelationCandidate,
+  isSelfRelationDefinition,
   TASK_SUBTASK_RELATION_KEY,
 } from "./hierarchyRelationProfile.js";
 
@@ -22,6 +24,13 @@ describe("hierarchyRelationProfile", () => {
         key: "task_assignee",
         source_object_type_key: "task",
         target_object_type_key: "user",
+      },
+      {
+        key: "podpunkt",
+        name: "Подпункт",
+        source_object_type_key: "napravleniya",
+        target_object_type_key: "napravleniya",
+        relation_type: "one_to_one",
       },
     ],
   };
@@ -52,6 +61,15 @@ describe("hierarchyRelationProfile", () => {
   it("detects hierarchy relation field (canonical)", () => {
     assert.equal(isHierarchyRelationField(subtaskField, catalog, "task"), true);
     assert.equal(isHierarchyRelationField(assigneeField, catalog, "task"), false);
+  });
+
+  it("detects generic self-relation without semantic profile", () => {
+    const podpunkt = catalog.relations[2];
+
+    assert.equal(isSelfRelationDefinition(podpunkt), true);
+    assert.equal(isHierarchyRelationDefinition(podpunkt, "napravleniya"), true);
+    assert.equal(isPlanHierarchyRelationCandidate(podpunkt, "napravleniya"), true);
+    assert.equal(isHierarchyRelationDefinition(podpunkt, "task"), false);
   });
 
   it("card and table aliases use the same detector", () => {

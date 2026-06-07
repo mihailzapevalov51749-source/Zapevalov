@@ -1,5 +1,7 @@
 const VIEW_TYPE_LABELS = {
   table: "Таблица",
+  plan: "План",
+  quick_form: "Быстрая форма",
   kanban: "Канбан",
   calendar: "Календарь",
   chart: "Диаграмма",

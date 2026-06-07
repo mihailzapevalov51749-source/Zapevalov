@@ -1,0 +1,174 @@
+{
+  "projection": {
+    "fieldKeys": [
+      "nazvanie",
+      "opisanie",
+      "otvetstvennyy",
+      "prioritet",
+      "problemy",
+      "status",
+      "tselevoy_srok"
+    ],
+    "fieldOrder": [
+      "nazvanie",
+      "opisanie",
+      "otvetstvennyy",
+      "prioritet",
+      "problemy",
+      "status",
+      "tselevoy_srok"
+    ],
+    "infoFieldKeys": [
+      "otvetstvennyy",
+      "prioritet",
+      "problemy",
+      "tselevoy_srok",
+      "status",
+      "opisanie"
+    ],
+    "titleFieldKey": "nazvanie"
+  },
+  "roleMapping": {
+    "labels": {
+      "nodeTitle": "nazvanie",
+      "nodeStatus": "status",
+      "nodeDescription": "opisanie"
+    },
+    "nodeTitle": "nazvanie",
+    "nodeStatus": "status",
+    "nodeDescription": "opisanie"
+  },
+  "plan": {
+    "planLayout": {
+      "tabs": [
+        {
+          "key": "info",
+          "label": "Инфо",
+          "order": 10,
+          "system": true,
+          "visible": true,
+          "showInInfo": false
+        },
+        {
+          "key": "comments",
+          "label": "Комментарии",
+          "order": 30,
+          "system": true,
+          "visible": true,
+          "showInInfo": false
+        },
+        {
+          "key": "history",
+          "label": "История",
+          "order": 50,
+          "system": true,
+          "visible": true,
+          "showInInfo": false
+        },
+        {
+          "key": "files",
+          "label": "Файлы",
+          "order": 40,
+          "system": true,
+          "visible": true,
+          "showInInfo": false
+        },
+        {
+          "key": "tasks",
+          "label": "Задачи",
+          "order": 20,
+          "system": true,
+          "visible": true,
+          "showInInfo": false
+        },
+        {
+          "key": "checklist",
+          "label": "Чек-лист",
+          "order": 60,
+          "system": true,
+          "visible": true,
+          "showInInfo": true
+        }
+      ],
+      "fields": {
+        "order": [],
+        "hiddenFieldKeys": [],
+        "visibleFieldKeys": []
+      },
+      "infoSections": [
+        {
+          "key": "status",
+          "label": "Статус",
+          "order": 10,
+          "system": true,
+          "visible": true
+        },
+        {
+          "key": "progress",
+          "label": "Готовность",
+          "order": 20,
+          "system": true,
+          "visible": true
+        },
+        {
+          "key": "description",
+          "label": "Описание",
+          "order": 30,
+          "system": true,
+          "visible": true
+        },
+        {
+          "key": "checklist",
+          "label": "Чек-лист",
+          "order": 40,
+          "system": true,
+          "visible": true
+        },
+        {
+          "key": "fields",
+          "label": "Основные поля",
+          "order": 50,
+          "system": true,
+          "visible": true
+        },
+        {
+          "key": "problems",
+          "label": "Проблемы",
+          "order": 60,
+          "system": true,
+          "visible": true
+        }
+      ]
+    },
+    "progressMode": "status_based",
+    "statusMapping": {
+      "new": 0,
+      "done": 100,
+      "ready": 100,
+      "review": 50,
+      "planned": 0,
+      "deferred": 0,
+      "progress": 50,
+      "completed": 100,
+      "postponed": 0,
+      "in_progress": 50,
+      "not_started": 0
+    },
+    "issuesRelationKey": "problemy",
+    "statusProgressMap": {
+      "new": 0,
+      "done": 100,
+      "ready": 100,
+      "review": 50,
+      "planned": 0,
+      "deferred": 0,
+      "progress": 50,
+      "completed": 100,
+      "postponed": 0,
+      "in_progress": 50,
+      "not_started": 0
+    },
+    "hierarchyRelationKey": "podpunkt",
+    "usesLegacyPlanFields": false
+  }
+}

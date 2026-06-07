@@ -15,6 +15,7 @@ from app.modules.platform.designer.object_types.menu_placements.schemas import (
     MenuPlacementsResponse,
 )
 from app.modules.platform.designer.object_types.models import DesignerObjectType
+from app.modules.platform.shared.object_type_settings import resolve_show_in_navigation
 from app.modules.navigation.enrichment import load_object_types_map
 
 DISALLOWED_PARENT_TYPES = frozenset({OBJECT_TYPE_NAV_TYPE, "system_page"})
@@ -107,6 +108,12 @@ def upsert_menu_placement(
 
     menu_scope = placement.menu_scope
     _validate_parent(db, tenant_id, placement.parent_id, menu_scope)
+
+    if not resolve_show_in_navigation(object_type.settings_json):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Объект не отображается в навигации. Включите «Отображать в навигации» в настройках объекта.",
+        )
 
     url = _resolve_placement_url(menu_scope, tenant_id, object_type)
     existing = _find_existing_placement(db, tenant_id, menu_scope, object_type_id)

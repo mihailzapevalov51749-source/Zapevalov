@@ -5,6 +5,7 @@ import { getApiErrorMessage } from "../api/platformApiClient";
 import * as designerApi from "../api/designerApi";
 import * as runtimeCatalogApi from "../api/runtimeCatalogApi";
 import ObjectTypeWorkspace from "../components/objectTypes/ObjectTypeWorkspace";
+import ObjectTypeDeleteConfirmModal from "../components/objectTypes/ObjectTypeDeleteConfirmModal";
 import ObjectTypePublishToMenuDialog from "../components/objectTypes/ObjectTypePublishToMenuDialog";
 import ObjectTypeWorkspaceHeader from "../components/objectTypes/ObjectTypeWorkspaceHeader";
 import FieldsTab from "../components/tabs/FieldsTab";
@@ -14,6 +15,7 @@ import RuntimePreviewTab from "../components/tabs/RuntimePreviewTab";
 import ViewsTab from "../components/tabs/ViewsTab";
 import { DEFAULT_DESIGNER_TAB, isValidDesignerTab } from "../constants/tabs";
 import { ObjectTypePreviewTabProvider } from "../context/ObjectTypePreviewTabContext";
+import { PlanViewStudioProvider } from "../context/PlanViewStudioContext";
 import { useDesignerShell } from "../context/DesignerShellContext";
 import { mergeObjectTypeAppearance } from "../../../shared/icons/iconFileUtils";
 import { navigationService } from "../../navigation/services/navigationService";
@@ -24,6 +26,7 @@ import {
   dispatchPortalNavigationReload,
 } from "../utils/navigationReload";
 import { resolveObjectTypeLifecycleState } from "../utils/objectTypeLifecycleState";
+import { dispatchDesignerObjectSchemaChanged } from "../utils/designerObjectSchemaChanged";
 
 export default function ObjectTypeWorkspacePage() {
   const { tenantId } = useDesignerShell();
@@ -37,10 +40,17 @@ export default function ObjectTypeWorkspacePage() {
   const [deleting, setDeleting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isDraftDirty, setIsDraftDirty] = useState(false);
+  const [schemaRevision, setSchemaRevision] = useState(0);
+  const [studioStatusMessage, setStudioStatusMessage] = useState("");
   const [hasMenuPlacement, setHasMenuPlacement] = useState(false);
   const [catalogVersion, setCatalogVersion] = useState(null);
   const generalSaveRef = useRef(null);
+  const tableViewsSaveRef = useRef(null);
+  const planViewsSaveRef = useRef(null);
   const [generalSaveReady, setGeneralSaveReady] = useState(false);
+  const [tableViewsDirty, setTableViewsDirty] = useState(false);
+  const [planViewsDirty, setPlanViewsDirty] = useState(false);
+  const isViewsDirty = tableViewsDirty || planViewsDirty;
   const [appearanceDraft, setAppearanceDraft] = useState({
     icon_type: null,
     icon_file_url: null,
@@ -48,6 +58,9 @@ export default function ObjectTypeWorkspacePage() {
   });
   const [menuDialogOpen, setMenuDialogOpen] = useState(false);
   const [menuPublishMessage, setMenuPublishMessage] = useState("");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletePreviewLoading, setDeletePreviewLoading] = useState(false);
+  const [deletePreview, setDeletePreview] = useState(null);
 
   const resolveAppearanceDraft = useCallback(
     async (objectTypeData) => {
@@ -106,37 +119,67 @@ export default function ObjectTypeWorkspacePage() {
     [resolveAppearanceDraft],
   );
 
-  const handleSchemaChanged = useCallback(async () => {
+  const handleSchemaChanged = useCallback(async (options = {}) => {
     try {
       const objectTypeData = await designerApi.getObjectType(tenantId, objectTypeId);
       setObjectType(objectTypeData);
+      setSchemaRevision((value) => value + 1);
+      dispatchDesignerObjectSchemaChanged({
+        tenantId,
+        objectTypeId,
+        viewKey: options?.viewKey ?? null,
+      });
     } catch (err) {
       console.warn("[ObjectTypeWorkspacePage] Failed to reload object type after schema change", err);
     }
   }, [tenantId, objectTypeId]);
 
+  const registerPlanViewsSave = useCallback((saveFn) => {
+    planViewsSaveRef.current = saveFn;
+  }, []);
+
+  const registerTableViewsSave = useCallback((saveFn) => {
+    tableViewsSaveRef.current = saveFn;
+  }, []);
+
   const lifecycle = useMemo(
     () =>
       resolveObjectTypeLifecycleState({
-        isDirty: isDraftDirty,
+        isDirty: isDraftDirty || isViewsDirty,
         objectType,
         catalogVersion,
         hasMenuPlacement,
       }),
-    [catalogVersion, hasMenuPlacement, isDraftDirty, objectType],
+    [catalogVersion, hasMenuPlacement, isDraftDirty, isViewsDirty, objectType],
   );
 
   const handleUpdatePublication = useCallback(async () => {
     setPublishing(true);
     setMenuPublishMessage("");
 
+    const hadPublishedBefore = Boolean(objectType?.last_published_at || objectType?.lastPublishedAt);
+
     try {
+      if (isViewsDirty) {
+        if (planViewsDirty && planViewsSaveRef.current) {
+          await planViewsSaveRef.current();
+        } else if (tableViewsDirty && tableViewsSaveRef.current) {
+          await tableViewsSaveRef.current();
+        } else {
+          window.alert(
+            "Есть несохранённые изменения вкладок. Сохраните их перед публикацией.",
+          );
+          return;
+        }
+      }
+
       if (isDraftDirty && generalSaveRef.current) {
         await generalSaveRef.current();
         setIsDraftDirty(false);
       }
 
       const publishResult = await designerApi.publishCatalog(tenantId);
+
       setCatalogVersion(publishResult?.catalog_version ?? null);
 
       const objectTypeData = await designerApi.getObjectType(tenantId, objectTypeId);
@@ -147,38 +190,53 @@ export default function ObjectTypeWorkspacePage() {
       dispatchPortalNavigationReload();
 
       setMenuPublishMessage(
-        "Публикация обновлена. Данные объекта синхронизированы, размещение в меню не изменилось.",
+        hadPublishedBefore
+          ? "Публикация обновлена. Данные объекта синхронизированы."
+          : "Каталог опубликован. Объект доступен в Runtime, связях, вкладках пространств и на страницах.",
       );
+      setStudioStatusMessage("");
     } catch (err) {
       window.alert(getApiErrorMessage(err, "Не удалось обновить публикацию"));
     } finally {
       setPublishing(false);
     }
-  }, [isDraftDirty, objectTypeId, resolveAppearanceDraft, tenantId]);
+  }, [
+    isDraftDirty,
+    isViewsDirty,
+    planViewsDirty,
+    tableViewsDirty,
+    objectType,
+    objectTypeId,
+    resolveAppearanceDraft,
+    tenantId,
+  ]);
 
   const handlePublish = useCallback(() => {
-    if (lifecycle.publishAction === "update-catalog") {
+    if (
+      lifecycle.publishAction === "update-catalog" ||
+      lifecycle.publishAction === "publish-catalog"
+    ) {
       handleUpdatePublication();
+    }
+  }, [handleUpdatePublication, lifecycle.publishAction]);
+
+  const handleBeforePublish = useCallback(async () => {
+    if (isViewsDirty) {
+      if (planViewsDirty && planViewsSaveRef.current) {
+        await planViewsSaveRef.current();
+      } else if (tableViewsDirty && tableViewsSaveRef.current) {
+        await tableViewsSaveRef.current();
+      }
       return;
     }
 
-    setMenuPublishMessage("");
-    setMenuDialogOpen(true);
-  }, [handleUpdatePublication, lifecycle.publishAction]);
-
-  const handleManagePublication = () => {
-    setMenuPublishMessage("");
-    setMenuDialogOpen(true);
-  };
-
-  const handleBeforePublish = useCallback(async () => {
     if (!isDraftDirty || !generalSaveRef.current) {
       return;
     }
 
     await generalSaveRef.current();
     setIsDraftDirty(false);
-  }, [isDraftDirty]);
+  }, [isDraftDirty, isViewsDirty, planViewsDirty, tableViewsDirty]);
 
   const handleMenuPlacementSuccess = useCallback(
     async ({ catalogVersion: nextCatalogVersion } = {}) => {
@@ -195,7 +253,7 @@ export default function ObjectTypeWorkspacePage() {
 
       setHasMenuPlacement(true);
       setMenuPublishMessage(
-        "Каталог опубликован. Объект доступен в предпросмотре и размещён в меню.",
+        "Каталог опубликован. Размещение в меню обновлено.",
       );
 
       try {
@@ -213,7 +271,15 @@ export default function ObjectTypeWorkspacePage() {
     [objectTypeId, resolveAppearanceDraft, tenantId],
   );
 
-  const handleDeleteObject = async () => {
+  const handleRenameObject = useCallback(() => {
+    navigate(`/designer/tenant/${tenantId}/object-types/${objectTypeId}/general`);
+  }, [navigate, objectTypeId, tenantId]);
+
+  const handleDuplicateObject = useCallback(() => {
+    window.alert("Дублирование объекта будет доступно в следующем релизе.");
+  }, []);
+
+  const handleOpenDeleteModal = useCallback(async () => {
     if (!objectType) {
       return;
     }
@@ -223,11 +289,32 @@ export default function ObjectTypeWorkspacePage() {
       return;
     }
 
-    const confirmed = window.confirm(
-      `Удалить объект «${objectType.name}»?\n\nОбъект будет удалён из Designer. Это действие нельзя отменить.`,
-    );
+    setDeleteModalOpen(true);
+    setDeletePreview(null);
+    setDeletePreviewLoading(true);
 
-    if (!confirmed) {
+    try {
+      const preview = await designerApi.getObjectTypeDeletePreview(tenantId, objectTypeId);
+      setDeletePreview(preview);
+    } catch (err) {
+      setDeleteModalOpen(false);
+      window.alert(getApiErrorMessage(err, "Не удалось проверить использование объекта"));
+    } finally {
+      setDeletePreviewLoading(false);
+    }
+  }, [objectType, objectTypeId, tenantId]);
+
+  const handleCloseDeleteModal = useCallback(() => {
+    if (deleting) {
+      return;
+    }
+    setDeleteModalOpen(false);
+    setDeletePreview(null);
+    setDeletePreviewLoading(false);
+  }, [deleting]);
+
+  const handleConfirmDeleteObject = async () => {
+    if (!objectType || objectType.is_system) {
       return;
     }
 
@@ -236,6 +323,8 @@ export default function ObjectTypeWorkspacePage() {
     try {
       await designerApi.deleteObjectType(tenantId, objectTypeId);
       dispatchDesignerNavigationReload();
+      setDeleteModalOpen(false);
+      setDeletePreview(null);
       navigate(`/designer/tenant/${tenantId}/object-types`);
     } catch (err) {
       window.alert(getApiErrorMessage(err, "Не удалось удалить объект"));
@@ -245,21 +334,65 @@ export default function ObjectTypeWorkspacePage() {
   };
 
   const handleHeaderSave = async () => {
-    if (!generalSaveRef.current) {
+    setStudioStatusMessage("");
+
+    if (isViewsDirty) {
+      setSaving(true);
+
+      try {
+        if (planViewsDirty && planViewsSaveRef.current) {
+          await planViewsSaveRef.current();
+        } else if (tableViewsDirty && tableViewsSaveRef.current) {
+          await tableViewsSaveRef.current();
+        }
+      } catch (err) {
+        window.alert(getApiErrorMessage(err, "Не удалось сохранить"));
+      } finally {
+        setSaving(false);
+      }
       return;
     }
 
-    setSaving(true);
+    if (isDraftDirty && generalSaveRef.current) {
+      setSaving(true);
 
-    try {
-      await generalSaveRef.current();
-      setIsDraftDirty(false);
-    } catch (err) {
-      window.alert(getApiErrorMessage(err, "Не удалось сохранить"));
-    } finally {
-      setSaving(false);
+      try {
+        await generalSaveRef.current();
+        setIsDraftDirty(false);
+      } catch (err) {
+        window.alert(getApiErrorMessage(err, "Не удалось сохранить"));
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
+    if (lifecycle.needsPublish) {
+      setSaving(true);
+
+      try {
+        await handleSchemaChanged();
+        setStudioStatusMessage(
+          "Изменения сохранены в Studio. Опубликуйте каталог, когда закончите настройку.",
+        );
+      } catch (err) {
+        window.alert(getApiErrorMessage(err, "Не удалось обновить состояние Studio"));
+      } finally {
+        setSaving(false);
+      }
     }
   };
+
+  const canSaveGeneralDraft = tab === "general" && generalSaveReady && isDraftDirty;
+  const canSaveViewsDraft = isViewsDirty;
+  const hasStudioUnpublishedChanges = Boolean(lifecycle.needsPublish);
+  const headerSaveAvailable =
+    canSaveGeneralDraft || canSaveViewsDraft || hasStudioUnpublishedChanges;
+  const headerSaveDisabled =
+    !canSaveGeneralDraft &&
+    !canSaveViewsDraft &&
+    !hasStudioUnpublishedChanges &&
+    lifecycle.saveVariant === "neutral";
 
   if (!isValidDesignerTab(tab)) {
     return (
@@ -336,13 +469,17 @@ export default function ObjectTypeWorkspacePage() {
       <ViewsTab
         tenantId={tenantId}
         objectTypeId={objectTypeId}
+        objectTypeName={objectType?.name || objectType?.key || ""}
+        objectTypeKey={objectType?.key || ""}
         onSchemaChanged={handleSchemaChanged}
+        registerSave={registerTableViewsSave}
+        onDirtyChange={setTableViewsDirty}
       />
     );
   } else if (tab === "runtime-preview") {
     tabContent = (
       <RuntimePreviewTab
-        key={`runtime-preview-${objectType.key}-${catalogVersion ?? "none"}`}
+        key={`runtime-preview-${objectType.key}-${catalogVersion ?? "none"}-${schemaRevision}`}
         tenantId={tenantId}
         objectTypeId={objectTypeId}
         objectType={objectType}
@@ -366,12 +503,34 @@ export default function ObjectTypeWorkspacePage() {
         onPublishingChange={setPublishing}
         onSuccess={handleMenuPlacementSuccess}
       />
+      <ObjectTypeDeleteConfirmModal
+        open={deleteModalOpen}
+        objectName={deletePreview?.name || objectType?.name}
+        usageGroups={deletePreview?.groups || []}
+        loading={deletePreviewLoading}
+        isSubmitting={deleting}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDeleteObject}
+      />
       {menuPublishMessage ? (
         <div className="designer-publish-dialog__success" role="status">
           {menuPublishMessage}
         </div>
       ) : null}
+      {studioStatusMessage ? (
+        <div className="designer-publish-dialog__success" role="status">
+          {studioStatusMessage}
+        </div>
+      ) : null}
       <ObjectTypePreviewTabProvider tenantId={tenantId} objectTypeId={objectTypeId}>
+        <PlanViewStudioProvider
+          tenantId={tenantId}
+          objectTypeId={objectTypeId}
+          objectTypeKey={objectType?.key || ""}
+          onSchemaChanged={handleSchemaChanged}
+          onDirtyChange={setPlanViewsDirty}
+          registerSave={registerPlanViewsSave}
+        >
         <ObjectTypeWorkspace
           header={
             <ObjectTypeWorkspaceHeader
@@ -379,19 +538,21 @@ export default function ObjectTypeWorkspacePage() {
               lifecycle={lifecycle}
               saving={saving}
               publishing={publishing}
-              saveAvailable={tab === "general" && generalSaveReady}
-              saveDisabled={!isDraftDirty && lifecycle.saveVariant === "neutral"}
+              saveAvailable={headerSaveAvailable}
+              saveDisabled={headerSaveDisabled}
+              showUnpublishedChanges={hasStudioUnpublishedChanges}
               deleting={deleting}
               onSave={handleHeaderSave}
               onPublish={handlePublish}
-              onManagePublication={handleManagePublication}
-              showManagePublication={Boolean(hasMenuPlacement)}
-              onDeleteObject={handleDeleteObject}
+              onRenameObject={handleRenameObject}
+              onDuplicateObject={handleDuplicateObject}
+              onDeleteObject={handleOpenDeleteModal}
             />
           }
         >
           {tabContent}
         </ObjectTypeWorkspace>
+        </PlanViewStudioProvider>
       </ObjectTypePreviewTabProvider>
     </>
   );

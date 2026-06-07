@@ -10,6 +10,11 @@ import { useSearchParams } from "react-router-dom";
 
 import { getApiErrorMessage } from "../api/platformApiClient";
 import * as designerApi from "../api/designerApi";
+import {
+  DESIGNER_OBJECT_SCHEMA_CHANGED_EVENT,
+  dispatchDesignerObjectSchemaChanged,
+  matchesDesignerObjectSchemaChangedEvent,
+} from "../utils/designerObjectSchemaChanged";
 
 const ObjectTypePreviewTabContext = createContext(null);
 
@@ -43,6 +48,33 @@ export function ObjectTypePreviewTabProvider({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedViewKey, setSelectedViewKey] = useState(null);
+  const [studioViewDraft, setStudioViewDraftState] = useState(null);
+  const [planPreviewEditor, setPlanPreviewEditorState] = useState(null);
+
+  const setStudioViewDraft = useCallback((next) => {
+    setStudioViewDraftState((prev) => {
+      if (prev === next) {
+        return prev;
+      }
+
+      if (
+        prev &&
+        next &&
+        typeof prev === "object" &&
+        typeof next === "object" &&
+        prev.viewKey === next.viewKey &&
+        JSON.stringify(prev.settingsJson) === JSON.stringify(next.settingsJson)
+      ) {
+        return prev;
+      }
+
+      return next;
+    });
+  }, []);
+
+  const setPlanPreviewEditor = useCallback((next) => {
+    setPlanPreviewEditorState((prev) => (prev === next ? prev : next));
+  }, []);
 
   const loadViews = useCallback(async () => {
     if (!tenantId || !objectTypeId) {
@@ -68,6 +100,44 @@ export function ObjectTypePreviewTabProvider({
   useEffect(() => {
     void loadViews();
   }, [loadViews]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return undefined;
+    }
+
+    const handleSchemaChanged = (event) => {
+      if (
+        !matchesDesignerObjectSchemaChangedEvent(
+          event?.detail,
+          tenantId,
+          objectTypeId,
+        )
+      ) {
+        return;
+      }
+
+      void loadViews().then(() => {
+        const nextViewKey = String(event?.detail?.viewKey || "").trim();
+        if (nextViewKey) {
+          setSelectedViewKey(nextViewKey);
+
+          const nextParams = new URLSearchParams(searchParams);
+          nextParams.set("viewKey", nextViewKey);
+          setSearchParams(nextParams, { replace: true });
+        }
+      });
+    };
+
+    window.addEventListener(DESIGNER_OBJECT_SCHEMA_CHANGED_EVENT, handleSchemaChanged);
+
+    return () => {
+      window.removeEventListener(
+        DESIGNER_OBJECT_SCHEMA_CHANGED_EVENT,
+        handleSchemaChanged,
+      );
+    };
+  }, [loadViews, objectTypeId, searchParams, setSearchParams, tenantId]);
 
   useEffect(() => {
     if (!views.length) {
@@ -110,6 +180,10 @@ export function ObjectTypePreviewTabProvider({
       selectedView,
       selectView,
       reloadViews: loadViews,
+      studioViewDraft,
+      setStudioViewDraft,
+      planPreviewEditor,
+      setPlanPreviewEditor,
     }),
     [
       views,
@@ -119,6 +193,8 @@ export function ObjectTypePreviewTabProvider({
       selectedView,
       selectView,
       loadViews,
+      studioViewDraft,
+      planPreviewEditor,
     ],
   );
 

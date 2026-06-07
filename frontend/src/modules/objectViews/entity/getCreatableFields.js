@@ -1,10 +1,7 @@
 import { isFileFieldType } from "../../../shared/files/attachments/utils/attachmentFileTypes";
-import {
-  isCreatableFieldType,
-  normalizeFieldEditorType,
-} from "../../../shared/fieldEditors/fieldEditorRegistry";
-import { catalogFieldToFieldDef } from "../table/services/adapters/catalogFieldToFieldDef";
+import { isCreatableFieldType } from "../../../shared/fieldEditors/fieldEditorRegistry";
 import { findCatalogObjectType } from "../table/services/adapters/ObjectTypeTableAdapter";
+import { mapFieldForCreateForm } from "./mapFieldForCreateForm";
 
 /**
  * Published catalog fields eligible for runtime entity create form.
@@ -38,31 +35,8 @@ export function getCreatableFields(catalog, objectTypeKey) {
         return false;
       }
 
-      if (rawType === "relation") {
-        return false;
-      }
-
       return isCreatableFieldType(rawType);
     })
-    .map((field) => {
-      const rawFieldType = normalizeFieldEditorType(
-        field.field_type || field.type,
-      );
-      const fieldDef = catalogFieldToFieldDef(field);
-
-      if (!fieldDef) {
-        return null;
-      }
-
-      return {
-        ...fieldDef,
-        rawFieldType,
-        type:
-          rawFieldType === "multi_choice"
-            ? "choice"
-            : fieldDef.type,
-        multiple: rawFieldType === "multi_choice" || fieldDef.multiple,
-      };
-    })
+    .map((field) => mapFieldForCreateForm(field))
     .filter(Boolean);
 }
