@@ -1,3 +1,27 @@
+.designer-object-engine-tab-placeholder {
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+  border: 1px solid var(--designer-border);
+  border-radius: var(--designer-radius);
+  background: var(--designer-panel);
+  padding: 20px 22px;
+  box-sizing: border-box;
+}
+
+.designer-object-engine-tab-placeholder__title {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.3;
+  color: var(--designer-text);
+}
+
+.designer-object-engine-tab-placeholder__note {
+  margin: 10px 0 0;
+  font-size: 14px;
+  color: var(--designer-text-muted);
+}
+
 .designer-root {
   --designer-accent: var(--platform-accent, #7c3aed);
   --designer-accent-hover: var(--platform-accent-hover, #6d28d9);

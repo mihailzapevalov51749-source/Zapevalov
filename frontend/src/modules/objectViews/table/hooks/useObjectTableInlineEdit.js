@@ -1,8 +1,7 @@
 import { useCallback, useState } from "react";
 
 import { getApiErrorMessage } from "../../../designer/api/platformApiClient";
-import { buildEntityUpdatePayload } from "../../../objectEntities/services/buildEntityUpdatePayload";
-import { runtimeWriteGateway } from "../../../runtimeWriteGateway";
+import { persistRuntimeEntityFieldUpdate } from "../../services/persistRuntimeEntityFieldUpdate.js";
 import { isCreatableFieldType } from "../../../../shared/fieldEditors/fieldEditorRegistry";
 import { isViewEngineSystemColumn } from "../../../../shared/viewEngine/systemColumnKeys";
 
@@ -50,33 +49,21 @@ export default function useObjectTableInlineEdit({
       setInlineEditError("");
 
       try {
-        const { values, fieldErrors } = buildEntityUpdatePayload(
-          { [key]: nextValue },
-          [
-            {
-              key,
-              rawFieldType: fieldDef.rawFieldType || fieldDef.type,
-              isRequired: fieldDef.isRequired === true,
-            },
-          ],
-        );
-
-        if (Object.keys(fieldErrors).length > 0) {
-          setInlineEditError(fieldErrors[key] || "Некорректное значение");
-          return;
-        }
-
-        await runtimeWriteGateway.updateEntity({
+        await persistRuntimeEntityFieldUpdate({
           tenantId,
           objectTypeKey,
           entityId: String(rowId),
-          values,
+          fieldKey: key,
+          fieldDef,
+          nextValue,
         });
 
         await onEntityUpdated?.();
       } catch (error) {
         setInlineEditError(
-          getApiErrorMessage(error, "Не удалось сохранить изменение"),
+          error instanceof Error
+            ? error.message
+            : getApiErrorMessage(error, "Не удалось сохранить изменение"),
         );
       }
     },

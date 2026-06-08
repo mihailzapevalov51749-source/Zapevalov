@@ -228,6 +228,9 @@
 .object-plan-view__tree-columns-readiness,
 .object-plan-view__tree-columns-status {
   text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .object-plan-view__tree-list {
@@ -357,6 +360,13 @@
   flex-shrink: 0;
 }
 
+.object-plan-view__info-save-error {
+  margin: 0 0 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #dc2626;
+}
+
 .object-plan-view__work-area {
   display: flex;
   flex-direction: column;
@@ -374,6 +384,14 @@
   border-bottom: 1px solid #e2e8f0;
   background: #fff;
   flex-shrink: 0;
+}
+
+.object-plan-view__work-header-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .object-plan-view__work-title {
@@ -583,9 +601,38 @@
   margin-bottom: 4px;
 }
 
-.object-plan-view__info-grid-value {
+.object-plan-view__info-grid-value,
+.object-plan-view__info-grid-value-wrap {
   font-size: 14px;
   color: #0f172a;
+}
+
+.object-plan-view__info-grid-value--editable {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  transition: background-color 0.12s ease;
+}
+
+.object-plan-view__info-grid-value--editable:hover {
+  background: #f8fafc;
+}
+
+.object-plan-view__info-grid-value--editing {
+  min-width: 0;
+}
+
+.object-plan-view__info-grid-value--editing.is-saving {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.object-plan-view__info-field-error {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #dc2626;
 }
 
 .object-plan-view__issues-list {

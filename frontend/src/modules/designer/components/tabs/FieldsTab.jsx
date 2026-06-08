@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { getApiErrorMessage } from "../../api/platformApiClient";
 import * as designerApi from "../../api/designerApi";
 import CreateFieldModal, { FIELD_TYPE_OPTIONS } from "../fields/CreateFieldModal";
-import FieldPropertiesPanel from "../fields/FieldPropertiesPanel";
+import FieldPropertiesForm from "../fields/FieldPropertiesForm";
 import {
   buildChoiceSettingsPayload,
   buildFileSettingsPayload,
@@ -21,6 +21,16 @@ import {
   normalizeDefaultValueFromField,
   validateDefaultValueDraft,
 } from "../fields/defaultValue/defaultValueFormUtils";
+import {
+  ObjectSettingsButton,
+  ObjectSettingsEmptyState,
+  ObjectSettingsHeader,
+  ObjectSettingsPage,
+  ObjectSettingsPanel,
+  ObjectSettingsPanelFooter,
+  ObjectSettingsSplitLayout,
+  buildObjectSettingsLayoutStorageKey,
+} from "../../../../shared/objectSettings";
 import {
   buildRelationSettingsPayload,
   isRelationFieldType,
@@ -88,9 +98,21 @@ export default function FieldsTab({
     void reloadRelations();
   }, [reloadRelations]);
 
+  const objectTypeKey = objectType?.key || "";
+
   const objectTypeLabel = useMemo(
     () => String(objectType?.name || objectType?.key || "").trim(),
     [objectType],
+  );
+
+  const layoutStorageKey = useMemo(
+    () =>
+      buildObjectSettingsLayoutStorageKey({
+        tenantId,
+        objectTypeKey,
+        tabKey: "fields",
+      }),
+    [objectTypeKey, tenantId],
   );
 
   const existingRelationKeys = useMemo(
@@ -327,96 +349,125 @@ export default function FieldsTab({
     }
   };
 
-  const handleClosePanel = () => {
-    setSelectedId(null);
-    setDraft(null);
-    setSaveError("");
-  };
-
   if (loading) return <div className="designer-loading">Загрузка полей...</div>;
   if (error) return <div className="designer-error">{error}</div>;
 
   return (
-    <div
-      className={`designer-workspace-layout ${
-        selected ? "has-panel" : ""
-      }`}
-    >
-      <div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginBottom: 12,
-          }}
-        >
-          <h3 style={{ margin: 0 }}>
-            Поля объекта <span className="designer-badge">{items.length}</span>
-          </h3>
-          <button
-            type="button"
-            className="designer-btn designer-btn--primary"
+    <ObjectSettingsPage>
+      <ObjectSettingsHeader
+        title="Поля объекта"
+        count={items.length}
+        centered
+        primaryAction={
+          <ObjectSettingsButton
+            variant="primary"
             onClick={() => {
               setCreateError("");
               setIsCreateModalOpen(true);
             }}
           >
             + Добавить поле
-          </button>
-        </div>
+          </ObjectSettingsButton>
+        }
+      />
 
-        <div className="designer-table-wrap">
-          <table className="designer-table">
-            <thead>
-              <tr>
-                <th>Название</th>
-                <th>Key</th>
-                <th>Тип</th>
-                <th>Обязательное</th>
-                <th>Уникальное</th>
-                <th>Быстрая форма</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr
-                  key={item.id}
-                  className={item.id === selectedId ? "is-selected" : ""}
-                  onClick={() => setSelectedId(item.id)}
-                >
-                  <td>{item.name}</td>
-                  <td>
-                    <code>{item.key}</code>
-                  </td>
-                  <td>{getFieldTypeLabel(item.field_type, FIELD_TYPE_OPTIONS)}</td>
-                  <td>{item.is_required ? "Да" : "Нет"}</td>
-                  <td>{item.is_unique ? "Да" : "Нет"}</td>
-                  <td>{item.quick_create ? "Да" : "Нет"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {selected && draft ? (
-        <FieldPropertiesPanel
-          draft={draft}
-          tenantId={tenantId}
-          objectTypeId={objectTypeId}
-          objectTypeLabel={objectTypeLabel}
-          relationDefinitions={relationDefinitions}
-          existingRelationKeys={existingRelationKeys}
-          onReloadRelations={reloadRelations}
-          onOpenRelationsTab={handleOpenRelationsTab}
-          saveError={saveError}
-          saving={saving}
-          onDraftChange={setDraft}
-          onClose={handleClosePanel}
-          onSave={handleSave}
-          onDelete={handleDelete}
-        />
-      ) : null}
+      <ObjectSettingsSplitLayout
+        storageKey={layoutStorageKey}
+        left={
+          <ObjectSettingsPanel
+            title="Список полей"
+            tone="muted"
+            titleId="designer-object-fields-list-title"
+          >
+            {!items.length ? (
+              <ObjectSettingsEmptyState
+                compact
+                inPanel
+                title="Нет полей"
+                description="Добавьте первое поле с помощью кнопки «+ Добавить поле»."
+              />
+            ) : (
+              <div className="designer-table-wrap">
+                <table className="designer-table">
+                  <thead>
+                    <tr>
+                      <th>Название</th>
+                      <th>Key</th>
+                      <th>Тип</th>
+                      <th>Обязательное</th>
+                      <th>Уникальное</th>
+                      <th>Быстрая форма</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item) => (
+                      <tr
+                        key={item.id}
+                        className={item.id === selectedId ? "is-selected" : ""}
+                        onClick={() => setSelectedId(item.id)}
+                      >
+                        <td>{item.name}</td>
+                        <td>
+                          <code>{item.key}</code>
+                        </td>
+                        <td>{getFieldTypeLabel(item.field_type, FIELD_TYPE_OPTIONS)}</td>
+                        <td>{item.is_required ? "Да" : "Нет"}</td>
+                        <td>{item.is_unique ? "Да" : "Нет"}</td>
+                        <td>{item.quick_create ? "Да" : "Нет"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </ObjectSettingsPanel>
+        }
+        right={
+          <ObjectSettingsPanel
+            title="Свойства поля"
+            titleId="designer-object-field-properties-title"
+            footer={
+              selected && draft ? (
+                <ObjectSettingsPanelFooter
+                  onDelete={handleDelete}
+                  onSave={handleSave}
+                  saving={saving}
+                />
+              ) : null
+            }
+          >
+            {selected && draft ? (
+              <FieldPropertiesForm
+                draft={draft}
+                tenantId={tenantId}
+                objectTypeId={objectTypeId}
+                objectTypeLabel={objectTypeLabel}
+                relationDefinitions={relationDefinitions}
+                existingRelationKeys={existingRelationKeys}
+                onReloadRelations={reloadRelations}
+                onOpenRelationsTab={handleOpenRelationsTab}
+                saveError={saveError}
+                onDraftChange={setDraft}
+              />
+            ) : (
+              <ObjectSettingsEmptyState
+                compact
+                inPanel
+                title={
+                  items.length === 0
+                    ? "Создайте первый элемент"
+                    : "Выберите элемент слева"
+                }
+                description={
+                  items.length === 0
+                    ? "Добавьте первое поле с помощью кнопки «+ Добавить поле»."
+                    : "Чтобы просмотреть и изменить свойства поля."
+                }
+              />
+            )}
+          </ObjectSettingsPanel>
+        }
+      />
 
       <CreateFieldModal
         isOpen={isCreateModalOpen}
@@ -433,6 +484,6 @@ export default function FieldsTab({
         onClose={() => setIsCreateModalOpen(false)}
         onCreate={handleCreateField}
       />
-    </div>
+    </ObjectSettingsPage>
   );
 }

@@ -3,14 +3,20 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { getApiErrorMessage } from "../../api/platformApiClient";
 import * as designerApi from "../../api/designerApi";
 import CreateRelationDefinitionModal from "../relations/CreateRelationDefinitionModal";
-import RelationHierarchyLabelsEditor from "../relations/RelationHierarchyLabelsEditor";
-import PropertiesPanel from "../common/PropertiesPanel";
+import RelationPropertiesForm from "../relations/RelationPropertiesForm";
 import "../relations/relationPropertiesPanel.css";
-import { isHierarchyRelationDefinition } from "../../../../shared/relation/hierarchyRelationProfile.js";
 import {
-  DEFAULT_HIERARCHY_LABELS,
-  suggestRussianHierarchyInflection,
-} from "../../../../shared/relation/hierarchyLabels.js";
+  ObjectSettingsButton,
+  ObjectSettingsEmptyState,
+  ObjectSettingsHeader,
+  ObjectSettingsPage,
+  ObjectSettingsPanel,
+  ObjectSettingsPanelFooter,
+  ObjectSettingsSplitLayout,
+  buildObjectSettingsLayoutStorageKey,
+} from "../../../../shared/objectSettings";
+import { isHierarchyRelationDefinition } from "../../../../shared/relation/hierarchyRelationProfile.js";
+import { DEFAULT_HIERARCHY_LABELS } from "../../../../shared/relation/hierarchyLabels.js";
 
 export default function RelationsTab({
   tenantId,
@@ -33,9 +39,21 @@ export default function RelationsTab({
     [items],
   );
 
+  const objectTypeKey = objectType?.key || "";
+
   const objectTypeLabel = useMemo(
     () => String(objectType?.name || objectType?.key || "").trim(),
     [objectType],
+  );
+
+  const layoutStorageKey = useMemo(
+    () =>
+      buildObjectSettingsLayoutStorageKey({
+        tenantId,
+        objectTypeKey,
+        tabKey: "relations",
+      }),
+    [objectTypeKey, tenantId],
   );
 
   const loadItems = useCallback(async () => {
@@ -146,189 +164,111 @@ export default function RelationsTab({
   if (error) return <div className="designer-error">{error}</div>;
 
   return (
-    <div className={`designer-workspace-layout ${selected ? "has-panel" : ""}`}>
-      <div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginBottom: 12,
-          }}
-        >
-          <h3 style={{ margin: 0 }}>
-            Список связей <span className="designer-badge">{items.length}</span>
-          </h3>
-          <button
-            type="button"
-            className="designer-btn designer-btn--primary"
+    <ObjectSettingsPage>
+      <ObjectSettingsHeader
+        title="Список связей"
+        count={items.length}
+        centered
+        primaryAction={
+          <ObjectSettingsButton
+            variant="primary"
             onClick={() => setIsCreateModalOpen(true)}
           >
             + Добавить связь
-          </button>
-        </div>
+          </ObjectSettingsButton>
+        }
+      />
 
-        <div className="designer-table-wrap">
-          <table className="designer-table">
-            <thead>
-              <tr>
-                <th>Название</th>
-                <th>Key</th>
-                <th>От</th>
-                <th>К</th>
-                <th>Тип</th>
-                <th>Активна</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr
-                  key={item.id}
-                  className={item.id === selectedId ? "is-selected" : ""}
-                  onClick={() => setSelectedId(item.id)}
-                >
-                  <td>{item.name}</td>
-                  <td>
-                    <code>{item.key}</code>
-                  </td>
-                  <td>{item.source_object_type_key || item.source_object_type_id}</td>
-                  <td>{item.target_object_type_key || item.target_object_type_id}</td>
-                  <td>{item.relation_type}</td>
-                  <td>{item.is_active ? "Да" : "Нет"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {selected && draft ? (
-        <PropertiesPanel
-          className="designer-relation-properties-panel"
-          title="Свойства связи"
-          closeVariant="icon"
-          onClose={() => setSelectedId(null)}
-          footer={
-            <>
-              <button
-                type="button"
-                className="designer-btn designer-btn--danger"
-                onClick={handleDelete}
-              >
-                Удалить связь
-              </button>
-              <button
-                type="button"
-                className="designer-btn designer-btn--primary"
-                onClick={handleSave}
-                disabled={saving}
-              >
-                {saving ? "Сохранение..." : "Сохранить"}
-              </button>
-            </>
-          }
-        >
-          <div className="designer-relation-form">
-            <div className="designer-relation-form__identity">
-              <input
-                className="designer-relation-form__name"
-                value={draft.name}
-                aria-label="Название связи"
-                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+      <ObjectSettingsSplitLayout
+        storageKey={layoutStorageKey}
+        left={
+          <ObjectSettingsPanel
+            title="Список связей"
+            tone="muted"
+            titleId="designer-object-relations-list-title"
+          >
+            {!items.length ? (
+              <ObjectSettingsEmptyState
+                compact
+                inPanel
+                title="Нет связей"
+                description="Добавьте первую связь с помощью кнопки «+ Добавить связь»."
               />
-              <code className="designer-relation-form__key">{draft.key}</code>
-            </div>
-
-            <div className="designer-relation-form__flags">
-              <label className="designer-relation-form__flag">
-                <input
-                  type="checkbox"
-                  checked={draft.is_active}
-                  onChange={(e) =>
-                    setDraft({ ...draft, is_active: e.target.checked })
-                  }
+            ) : (
+              <div className="designer-table-wrap">
+                <table className="designer-table">
+                  <thead>
+                    <tr>
+                      <th>Название</th>
+                      <th>Key</th>
+                      <th>От</th>
+                      <th>К</th>
+                      <th>Тип</th>
+                      <th>Активна</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item) => (
+                      <tr
+                        key={item.id}
+                        className={item.id === selectedId ? "is-selected" : ""}
+                        onClick={() => setSelectedId(item.id)}
+                      >
+                        <td>{item.name}</td>
+                        <td>
+                          <code>{item.key}</code>
+                        </td>
+                        <td>{item.source_object_type_key || item.source_object_type_id}</td>
+                        <td>{item.target_object_type_key || item.target_object_type_id}</td>
+                        <td>{item.relation_type}</td>
+                        <td>{item.is_active ? "Да" : "Нет"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </ObjectSettingsPanel>
+        }
+        right={
+          <ObjectSettingsPanel
+            title="Свойства связи"
+            titleId="designer-object-relation-properties-title"
+            footer={
+              selected && draft ? (
+                <ObjectSettingsPanelFooter
+                  onDelete={handleDelete}
+                  onSave={handleSave}
+                  saving={saving}
                 />
-                Активная связь
-              </label>
-              <label className="designer-relation-form__flag">
-                <input
-                  type="checkbox"
-                  checked={draft.is_hierarchy}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-
-                    setDraft((current) => {
-                      if (!current) {
-                        return current;
-                      }
-
-                      const next = {
-                        ...current,
-                        is_hierarchy: checked,
-                      };
-
-                      if (
-                        checked &&
-                        !current.hierarchy_labels?.child &&
-                        current.name
-                      ) {
-                        next.hierarchy_labels = suggestRussianHierarchyInflection(
-                          current.name,
-                          objectTypeLabel,
-                        );
-                      }
-
-                      return next;
-                    });
-                  }}
-                />
-                Иерархическая связь
-              </label>
-            </div>
-
-            <div className="designer-relation-form__group">
-              <label className="designer-label">Тип связи</label>
-              <select
-                className="designer-select"
-                value={draft.relation_type}
-                onChange={(e) =>
-                  setDraft({ ...draft, relation_type: e.target.value })
+              ) : null
+            }
+          >
+            {selected && draft ? (
+              <RelationPropertiesForm
+                draft={draft}
+                objectTypeLabel={objectTypeLabel}
+                onDraftChange={setDraft}
+              />
+            ) : (
+              <ObjectSettingsEmptyState
+                compact
+                inPanel
+                title={
+                  items.length === 0
+                    ? "Создайте первый элемент"
+                    : "Выберите элемент слева"
                 }
-              >
-                <option value="one_to_one">one_to_one</option>
-                <option value="one_to_many">one_to_many</option>
-                <option value="many_to_many">many_to_many</option>
-              </select>
-            </div>
-
-            <RelationHierarchyLabelsEditor
-              isHierarchy={draft.is_hierarchy}
-              hierarchyLabels={draft.hierarchy_labels}
-              onHierarchyLabelsChange={(hierarchyLabels) =>
-                setDraft((current) =>
-                  current
-                    ? {
-                        ...current,
-                        hierarchy_labels: hierarchyLabels,
-                      }
-                    : current,
-                )
-              }
-            />
-
-            <div className="designer-relation-form__group">
-              <label className="designer-label">Описание</label>
-              <textarea
-                className="designer-textarea"
-                rows={2}
-                value={draft.description}
-                onChange={(e) =>
-                  setDraft({ ...draft, description: e.target.value })
+                description={
+                  items.length === 0
+                    ? "Добавьте первую связь с помощью кнопки «+ Добавить связь»."
+                    : "Чтобы просмотреть и изменить свойства связи."
                 }
               />
-            </div>
-          </div>
-        </PropertiesPanel>
-      ) : null}
+            )}
+          </ObjectSettingsPanel>
+        }
+      />
 
       <CreateRelationDefinitionModal
         open={isCreateModalOpen}
@@ -339,6 +279,6 @@ export default function RelationsTab({
         onClose={() => setIsCreateModalOpen(false)}
         onCreated={handleRelationCreated}
       />
-    </div>
+    </ObjectSettingsPage>
   );
 }

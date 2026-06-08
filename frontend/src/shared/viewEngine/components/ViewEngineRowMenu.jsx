@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import RuntimeRowActions from "../../../modules/runtimeActions/components/RuntimeRowActions.jsx";
+
 const MENU_WIDTH = 190;
 const MENU_PADDING = 8;
 const MENU_GAP = 6;
@@ -68,16 +70,21 @@ export default function ViewEngineRowMenu({
   createChildMenuLabel = "Создать дочернюю запись",
   onCreateSubtask,
   onDelete,
+  runtimePlacedActions = [],
+  runtimeActionContext = null,
 }) {
   const menuButtonRef = useRef(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuAnchorRect, setMenuAnchorRect] = useState(null);
 
   const showButton = visible || isMenuOpen;
-  const hasActions =
-    readOnly ||
-    (canCreateSubtask && typeof onCreateSubtask === "function") ||
-    (canDelete && typeof onDelete === "function");
+  const runtimeActions = Array.isArray(runtimePlacedActions) ? runtimePlacedActions : [];
+  const hasRuntimeActions = runtimeActions.length > 0;
+  const showCreateSubtask =
+    canCreateSubtask && (readOnly || typeof onCreateSubtask === "function");
+  const showDelete = canDelete && (readOnly || typeof onDelete === "function");
+  const hasBuiltinActions = showCreateSubtask || showDelete;
+  const hasActions = hasBuiltinActions || hasRuntimeActions;
 
   useEffect(() => {
     if (!isMenuOpen) {
@@ -163,8 +170,7 @@ export default function ViewEngineRowMenu({
           onClick={(event) => event.stopPropagation()}
           onMouseDown={(event) => event.stopPropagation()}
         >
-          {canCreateSubtask &&
-          (readOnly || typeof onCreateSubtask === "function") ? (
+          {showCreateSubtask ? (
             <button
               type="button"
               onClick={readOnly ? undefined : handleCreateSubtask}
@@ -180,7 +186,7 @@ export default function ViewEngineRowMenu({
             </button>
           ) : null}
 
-          {canDelete && (readOnly || typeof onDelete === "function") ? (
+          {showDelete ? (
             <button
               type="button"
               onClick={readOnly ? undefined : handleDelete}
@@ -195,6 +201,30 @@ export default function ViewEngineRowMenu({
             >
               Удалить
             </button>
+          ) : null}
+
+          {hasBuiltinActions && hasRuntimeActions ? (
+            <div
+              role="separator"
+              aria-hidden="true"
+              style={{
+                height: 1,
+                margin: "6px 4px",
+                background: "#e2e8f0",
+              }}
+            />
+          ) : null}
+
+          {hasRuntimeActions ? (
+            <RuntimeRowActions
+              actions={runtimeActions}
+              tenantId={runtimeActionContext?.tenantId ?? null}
+              objectTypeKey={runtimeActionContext?.objectTypeKey ?? null}
+              entityId={runtimeActionContext?.entityId ?? null}
+              menuItemStyle={menuItemStyle}
+              onCloseMenu={() => setIsMenuOpen(false)}
+              onActionClick={runtimeActionContext?.onActionClick ?? null}
+            />
           ) : null}
         </div>,
         document.body,

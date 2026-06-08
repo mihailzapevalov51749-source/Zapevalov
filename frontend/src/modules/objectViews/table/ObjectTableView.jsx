@@ -64,6 +64,10 @@ import {
   formatCreateChildMenuLabel,
   resolveHierarchyLabelsFromCatalog,
 } from "../../../shared/relation/hierarchyLabels.js";
+import usePlacedActions from "../../runtimeActions/hooks/usePlacedActions";
+import useRuntimeActionFormSession from "../../runtimeActions/hooks/useRuntimeActionFormSession";
+import RuntimeActionFormModal from "../../runtimeActions/components/RuntimeActionFormModal";
+import { subscribeRuntimeEntityDataReload } from "../../../shared/objectPlatform/runtimeEntityDataReloadBridge.js";
 import useObjectTableSort from "./hooks/useObjectTableSort";
 import { resolveRelationTableColumns } from "../services/resolveRelationTableColumns";
 import { resolveRelatedEntityCardOpenArgs } from "./openRelatedEntityFromTable";
@@ -148,6 +152,23 @@ export default function ObjectTableView({
     query.resetOffset?.();
     await query.reload?.();
   }, [query]);
+
+  useEffect(() => {
+    return subscribeRuntimeEntityDataReload((detail) => {
+      const reloadObjectTypeKey = String(detail?.objectTypeKey || "").trim();
+      const currentObjectTypeKey = String(objectTypeKey || "").trim();
+
+      if (
+        reloadObjectTypeKey &&
+        currentObjectTypeKey &&
+        reloadObjectTypeKey !== currentObjectTypeKey
+      ) {
+        return;
+      }
+
+      void handleEntityCreated();
+    });
+  }, [handleEntityCreated, objectTypeKey]);
 
   const handleEntitySaved = useCallback(async () => {
     await query.reload?.();
@@ -761,10 +782,28 @@ export default function ObjectTableView({
     [entityCard.beginCreateSubtask, hierarchyRelationKey],
   );
 
+  const canDeleteFromRow = !isPreviewMode;
+
+  const { actions: runtimeRowMenuActions } = usePlacedActions({
+    tenantId,
+    objectTypeKey,
+    placementKey: "row_menu",
+    enabled: !isPreviewMode && Boolean(tenantId && objectTypeKey),
+  });
+
+  const runtimeActionForm = useRuntimeActionFormSession({
+    tenantId,
+    objectTypeKey,
+    catalog: query.catalog,
+  });
+
+  const hasRuntimeRowMenuActions = runtimeRowMenuActions.length > 0;
+
   const rowActionsEnabled =
-    canCreateSubtaskFromRow &&
     !inlineEdit.isInlineEditMode &&
-    (createEntityEnabled || isPreviewMode);
+    (canDeleteFromRow ||
+      (canCreateSubtaskFromRow && (createEntityEnabled || isPreviewMode)) ||
+      hasRuntimeRowMenuActions);
 
   const expandableHierarchyRowIds = hierarchyTable.expandableRowIds;
 
@@ -802,6 +841,10 @@ export default function ObjectTableView({
             canDelete: !isPreviewMode,
             titleFieldKey,
             createChildMenuLabel,
+            tenantId,
+            objectTypeKey,
+            runtimePlacedActions: runtimeRowMenuActions,
+            onRuntimeActionClick: runtimeActionForm.handleActionClick,
             onCreateSubtask: isPreviewMode ? undefined : handleCreateSubtaskFromRow,
             onBeginDeleteEntity: isPreviewMode ? undefined : handleBeginDeleteEntity,
           }
@@ -856,6 +899,8 @@ export default function ObjectTableView({
       canCreateSubtaskFromRow,
       createChildMenuLabel,
       rowActionsEnabled,
+      runtimeRowMenuActions,
+      runtimeActionForm.handleActionClick,
       isPreviewMode,
       titleFieldKey,
       hierarchyTable.treeEnabled,
@@ -1609,7 +1654,7 @@ export default function ObjectTableView({
           title={entityCard.quickCreate?.title}
           objectTypeLabel={entityCard.quickCreate?.objectTypeLabel}
           tenantId={entityCard.quickCreate?.tenantId}
-          catalog={catalog}
+          catalog={query.catalog}
           objectTypeKey={entityCard.quickCreate?.objectTypeKey}
           fields={entityCard.quickCreate?.fields || []}
           formValues={entityCard.quickCreate?.formValues || {}}
@@ -1619,6 +1664,31 @@ export default function ObjectTableView({
           submitError={entityCard.quickCreate?.submitError}
           submitLabel={entityCard.quickCreate?.submitLabel}
           canCustomizeLayout
+        />
+        ) : null}
+
+        {!isPreviewMode ? (
+        <RuntimeActionFormModal
+          open={runtimeActionForm.open}
+          onClose={runtimeActionForm.closeActionForm}
+          onSubmit={runtimeActionForm.submitActionForm}
+          title={
+            runtimeActionForm.session?.action?.form?.title ||
+            runtimeActionForm.session?.action?.name
+          }
+          description={runtimeActionForm.session?.action?.form?.description || ""}
+          submitLabel={runtimeActionForm.session?.action?.form?.submit_label || "Создать"}
+          cancelLabel={runtimeActionForm.session?.action?.form?.cancel_label || "Отмена"}
+          fields={runtimeActionForm.fields}
+          formValues={runtimeActionForm.formValues}
+          onFieldChange={runtimeActionForm.setFieldValue}
+          fieldErrors={runtimeActionForm.fieldErrors}
+          submitError={runtimeActionForm.submitError}
+          submitting={runtimeActionForm.submitting}
+          tenantId={tenantId}
+          catalog={runtimeActionForm.catalog}
+          objectTypeKey={objectTypeKey}
+          modalKey={`runtime_action_form_row_menu_${objectTypeKey || "object"}`}
         />
         ) : null}
 

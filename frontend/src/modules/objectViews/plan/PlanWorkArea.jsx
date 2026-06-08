@@ -13,6 +13,7 @@ import PlanInfoTab from "./PlanInfoTab.jsx";
 import PlanPreviewContextMenu from "./PlanPreviewContextMenu.jsx";
 import PlanPreviewInlineRenameInput from "./PlanPreviewInlineRenameInput.jsx";
 import PlanTabContent from "./PlanTabContent.jsx";
+import ObjectRuntimeRecordToolbarActions from "../../runtimeActions/components/ObjectRuntimeRecordToolbarActions.jsx";
 import { buildPlanTabContextMenuActions } from "./planPreviewConstructor.js";
 
 export default function PlanWorkArea({
@@ -27,6 +28,10 @@ export default function PlanWorkArea({
   previewMode = false,
   onOpenRelatedEntity = null,
   planPreviewEditor = null,
+  onInfoFieldChange = null,
+  infoFieldErrors = {},
+  canEditInfoFields = false,
+  infoSaveError = "",
 }) {
   const dropPositionRef = useRef("before");
   const [dragOverTabId, setDragOverTabId] = useState(null);
@@ -80,6 +85,10 @@ export default function PlanWorkArea({
       relationsState={relationsState}
       onOpenRelatedEntity={onOpenRelatedEntity}
       planPreviewEditor={planPreviewEditor}
+      onFieldChange={onInfoFieldChange}
+      fieldErrors={infoFieldErrors}
+      canEdit={canEditInfoFields}
+      saveError={infoSaveError}
     />
   );
 
@@ -169,9 +178,20 @@ export default function PlanWorkArea({
       aria-label="Рабочая область плана"
     >
       <div className="object-plan-view__work-header">
-        <h2 className="object-plan-view__work-title" title={recordTitle}>
-          {recordTitle}
-        </h2>
+        <div className="object-plan-view__work-header-main">
+          <h2 className="object-plan-view__work-title" title={recordTitle}>
+            {recordTitle}
+          </h2>
+
+          {!previewMode ? (
+            <ObjectRuntimeRecordToolbarActions
+              tenantId={tenantId}
+              objectTypeKey={objectTypeKey}
+              entityId={runtimeEntityId}
+              catalog={catalog}
+            />
+          ) : null}
+        </div>
 
         <div className="object-plan-view__work-tabs" role="tablist" aria-label="Вкладки записи">
           {visibleTabs.map((tab) => {

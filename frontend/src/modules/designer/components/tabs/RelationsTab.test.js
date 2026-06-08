@@ -21,7 +21,10 @@ describe("RelationsTab publish state", () => {
 
 describe("RelationsTab compact layout", () => {
   it("uses compact relation properties grid", () => {
-    const tabSource = readFileSync(resolve(here, "RelationsTab.jsx"), "utf8");
+    const formSource = readFileSync(
+      resolve(here, "../relations/RelationPropertiesForm.jsx"),
+      "utf8",
+    );
     const editorSource = readFileSync(
       resolve(here, "../relations/RelationHierarchyLabelsEditor.jsx"),
       "utf8",
@@ -31,9 +34,9 @@ describe("RelationsTab compact layout", () => {
       "utf8",
     );
 
-    expect(tabSource).toContain("designer-relation-form__identity");
-    expect(tabSource).toContain("designer-relation-form__flags");
-    expect(tabSource).toContain('closeVariant="icon"');
+    expect(formSource).toContain("designer-relation-form__identity");
+    expect(formSource).toContain("designer-relation-form__flags");
+    expect(formSource).toContain("RelationHierarchyLabelsEditor");
     expect(editorSource).toContain("designer-relation-hierarchy__parent");
     expect(editorSource).toContain("designer-relation-hierarchy__child-terms");
     expect(editorSource).toContain("designer-relation-hierarchy__inflections");

@@ -25,6 +25,8 @@ PLATFORM_ALEMBIC_TABLE_NAMES = frozenset(
         "designer_field_definitions",
         "designer_relation_definitions",
         "designer_view_definitions",
+        "designer_action_definitions",
+        "designer_action_placements",
         "designer_metadata_snapshots",
         "designer_publish_records",
         "runtime_entities",

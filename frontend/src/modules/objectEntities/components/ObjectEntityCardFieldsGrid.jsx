@@ -103,7 +103,7 @@ function isOutsideInlineEditor(target, cellElement) {
   return true;
 }
 
-function RuntimeFieldCell({
+export function RuntimeFieldCell({
   field,
   value,
   onFieldChange,

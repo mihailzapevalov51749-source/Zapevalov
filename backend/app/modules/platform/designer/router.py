@@ -23,6 +23,16 @@ from app.modules.platform.designer.pages.router import (
     router as pages_registry_router,
 )
 from app.modules.platform.designer.trash.router import router as trash_router
+from app.modules.platform.action_engine.action_definitions.router import (
+    object_type_action_definitions_router,
+)
+from app.modules.platform.action_engine.action_placements.router import (
+    action_definition_placements_router,
+)
+from app.modules.platform.action_engine.action_forms.router import (
+    action_definition_form_router,
+)
+from app.modules.platform.action_engine.router import router as action_engine_router
 from app.modules.platform.shared.dependencies import (
     require_designer_user,
     require_tenant,
@@ -78,5 +88,21 @@ tenant_router.include_router(publish_router)
 tenant_router.include_router(workspaces_router)
 tenant_router.include_router(pages_registry_router)
 tenant_router.include_router(trash_router)
+tenant_router.include_router(action_engine_router)
+
+tenant_router.include_router(
+    object_type_action_definitions_router,
+    prefix="/object-types/{object_type_id}/action-definitions",
+)
+
+tenant_router.include_router(
+    action_definition_placements_router,
+    prefix="/object-types/{object_type_id}/action-definitions/{action_definition_id}/placements",
+)
+
+tenant_router.include_router(
+    action_definition_form_router,
+    prefix="/object-types/{object_type_id}/action-definitions/{action_definition_id}/form",
+)
 
 router.include_router(tenant_router)

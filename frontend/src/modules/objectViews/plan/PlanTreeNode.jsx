@@ -14,6 +14,7 @@ export default function PlanTreeNode({
   onDrop,
   onDragEnd,
   onContextMenu,
+  showStatusColumn = true,
 }) {
   const hasChildren = Array.isArray(node.children) && node.children.length > 0;
   const isExpanded = expandedNodeIds.has(node.id);
@@ -79,16 +80,18 @@ export default function PlanTreeNode({
 
         <span className="object-plan-view__tree-col-readiness">{node.readiness}%</span>
 
-        <span className="object-plan-view__tree-col-status">
-          <span
-            className="object-plan-view__tree-status-dot"
-            style={{ color: node.statusColor || "#94a3b8" }}
-            aria-hidden="true"
-          >
-            ●
+        {showStatusColumn ? (
+          <span className="object-plan-view__tree-col-status">
+            <span
+              className="object-plan-view__tree-status-dot"
+              style={{ color: node.statusColor || "#94a3b8" }}
+              aria-hidden="true"
+            >
+              ●
+            </span>
+            <span className="object-plan-view__tree-status-label">{node.statusLabel}</span>
           </span>
-          <span className="object-plan-view__tree-status-label">{node.statusLabel}</span>
-        </span>
+        ) : null}
       </div>
 
       {hasChildren && isExpanded
@@ -108,6 +111,7 @@ export default function PlanTreeNode({
               onDrop={onDrop}
               onDragEnd={onDragEnd}
               onContextMenu={onContextMenu}
+              showStatusColumn={showStatusColumn}
             />
           ))
         : null}

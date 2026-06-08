@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 describe("ViewPropertiesPanel plan layout", () => {
   it("does not expose Role Mapping for plan views", () => {
     const source = readFileSync(
-      new URL("./ViewPropertiesPanel.jsx", import.meta.url),
+      new URL("./ViewPropertiesForm.jsx", import.meta.url),
       "utf8",
     );
 

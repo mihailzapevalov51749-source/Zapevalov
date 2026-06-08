@@ -26,6 +26,8 @@ export default function ObjectTypeWorkspaceHeader({
   deleting,
   onSave,
   onPublish,
+  onManagePublication,
+  showManagePublication = false,
   onRenameObject,
   onDuplicateObject,
   onDeleteObject,
@@ -119,6 +121,16 @@ export default function ObjectTypeWorkspaceHeader({
           >
             {publishing ? "Публикация..." : publishLabel}
           </button>
+          {showManagePublication ? (
+            <button
+              type="button"
+              className="designer-workspace-btn designer-workspace-btn--save designer-workspace-btn--save-outline"
+              onClick={onManagePublication}
+              disabled={publishing}
+            >
+              Разместить в меню
+            </button>
+          ) : null}
           <ObjectTypeWorkspaceActionsMenu
             isSystemObject={Boolean(objectType?.is_system)}
             deleting={deleting}

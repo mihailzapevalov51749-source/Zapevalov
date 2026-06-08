@@ -72,12 +72,21 @@ export function rollupReadinessFromChildren(children) {
  */
 export function computePlanNodeReadiness({
   statusValue,
+  progressValue,
   children = [],
   statusMapping = DEFAULT_PLAN_STATUS_MAPPING,
 }) {
   const childRollup = rollupReadinessFromChildren(children);
   if (childRollup != null) {
     return childRollup;
+  }
+
+  if (progressValue != null && progressValue !== "") {
+    const numeric = Number(progressValue);
+
+    if (Number.isFinite(numeric)) {
+      return Math.max(0, Math.min(100, Math.round(numeric)));
+    }
   }
 
   return resolveStatusReadinessPercent(statusValue, statusMapping);

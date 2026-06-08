@@ -52,6 +52,10 @@
   color: inherit;
 }
 
+.portal-object-runtime-header .object-runtime-top-panel-actions {
+  align-self: center;
+}
+
 .portal-object-runtime-header__tabs {
   flex: 1 1 auto;
   min-width: 0;

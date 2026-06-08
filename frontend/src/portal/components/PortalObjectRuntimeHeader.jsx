@@ -1,3 +1,4 @@
+import ObjectRuntimeTopPanelActions from "../../modules/runtimeActions/components/ObjectRuntimeTopPanelActions";
 import ObjectTypeIcon from "../../shared/icons/ObjectTypeIcon";
 import ObjectContextMenuTrigger from "../../shared/objectPlatform/objectContextMenu/ObjectContextMenuTrigger";
 
@@ -131,6 +132,11 @@ export default function PortalObjectRuntimeHeader({
         className="portal-object-runtime-header portal-object-runtime-header--menu-in-tab"
         aria-label="Вкладки объекта"
       >
+        <ObjectRuntimeTopPanelActions
+          tenantId={tenantId}
+          objectTypeKey={objectTypeKey}
+          placementKey="top_panel"
+        />
         {tabsBar}
       </div>
     );
@@ -155,6 +161,12 @@ export default function PortalObjectRuntimeHeader({
           </h1>
         </div>
       ) : null}
+
+      <ObjectRuntimeTopPanelActions
+        tenantId={tenantId}
+        objectTypeKey={objectTypeKey}
+        placementKey="top_panel"
+      />
 
       {tabsBar}
     </header>

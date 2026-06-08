@@ -84,6 +84,7 @@ export function buildPlanTree({
   titleFieldKey = null,
   statusFieldKey = null,
   statusField = null,
+  progressFieldKey = null,
 }) {
   const relationKey = String(planPresentation?.hierarchyRelationKey || "").trim();
   if (!relationKey) {
@@ -109,6 +110,7 @@ export function buildPlanTree({
   const statusMapping = planPresentation.statusMapping || {};
   const resolvedTitleFieldKey = String(titleFieldKey || "").trim() || null;
   const resolvedStatusFieldKey = String(statusFieldKey || "").trim() || null;
+  const resolvedProgressFieldKey = String(progressFieldKey || "").trim() || null;
 
   /** @type {Map<string, object>} */
   const nodesById = new Map();
@@ -152,8 +154,13 @@ export function buildPlanTree({
     const statusCategory = rolledUpStatusCategory || ownStatusCategory;
     const rollupStatusDisplay = resolvePlanStatusDisplay(statusCategory);
 
+    const ownProgressValue = resolvedProgressFieldKey
+      ? getPlanEntityFieldValue(entity, resolvedProgressFieldKey)
+      : null;
+
     const readiness = computePlanNodeReadiness({
       statusValue: ownStatusValue,
+      progressValue: ownProgressValue,
       children,
       statusMapping,
     });

@@ -3,6 +3,7 @@ import { GripVertical } from "lucide-react";
 
 import FieldValueRenderer from "../../../shared/fieldTypes/FieldValueRenderer";
 import { fieldDefToRendererColumn } from "../../../shared/viewEngine/utils/fieldDefToRendererColumn.js";
+import PlanInfoFieldValue from "./PlanInfoFieldValue.jsx";
 import { buildInitialFormValuesFromEntity } from "../../objectEntities/services/buildEntityUpdatePayload.js";
 import PlanPreviewContextMenu from "./PlanPreviewContextMenu.jsx";
 import PlanPreviewInlineRenameInput from "./PlanPreviewInlineRenameInput.jsx";
@@ -33,6 +34,10 @@ export default function PlanInfoTab({
   relationsState = null,
   onOpenRelatedEntity = null,
   planPreviewEditor = null,
+  onFieldChange = null,
+  fieldErrors = {},
+  canEdit = false,
+  saveError = "",
 }) {
   const dropPositionRef = useRef("before");
   const dragSourceKeyRef = useRef(null);
@@ -68,6 +73,19 @@ export default function PlanInfoTab({
 
   const runtimeEntityId = node?.id ? String(node.id) : null;
   const hasEmbeddedTabs = embeddedTabs.length > 0;
+  const officeEditMode = !constructorMode && canEdit && Boolean(onFieldChange);
+
+  const createContext = useMemo(
+    () =>
+      tenantId && objectTypeKey
+        ? {
+            tenantId,
+            catalog,
+            objectTypeKey,
+          }
+        : null,
+    [catalog, objectTypeKey, tenantId],
+  );
 
   const handleFieldContextMenu = useCallback(
     (event, field) => {
@@ -165,6 +183,10 @@ export default function PlanInfoTab({
     >
       {displayFields.length ? (
         <section className="object-plan-view__info-section">
+          {saveError ? (
+            <p className="object-plan-view__info-save-error">{saveError}</p>
+          ) : null}
+
           <div className="object-plan-view__info-fields-grid">
             {displayFields.map((field) => {
               const fieldKey = String(field?.key || "").trim();
@@ -271,12 +293,26 @@ export default function PlanInfoTab({
                     </span>
                   )}
 
-                  <div className="object-plan-view__info-grid-value">
-                    <FieldValueRenderer
-                      type={field.type}
-                      column={fieldDefToRendererColumn(field)}
-                      value={formValues[field.key]}
-                    />
+                  <div className="object-plan-view__info-grid-value-wrap">
+                    {officeEditMode ? (
+                      <PlanInfoFieldValue
+                        field={field}
+                        value={formValues[field.key]}
+                        onFieldChange={onFieldChange}
+                        readOnly={false}
+                        fieldError={fieldErrors[field.key]}
+                        createContext={createContext}
+                      />
+                    ) : (
+                      <div className="object-plan-view__info-grid-value">
+                        <FieldValueRenderer
+                          type={field.type}
+                          column={fieldDefToRendererColumn(field)}
+                          value={formValues[field.key]}
+                          emptyValue="—"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <span

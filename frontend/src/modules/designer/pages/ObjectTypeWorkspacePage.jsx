@@ -11,6 +11,8 @@ import ObjectTypeWorkspaceHeader from "../components/objectTypes/ObjectTypeWorks
 import FieldsTab from "../components/tabs/FieldsTab";
 import GeneralTab from "../components/tabs/GeneralTab";
 import RelationsTab from "../components/tabs/RelationsTab";
+import ObjectActionsTab from "../components/tabs/ObjectActionsTab";
+import ObjectRulesTab from "../components/tabs/ObjectRulesTab";
 import RuntimePreviewTab from "../components/tabs/RuntimePreviewTab";
 import ViewsTab from "../components/tabs/ViewsTab";
 import { DEFAULT_DESIGNER_TAB, isValidDesignerTab } from "../constants/tabs";
@@ -189,11 +191,19 @@ export default function ObjectTypeWorkspacePage() {
       dispatchDesignerNavigationReload();
       dispatchPortalNavigationReload();
 
-      setMenuPublishMessage(
-        hadPublishedBefore
-          ? "Публикация обновлена. Данные объекта синхронизированы."
-          : "Каталог опубликован. Объект доступен в Runtime, связях, вкладках пространств и на страницах.",
-      );
+      const menuPlaced = await detectObjectTypeMenuPlacement(tenantId, objectTypeId);
+      setHasMenuPlacement(menuPlaced);
+
+      if (!hadPublishedBefore && !menuPlaced) {
+        setMenuPublishMessage("");
+        setMenuDialogOpen(true);
+      } else {
+        setMenuPublishMessage(
+          hadPublishedBefore
+            ? "Публикация обновлена. Данные объекта синхронизированы."
+            : "Каталог опубликован. Объект доступен в Runtime, связях, вкладках пространств и на страницах.",
+        );
+      }
       setStudioStatusMessage("");
     } catch (err) {
       window.alert(getApiErrorMessage(err, "Не удалось обновить публикацию"));
@@ -210,6 +220,11 @@ export default function ObjectTypeWorkspacePage() {
     resolveAppearanceDraft,
     tenantId,
   ]);
+
+  const handleManagePublication = useCallback(() => {
+    setMenuPublishMessage("");
+    setMenuDialogOpen(true);
+  }, []);
 
   const handlePublish = useCallback(() => {
     if (
@@ -476,6 +491,22 @@ export default function ObjectTypeWorkspacePage() {
         onDirtyChange={setTableViewsDirty}
       />
     );
+  } else if (tab === "actions") {
+    tabContent = (
+      <ObjectActionsTab
+        tenantId={tenantId}
+        objectTypeId={objectTypeId}
+        objectTypeKey={objectType?.key || ""}
+        onSchemaChanged={handleSchemaChanged}
+      />
+    );
+  } else if (tab === "rules") {
+    tabContent = (
+      <ObjectRulesTab
+        tenantId={tenantId}
+        objectTypeKey={objectType?.key || ""}
+      />
+    );
   } else if (tab === "runtime-preview") {
     tabContent = (
       <RuntimePreviewTab
@@ -544,6 +575,8 @@ export default function ObjectTypeWorkspacePage() {
               deleting={deleting}
               onSave={handleHeaderSave}
               onPublish={handlePublish}
+              onManagePublication={handleManagePublication}
+              showManagePublication={Boolean(lifecycle.needsMenuPlacement)}
               onRenameObject={handleRenameObject}
               onDuplicateObject={handleDuplicateObject}
               onDeleteObject={handleOpenDeleteModal}

@@ -230,6 +230,7 @@ export default function ViewEngineCell({
                   }
                 : null
             }
+            entityId={row?.id ?? row?.entityId ?? null}
             onCreateSubtask={() =>
               rowActions?.onCreateSubtask?.({
                 entityId: row?.id,

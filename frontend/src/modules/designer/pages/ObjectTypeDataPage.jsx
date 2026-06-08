@@ -115,17 +115,30 @@ export default function ObjectTypeDataPage() {
       dispatchDesignerNavigationReload();
       dispatchPortalNavigationReload();
 
-      setMenuPublishMessage(
-        hadPublishedBefore
-          ? "Публикация обновлена. Карточка и представления синхронизированы с Office."
-          : "Каталог опубликован. Объект доступен в Runtime, связях, вкладках пространств и на страницах.",
-      );
+      const menuPlaced = await detectObjectTypeMenuPlacement(tenantId, objectTypeId);
+      setHasMenuPlacement(menuPlaced);
+
+      if (!hadPublishedBefore && !menuPlaced) {
+        setMenuPublishMessage("");
+        setMenuDialogOpen(true);
+      } else {
+        setMenuPublishMessage(
+          hadPublishedBefore
+            ? "Публикация обновлена. Карточка и представления синхронизированы с Office."
+            : "Каталог опубликован. Объект доступен в Runtime, связях, вкладках пространств и на страницах.",
+        );
+      }
     } catch (err) {
       window.alert(getApiErrorMessage(err, "Не удалось обновить публикацию"));
     } finally {
       setPublishing(false);
     }
   }, [objectType, objectTypeId, tenantId]);
+
+  const handleManagePublication = useCallback(() => {
+    setMenuPublishMessage("");
+    setMenuDialogOpen(true);
+  }, []);
 
   const handlePublish = useCallback(() => {
     if (
@@ -267,6 +280,8 @@ export default function ObjectTypeDataPage() {
           deleting={false}
           onSave={() => {}}
           onPublish={handlePublish}
+          onManagePublication={handleManagePublication}
+          showManagePublication={Boolean(lifecycle.needsMenuPlacement)}
           onRenameObject={() => navigate(settingsPath)}
           onDuplicateObject={() => window.alert("Дублирование объекта будет доступно в следующем релизе.")}
           onDeleteObject={() => navigate(settingsPath)}

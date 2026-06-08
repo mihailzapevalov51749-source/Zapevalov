@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 describe("ViewPropertiesPanel projection layout", () => {
   it("renders ObjectProjectionPanel for all view types including plan", () => {
     const source = readFileSync(
-      new URL("./ViewPropertiesPanel.jsx", import.meta.url),
+      new URL("./ViewPropertiesForm.jsx", import.meta.url),
       "utf8",
     );
 

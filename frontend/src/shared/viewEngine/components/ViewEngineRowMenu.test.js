@@ -36,6 +36,8 @@ describe("ViewEngineRowMenu", () => {
     expect(titleChromeSource).toContain("view-engine-title-field-chrome__content");
     expect(selectionCellSource).toContain("ViewEngineSelectionTreeToggle");
     expect(source).toContain("readOnly");
+    expect(source).toContain("RuntimeRowActions");
+    expect(source).toContain("runtimePlacedActions");
     expect(cssSource).toContain("grid-template-columns: 24px minmax(0, 1fr)");
     expect(cssSource).toContain("view-engine-table-selection-tree-toggle");
     expect(cssSource).toContain("min-width: 36px");

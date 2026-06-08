@@ -9,6 +9,203 @@ export async function listObjectTypes(tenantId) {
   return data;
 }
 
+export async function listActionCategories(tenantId) {
+  const { data } = await platformApiClient.get(
+    `${tenantBase(tenantId)}/action-categories`,
+  );
+  return data;
+}
+
+export async function listActionTypes(tenantId) {
+  const { data } = await platformApiClient.get(`${tenantBase(tenantId)}/action-types`);
+  return data;
+}
+
+export async function listActionDefinitions(tenantId, objectTypeId) {
+  const { data } = await platformApiClient.get(
+    `${tenantBase(tenantId)}/object-types/${objectTypeId}/action-definitions`,
+  );
+  return data;
+}
+
+export async function getActionDefinition(tenantId, objectTypeId, actionDefinitionId) {
+  const { data } = await platformApiClient.get(
+    `${tenantBase(tenantId)}/object-types/${objectTypeId}/action-definitions/${actionDefinitionId}`,
+  );
+  return data;
+}
+
+export async function createActionDefinition(tenantId, objectTypeId, payload) {
+  const { data } = await platformApiClient.post(
+    `${tenantBase(tenantId)}/object-types/${objectTypeId}/action-definitions`,
+    payload,
+  );
+  return data;
+}
+
+export async function updateActionDefinition(
+  tenantId,
+  objectTypeId,
+  actionDefinitionId,
+  payload,
+) {
+  const { data } = await platformApiClient.patch(
+    `${tenantBase(tenantId)}/object-types/${objectTypeId}/action-definitions/${actionDefinitionId}`,
+    payload,
+  );
+  return data;
+}
+
+export async function deleteActionDefinition(tenantId, objectTypeId, actionDefinitionId) {
+  await platformApiClient.delete(
+    `${tenantBase(tenantId)}/object-types/${objectTypeId}/action-definitions/${actionDefinitionId}`,
+  );
+}
+
+export async function getActionPlacementCatalog(tenantId) {
+  const { data } = await platformApiClient.get(
+    `${tenantBase(tenantId)}/action-placements`,
+  );
+  return data;
+}
+
+function actionPlacementsBase(tenantId, objectTypeId, actionDefinitionId) {
+  return `${tenantBase(tenantId)}/object-types/${objectTypeId}/action-definitions/${actionDefinitionId}/placements`;
+}
+
+export async function listActionPlacements(tenantId, objectTypeId, actionDefinitionId) {
+  const { data } = await platformApiClient.get(
+    actionPlacementsBase(tenantId, objectTypeId, actionDefinitionId),
+  );
+  return data;
+}
+
+export async function createActionPlacement(
+  tenantId,
+  objectTypeId,
+  actionDefinitionId,
+  payload,
+) {
+  const { data } = await platformApiClient.post(
+    actionPlacementsBase(tenantId, objectTypeId, actionDefinitionId),
+    payload,
+  );
+  return data;
+}
+
+export async function updateActionPlacement(
+  tenantId,
+  objectTypeId,
+  actionDefinitionId,
+  placementId,
+  payload,
+) {
+  const { data } = await platformApiClient.patch(
+    `${actionPlacementsBase(tenantId, objectTypeId, actionDefinitionId)}/${placementId}`,
+    payload,
+  );
+  return data;
+}
+
+export async function deleteActionPlacement(
+  tenantId,
+  objectTypeId,
+  actionDefinitionId,
+  placementId,
+) {
+  await platformApiClient.delete(
+    `${actionPlacementsBase(tenantId, objectTypeId, actionDefinitionId)}/${placementId}`,
+  );
+}
+
+function actionFormBase(tenantId, objectTypeId, actionDefinitionId) {
+  return `${tenantBase(tenantId)}/object-types/${objectTypeId}/action-definitions/${actionDefinitionId}/form`;
+}
+
+export async function getActionForm(tenantId, objectTypeId, actionDefinitionId) {
+  const { data } = await platformApiClient.get(
+    actionFormBase(tenantId, objectTypeId, actionDefinitionId),
+  );
+  return data;
+}
+
+export async function createActionForm(
+  tenantId,
+  objectTypeId,
+  actionDefinitionId,
+  payload,
+) {
+  const { data } = await platformApiClient.post(
+    actionFormBase(tenantId, objectTypeId, actionDefinitionId),
+    payload,
+  );
+  return data;
+}
+
+export async function updateActionForm(
+  tenantId,
+  objectTypeId,
+  actionDefinitionId,
+  payload,
+) {
+  const { data } = await platformApiClient.patch(
+    actionFormBase(tenantId, objectTypeId, actionDefinitionId),
+    payload,
+  );
+  return data;
+}
+
+export async function deleteActionForm(tenantId, objectTypeId, actionDefinitionId) {
+  await platformApiClient.delete(
+    actionFormBase(tenantId, objectTypeId, actionDefinitionId),
+  );
+}
+
+export async function listActionFormFields(tenantId, objectTypeId, actionDefinitionId) {
+  const { data } = await platformApiClient.get(
+    `${actionFormBase(tenantId, objectTypeId, actionDefinitionId)}/fields`,
+  );
+  return data;
+}
+
+export async function createActionFormField(
+  tenantId,
+  objectTypeId,
+  actionDefinitionId,
+  payload,
+) {
+  const { data } = await platformApiClient.post(
+    `${actionFormBase(tenantId, objectTypeId, actionDefinitionId)}/fields`,
+    payload,
+  );
+  return data;
+}
+
+export async function updateActionFormField(
+  tenantId,
+  objectTypeId,
+  actionDefinitionId,
+  fieldId,
+  payload,
+) {
+  const { data } = await platformApiClient.patch(
+    `${actionFormBase(tenantId, objectTypeId, actionDefinitionId)}/fields/${fieldId}`,
+    payload,
+  );
+  return data;
+}
+
+export async function deleteActionFormField(
+  tenantId,
+  objectTypeId,
+  actionDefinitionId,
+  fieldId,
+) {
+  await platformApiClient.delete(
+    `${actionFormBase(tenantId, objectTypeId, actionDefinitionId)}/fields/${fieldId}`,
+  );
+}
+
 export async function getObjectType(tenantId, objectTypeId) {
   const { data } = await platformApiClient.get(
     `${tenantBase(tenantId)}/object-types/${objectTypeId}`,

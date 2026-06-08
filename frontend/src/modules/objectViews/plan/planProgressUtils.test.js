@@ -63,4 +63,15 @@ describe("computePlanNodeReadiness", () => {
       50,
     );
   });
+
+  it("prefers explicit progress value over status when there are no children", () => {
+    assert.equal(
+      computePlanNodeReadiness({
+        statusValue: "planned",
+        progressValue: 75,
+        children: [],
+      }),
+      75,
+    );
+  });
 });

@@ -1,7 +1,17 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
+from app.modules.platform.action_engine.action_definitions.models import (
+    DesignerActionDefinition,
+)
+from app.modules.platform.action_engine.action_placements.models import (
+    DesignerActionPlacement,
+)
+from app.modules.platform.action_engine.action_forms.models import (
+    DesignerActionForm,
+    DesignerActionFormField,
+)
 from app.modules.platform.designer.field_definitions.models import DesignerFieldDefinition
 from app.modules.platform.designer.object_types.models import DesignerObjectType
 from app.modules.platform.designer.relation_definitions.models import DesignerRelationDefinition
@@ -15,6 +25,10 @@ class TenantDraftCatalog:
     fields: list[DesignerFieldDefinition]
     relations: list[DesignerRelationDefinition]
     views: list[DesignerViewDefinition]
+    actions: list[DesignerActionDefinition] = field(default_factory=list)
+    placements: list[DesignerActionPlacement] = field(default_factory=list)
+    action_forms: list[DesignerActionForm] = field(default_factory=list)
+    action_form_fields: list[DesignerActionFormField] = field(default_factory=list)
 
 
 def load_tenant_draft_catalog(db: Session, tenant_id: int) -> TenantDraftCatalog:
@@ -65,9 +79,53 @@ def load_tenant_draft_catalog(db: Session, tenant_id: int) -> TenantDraftCatalog
             .all()
         )
 
+    actions: list[DesignerActionDefinition] = []
+    placements: list[DesignerActionPlacement] = []
+    action_forms: list[DesignerActionForm] = []
+    action_form_fields: list[DesignerActionFormField] = []
+    if object_type_ids:
+        actions = (
+            db.query(DesignerActionDefinition)
+            .filter(
+                DesignerActionDefinition.tenant_id == tenant_id,
+                DesignerActionDefinition.object_type_id.in_(object_type_ids),
+            )
+            .all()
+        )
+        placements = (
+            db.query(DesignerActionPlacement)
+            .filter(
+                DesignerActionPlacement.tenant_id == tenant_id,
+                DesignerActionPlacement.object_type_id.in_(object_type_ids),
+            )
+            .all()
+        )
+        action_forms = (
+            db.query(DesignerActionForm)
+            .filter(
+                DesignerActionForm.tenant_id == tenant_id,
+                DesignerActionForm.object_type_id.in_(object_type_ids),
+            )
+            .all()
+        )
+        action_form_ids = [row.id for row in action_forms]
+        if action_form_ids:
+            action_form_fields = (
+                db.query(DesignerActionFormField)
+                .filter(
+                    DesignerActionFormField.tenant_id == tenant_id,
+                    DesignerActionFormField.action_form_id.in_(action_form_ids),
+                )
+                .all()
+            )
+
     return TenantDraftCatalog(
         object_types=object_types,
         fields=fields,
         relations=relations,
         views=views,
+        actions=actions,
+        placements=placements,
+        action_forms=action_forms,
+        action_form_fields=action_form_fields,
     )

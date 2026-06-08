@@ -12,6 +12,7 @@ export default function ViewEngineTitleFieldChrome({
   hierarchyTreeEnabled = false,
   isRowHovered = false,
   rowActions = null,
+  entityId = null,
   onCreateSubtask,
   onDelete,
   children,
@@ -33,6 +34,13 @@ export default function ViewEngineTitleFieldChrome({
     rowActionsEnabled &&
     rowActions?.canDelete !== false &&
     (rowActionsReadOnly || typeof onDelete === "function");
+  const runtimePlacedActions = Array.isArray(rowActions?.runtimePlacedActions)
+    ? rowActions.runtimePlacedActions
+    : [];
+  const hasRuntimePlacedActions = runtimePlacedActions.length > 0;
+  const showRowMenu =
+    rowActionsEnabled &&
+    (canCreateSubtask || canDelete || hasRuntimePlacedActions);
 
   const rootClassName = [
     "view-engine-title-field-chrome",
@@ -42,7 +50,7 @@ export default function ViewEngineTitleFieldChrome({
     .filter(Boolean)
     .join(" ");
 
-  const menu = rowActionsEnabled ? (
+  const menu = showRowMenu ? (
     <ViewEngineRowMenu
       visible={isRowHovered}
       readOnly={rowActionsReadOnly}
@@ -51,6 +59,13 @@ export default function ViewEngineTitleFieldChrome({
       createChildMenuLabel={rowActions?.createChildMenuLabel}
       onCreateSubtask={onCreateSubtask}
       onDelete={onDelete}
+      runtimePlacedActions={runtimePlacedActions}
+      runtimeActionContext={{
+        tenantId: rowActions?.tenantId ?? null,
+        objectTypeKey: rowActions?.objectTypeKey ?? null,
+        entityId: entityId ?? null,
+        onActionClick: rowActions?.onRuntimeActionClick ?? null,
+      }}
     />
   ) : null;
 

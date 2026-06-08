@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import PlatformQuickCreateForm from "../../../shared/quickCreate/PlatformQuickCreateForm.jsx";
 import { ObjectEntityCardModal } from "../../objectEntities";
@@ -26,6 +26,9 @@ import { reparentPlanNode } from "./planHierarchyMove.js";
 import { resolveFirstVisiblePlanTabKey } from "./planLayoutSettings.js";
 import { PLAN_TREE_EMPTY_FALLBACK_MESSAGE } from "./planEmptyStateMessages.js";
 import { logPlanDebug } from "./planViewDebug.js";
+import { applyPlanEntityPatches } from "./applyPlanEntityPatches.js";
+import { resolvePlanInfoDisplayFields } from "./resolvePlanInfoDisplayFields.js";
+import usePlanInfoFieldSave from "./usePlanInfoFieldSave.js";
 
 import "./objectPlanView.css";
 
@@ -254,6 +257,8 @@ function ObjectPlanViewConfigured({
   const [selectedNodeId, setSelectedNodeId] = useState(null);
 
   const [expandedNodeIds, setExpandedNodeIds] = useState(() => new Set());
+  const [entityPatches, setEntityPatches] = useState({});
+  const initialExpansionAppliedRef = useRef(false);
 
   const [movingNodeId, setMovingNodeId] = useState(null);
 
@@ -281,7 +286,10 @@ function ObjectPlanViewConfigured({
 
   }, [query?.listResult?.items]);
 
-
+  const patchedItems = useMemo(
+    () => applyPlanEntityPatches(items, entityPatches),
+    [items, entityPatches],
+  );
 
   const catalog = query?.catalog ?? null;
 
@@ -304,6 +312,16 @@ function ObjectPlanViewConfigured({
     [catalog, objectTypeKey, statusFieldKey],
   );
 
+  const planInfoDisplayFields = useMemo(
+    () =>
+      resolvePlanInfoDisplayFields({
+        catalog,
+        objectTypeKey,
+        projection: resolvedContract?.projection,
+      }),
+    [catalog, objectTypeKey, resolvedContract?.projection],
+  );
+
   const {
     tree,
     loading,
@@ -315,7 +333,7 @@ function ObjectPlanViewConfigured({
     tenantId,
     catalog,
     objectTypeKey,
-    items,
+    items: patchedItems,
     planPresentation,
     titleFieldKey,
     statusFieldKey,
@@ -356,11 +374,17 @@ function ObjectPlanViewConfigured({
 
 
   useEffect(() => {
+    if (!tree.roots.length) {
+      initialExpansionAppliedRef.current = false;
+      return;
+    }
 
-    const expandable = collectExpandableNodeIds(tree.roots);
+    if (initialExpansionAppliedRef.current) {
+      return;
+    }
 
-    setExpandedNodeIds(new Set(expandable));
-
+    setExpandedNodeIds(new Set(collectExpandableNodeIds(tree.roots)));
+    initialExpansionAppliedRef.current = true;
   }, [tree.roots]);
 
 
@@ -476,6 +500,45 @@ function ObjectPlanViewConfigured({
     await reloadHierarchy();
 
   }, [query, reloadHierarchy]);
+
+  const handlePlanEntityPatched = useCallback((entityId, valuesPatch) => {
+    setEntityPatches((previous) => ({
+      ...previous,
+      [entityId]: {
+        ...(previous[entityId] || {}),
+        ...valuesPatch,
+      },
+    }));
+  }, []);
+
+  const handlePlanFieldEntityUpdated = useCallback(
+    async (entityId) => {
+      const normalizedId = String(entityId || "").trim();
+
+      await query?.reload?.();
+      setEntityPatches((previous) => {
+        if (!previous[normalizedId]) {
+          return previous;
+        }
+
+        const next = { ...previous };
+        delete next[normalizedId];
+        return next;
+      });
+    },
+    [query],
+  );
+
+  const planInfoFieldSave = usePlanInfoFieldSave({
+    tenantId,
+    objectTypeKey,
+    entityId: selectedNodeId,
+    displayFields: planInfoDisplayFields,
+    enabled: Boolean(tenantId && objectTypeKey && !previewMode),
+    previewMode,
+    onEntityPatched: handlePlanEntityPatched,
+    onEntityUpdated: handlePlanFieldEntityUpdated,
+  });
 
 
 
@@ -869,6 +932,9 @@ function ObjectPlanViewConfigured({
             previewMode={previewMode}
             onOpenRelatedEntity={handleOpenRelatedEntity}
             planPreviewEditor={planPreviewEditor}
+            onInfoFieldChange={planInfoFieldSave.handleFieldChange}
+            canEditInfoFields={planInfoFieldSave.canEdit}
+            infoSaveError={planInfoFieldSave.saveError}
           />
 
         }

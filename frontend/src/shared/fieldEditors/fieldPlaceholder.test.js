@@ -8,7 +8,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 describe("FieldPropertiesPanel placeholder UI", () => {
   it("exposes Подсказка field below description", () => {
     const source = readFileSync(
-      join(__dirname, "../../../modules/designer/components/fields/FieldPropertiesPanel.jsx"),
+      join(__dirname, "../../modules/designer/components/fields/FieldPropertiesForm.jsx"),
       "utf8",
     );
 

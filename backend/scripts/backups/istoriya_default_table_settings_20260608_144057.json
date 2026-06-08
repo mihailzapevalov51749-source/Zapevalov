@@ -1,0 +1,78 @@
+{
+  "objectView": {
+    "key": "default_table",
+    "presentation": {},
+    "projection": {
+      "fieldKeys": [
+        "data",
+        "tip_sobytiya",
+        "nazvanie_sobytiya",
+        "napravlenie",
+        "status",
+        "kommit",
+        "versiya_etap",
+        "sleduyuschiy_shag"
+      ],
+      "fieldOrder": [
+        "data",
+        "tip_sobytiya",
+        "nazvanie_sobytiya",
+        "napravlenie",
+        "status",
+        "kommit",
+        "versiya_etap",
+        "sleduyuschiy_shag"
+      ],
+      "infoFieldKeys": [],
+      "titleFieldKey": "nazvanie_sobytiya"
+    },
+    "query": {
+      "filters": {
+        "conditions": [],
+        "defaultQuickFilterId": null,
+        "quickFilters": [],
+        "savedFilters": []
+      },
+      "pagination": {
+        "defaultPageSize": 20
+      },
+      "sort": {
+        "rules": []
+      }
+    },
+    "roleMapping": {},
+    "schemaVersion": 1,
+    "viewType": "table"
+  },
+  "projection": {
+    "default_sort": {
+      "field": null,
+      "order": "desc"
+    },
+    "field_order": [
+      "data",
+      "tip_sobytiya",
+      "nazvanie_sobytiya",
+      "napravlenie",
+      "status",
+      "kommit",
+      "versiya_etap",
+      "sleduyuschiy_shag"
+    ],
+    "info_field_keys": [],
+    "title_field": "nazvanie_sobytiya",
+    "visible_fields": [
+      "data",
+      "nazvanie_sobytiya",
+      "status",
+      "tip_sobytiya",
+      "napravlenie",
+      "kommit",
+      "versiya_etap",
+      "sleduyuschiy_shag"
+    ]
+  },
+  "tabSettings": {
+    "menuInTab": true
+  }
+}

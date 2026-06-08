@@ -3,6 +3,14 @@ from types import SimpleNamespace
 from uuid import uuid4
 from uuid import UUID
 
+from app.modules.platform.action_engine.action_placements.registry import (
+    action_placement_registry,
+    ensure_builtin_action_placements_registered,
+)
+from app.modules.platform.action_engine.action_types.registry import (
+    action_type_registry,
+    ensure_builtin_action_types_registered,
+)
 from app.modules.platform.designer.publish.draft_loader import TenantDraftCatalog
 from app.modules.platform.designer.publish.object_view_contract import (
     validate_object_view_for_publish,
@@ -135,6 +143,8 @@ def _bootstrap_default_table_views(catalog: TenantDraftCatalog) -> None:
 
 
 def validate_tenant_draft_catalog(catalog: TenantDraftCatalog) -> PublishValidationReport:
+    ensure_builtin_action_types_registered()
+    ensure_builtin_action_placements_registered()
     _bootstrap_default_table_views(catalog)
 
     errors: list[ValidationIssue] = []
@@ -144,6 +154,10 @@ def validate_tenant_draft_catalog(catalog: TenantDraftCatalog) -> PublishValidat
     fields = catalog.fields
     relations = catalog.relations
     views = catalog.views
+    actions = catalog.actions
+    placements = catalog.placements
+    action_forms = catalog.action_forms
+    action_form_fields = catalog.action_form_fields
 
     object_type_by_id: dict[UUID, object] = {row.id: row for row in object_types}
     fields_by_object_type: dict[UUID, list] = defaultdict(list)
@@ -377,11 +391,247 @@ def validate_tenant_draft_catalog(catalog: TenantDraftCatalog) -> PublishValidat
                 ),
             )
 
+    action_keys_by_object_type: dict[UUID, set[str]] = defaultdict(set)
+    action_by_id = {action.id: action for action in actions}
+    field_by_id = {field.id: field for field in fields}
+    placement_keys_by_action: dict[UUID, set[str]] = defaultdict(set)
+    forms_by_action: dict[UUID, object] = {}
+    published_action_count = 0
+    published_placement_count = 0
+
+    for action in actions:
+        action_path = f"actions[{action.key}]"
+
+        if action.object_type_id not in object_type_by_id:
+            errors.append(
+                _error(
+                    "action_orphan_object_type",
+                    action_path,
+                    "ActionDefinition ссылается на несуществующий active ObjectType",
+                ),
+            )
+            continue
+
+        if not action.key or not action.name:
+            errors.append(
+                _error(
+                    "action_missing_identity",
+                    action_path,
+                    "У ActionDefinition должны быть key и name",
+                ),
+            )
+            continue
+
+        if action.key in action_keys_by_object_type[action.object_type_id]:
+            errors.append(
+                _error(
+                    "action_duplicate_key",
+                    action_path,
+                    "ActionDefinition key должен быть уникален в рамках ObjectType",
+                ),
+            )
+        else:
+            action_keys_by_object_type[action.object_type_id].add(action.key)
+
+        action_type = action_type_registry.get(action.action_type_key)
+        if not action_type or not action_type.is_active:
+            errors.append(
+                _error(
+                    "action_unknown_type",
+                    action_path,
+                    f"Неизвестный или неактивный action_type_key: {action.action_type_key}",
+                ),
+            )
+
+        if action.action_type_key == "create_record":
+            target_object_type_id = getattr(action, "target_object_type_id", None)
+            if not target_object_type_id:
+                errors.append(
+                    _error(
+                        "action_missing_target_object_type",
+                        action_path,
+                        "create_record требует target_object_type_id",
+                    ),
+                )
+            elif target_object_type_id not in object_type_by_id:
+                errors.append(
+                    _error(
+                        "action_unknown_target_object_type",
+                        action_path,
+                        "target_object_type не найден среди active ObjectType",
+                    ),
+                )
+
+        if action.is_active:
+            published_action_count += 1
+
+    for placement in placements:
+        placement_path = f"placements[{placement.placement_key}]"
+        parent_action = action_by_id.get(placement.action_definition_id)
+
+        if not parent_action:
+            errors.append(
+                _error(
+                    "placement_orphan_action",
+                    placement_path,
+                    "ActionPlacement ссылается на несуществующий ActionDefinition",
+                ),
+            )
+            continue
+
+        if placement.object_type_id not in object_type_by_id:
+            errors.append(
+                _error(
+                    "placement_orphan_object_type",
+                    placement_path,
+                    "ActionPlacement ссылается на несуществующий active ObjectType",
+                ),
+            )
+
+        if placement.object_type_id != parent_action.object_type_id:
+            errors.append(
+                _error(
+                    "placement_object_type_mismatch",
+                    placement_path,
+                    "ActionPlacement object_type_id не совпадает с ActionDefinition",
+                ),
+            )
+
+        placement_catalog_item = action_placement_registry.get(placement.placement_key)
+        if not placement_catalog_item or not placement_catalog_item.is_active:
+            errors.append(
+                _error(
+                    "placement_unknown_key",
+                    placement_path,
+                    f"Неизвестный или неактивный placement_key: {placement.placement_key}",
+                ),
+            )
+
+        placement_key_set = placement_keys_by_action[placement.action_definition_id]
+        if placement.placement_key in placement_key_set:
+            errors.append(
+                _error(
+                    "placement_duplicate_key",
+                    f"actions[{parent_action.key}].placements[{placement.placement_key}]",
+                    "Для ActionDefinition запрещены дублирующиеся placement_key",
+                ),
+            )
+        else:
+            placement_key_set.add(placement.placement_key)
+
+        if placement.is_active and parent_action.is_active:
+            published_placement_count += 1
+
+    for action_form in action_forms:
+        form_path = f"action_forms[{action_form.id}]"
+        parent_action = action_by_id.get(action_form.action_definition_id)
+
+        if not parent_action:
+            errors.append(
+                _error(
+                    "action_form_orphan_action",
+                    form_path,
+                    "ActionForm ссылается на несуществующий ActionDefinition",
+                ),
+            )
+            continue
+
+        if action_form.object_type_id != parent_action.object_type_id:
+            errors.append(
+                _error(
+                    "action_form_object_type_mismatch",
+                    form_path,
+                    "ActionForm object_type_id не совпадает с ActionDefinition",
+                ),
+            )
+
+        if action_form.action_definition_id in forms_by_action:
+            errors.append(
+                _error(
+                    "action_form_duplicate",
+                    f"actions[{parent_action.key}].form",
+                    "Для ActionDefinition допускается только одна ActionForm",
+                ),
+            )
+        else:
+            forms_by_action[action_form.action_definition_id] = action_form
+
+        if not str(action_form.title or "").strip():
+            errors.append(
+                _error(
+                    "action_form_missing_title",
+                    form_path,
+                    "У ActionForm должен быть title",
+                ),
+            )
+
+    form_by_id = {row.id: row for row in action_forms}
+    form_field_keys_by_form: dict[UUID, set[UUID]] = defaultdict(set)
+
+    for form_field in action_form_fields:
+        field_path = f"action_form_fields[{form_field.id}]"
+        parent_form = form_by_id.get(form_field.action_form_id)
+
+        if not parent_form:
+            errors.append(
+                _error(
+                    "action_form_field_orphan_form",
+                    field_path,
+                    "ActionFormField ссылается на несуществующую ActionForm",
+                ),
+            )
+            continue
+
+        parent_action = action_by_id.get(parent_form.action_definition_id)
+        field_definition = field_by_id.get(form_field.field_definition_id)
+
+        if not field_definition:
+            errors.append(
+                _error(
+                    "action_form_field_orphan_field_definition",
+                    field_path,
+                    "ActionFormField ссылается на несуществующий FieldDefinition",
+                ),
+            )
+            continue
+
+        fields_object_type_id = parent_form.object_type_id
+        if parent_action and parent_action.action_type_key == "create_record":
+            target_object_type_id = getattr(
+                parent_action,
+                "target_object_type_id",
+                None,
+            )
+            if target_object_type_id:
+                fields_object_type_id = target_object_type_id
+
+        if field_definition.object_type_id != fields_object_type_id:
+            errors.append(
+                _error(
+                    "action_form_field_object_type_mismatch",
+                    field_path,
+                    "ActionFormField field_definition_id не принадлежит ObjectType",
+                ),
+            )
+
+        if form_field.field_definition_id in form_field_keys_by_form[parent_form.id]:
+            errors.append(
+                _error(
+                    "action_form_field_duplicate",
+                    f"actions[{parent_action.key if parent_action else parent_form.action_definition_id}].form.fields",
+                    "Для ActionForm запрещены дублирующиеся field_definition_id",
+                ),
+            )
+        else:
+            form_field_keys_by_form[parent_form.id].add(form_field.field_definition_id)
+
     summary = PublishSummaryCounts(
         object_types=len(object_types),
         fields=len(fields),
         relations=len(relations),
         views=len(views),
+        actions=published_action_count,
+        placements=published_placement_count,
     )
 
     return PublishValidationReport(

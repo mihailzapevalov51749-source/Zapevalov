@@ -99,10 +99,12 @@ export function computeObjectTypePublishFlags(objectType, context = {}) {
     "last_published_at",
     "lastPublishedAt",
   );
+  const hasMenuPlacement = Boolean(context.hasMenuPlacement);
   const hasPublishedBaseline = hasCatalog && lastPublishedAt != null;
   const needsContentSync =
     hasPublishedBaseline && hasUnpublishedObjectTypeChanges(objectType);
   const needsInitialPublish = Boolean(objectType) && !hasPublishedBaseline;
+  const needsMenuPlacement = hasPublishedBaseline && !hasMenuPlacement;
 
   let publishAction = "none";
 
@@ -114,12 +116,12 @@ export function computeObjectTypePublishFlags(objectType, context = {}) {
 
   return {
     hasCatalog,
-    hasMenuPlacement: Boolean(context.hasMenuPlacement),
+    hasMenuPlacement,
     hasPublishedBaseline,
     needsPublish: needsInitialPublish || needsContentSync,
     needsContentSync,
     needsInitialPublish,
-    needsMenuPlacement: false,
+    needsMenuPlacement,
     publishAction,
   };
 }

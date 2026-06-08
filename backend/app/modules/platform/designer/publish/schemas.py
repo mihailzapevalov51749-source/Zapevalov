@@ -16,6 +16,8 @@ class PublishSummaryCounts(BaseModel):
     fields: int = 0
     relations: int = 0
     views: int = 0
+    actions: int = 0
+    placements: int = 0
 
 
 class PublishValidationReport(BaseModel):

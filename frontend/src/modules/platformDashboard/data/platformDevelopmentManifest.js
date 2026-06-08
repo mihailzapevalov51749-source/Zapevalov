@@ -1,5 +1,5 @@
 export const platformDevelopmentManifest = {
-  updatedAt: "2026-06-08T18:00:00",
+  updatedAt: "2026-06-09T02:00:00",
 
   title: "Развитие платформы ЯсноПро",
 
@@ -16,7 +16,7 @@ export const platformDevelopmentManifest = {
 
   readiness: {
     targetPlatformPercent: 40,
-    currentPhasePercent: 69,
+    currentPhasePercent: 70,
     capabilities: [
       {
         name: "Модель объектов",
@@ -30,7 +30,7 @@ export const platformDevelopmentManifest = {
         status: "ready",
         percent: 85,
         businessMeaning:
-          "Табличный вид, фильтры, персональные представления и вкладка «План» над объектами.",
+          "Табличный вид, фильтры, персональные представления и рабочая вкладка «План» с inline-редактированием ключевых полей.",
       },
       {
         name: "Карточка объекта",
@@ -147,6 +147,41 @@ export const platformDevelopmentManifest = {
   },
 
   achievements: [
+    {
+      date: "2026-06-09",
+      text:
+        "Action Engine: Target Object для create_record — Action Definition хранит target_object_type_id; форма и executor создают запись в целевом объекте (например, Проект → Создать задачу → Задачи).",
+    },
+    {
+      date: "2026-06-08",
+      text:
+        "Action Engine: Executor create_record — Runtime Action Form создаёт запись через runtimeWriteGateway.createEntity и submitPendingRelationLinks; top_panel и row_menu обновляют таблицу через runtimeEntityDataReloadBridge.",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "Plan View Studio/Office parity: вкладка Инфо в Office снова использует ту же plan info grid, что и Studio preview; inline-edit через PlanInfoFieldValue внутри сетки (без entity card layout RuntimeFieldCell).",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "Plan View: inline-редактирование перенесено из левого дерева в правую карточку (вкладка Инфо); дерево восстановлено как навигационное (название / готовность / статус); persistRuntimeEntityFieldUpdate.",
+    },
+    {
+      date: "2026-06-08",
+      text:
+        "Plan Inline Editing audit: устранён регресс запуска frontend — FieldValueRenderer импортируется из shared/fieldTypes (как ViewEngineCell), не из несуществующего fieldEditors.",
+    },
+    {
+      date: "2026-06-08",
+      text:
+        "Plan View: inline-редактирование ключевых полей в дереве (статус, ответственный, приоритет, срок, % готовности) через общий runtime update pipeline с Object Table; optimistic patch без сброса раскрытия дерева.",
+    },
+    {
+      date: "2026-06-08",
+      text:
+        "Action Engine V1: в Studio → Object Type добавлены системные вкладки «Действия» и «Правила» (/actions, /rules) между «Вкладки» и «Предпросмотр»; заглушки ObjectActionsTab / ObjectRulesTab — задел под Event → Rule → Action Engine.",
+    },
     {
       date: "2026-06-07",
       text:
@@ -352,6 +387,14 @@ export const platformDevelopmentManifest = {
   ],
 
   platformChangelog: [
+    {
+      date: "2026-06-08",
+      version: null,
+      title: "Object Type: вкладки «Действия» и «Правила»",
+      summary:
+        "Studio → Object Type: маршруты /actions и /rules, компоненты ObjectActionsTab / ObjectRulesTab (заглушки); порядок вкладок — между «Вкладки» и «Предпросмотр»; задел под Action Engine и Rule Engine.",
+      nextStage: "CRUD Action Definition и Rule Definition в новых вкладках",
+    },
     {
       date: "2026-06-07",
       version: null,
@@ -647,7 +690,7 @@ export const platformDevelopmentManifest = {
     docVersion: "1.0",
     activeSubPhaseKey: "object-view-architecture-unification",
     currentStatus:
-      "Plan UI: дерево компактное — контрастные заголовки колонок, глобальное раскрытие, единый gap 8px.",
+      "Plan View: дерево слева — навигация и индикаторы; inline-редактирование полей — только на вкладке Инфо справа (RuntimeFieldCell + persistRuntimeEntityFieldUpdate).",
     nextStage: "Этап 6 — Финальная унификация",
     planLegacyDeprecationMetrics: {
       title: "Plan Views",
@@ -718,6 +761,25 @@ export const platformDevelopmentManifest = {
         codePreserved: "generatePlanRoleMappingFromLegacy",
       },
       projectionTitleFieldRecommendation: "keep — object-type entity display layer; nodeTitle is Plan-view role",
+    },
+    planInlineFieldEditing: {
+      title: "Plan Inline Field Editing",
+      completedAt: "2026-06-09T00:00:00+00:00",
+      auditCompletedAt: "2026-06-08T24:00:00+00:00",
+      location: "Plan Info tab (right card) — not left tree",
+      startupRegressionFix:
+        "FieldValueRenderer path corrected to shared/fieldTypes/FieldValueRenderer",
+      catalogVersion: 69,
+      sharedPipeline: "persistRuntimeEntityFieldUpdate → runtimeWriteGateway.updateEntity",
+      uiComponent: "RuntimeFieldCell (exported from ObjectEntityCardFieldsGrid)",
+      hook: "usePlanInfoFieldSave",
+      treeSync: "applyPlanEntityPatches — left tree reflects saved values without editors",
+      removedFromTree: [
+        "PlanInlineFieldCell",
+        "planTreeGrid dynamic columns",
+        "resolvePlanInlineEditableFields",
+      ],
+      tableRefactor: "useObjectTableInlineEdit uses same persist helper",
     },
     planTreeVisualPolish: {
       title: "Plan Tree Visual Polish",
@@ -1831,6 +1893,108 @@ export const platformDevelopmentManifest = {
   },
 
   platformHistory: [
+    {
+      key: "plan-studio-office-info-parity",
+      date: "2026-06-09",
+      title: "Унификация вкладки Инфо Plan: Studio и Office",
+      type: "fix",
+      description:
+        "Проведён аудит расхождения Studio/Office в Plan View: Office ошибочно рендерил RuntimeFieldCell (layout карточки объекта), Studio — plan info grid из published projection. Office приведён к той же сетке; inline-edit встроен в PlanInfoFieldValue без смены layout.",
+      impact:
+        "Настраиваем в Studio — видим то же в Office; допустимое отличие — только элементы конструктора (drag handles) в Studio preview.",
+      relatedContours: ["Object Platform", "Plan View", "Designer Foundation"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "plan-inline-editing-moved-to-card",
+      date: "2026-06-09",
+      title: "Inline-редактирование Plan перенесено в правую карточку",
+      type: "fix",
+      description:
+        "Исправлена реализация Plan Inline Editing: редактирование убрано из левого дерева, восстановлено компактное дерево (название / готовность / статус); inline-редактирование полей — на вкладке Инфо справа через RuntimeFieldCell.",
+      impact:
+        "Plan снова читаем как иерархия; пользователь редактирует поля в карточке выбранной записи; дерево обновляется после сохранения.",
+      relatedContours: ["Object Platform", "Plan View", "Object Card"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "plan-inline-editing-audit-fix",
+      date: "2026-06-08",
+      title: "Аудит Plan Inline Editing — устранён регресс запуска frontend",
+      type: "fix",
+      description:
+        "Проведён аудит реализации Plan Inline Editing. Причина падения Vite: неверный импорт FieldValueRenderer из shared/fieldEditors (модуль не существует). Исправлено: shared/fieldTypes/FieldValueRenderer + fieldDefToRendererColumn как в ViewEngineCell.",
+      impact:
+        "Frontend снова собирается; Plan переиспользует платформенные FieldEditor/FieldValueRenderer и общий persistRuntimeEntityFieldUpdate с Object Table.",
+      relatedContours: ["Object Platform", "Plan View", "Object Table"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "plan-view-inline-field-editing",
+      date: "2026-06-08",
+      title: "Добавлено inline-редактирование полей в представлении Plan",
+      type: "milestone",
+      description:
+        "В дереве Plan можно менять статус, ответственного, приоритет, срок и процент готовности без открытия карточки; колонки резолвятся из projection/roleMapping, сохранение через общий runtime pipeline с Object Table.",
+      impact:
+        "Plan становится рабочим представлением управления задачами; карточка справа и rollup готовности обновляются после сохранения.",
+      relatedContours: ["Object Platform", "Plan View", "Object Table", "Runtime Entity"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "object-type-actions-rules-tabs",
+      date: "2026-06-08",
+      title: "Добавлены вкладки «Действия» и «Правила»",
+      type: "milestone",
+      description:
+        "В настройках любого Object Type появились системные вкладки Действия (/actions) и Правила (/rules) с заглушками ObjectActionsTab и ObjectRulesTab — инфраструктура для Action Engine и Rule Engine.",
+      impact:
+        "Studio → Object Type → любой объект: навигация и URL для будущей настройки действий и правил без смешения с Полями/Связями/Вкладками.",
+      relatedContours: ["Object Platform", "Designer Foundation", "Action Engine", "Rule Engine"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "action-engine-target-object-create-record",
+      date: "2026-06-09",
+      title: "Action Engine: Target Object для create_record",
+      type: "milestone",
+      description:
+        "Action Definition получил target_object_type_id: Designer показывает «Целевой объект», Action Form маппит поля target object, publish snapshot включает target_object_type, Runtime Resolver и executor создают запись в целевом объекте.",
+      impact:
+        "Сценарий «Проект → Создать задачу → запись в Задачах» работает без привязки формы к объекту-владельцу действия.",
+      relatedContours: [
+        "Object Platform",
+        "Action Engine",
+        "Designer Foundation",
+        "Publish",
+        "Runtime Entity",
+      ],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "action-engine-executor-create-record",
+      date: "2026-06-08",
+      title: "Action Engine: Executor create_record (MVP)",
+      type: "milestone",
+      description:
+        "Runtime Action Form для action_type_key=create_record вызывает executeCreateRecordAction: buildCreateEntityPayload → runtimeWriteGateway.createEntity → submitPendingRelationLinks; без нового backend endpoint.",
+      impact:
+        "Office → объект → действие «Создать …» (top_panel / row_menu): форма создаёт запись, показывает toast «Запись успешно создана», таблица обновляется без F5.",
+      relatedContours: [
+        "Object Platform",
+        "Action Engine",
+        "Runtime Entity",
+        "Office Object Table",
+      ],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
     {
       key: "adr-001-accepted",
       date: "2026-05-29",

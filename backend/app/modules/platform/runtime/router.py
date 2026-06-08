@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.modules.platform.runtime.actions.router import actions_router
 from app.modules.platform.runtime.catalog.router import catalog_router
 from app.modules.platform.runtime.entities.router import entities_router
 from app.modules.platform.runtime.query.router import query_router
@@ -14,6 +15,8 @@ router.include_router(
     catalog_router,
     prefix="/platform-metadata",
 )
+
+router.include_router(actions_router)
 
 router.include_router(entities_router)
 router.include_router(relations_router)

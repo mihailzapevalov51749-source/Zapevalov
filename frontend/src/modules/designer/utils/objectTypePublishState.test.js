@@ -31,6 +31,32 @@ describe("objectTypePublishState", () => {
     assert.equal(flags.needsMenuPlacement, false);
   });
 
+  it("flags menu placement when published but not placed in navigation", () => {
+    const flags = computeObjectTypePublishFlags(
+      {
+        updated_at: "2026-06-01T10:00:00.000Z",
+        last_published_at: "2026-06-01T12:00:00.000Z",
+      },
+      { catalogVersion: 3, hasMenuPlacement: false },
+    );
+
+    assert.equal(flags.hasPublishedBaseline, true);
+    assert.equal(flags.needsMenuPlacement, true);
+    assert.equal(flags.publishAction, "none");
+  });
+
+  it("clears menu placement need when navigation item exists", () => {
+    const flags = computeObjectTypePublishFlags(
+      {
+        updated_at: "2026-06-01T10:00:00.000Z",
+        last_published_at: "2026-06-01T12:00:00.000Z",
+      },
+      { catalogVersion: 3, hasMenuPlacement: true },
+    );
+
+    assert.equal(flags.needsMenuPlacement, false);
+  });
+
   it("detects pending catalog sync after object edits", () => {
     assert.equal(
       hasUnpublishedObjectTypeChanges({

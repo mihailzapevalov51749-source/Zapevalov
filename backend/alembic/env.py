@@ -38,6 +38,16 @@ from app.modules.platform.designer.relation_definitions.models import (  # noqa:
 from app.modules.platform.designer.view_definitions.models import (  # noqa: E402, F401
     DesignerViewDefinition,
 )
+from app.modules.platform.action_engine.action_definitions.models import (  # noqa: E402, F401
+    DesignerActionDefinition,
+)
+from app.modules.platform.action_engine.action_placements.models import (  # noqa: E402, F401
+    DesignerActionPlacement,
+)
+from app.modules.platform.action_engine.action_forms.models import (  # noqa: E402, F401
+    DesignerActionForm,
+    DesignerActionFormField,
+)
 from app.modules.platform.designer.publish.models import (  # noqa: E402, F401
     DesignerMetadataSnapshot,
     DesignerPublishRecord,

@@ -5,6 +5,10 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.modules.platform.runtime.actions.schemas import PublishedRuntimeAction
+from app.modules.platform.runtime.actions.service import (
+    get_actions_for_placement as resolve_actions_for_placement,
+)
 from app.modules.platform.runtime.catalog import repository
 from app.modules.platform.runtime.entities.system_fields import merge_catalog_fields_with_system
 from app.modules.platform.runtime.catalog.schemas import (
@@ -365,4 +369,49 @@ def get_published_view_projection_metadata(
         filters_json=filters_json,
         layout_json=layout_json,
         view_meta=view_meta,
+    )
+
+
+def get_published_actions(
+    db: Session,
+    tenant_id: int,
+    object_type_key: str,
+) -> list[dict[str, Any]]:
+    """Return published Action Definitions (with placements) for an ObjectType."""
+    snapshot = repository.get_latest_snapshot(db, tenant_id)
+
+    if not snapshot:
+        raise CatalogNotFound(f"Published catalog не найден для tenant {tenant_id}")
+
+    payload = snapshot.payload or {}
+
+    for object_type in payload.get("object_types", []):
+        if not isinstance(object_type, dict):
+            continue
+        if object_type.get("key") != object_type_key:
+            continue
+
+        actions = object_type.get("actions", [])
+        if not isinstance(actions, list):
+            return []
+        return [action for action in actions if isinstance(action, dict)]
+
+    raise CatalogNotFound(
+        f"ObjectType '{object_type_key}' не найден в published catalog "
+        f"для tenant {tenant_id}",
+    )
+
+
+def get_actions_for_placement(
+    db: Session,
+    tenant_id: int,
+    object_type_key: str,
+    placement_key: str,
+) -> list[PublishedRuntimeAction]:
+    """Public runtime API: published actions for a single placement key."""
+    return resolve_actions_for_placement(
+        db,
+        tenant_id,
+        object_type_key,
+        placement_key,
     )

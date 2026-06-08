@@ -8,8 +8,11 @@ from pathlib import Path
 from uuid import UUID
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(BACKEND_ROOT))
+sys.path.insert(0, str(SCRIPTS_ROOT))
 
+from platform_data_write_guard import require_platform_data_write_approval
 from app.modules.portals.models import Portal  # noqa: F401
 from app.modules.users.models import User  # noqa: F401
 from app.modules.platform.runtime.entities.models import RuntimeEntity  # noqa: F401
@@ -199,6 +202,7 @@ def _link_parent_child(db, parent_id: UUID, child_id: UUID) -> None:
 
 
 def main() -> int:
+    require_platform_data_write_approval(script_name=Path(__file__).name)
     db = SessionLocal()
     try:
         metadata = catalog_service.get_published_object_type_metadata(

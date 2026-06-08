@@ -16,10 +16,21 @@ import {
 import {
   readObjectTabSettings,
 } from "../../../objectViews/services/objectTabSettings";
-import ViewPropertiesPanel from "../views/ViewPropertiesPanel";
+import ViewPropertiesForm from "../views/ViewPropertiesForm";
 import CreateObjectViewModal from "../views/CreateObjectViewModal.jsx";
 import { useObjectTypePreviewTab } from "../../context/ObjectTypePreviewTabContext";
 import { usePlanViewStudio } from "../../context/PlanViewStudioContext";
+import {
+  ObjectSettingsBadge,
+  ObjectSettingsButton,
+  ObjectSettingsEmptyState,
+  ObjectSettingsHeader,
+  ObjectSettingsPage,
+  ObjectSettingsPanel,
+  ObjectSettingsPanelFooter,
+  ObjectSettingsSplitLayout,
+  buildObjectSettingsLayoutStorageKey,
+} from "../../../../shared/objectSettings";
 
 export default function ViewsTab({
   tenantId,
@@ -68,6 +79,16 @@ export default function ViewsTab({
     ? planStudio?.fieldOptions || fieldOptions
     : fieldOptions;
   const isSelectedSystemDefault = Boolean(selected?.is_system && selected?.is_default);
+
+  const layoutStorageKey = useMemo(
+    () =>
+      buildObjectSettingsLayoutStorageKey({
+        tenantId,
+        objectTypeKey,
+        tabKey: "tabs",
+      }),
+    [objectTypeKey, tenantId],
+  );
 
   const loadRelations = useCallback(async () => {
     try {
@@ -362,93 +383,132 @@ export default function ViewsTab({
   };
 
   return (
-    <div className={`designer-workspace-layout ${selected ? "has-panel" : ""}`}>
-      <div>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            marginBottom: 12,
-          }}
-        >
-          <h3 style={{ margin: 0 }}>
-            Вкладки объекта{" "}
-            <span className="designer-badge">{items.length}</span>
-          </h3>
-          <button
-            type="button"
-            className="designer-btn designer-btn--primary"
+    <ObjectSettingsPage>
+      <ObjectSettingsHeader
+        title="Вкладки объекта"
+        count={items.length}
+        centered
+        primaryAction={
+          <ObjectSettingsButton
+            variant="primary"
             onClick={() => setIsCreateModalOpen(true)}
           >
             + Создать вкладку
-          </button>
-        </div>
+          </ObjectSettingsButton>
+        }
+      />
 
-        <div className="designer-table-wrap">
-          <table className="designer-table">
-            <thead>
-              <tr>
-                <th>Название</th>
-                <th>Key</th>
-                <th>Тип</th>
-                <th>Активно</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <tr
-                  key={item.id}
-                  className={item.id === selectedId ? "is-selected" : ""}
-                  onClick={() => setSelectedId(item.id)}
-                >
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span>{item.name}</span>
-                      {item.is_system ? (
-                        <span className="designer-badge" title="Системная вкладка">
-                          System
-                        </span>
-                      ) : null}
-                      {item.is_default ? (
-                        <span className="designer-badge" title="Вкладка по умолчанию">
-                          Default
-                        </span>
-                      ) : null}
-                    </div>
-                  </td>
-                  <td>
-                    <code>{item.key}</code>
-                  </td>
-                  <td>{item.view_type}</td>
-                  <td>{item.is_active ? "Да" : "Нет"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {selected && panelDraft ? (
-        <ViewPropertiesPanel
-          draft={panelDraft}
-          isSelectedSystemDefault={isSelectedSystemDefault}
-          fieldOptions={panelFieldOptions}
-          relationOptions={relationOptions}
-          objectTypeKey={objectTypeKey}
-          planSettings={panelPlanSettings}
-          onPlanSettingsChange={panelSetPlanSettings}
-          saving={saving}
-          onDraftChange={panelSetDraft}
-          onClose={() => setSelectedId(null)}
-          onSave={handleSave}
-          onDelete={handleDelete}
-          onOpenRuntimePreview={openRuntimePreviewForView}
-          titleFieldKey={panelDraft.projection?.title_field}
-          onToggleVisibleField={toggleVisibleField}
-          onToggleInfoField={toggleInfoField}
-          onReorderField={reorderFieldOrder}
-        />
-      ) : null}
+      <ObjectSettingsSplitLayout
+        storageKey={layoutStorageKey}
+        left={
+          <ObjectSettingsPanel
+            title="Список вкладок"
+            tone="muted"
+            titleId="designer-object-tabs-list-title"
+          >
+            {!items.length ? (
+              <ObjectSettingsEmptyState
+                compact
+                inPanel
+                title="Нет вкладок"
+                description="Создайте первую вкладку с помощью кнопки «+ Создать вкладку»."
+              />
+            ) : (
+              <div className="designer-table-wrap">
+                <table className="designer-table">
+                  <thead>
+                    <tr>
+                      <th>Название</th>
+                      <th>Key</th>
+                      <th>Тип</th>
+                      <th>Активно</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item) => (
+                      <tr
+                        key={item.id}
+                        className={item.id === selectedId ? "is-selected" : ""}
+                        onClick={() => setSelectedId(item.id)}
+                      >
+                        <td>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span>{item.name}</span>
+                            {item.is_system ? (
+                              <ObjectSettingsBadge variant="system" title="Системная вкладка">
+                                System
+                              </ObjectSettingsBadge>
+                            ) : null}
+                            {item.is_default ? (
+                              <ObjectSettingsBadge variant="default" title="Вкладка по умолчанию">
+                                Default
+                              </ObjectSettingsBadge>
+                            ) : null}
+                          </div>
+                        </td>
+                        <td>
+                          <code>{item.key}</code>
+                        </td>
+                        <td>{item.view_type}</td>
+                        <td>{item.is_active ? "Да" : "Нет"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </ObjectSettingsPanel>
+        }
+        right={
+          <ObjectSettingsPanel
+            title="Свойства вкладки"
+            titleId="designer-object-tab-properties-title"
+            footer={
+              selected && panelDraft ? (
+                <ObjectSettingsPanelFooter
+                  onDelete={handleDelete}
+                  onSave={handleSave}
+                  deleteDisabled={isSelectedSystemDefault}
+                  saving={saving}
+                />
+              ) : null
+            }
+          >
+            {selected && panelDraft ? (
+              <ViewPropertiesForm
+                draft={panelDraft}
+                isSelectedSystemDefault={isSelectedSystemDefault}
+                fieldOptions={panelFieldOptions}
+                relationOptions={relationOptions}
+                objectTypeKey={objectTypeKey}
+                planSettings={panelPlanSettings}
+                onPlanSettingsChange={panelSetPlanSettings}
+                onDraftChange={panelSetDraft}
+                onOpenRuntimePreview={openRuntimePreviewForView}
+                titleFieldKey={panelDraft.projection?.title_field}
+                onToggleVisibleField={toggleVisibleField}
+                onToggleInfoField={toggleInfoField}
+                onReorderField={reorderFieldOrder}
+              />
+            ) : (
+              <ObjectSettingsEmptyState
+                compact
+                inPanel
+                title={
+                  items.length === 0
+                    ? "Создайте первый элемент"
+                    : "Выберите элемент слева"
+                }
+                description={
+                  items.length === 0
+                    ? "Создайте первую вкладку с помощью кнопки «+ Создать вкладку»."
+                    : "Чтобы просмотреть и изменить свойства вкладки."
+                }
+              />
+            )}
+          </ObjectSettingsPanel>
+        }
+      />
 
       <CreateObjectViewModal
         open={isCreateModalOpen}
@@ -459,6 +519,6 @@ export default function ViewsTab({
         onClose={() => setIsCreateModalOpen(false)}
         onCreated={handleViewCreated}
       />
-    </div>
+    </ObjectSettingsPage>
   );
 }
