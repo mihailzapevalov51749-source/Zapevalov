@@ -12,14 +12,34 @@ import YasiiEmbeddedPanel from "../components/YasiiEmbeddedPanel.jsx";
 import { EMBEDDED_SURFACE_IDS } from "../embedded/embeddedSurfaceTypes.js";
 import { resolvePlatformDashboardUserId } from "../hostContextBuilders.js";
 import { useYasiiResolvedSurface } from "../hooks/useYasiiResolvedSurface.js";
+import {
+  PAGE_LAYOUT_PAGE_TYPE,
+  PAGE_LAYOUT_TOOLBAR_ZONE,
+  useResolvedPageLayoutContract,
+} from "../../shared/appShell/pageLayoutContract";
 
 const DEFAULT_PORTAL_ID = 1;
 
 export default function YasiiWorkspacePage() {
+  useResolvedPageLayoutContract({
+    pageType: PAGE_LAYOUT_PAGE_TYPE.YASII_WORKSPACE,
+    toolbarZoneId: PAGE_LAYOUT_TOOLBAR_ZONE.APP_HEADER,
+    canMinimize: true,
+    title: "Ассистент",
+    context: {
+      pageTitle: "Ассистент",
+      layoutPageType: PAGE_LAYOUT_PAGE_TYPE.YASII_WORKSPACE,
+    },
+  });
+
   const navigate = useNavigate();
   const location = useLocation();
   const portalId = DEFAULT_PORTAL_ID;
   const session = useYasiiAssistantSession();
+
+  useEffect(() => {
+    session?.enterYasiiPage?.();
+  }, [session]);
   const resolvedSurface = useYasiiResolvedSurface(location.pathname);
 
   const { navigation, reloadNavigation } = useNavigationTree(portalId, {
@@ -109,7 +129,7 @@ export default function YasiiWorkspacePage() {
 
   const handleCloseWorkspace = useCallback(() => {
     const returnPath = readYasiiPreWorkspacePath() || getLastRuntimePath();
-    session?.setFloatingOpen?.(false);
+    session?.leaveYasiiPageMinimized?.();
     navigate(returnPath);
   }, [navigate, session]);
 

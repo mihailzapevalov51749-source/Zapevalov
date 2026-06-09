@@ -1,6 +1,13 @@
+import { useRegisterAppShellChrome } from "../appShell/AppShellChromeContext";
+
+import { APP_SHELL_SHELL_HEADER_HEIGHT } from "../appShell/appShellConstants";
+
 import AppHeaderRenderer from "./header/components/AppHeaderRenderer";
+
 import AppSidebarRenderer from "./sidebar/components/AppSidebarRenderer";
+
 import { resolveAppSidebarWidth } from "./shellSidebarGeometry";
+
 import { useShellSidebarState } from "./useShellSidebarState";
 
 export default function AppShellFrame({
@@ -13,33 +20,29 @@ export default function AppShellFrame({
   sidebarTransition = "all 0.2s ease",
   workspaceTransition = "all 0.2s ease",
   platformZone = undefined,
+  ...rootProps
 }) {
   const { sidebarCollapsed, toggleSidebarCollapsed } = useShellSidebarState();
   const sidebarWidth = resolveAppSidebarWidth(sidebarCollapsed);
   const workspaceLeftOffset = resolveAppSidebarWidth(sidebarCollapsed);
 
+  useRegisterAppShellChrome({
+    hasPlatformChrome: true,
+    workspaceLeftOffset,
+    shellHeaderHeight: headerContract ? APP_SHELL_SHELL_HEADER_HEIGHT : 0,
+  });
+
   return (
     <div
+      className="app-shell-frame"
       data-platform-zone={platformZone || undefined}
-      style={{
-        width: "100vw",
-        height: "100vh",
-        minHeight: "100vh",
-        maxHeight: "100vh",
-        background: "#f8fafc",
-        overflow: "hidden",
-        boxSizing: "border-box",
-      }}
+      {...rootProps}
     >
-      <div
+      <aside
+        className="app-shell-frame__sidebar"
         style={{
-          position: "fixed",
-          left: 0,
-          top: 0,
           width: sidebarWidth,
-          height: "100vh",
-          zIndex: 20,
-          boxSizing: "border-box",
+          flexShrink: 0,
           transition: sidebarTransition,
         }}
       >
@@ -52,45 +55,19 @@ export default function AppShellFrame({
             onAction={onSidebarAction}
           />
         ) : null}
-      </div>
+      </aside>
 
       <main
+        className="app-shell-frame__main"
         style={{
-          position: "fixed",
-          top: 0,
-          left: workspaceLeftOffset,
-          right: 0,
-          bottom: 0,
-          height: "100vh",
-          minHeight: 0,
-          background: "#f8fafc",
-          overflow: "hidden",
-          boxSizing: "border-box",
-          display: "flex",
-          flexDirection: "column",
           transition: workspaceTransition,
         }}
       >
         {headerContract ? (
-          <AppHeaderRenderer
-            contract={headerContract}
-            onAction={onHeaderAction}
-          />
+          <AppHeaderRenderer contract={headerContract} onAction={onHeaderAction} />
         ) : null}
-        <div
-          style={{
-            flex: 1,
-            minHeight: 0,
-            minWidth: 0,
-            width: "100%",
-            overflow: "hidden",
-            boxSizing: "border-box",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          {workspace}
-        </div>
+
+        <div className="app-shell-frame__workspace">{workspace}</div>
       </main>
     </div>
   );

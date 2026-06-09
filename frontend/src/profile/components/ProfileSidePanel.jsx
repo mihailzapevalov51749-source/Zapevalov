@@ -15,8 +15,11 @@ import departmentIcon from "../../assets/icons/department.png";
 import bossIcon from "../../assets/icons/boss.png";
 import mentorIcon from "../../assets/icons/mentor.png";
 
+import AppShellPageMinimizeButton from "../../shared/appShell/AppShellPageMinimizeButton.jsx";
+import "../../shared/appShell/pageToolbarActions.css";
 import ConfirmSavePopover from "./ConfirmSavePopover";
 import { styles } from "../styles/profileSidePanelStyles";
+import "../styles/profileSidePanelHeaderActions.css";
 
 const DEFAULT_AVATAR_SETTINGS = {
   x: 0,
@@ -142,7 +145,12 @@ const avatarSmallIconStyle = {
   objectFit: "contain",
 };
 
-export default function ProfileSidePanel({ isOpen, onClose }) {
+export default function ProfileSidePanel({
+  isOpen = true,
+  onClose,
+  initialPanelState = {},
+  onMinimize,
+}) {
   const fileInputRef = useRef(null);
   const avatarCircleRef = useRef(null);
   const dragStateRef = useRef(null);
@@ -160,9 +168,24 @@ export default function ProfileSidePanel({ isOpen, onClose }) {
   const avatarSettings = normalizeAvatarSettings(form.avatar_settings);
 
   useEffect(() => {
-    if (!isOpen) return;
-    loadUser();
+    if (isOpen) {
+      loadUser();
+    }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    if (initialPanelState?.activeTab) {
+      setActiveTab(initialPanelState.activeTab);
+    }
+
+    if (typeof initialPanelState?.isEdit === "boolean") {
+      setIsEdit(initialPanelState.isEdit);
+    }
+  }, [initialPanelState, isOpen]);
 
   useEffect(() => {
     const handleMouseMove = (event) => {
@@ -392,6 +415,14 @@ export default function ProfileSidePanel({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
+  const handleMinimize = () => {
+    onMinimize?.({
+      activeTab,
+      isEdit,
+      user,
+    });
+  };
+
   const initials =
     form?.full_name?.trim()?.charAt(0)?.toUpperCase() ||
     user?.full_name?.trim()?.charAt(0)?.toUpperCase() ||
@@ -401,32 +432,51 @@ export default function ProfileSidePanel({ isOpen, onClose }) {
   const roleName = getUserRoleName(user);
   const roleDescription = getUserRoleDescription(user);
 
-  return (
-    <div style={styles.overlay} onClick={onClose}>
-      <aside style={styles.panel} onClick={(event) => event.stopPropagation()}>
+  const panel = (
+      <aside
+        style={styles.panel}
+        onClick={(event) => event.stopPropagation()}
+      >
         <header style={styles.headerCard}>
           <div>
             <h2 style={styles.title}>Личный кабинет сотрудника</h2>
             <div style={styles.subtitle}>Профиль, контакты, организация</div>
           </div>
 
-          <div style={styles.headerActions}>
-            <button
-              type="button"
-              style={styles.iconButton}
-              title={isEdit ? "Сохранить изменения" : "Редактировать"}
-              onClick={isEdit ? handleRequestSave : () => setIsEdit(true)}
-            >
-              <img
-                src={isEdit ? saveIcon : settingsIcon}
-                alt={isEdit ? "Сохранить" : "Настройки"}
-                style={styles.actionIcon}
-              />
-            </button>
+          <div className="profile-side-panel__header-actions">
+            {onMinimize ? (
+              <AppShellPageMinimizeButton onClick={handleMinimize} />
+            ) : null}
 
-            <button type="button" onClick={onClose} style={styles.closeButton}>
-              ×
-            </button>
+            <div className="app-shell-page-minimize-control">
+              <button
+                type="button"
+                className="app-shell-page-minimize-control__button"
+                title={isEdit ? "Сохранить изменения" : "Редактировать"}
+                aria-label={isEdit ? "Сохранить изменения" : "Редактировать"}
+                onClick={isEdit ? handleRequestSave : () => setIsEdit(true)}
+              >
+                <img
+                  src={isEdit ? saveIcon : settingsIcon}
+                  alt=""
+                  aria-hidden
+                />
+              </button>
+            </div>
+
+            <div className="app-shell-page-minimize-control">
+              <button
+                type="button"
+                className="app-shell-page-minimize-control__button"
+                onClick={onClose}
+                title="Закрыть"
+                aria-label="Закрыть"
+              >
+                <span className="profile-side-panel__close-glyph" aria-hidden>
+                  ×
+                </span>
+              </button>
+            </div>
           </div>
         </header>
 
@@ -733,6 +783,11 @@ export default function ProfileSidePanel({ isOpen, onClose }) {
           />
         )}
       </aside>
+  );
+
+  return (
+    <div style={styles.overlay} onClick={onClose}>
+      {panel}
     </div>
   );
 }

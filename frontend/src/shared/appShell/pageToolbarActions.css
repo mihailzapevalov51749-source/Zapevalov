@@ -1,0 +1,120 @@
+:root {
+  --app-shell-minimize-control-size: 28px;
+}
+
+.page-toolbar-actions__slot,
+.app-shell-page-actions-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-height: var(--app-shell-minimize-control-size);
+}
+
+.page-toolbar-actions__workspace-tabs,
+.app-shell-page-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.app-shell-page-actions-anchor {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: var(--app-shell-minimize-control-size);
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid #e2e8f0;
+}
+
+.app-shell-page-actions-anchor:not(:has([data-app-shell-page-actions-host])) {
+  display: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.app-header-renderer__page-toolbar {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.app-header-renderer__page-toolbar .page-toolbar-actions__slot:empty,
+.app-header-renderer__page-toolbar .app-shell-page-actions-slot:empty {
+  display: none;
+}
+
+.app-shell-page-minimize-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.app-shell-page-minimize-control__button {
+  width: var(--app-shell-minimize-control-size);
+  min-width: var(--app-shell-minimize-control-size);
+  height: var(--app-shell-minimize-control-size);
+  min-height: var(--app-shell-minimize-control-size);
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.app-shell-page-minimize-control__button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.app-shell-page-minimize-control__button:not(:disabled):hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.app-shell-page-minimize-control__button:not(:disabled):focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+}
+
+.page-toolbar-actions__group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.portal-object-runtime-header__page-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+  align-self: center;
+  margin-left: auto;
+}
+
+.chat-header__context-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.chat-header__actions {
+  margin-left: auto;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}

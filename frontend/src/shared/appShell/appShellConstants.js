@@ -1,0 +1,4 @@
+export const APP_SHELL_BOTTOM_TABS_HEIGHT = 32;
+
+export const APP_SHELL_SHELL_HEADER_HEIGHT = 56;
+

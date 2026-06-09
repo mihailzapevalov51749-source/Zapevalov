@@ -54,12 +54,16 @@ describe("yasii workspace modes", () => {
     assert.match(dismissSource, /isPinned/);
     assert.match(assistantSource, /readYasiiPinned/);
     assert.match(assistantSource, /messages/);
+    assert.match(headerSource, /resolveYasiiPanelControlOrder/);
     assert.match(headerSource, /Pin\.png/);
     assert.match(headerSource, /expand\.png/);
     assert.match(headerSource, /collapse\.png/);
+    assert.match(headerSource, /minimizeCurrentPage/);
     assert.match(headerSource, /navigate\("\/yasii"\)/);
-    assert.match(headerSource, /setFloatingOpen\?\.\(true\)/);
-    assert.match(workspaceSource, /setFloatingOpen\?\.\(false\)/);
+    assert.match(headerSource, /leaveYasiiPageToPanel/);
+    assert.match(headerSource, /enterYasiiPage/);
+    assert.match(workspaceSource, /enterYasiiPage/);
+    assert.match(workspaceSource, /leaveYasiiPageMinimized/);
     assert.doesNotMatch(
       workspaceSource,
       /useEffect\(\(\) => {\s*session\?\.setFloatingOpen/,

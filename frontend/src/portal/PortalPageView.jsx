@@ -95,8 +95,13 @@ import {
   buildBreadcrumbsFromNavigationChain,
   resolveNavigationContext,
 } from "../shared/navigation/navigationContextResolver";
-
-const CORPORATE_CHAT_PAGE_ID = 35;
+import { useResolvedPageLayoutContract } from "../shared/appShell/pageLayoutContract";
+import EmbeddedPageContent from "../shared/shell/EmbeddedPageContent";
+import {
+  CORPORATE_CHAT_PAGE_ID,
+  isDesignerShellEmbeddedPortalRoute,
+  resolvePortalPageViewLayoutContractOverrides,
+} from "./resolvePortalPageViewLayoutContract";
 
 const EMPTY_SECTIONS = [];
 
@@ -416,6 +421,19 @@ export default function PortalPageView() {
     /^\/designer\/tenant\/\d+\/administration\/?$/.test(location.pathname);
   const isCorporateChatPage = Number(pageId) === CORPORATE_CHAT_PAGE_ID;
 
+  const isPortalCmsPage =
+    /^\/portal\/\d+\/page\/\d+/.test(location.pathname) &&
+    !isUniversalTablePage &&
+    !isAdminPage &&
+    !isCorporateChatPage;
+
+  const isDesignerCustomPageRoute = /^\/designer\/tenant\/\d+\/page\/\d+/.test(
+    location.pathname,
+  );
+  const isDesignerShellEmbeddedRoute = isDesignerShellEmbeddedPortalRoute(
+    location.pathname,
+  );
+
   const adminPageContent = getAdminPageByPath(location.pathname);
 
   const [pageData, setPageData] = useState(null);
@@ -535,6 +553,32 @@ export default function PortalPageView() {
       tabTitle: workspaceTabTitle,
     };
   }, [location.pathname, location.search]);
+
+  const portalLayoutContractOverrides = useMemo(
+    () =>
+      resolvePortalPageViewLayoutContractOverrides(location, pageId, {
+        portalId,
+        page: pageData?.page,
+        navigationItemTitle: activeNavigationItem?.title,
+        pageTitleDraft,
+        headerTitle: topBarMeta.title,
+        workspaceRuntimeContext,
+      }),
+    [
+      location.pathname,
+      location.search,
+      pageId,
+      portalId,
+      pageData?.page,
+      activeNavigationItem?.title,
+      pageTitleDraft,
+      topBarMeta.title,
+      workspaceRuntimeContext,
+    ],
+  );
+
+  useResolvedPageLayoutContract(portalLayoutContractOverrides);
+
   const isDocumentLibraryContext =
     isDocumentLibraryPage && Array.isArray(libraryContextPath.folderPath);
   const headerSectionTitle = isDocumentLibraryContext
@@ -690,10 +734,6 @@ export default function PortalPageView() {
     !isCorporateChatPage &&
     !isDocumentLibraryPage &&
     Boolean(pageId);
-  const isDesignerCustomPageRoute = /^\/designer\/tenant\/[^/]+\/page\/\d+/.test(
-    location.pathname
-  );
-
   useEffect(() => {
     if (location.state?.enterEditMode !== true || !isCanvasEditPage) {
       return;
@@ -1567,36 +1607,12 @@ export default function PortalPageView() {
     await handleAddBlockToSection(sectionId, blockType, dropPoint);
   };
 
-  return (
-    <PortalLayout
-      portalId={portalId}
-      navigation={navigation}
-      activePageId={isUniversalTablePage ? "system-universal-table" : pageId}
-      activeSidebarItemId={navigationContext.currentNavigationItemId}
-      activeSidebarParentIds={navigationContext.activeParentIds}
-      onSelectPage={handleSelectPage}
-      onNavigateToPath={(path) => navigate(path)}
-      onSidebarItemAction={handleSidebarItemAction}
-      reloadNavigation={reloadNavigation}
-      onNavigationEditModeChange={setNavigationEditMode}
-      menuScale={menuScale}
-      onChangeMenuScale={changeMenuScale}
-      headerContract={runtimeHeaderModel?.contract}
-      onHeaderAction={runtimeHeaderModel?.onAction}
-      searchOverlay={
-        <SearchResultsOverlay
-          isVisible={headerSearch.isOverlayVisible}
-          isLoading={headerSearch.isLoading}
-          error={headerSearch.error}
-          results={headerSearch.results}
-          scopeLabel={searchContext.label}
-          onClose={headerSearch.closeResults}
-        />
-      }
-    >
-    
+  const pageShellInner = (
+    <>
+  {!isDesignerShellEmbeddedRoute ? (
 <div
   data-page-scroll
+  className="portal-page-shell"
   style={{
     width: "100%",
     height: "100%",
@@ -1608,30 +1624,32 @@ export default function PortalPageView() {
     background: "#f1f5f9",
   }}
 >
-  <WorkspaceTopBar
-    title={topBarMeta.title}
-    subtitle={topBarMeta.subtitle}
-    sectionTitle={headerSectionTitle}
-    breadcrumbItems={headerBreadcrumbItems}
-    searchQuery={headerSearch.searchQuery}
-    onQueryChange={headerSearch.onQueryChange}
-    searchPlaceholder={searchContext.label}
-    onOpenFirstResult={headerSearch.openFirstResult}
-    onCloseSearchResults={headerSearch.closeResults}
-    onClearSearch={headerSearch.clearResults}
-    isEditMode={isEditMode}
-    isPageTitleEditable={isEditMode && isCanvasEditPage}
-    pageTitleDraft={pageTitleDraft}
-    onChangePageTitleDraft={setPageTitleDraft}
-    onSavePageTitle={handleSavePageTitle}
-    showBackButton={isAdminPage && !isAdminRootPage}
-    onBack={() => navigate(-1)}
-    onEnterEditMode={() => setIsEditMode(true)}
-    onExitEditMode={exitEditMode}
-    tenantId={Number(portalId) || 1}
-    inlineRender={false}
-    onUnifiedHeaderModel={handleUnifiedHeaderModel}
-  />
+  {!isDesignerShellEmbeddedRoute ? (
+    <WorkspaceTopBar
+      title={topBarMeta.title}
+      subtitle={topBarMeta.subtitle}
+      sectionTitle={headerSectionTitle}
+      breadcrumbItems={headerBreadcrumbItems}
+      searchQuery={headerSearch.searchQuery}
+      onQueryChange={headerSearch.onQueryChange}
+      searchPlaceholder={searchContext.label}
+      onOpenFirstResult={headerSearch.openFirstResult}
+      onCloseSearchResults={headerSearch.closeResults}
+      onClearSearch={headerSearch.clearResults}
+      isEditMode={isEditMode}
+      isPageTitleEditable={isEditMode && isCanvasEditPage}
+      pageTitleDraft={pageTitleDraft}
+      onChangePageTitleDraft={setPageTitleDraft}
+      onSavePageTitle={handleSavePageTitle}
+      showBackButton={isAdminPage && !isAdminRootPage}
+      onBack={() => navigate(-1)}
+      onEnterEditMode={() => setIsEditMode(true)}
+      onExitEditMode={exitEditMode}
+      tenantId={Number(portalId) || 1}
+      inlineRender={false}
+      onUnifiedHeaderModel={handleUnifiedHeaderModel}
+    />
+  ) : null}
   {workspaceRuntimeContext ? (
     <WorkspaceRuntimeTabsBar
       portalId={portalId}
@@ -1842,6 +1860,117 @@ export default function PortalPageView() {
     onClose={() => setPageSettingsAnchor(null)}
   />
 </div>
+  ) : (
+    <EmbeddedPageContent data-page-canvas>
+      {navigationError && <SystemMessage>{navigationError}</SystemMessage>}
+      {error && <SystemMessage>{error}</SystemMessage>}
+
+      {!isUniversalTablePage && isCorporateChatPage && <CorporateChatPage />}
+
+      {!isUniversalTablePage && !isCorporateChatPage && isAdminPage && adminPageContent}
+
+      {!isUniversalTablePage &&
+        !isCorporateChatPage &&
+        isAdminPage &&
+        !adminPageContent && (
+          <SystemMessage>Раздел администрирования не найден</SystemMessage>
+        )}
+
+      {!isUniversalTablePage &&
+        !isAdminPage &&
+        !isCorporateChatPage &&
+        !isDocumentLibraryPage &&
+        !pageData &&
+        pageId && <SystemMessage>Загрузка...</SystemMessage>}
+
+      {!isUniversalTablePage &&
+        !isAdminPage &&
+        !isCorporateChatPage &&
+        !isDocumentLibraryPage &&
+        pageData &&
+        sections.length === 0 &&
+        isEditMode && <EmptyDropZone />}
+
+      {!isUniversalTablePage &&
+        !isAdminPage &&
+        !isCorporateChatPage &&
+        !isDocumentLibraryPage &&
+        pageData &&
+        sections.length > 0 && (
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              flexDirection: "column",
+              gap: 0,
+            }}
+          >
+            {sections.map(({ section, blocks }) => (
+              <div key={section.id} data-section-host-id={section.id}>
+                <ContentSection
+                  section={section}
+                  blocks={blocks}
+                  sections={sections}
+                  isEditMode={isEditMode}
+                  onEditSection={handleEditSection}
+                  onDeleteSection={handleRequestDeleteSection}
+                  onSectionUpdated={handleSectionUpdated}
+                  onBlockUpdated={handleBlockUpdated}
+                  onMoveBlock={handleMoveBlock}
+                  selectedBlockId={selectedBlock?.id}
+                  onEditBlock={handleEditBlock}
+                  onDeleteBlock={handleDeleteBlock}
+                  onWidgetDragOver={
+                    isEditMode
+                      ? (event) => widgetDnD.handleSectionDragOver(event, section.id)
+                      : undefined
+                  }
+                  onWidgetDrop={
+                    isEditMode
+                      ? (event) => widgetDnD.handleSectionDrop(event, section.id)
+                      : undefined
+                  }
+                  blockDragAndDrop={isEditMode ? blockDragAndDrop : undefined}
+                  sectionDragAndDrop={isEditMode ? sectionDragAndDrop : undefined}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+
+      <PageCanvasContextMenu
+        menuState={canvasContextMenu.menuState}
+        menuRef={canvasContextMenu.menuRef}
+        onSelect={handleContextMenuSelect}
+      />
+
+      <BlockSettingsModal
+        selectedBlock={selectedBlock}
+        selectedSection={selectedSection}
+        onSaveBlock={handleSaveBlock}
+        onPatchBlock={handlePatchBlock}
+        onCloseBlockEditor={() => setSelectedBlock(null)}
+        onRemoveBlockFromSection={handleRemoveBlockFromSection}
+        onSaveSection={handleSaveSection}
+        onCloseSectionEditor={() => setSelectedSection(null)}
+      />
+
+      <PageCanvasToast
+        message={errorToast.message}
+        anchor={errorToast.anchor}
+        onDismiss={() => setErrorToast({ message: "", anchor: null })}
+      />
+
+      <PageSettingsPopover
+        anchor={pageSettingsAnchor}
+        page={pageData?.page}
+        navigationItem={activeNavigationItem}
+        onSavePage={handleSavePageSettings}
+        onClose={() => setPageSettingsAnchor(null)}
+      />
+    </EmbeddedPageContent>
+  )}
+
       <DeleteSectionModal
         isOpen={deleteSectionState.isOpen}
         section={deleteSectionState.section}
@@ -1851,6 +1980,41 @@ export default function PortalPageView() {
         onDeleteEmpty={confirmDeleteEmptySection}
         onDeleteWithBlocks={confirmDeleteSectionWithBlocks}
       />
+    </>
+  );
+
+  if (isDesignerShellEmbeddedRoute) {
+    return pageShellInner;
+  }
+
+  return (
+    <PortalLayout
+      portalId={portalId}
+      navigation={navigation}
+      activePageId={isUniversalTablePage ? "system-universal-table" : pageId}
+      activeSidebarItemId={navigationContext.currentNavigationItemId}
+      activeSidebarParentIds={navigationContext.activeParentIds}
+      onSelectPage={handleSelectPage}
+      onNavigateToPath={(path) => navigate(path)}
+      onSidebarItemAction={handleSidebarItemAction}
+      reloadNavigation={reloadNavigation}
+      onNavigationEditModeChange={setNavigationEditMode}
+      menuScale={menuScale}
+      onChangeMenuScale={changeMenuScale}
+      headerContract={runtimeHeaderModel?.contract}
+      onHeaderAction={runtimeHeaderModel?.onAction}
+      searchOverlay={
+        <SearchResultsOverlay
+          isVisible={headerSearch.isOverlayVisible}
+          isLoading={headerSearch.isLoading}
+          error={headerSearch.error}
+          results={headerSearch.results}
+          scopeLabel={searchContext.label}
+          onClose={headerSearch.closeResults}
+        />
+      }
+    >
+      {pageShellInner}
     </PortalLayout>
   );
 }

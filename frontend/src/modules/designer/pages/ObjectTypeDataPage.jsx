@@ -20,11 +20,22 @@ import {
   publishDesignerObjectViewHeader,
 } from "../utils/designerObjectViewHeaderBridge";
 import { resolveObjectTypeLifecycleState } from "../utils/objectTypeLifecycleState";
+import {
+  PAGE_LAYOUT_PAGE_TYPE,
+  PAGE_LAYOUT_TOOLBAR_ZONE,
+  useResolvedPageLayoutContract,
+} from "../../../shared/appShell/pageLayoutContract";
 
 const DEFAULT_VIEW_KEY = "default_table";
 const DEFAULT_VIEW_LABEL = "Таблица";
 
 export default function ObjectTypeDataPage() {
+  useResolvedPageLayoutContract({
+    pageType: PAGE_LAYOUT_PAGE_TYPE.STUDIO_OBJECT_DATA,
+    toolbarZoneId: PAGE_LAYOUT_TOOLBAR_ZONE.APP_HEADER,
+    canMinimize: true,
+  });
+
   const { tenantId } = useDesignerShell();
   const navigate = useNavigate();
   const { objectTypeId } = useParams();

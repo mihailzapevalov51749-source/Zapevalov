@@ -53,43 +53,6 @@ export const styles = {
     color: "#64748b",
   },
 
-  headerActions: {
-    display: "flex",
-    gap: 8,
-    alignItems: "center",
-  },
-
-  iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 9,
-    border: "1px solid #dbe4ef",
-    background: "#ffffff",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 9,
-    border: "1px solid #dbe4ef",
-    background: "#ffffff",
-    cursor: "pointer",
-    fontSize: 22,
-    fontWeight: 400,
-    lineHeight: 1,
-    color: "#0f172a",
-  },
-
-  actionIcon: {
-    width: 19,
-    height: 19,
-    objectFit: "contain",
-  },
-
   contentGrid: {
     display: "grid",
     gridTemplateColumns: "260px 1fr",

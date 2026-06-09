@@ -22,6 +22,11 @@ import {
 import { buildFileUrl } from "../../../shared/files/api/filesApi";
 import { buildFileDiscussionContext } from "../../../shared/files/services/fileDiscussionContext";
 
+import {
+  PAGE_LAYOUT_PAGE_TYPE,
+  PAGE_LAYOUT_TOOLBAR_ZONE,
+  useResolvedPageLayoutContract,
+} from "../../../shared/appShell/pageLayoutContract";
 import { chatLayoutStyles } from "../styles/corporateChatStyles";
 
 function getParentMessageId(message) {
@@ -67,6 +72,12 @@ function getFileSize(file = {}) {
 }
 
 export default function CorporateChatPage() {
+  useResolvedPageLayoutContract({
+    pageType: PAGE_LAYOUT_PAGE_TYPE.CHAT_ROOM,
+    toolbarZoneId: PAGE_LAYOUT_TOOLBAR_ZONE.APP_HEADER,
+    canMinimize: true,
+  });
+
   const messagesRef = useRef(null);
 
   const [chats, setChats] = useState([]);

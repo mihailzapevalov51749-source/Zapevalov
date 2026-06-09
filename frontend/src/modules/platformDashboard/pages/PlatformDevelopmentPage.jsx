@@ -2,6 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { NavLink, Navigate, useLocation, useParams } from "react-router-dom";
 
 import { getApiErrorMessage } from "../../designer/api/platformApiClient";
+import {
+  PAGE_LAYOUT_PAGE_TYPE,
+  PAGE_LAYOUT_TOOLBAR_ZONE,
+  useResolvedPageLayoutContract,
+} from "../../../shared/appShell/pageLayoutContract";
 import RefreshIconButton from "../../../shared/ui/RefreshIconButton";
 import {
   buildPlatformDashboardMetadata,
@@ -902,6 +907,12 @@ function AddQualityIssueModal({ open, onClose, onSubmit, isSubmitting, submitErr
 }
 
 export default function PlatformDevelopmentPage() {
+  useResolvedPageLayoutContract({
+    pageType: PAGE_LAYOUT_PAGE_TYPE.DASHBOARD,
+    toolbarZoneId: PAGE_LAYOUT_TOOLBAR_ZONE.APP_HEADER,
+    canMinimize: true,
+  });
+
   const { tenantId } = useParams();
   const location = useLocation();
   const sectionResolution = resolveDashboardSectionKey(location.pathname);

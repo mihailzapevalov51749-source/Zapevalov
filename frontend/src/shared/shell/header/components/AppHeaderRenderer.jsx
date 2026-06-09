@@ -3,6 +3,8 @@ import settingsIcon from "../../../../assets/icons/settings.gif";
 import saveIcon from "../../../../assets/icons/save.gif";
 import AppModeSwitch from "../../../appMode/AppModeSwitch";
 import NotificationBell from "../../../../modules/notifications/components/NotificationBell";
+import { AppShellPageActionsSlot } from "../../../appShell/AppShellPageActionsContext";
+import { PAGE_LAYOUT_TOOLBAR_ZONE } from "../../../appShell/pageLayoutContract";
 import "./appHeaderRenderer.css";
 
 function getActionKey(action) {
@@ -274,6 +276,10 @@ export default function AppHeaderRenderer({ contract, onAction }) {
           readOnly={!searchInteractive}
           aria-disabled={!searchInteractive}
         />
+
+        <div className="app-header-renderer__page-toolbar">
+          <AppShellPageActionsSlot slotId={PAGE_LAYOUT_TOOLBAR_ZONE.APP_HEADER} />
+        </div>
 
         <div
           className={[

@@ -18,6 +18,11 @@ import {
   PAGE_STATUS_FILTERS,
 } from "../utils/pagesRegistryUtils";
 import { dispatchPageStatusNavigationRefresh } from "../utils/navigationReload";
+import {
+  PAGE_LAYOUT_PAGE_TYPE,
+  PAGE_LAYOUT_TOOLBAR_ZONE,
+  useResolvedPageLayoutContract,
+} from "../../../shared/appShell/pageLayoutContract";
 
 import "../styles/designerPagesRegistry.css";
 
@@ -37,6 +42,12 @@ const STATUS_FILTER_OPTIONS = [
 ];
 
 export default function DesignerPagesPage() {
+  useResolvedPageLayoutContract({
+    pageType: PAGE_LAYOUT_PAGE_TYPE.STUDIO_PAGES,
+    toolbarZoneId: PAGE_LAYOUT_TOOLBAR_ZONE.APP_HEADER,
+    canMinimize: true,
+  });
+
   const navigate = useNavigate();
   const { tenantId } = useDesignerShell();
 

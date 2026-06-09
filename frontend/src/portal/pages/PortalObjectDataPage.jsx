@@ -16,6 +16,14 @@ import {
   clearPortalObjectViewHeader,
   publishPortalObjectViewHeader,
 } from "../utils/portalObjectViewHeaderBridge";
+import {
+  PAGE_LAYOUT_PAGE_TYPE,
+  PAGE_LAYOUT_TOOLBAR_ZONE,
+  resolvePageLayoutContract,
+} from "../../shared/appShell/pageLayoutContract";
+import { useRegisterPageLayoutContract } from "../../shared/appShell/pageLayoutContract/PageLayoutContractContext.jsx";
+import { useGlobalWorkspaceTabs } from "../../shared/workspaceTabs/GlobalWorkspaceTabsProvider";
+import { useLocation } from "react-router-dom";
 
 async function resolveObjectTypeFromPublishedCatalog(tenantId, objectTypeRef) {
   const ref = String(objectTypeRef ?? "").trim();
@@ -118,6 +126,39 @@ export default function PortalObjectDataPage({
     () => findPublishedObjectTab(objectTabs, resolvedObjectTabKey),
     [objectTabs, resolvedObjectTabKey],
   );
+
+  const location = useLocation();
+  const { currentDescriptor } = useGlobalWorkspaceTabs();
+
+  const pageLayoutContract = useMemo(
+    () =>
+      resolvePageLayoutContract(location, currentDescriptor, {
+        pageType:
+          activeObjectTab?.viewType === "plan"
+            ? PAGE_LAYOUT_PAGE_TYPE.OBJECT_PLAN
+            : PAGE_LAYOUT_PAGE_TYPE.OBJECT_RUNTIME,
+        title: objectType?.name || currentDescriptor?.title,
+        toolbarZoneId: PAGE_LAYOUT_TOOLBAR_ZONE.APP_HEADER,
+        canMinimize: true,
+        context: {
+          objectTypeKey: objectType?.key,
+          objectTypeName: objectType?.name,
+          viewKey: resolvedObjectTabKey,
+        },
+      }),
+    [
+      location.pathname,
+      location.search,
+      location.hash,
+      currentDescriptor,
+      activeObjectTab?.viewType,
+      objectType?.name,
+      objectType?.key,
+      resolvedObjectTabKey,
+    ],
+  );
+
+  useRegisterPageLayoutContract(pageLayoutContract);
 
   useEffect(() => {
     if (!objectType || loading) {

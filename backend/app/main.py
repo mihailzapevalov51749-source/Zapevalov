@@ -59,6 +59,7 @@ from app.modules.chats.router import router as chats_router
 from app.modules.platform.designer.router import router as platform_designer_router
 from app.modules.platform.search.router import platform_search_router
 from app.modules.platform.runtime.router import router as platform_runtime_router
+from app.modules.platform.workspace_tabs.router import workspace_tabs_router
 from app.modules.ai_context.router import router as ai_context_router
 from app.modules.yasii.router import router as yasii_router
 
@@ -146,6 +147,9 @@ app.include_router(platform_designer_router)
 
 # PLATFORM RUNTIME (published metadata catalog)
 app.include_router(platform_runtime_router)
+
+# GLOBAL WORKSPACE TABS (per-user pinned pages)
+app.include_router(workspace_tabs_router)
 
 # PLATFORM SEARCH (unified runtime + designer)
 app.include_router(platform_search_router)

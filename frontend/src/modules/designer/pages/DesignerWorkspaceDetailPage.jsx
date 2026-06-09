@@ -12,6 +12,11 @@ import {
   updateDesignerWorkspaceTab,
 } from "../api/designerApi";
 import { listPublishedObjectViewsForWorkspace } from "../utils/listPublishedObjectViewsForWorkspace";
+import {
+  PAGE_LAYOUT_PAGE_TYPE,
+  PAGE_LAYOUT_TOOLBAR_ZONE,
+  useResolvedPageLayoutContract,
+} from "../../../shared/appShell/pageLayoutContract";
 import "../styles/designerWorkspaceDetailPage.css";
 
 const TAB_TYPE_OPTIONS = [
@@ -43,6 +48,12 @@ const INITIAL_FORM = {
 };
 
 export default function DesignerWorkspaceDetailPage() {
+  useResolvedPageLayoutContract({
+    pageType: PAGE_LAYOUT_PAGE_TYPE.STUDIO_WORKSPACE_DETAIL,
+    toolbarZoneId: PAGE_LAYOUT_TOOLBAR_ZONE.APP_HEADER,
+    canMinimize: true,
+  });
+
   const { tenantId } = useDesignerShell();
   const { workspaceSlug } = useParams();
   const resolvedTenantId = Number(tenantId) || 1;

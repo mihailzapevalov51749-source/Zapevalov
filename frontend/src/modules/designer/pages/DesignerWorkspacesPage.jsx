@@ -13,6 +13,11 @@ import {
   updateDesignerWorkspace,
 } from "../api/designerApi";
 import WorkspacePublishToMenuDialog from "../components/workspaces/WorkspacePublishToMenuDialog";
+import {
+  PAGE_LAYOUT_PAGE_TYPE,
+  PAGE_LAYOUT_TOOLBAR_ZONE,
+  useResolvedPageLayoutContract,
+} from "../../../shared/appShell/pageLayoutContract";
 import "../styles/designerWorkspacesPage.css";
 
 const fieldStyle = { display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 };
@@ -178,6 +183,12 @@ function CreateWorkspaceModal({ title, submitLabel, initialValue, onClose, onSub
 }
 
 export default function DesignerWorkspacesPage() {
+  useResolvedPageLayoutContract({
+    pageType: PAGE_LAYOUT_PAGE_TYPE.STUDIO_WORKSPACES,
+    toolbarZoneId: PAGE_LAYOUT_TOOLBAR_ZONE.APP_HEADER,
+    canMinimize: true,
+  });
+
   const navigate = useNavigate();
   const { tenantId } = useDesignerShell();
   const resolvedTenantId = Number(tenantId) || 1;

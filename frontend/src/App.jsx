@@ -6,8 +6,6 @@ import PortalObjectRuntimePage from "./portal/PortalObjectRuntimePage";
 import PortalLibraryRuntimePage from "./portal/PortalLibraryRuntimePage";
 import PortalWorkspaceRuntimePage from "./portal/PortalWorkspaceRuntimePage";
 import LoginPage from "./pages/login/LoginPage";
-import ProfilePage from "./profile/components/ProfilePage";
-
 import OnlyOfficeTest from "./test/OnlyOfficeTest";
 import AppSidebarRendererPreview from "./shared/shell/sidebar/dev/AppSidebarRendererPreview";
 import AppHeaderRendererPreview from "./shared/shell/header/dev/AppHeaderRendererPreview";
@@ -41,6 +39,9 @@ import DesignerTrashPage from "./modules/designer/pages/DesignerTrashPage";
 import DesignerWorkspacesPage from "./modules/designer/pages/DesignerWorkspacesPage";
 import DesignerWorkspaceDetailPage from "./modules/designer/pages/DesignerWorkspaceDetailPage";
 import PlatformDevelopmentPage from "./modules/platformDashboard/pages/PlatformDevelopmentPage";
+import AppShell from "./shared/appShell/AppShell.jsx";
+import { ProfileSidePanelProvider } from "./profile/ProfileSidePanelProvider.jsx";
+import { GlobalWorkspaceTabsProvider } from "./shared/workspaceTabs/GlobalWorkspaceTabsProvider.jsx";
 import { YasiiAssistantProvider } from "./yasii/context/YasiiAssistantContext.jsx";
 import YasiiWorkspacePage from "./yasii/pages/YasiiWorkspacePage.jsx";
 import { YasiiFloatingButton } from "./yasii";
@@ -130,11 +131,14 @@ export default function App() {
 
   return (
     <YasiiAssistantProvider>
-      <ModePathTracker />
-      <PlatformZoneTracker />
-      <UserActivityBootstrap />
-      <YasiiFloatingButton />
-      <Routes>
+      <GlobalWorkspaceTabsProvider>
+        <ProfileSidePanelProvider>
+        <AppShell>
+          <ModePathTracker />
+          <PlatformZoneTracker />
+          <UserActivityBootstrap />
+          <YasiiFloatingButton />
+          <Routes>
       <Route path="/" element={<Navigate to="/portal/1/page/1" replace />} />
 
       <Route path="/yasii" element={<YasiiWorkspacePage />} />
@@ -203,8 +207,6 @@ export default function App() {
         path="/portal/:portalId/workspaces/:workspaceSlug/tabs/:tabSlug"
         element={<PortalWorkspaceRuntimePage />}
       />
-
-      <Route path="/profile" element={<ProfilePage />} />
 
       <Route path="/designer" element={<DesignerAccessGate user={user} />}>
         <Route path="tenant/:tenantId" element={<DesignerTenantLayout />}>
@@ -288,7 +290,10 @@ export default function App() {
       />
 
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+          </Routes>
+        </AppShell>
+        </ProfileSidePanelProvider>
+      </GlobalWorkspaceTabsProvider>
     </YasiiAssistantProvider>
   );
 }

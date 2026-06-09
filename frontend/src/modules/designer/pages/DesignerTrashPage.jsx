@@ -13,6 +13,12 @@ import {
   parseTrashPurgeModalState,
 } from "../utils/trashPurgeModalState";
 
+import {
+  PAGE_LAYOUT_PAGE_TYPE,
+  PAGE_LAYOUT_TOOLBAR_ZONE,
+  useResolvedPageLayoutContract,
+} from "../../../shared/appShell/pageLayoutContract";
+
 import "../styles/designerTrash.css";
 
 const TYPE_FILTER_ALL = "all";
@@ -35,6 +41,12 @@ function itemKey(item) {
 }
 
 export default function DesignerTrashPage() {
+  useResolvedPageLayoutContract({
+    pageType: PAGE_LAYOUT_PAGE_TYPE.STUDIO_TRASH,
+    toolbarZoneId: PAGE_LAYOUT_TOOLBAR_ZONE.APP_HEADER,
+    canMinimize: true,
+  });
+
   const { tenantId } = useDesignerShell();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();

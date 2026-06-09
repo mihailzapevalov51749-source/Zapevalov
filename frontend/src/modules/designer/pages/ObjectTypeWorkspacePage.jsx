@@ -29,8 +29,19 @@ import {
 } from "../utils/navigationReload";
 import { resolveObjectTypeLifecycleState } from "../utils/objectTypeLifecycleState";
 import { dispatchDesignerObjectSchemaChanged } from "../utils/designerObjectSchemaChanged";
+import {
+  PAGE_LAYOUT_PAGE_TYPE,
+  PAGE_LAYOUT_TOOLBAR_ZONE,
+  useResolvedPageLayoutContract,
+} from "../../../shared/appShell/pageLayoutContract";
 
 export default function ObjectTypeWorkspacePage() {
+  useResolvedPageLayoutContract({
+    pageType: PAGE_LAYOUT_PAGE_TYPE.STUDIO_OBJECT,
+    toolbarZoneId: PAGE_LAYOUT_TOOLBAR_ZONE.APP_HEADER,
+    canMinimize: true,
+  });
+
   const { tenantId } = useDesignerShell();
   const navigate = useNavigate();
   const { objectTypeId, tab } = useParams();

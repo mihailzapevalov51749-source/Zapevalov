@@ -62,6 +62,52 @@ describe("resolvePublishedObjectTabs", () => {
 
     expect(tabs[0].menuInTab).toBe(true);
   });
+
+  it("excludes system quick_form views from Office tab bar", () => {
+    const tabs = resolvePublishedObjectTabs({
+      views: [
+        {
+          key: "default_table",
+          name: "Все задачи",
+          view_type: "table",
+          is_default: true,
+          sort_order: 1,
+        },
+        {
+          key: "default_quick_form",
+          name: "Быстрая форма",
+          view_type: "quick_form",
+          is_system: true,
+          is_active: true,
+          sort_order: 900,
+        },
+        {
+          key: "plan",
+          name: "План",
+          view_type: "plan",
+          sort_order: 2,
+        },
+      ],
+    });
+
+    expect(tabs.map((tab) => tab.key)).toEqual(["default_table", "plan"]);
+  });
+
+  it("excludes quick_form for any object type with default_quick_form", () => {
+    const objectTypes = ["tasks", "projects", "users", "companies"];
+
+    for (const objectKey of objectTypes) {
+      const tabs = resolvePublishedObjectTabs({
+        key: objectKey,
+        views: [
+          { key: "default_table", name: "Таблица", view_type: "table" },
+          { key: "default_quick_form", name: "Быстрая форма", view_type: "quick_form" },
+        ],
+      });
+
+      expect(tabs.map((tab) => tab.key)).toEqual(["default_table"]);
+    }
+  });
 });
 
 describe("resolveDefaultPublishedObjectTabKey", () => {
@@ -85,6 +131,19 @@ describe("resolveDefaultPublishedObjectTabKey", () => {
     });
 
     expect(resolveDefaultPublishedObjectTabKey(tabs, null)).toBe("default_table");
+  });
+
+  it("ignores hidden quick_form route key and falls back to default user tab", () => {
+    const tabs = resolvePublishedObjectTabs({
+      views: [
+        { key: "default_table", name: "Все задачи", view_type: "table", is_default: true },
+        { key: "default_quick_form", name: "Быстрая форма", view_type: "quick_form" },
+      ],
+    });
+
+    expect(resolveDefaultPublishedObjectTabKey(tabs, "default_quick_form")).toBe(
+      "default_table",
+    );
   });
 });
 

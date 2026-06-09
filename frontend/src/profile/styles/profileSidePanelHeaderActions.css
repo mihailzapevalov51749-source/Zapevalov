@@ -1,0 +1,20 @@
+.profile-side-panel__header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.profile-side-panel__header-actions .app-shell-page-minimize-control__button img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  display: block;
+}
+
+.profile-side-panel__close-glyph {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1;
+  color: #334155;
+}

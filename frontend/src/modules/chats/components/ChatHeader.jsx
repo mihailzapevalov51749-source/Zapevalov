@@ -141,7 +141,8 @@ export default function ChatHeader({
           </button>
         </div>
 
-        <div style={chatLayoutStyles.chatHeaderActions}>
+        <div className="chat-header__actions" style={chatLayoutStyles.chatHeaderActions}>
+          <div className="chat-header__context-actions">
           <button
             type="button"
             style={chatLayoutStyles.chatHeaderActionButton}
@@ -214,6 +215,7 @@ export default function ChatHeader({
               />
             </button>
           )}
+          </div>
         </div>
       </div>
     </div>

@@ -7,6 +7,7 @@ import {
   unregisterOverlay,
 } from "../../shared/overlay/overlayStack.js";
 import { useYasiiAssistantSession } from "../context/YasiiAssistantContext.jsx";
+import { isYasiiPanelPresentation } from "../presentation/yasiiPresentationState.js";
 import { shouldCloseFloatingOnOutsideClick } from "../workspace/yasiiFloatingDismiss.js";
 import YasiiEmbeddedPanel from "./YasiiEmbeddedPanel.jsx";
 
@@ -24,7 +25,9 @@ export default function YasiiLauncher({
 }) {
   const session = useYasiiAssistantSession();
   const [localPanelOpen, setLocalPanelOpen] = useState(false);
-  const isPanelOpen = session?.isFloatingOpen ?? localPanelOpen;
+  const isPanelOpen = session
+    ? isYasiiPanelPresentation(session.presentation)
+    : localPanelOpen;
   const setIsPanelOpen = session?.setFloatingOpen ?? setLocalPanelOpen;
   const isPinned = session?.isPinned ?? false;
   const buttonRef = useRef(null);

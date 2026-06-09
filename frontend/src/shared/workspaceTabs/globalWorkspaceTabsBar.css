@@ -1,0 +1,100 @@
+.global-workspace-tabs-bar {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: nowrap;
+  gap: 1px;
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  padding: 0 8px;
+  border-top: 1px solid #cbd5e1;
+  background: #e2e8f0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-shrink: 0;
+  scrollbar-width: thin;
+}
+
+.global-workspace-tabs-bar__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  max-width: 200px;
+  padding: 0 8px;
+  margin-top: 4px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background: rgba(255, 255, 255, 0.45);
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.global-workspace-tabs-bar__tab:hover:not(.is-active) {
+  background: rgba(255, 255, 255, 0.72);
+  color: #334155;
+}
+
+.global-workspace-tabs-bar__tab.is-active {
+  height: 30px;
+  margin-top: 2px;
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.global-workspace-tabs-bar__tab.is-minimized:not(.is-active) {
+  opacity: 0.78;
+}
+
+.global-workspace-tabs-bar__pin {
+  flex: 0 0 auto;
+  color: #94a3b8;
+}
+
+.global-workspace-tabs-bar__tab.is-active .global-workspace-tabs-bar__pin {
+  color: #2563eb;
+}
+
+.global-workspace-tabs-bar__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.global-workspace-tabs-bar__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  margin: 0 -2px 0 0;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1;
+  opacity: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.global-workspace-tabs-bar__tab:hover .global-workspace-tabs-bar__close,
+.global-workspace-tabs-bar__tab.is-active .global-workspace-tabs-bar__close {
+  opacity: 1;
+}
+
+.global-workspace-tabs-bar__close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}

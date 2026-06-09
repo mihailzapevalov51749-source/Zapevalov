@@ -5,8 +5,19 @@ import * as designerApi from "../api/designerApi";
 import CreateObjectTypeModal from "../components/objectTypes/CreateObjectTypeModal";
 import ObjectTypesList from "../components/objectTypes/ObjectTypesList";
 import { useDesignerShell } from "../context/DesignerShellContext";
+import {
+  PAGE_LAYOUT_PAGE_TYPE,
+  PAGE_LAYOUT_TOOLBAR_ZONE,
+  useResolvedPageLayoutContract,
+} from "../../../shared/appShell/pageLayoutContract";
 
 export default function ObjectTypesPage() {
+  useResolvedPageLayoutContract({
+    pageType: PAGE_LAYOUT_PAGE_TYPE.STUDIO_OBJECT_LIST,
+    toolbarZoneId: PAGE_LAYOUT_TOOLBAR_ZONE.APP_HEADER,
+    canMinimize: true,
+  });
+
   const { tenantId } = useDesignerShell();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);

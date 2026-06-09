@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getMe } from "../../api/authApi";
+import { useProfileSidePanel } from "../../profile/ProfileSidePanelProvider.jsx";
 
-import ProfileSidePanel from "../../profile/components/ProfileSidePanel";
 
 import useNotifications from "../../modules/notifications/hooks/useNotifications";
 import {
@@ -108,8 +108,8 @@ export default function WorkspaceTopBar({
   onUnifiedHeaderModel,
 }) {
   const navigate = useNavigate();
+  const { openProfileSidePanel } = useProfileSidePanel();
   const [user, setUser] = useState(() => getCachedHeaderUser());
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const { notifications, unreadCount, markAsRead } = useNotifications();
 
@@ -292,7 +292,7 @@ const effectiveShowBackButton = true;
           }
           return;
         case "profile":
-          setIsProfileOpen(true);
+          openProfileSidePanel();
           return;
         case "enter-edit-mode":
           onEnterEditMode?.();
@@ -320,6 +320,7 @@ const effectiveShowBackButton = true;
       handleBack,
       tenantId,
       navigate,
+      openProfileSidePanel,
       onQueryChange,
       onOpenFirstResult,
       onCloseSearchResults,
@@ -369,14 +370,6 @@ const effectiveShowBackButton = true;
         />
       ) : null}
 
-      <ProfileSidePanel
-        isOpen={isProfileOpen}
-        onClose={() => {
-          setIsProfileOpen(false);
-          loadUser();
-          window.dispatchEvent(new CustomEvent("user:profile-updated"));
-        }}
-      />
     </>
   );
 }

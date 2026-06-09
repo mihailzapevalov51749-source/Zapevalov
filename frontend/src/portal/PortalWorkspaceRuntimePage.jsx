@@ -21,6 +21,11 @@ import { resolvePortalObjectNavigationPath } from "./utils/portalObjectRoutes";
 import {
   PORTAL_OBJECT_VIEW_HEADER_EVENT,
 } from "./utils/portalObjectViewHeaderBridge";
+import {
+  PAGE_LAYOUT_PAGE_TYPE,
+  PAGE_LAYOUT_TOOLBAR_ZONE,
+  useResolvedPageLayoutContract,
+} from "../shared/appShell/pageLayoutContract";
 
 const WORKSPACE_HOME_DEBUG = import.meta.env?.DEV === true;
 
@@ -30,6 +35,12 @@ function debugWorkspaceHome(label, payload) {
 }
 
 export default function PortalWorkspaceRuntimePage() {
+  useResolvedPageLayoutContract({
+    pageType: PAGE_LAYOUT_PAGE_TYPE.OFFICE_WORKSPACE,
+    toolbarZoneId: PAGE_LAYOUT_TOOLBAR_ZONE.APP_HEADER,
+    canMinimize: true,
+  });
+
   const navigate = useNavigate();
   const location = useLocation();
   const { portalId: portalIdParam, workspaceSlug, tabSlug } = useParams();

@@ -1,5 +1,5 @@
 export const platformDevelopmentManifest = {
-  updatedAt: "2026-06-09T02:00:00",
+  updatedAt: "2026-06-10T18:00:00",
 
   title: "Развитие платформы ЯсноПро",
 
@@ -15,8 +15,8 @@ export const platformDevelopmentManifest = {
   },
 
   readiness: {
-    targetPlatformPercent: 40,
-    currentPhasePercent: 70,
+    targetPlatformPercent: 45,
+    currentPhasePercent: 95,
     capabilities: [
       {
         name: "Модель объектов",
@@ -147,6 +147,126 @@ export const platformDevelopmentManifest = {
   },
 
   achievements: [
+    {
+      date: "2026-06-10",
+      text:
+        "YASII — single presentation state machine: единый источник истины presentation (closed | panel | page) в YasiiAssistantContext; при развороте панель закрывается, при minimize страницы панель не появляется; исключено одновременное существование панели и страницы.",
+    },
+    {
+      date: "2026-06-10",
+      text:
+        "YASII — unified window controls and workspace minimize: единый порядок системных кнопок панели ЯСИИ (↗ 📌 ✕); на странице /yasii добавлено сворачивание (− ↗ 📌 ✕) через GlobalWorkspaceTabs minimizeCurrentPage; состояние чата сохраняется в YasiiAssistantProvider.",
+    },
+    {
+      date: "2026-06-10",
+      text:
+        "ProfileSidePanel — minimize overlay profile panel: личный кабинет остаётся overlay ProfileSidePanel; кнопка «Свернуть» в панели создаёт workspace tab profile_panel без navigate; восстановление через openProfileSidePanel() по клику на вкладку «Профиль: <имя>».",
+    },
+    {
+      date: "2026-06-10",
+      text:
+        "Workspace Tabs — remove false fallback warning and fix Studio section titles: minimize больше не показывает ложное предупреждение после успешного создания вкладки; Studio sections (Навигация, Связи, Представления, Бизнес-процессы, Публикация) отображаются с реальными названиями вместо «Студия: Раздел».",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "Workspace Tabs — fix CMS page titles and minimize fallback route warning: CMS-страницы Office/Studio сохраняют реальное название в contract/context_json; minimize больше не показывает предупреждение fallback route, когда маршрут можно вычислить безопасно.",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "Workspace Tabs — Russian display titles for minimized pages: нижние вкладки показывают пользовательские русские названия в формате «Контекст: Название» (Студия: Объекты, Офис: Документы, Объект: Задачник); технические pageType, pageId и object key больше не используются как основной title.",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "Workspace Tabs — preserve tab order on activation: клик по свернутой вкладке только активирует её; display order стабилен по sort_order + created_at; last_opened_at больше не влияет на порядок; новые minimize-вкладки добавляются в конец.",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "AppShell — fix sidebar footer and bottom tabs layout: sidebar снова на полную высоту viewport; резерв bottom tabs перенесён только в main workspace (padding-bottom); серая полоса больше не появляется в левом меню; footer «Свернуть меню» прижат к низу sidebar.",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "AppShell — fix main content horizontal offset after nested layout removal: AppShellFrame переведён на flex sidebar + main без left: sidebarWidth на main; убран конфликт width:100% + absolute offset; embedded content и Platform Dashboard используют width:100% без повторной компенсации sidebar.",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "AppShell — remove nested layout architecture globally: введён shellLayoutMode (shell | embedded); PortalLayout и PortalPageView не создают второй AppShellFrame внутри DesignerShell; AppShell viewport и AppShellFrame используют единую высоту без двойного scroll; GlobalWorkspaceTabsBar остаётся один на route.",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "AppShell — fix minimize coverage for Studio Administration and Studio pages: PortalPageView в DesignerShell больше не рендерит вложенный PortalLayout для administration и page/:pageId; minimize отображается в глобальном AppHeader DesignerShell; studio_admin и studio_page_editor contracts с canMinimize=true.",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "AppShell — fix nested contract ownership and bottom tabs layout: owner-based registration stacks для Page Layout Contract, AppShell chrome и AppHeader toolbar slots; unmount вложенного PortalLayout больше не обнуляет contract/chrome/slot родительского DesignerShell; нижняя панель Workspace Tabs остаётся в области основного контента.",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "AppShell — full platform minimize coverage: все полноценные страницы внутри AppShell получили Page Layout Contract с toolbarZoneId app-header и canMinimize=true — Studio (Pages, Trash, Workspaces, Workspace Detail, Section placeholders, Page Editor), Administration, Yasii workspace; единое правило без Group A/B.",
+    },
+    {
+      date: "2026-06-08",
+      text:
+        "AppShell — global minimize button in AppHeader: кнопка «Свернуть страницу» перенесена в единое место глобальной шапки (Поиск → Свернуть → Уведомления) для всех minimizable pageType; локальные slots удалены из object/chat/studio/dashboard/profile headers.",
+    },
+    {
+      date: "2026-06-08",
+      text:
+        "AppShell Phase 4.1 — Expand Page Layout Contract coverage to all Group A pages: office_page (PortalPageView), office_library (PortalLibraryRuntimePage), studio_object_list (ObjectTypesPage), studio_object_data (ObjectTypeDataPage); удалена неиспользуемая зона WORKSPACE_TABS.",
+    },
+    {
+      date: "2026-06-08",
+      text:
+        "AppShell — unified minimize button placement across page headers: единый app-shell-page-minimize-control (28px) и anchor-контейнер справа в header; кнопка «Свернуть» отделена от контекстных действий (Chat call/video, Object top panel, Studio Save/Publish, Dashboard refresh).",
+    },
+    {
+      date: "2026-06-08",
+      text:
+        "AppShell Phase 4 — Page Layout Contract for minimize workspace tabs: единый контракт страницы (pageType, toolbarZoneId, canMinimize, fallbackRoute); AppShellPageActionsHost рендерит «Свернуть» только в объявленную toolbar-зону без priority slots; MVP-регистрации для Office, Object Runtime/Plan, Chat, Studio Object, Dashboard и Profile.",
+    },
+    {
+      date: "2026-06-10",
+      text:
+        "AppShell phase 3 rollback: удалён отдельный AppShellPageToolbar (пустая полоса 36px); восстановлена высота рабочей области; сохранены AppShellPageActionsHost/Bridge и slot API для встраивания «Свернуть» в toolbar-зоны страниц.",
+    },
+    {
+      date: "2026-06-10",
+      text:
+        "AppShell phase 3 — unified PageToolbar and minimize-only workspace tabs: единый AppShellPageToolbar под shell header; убраны priority slots и кнопка «Закрепить»; нижняя панель — «Рабочие страницы».",
+    },
+    {
+      date: "2026-06-10",
+      text:
+        "AppShell phase 2.1: Page Actions перенесены в правые toolbar-зоны страниц (AppHeader, object top panel, Chat, Dashboard, Profile) через priority slots + portal; убран floating global slot и tab-row placement.",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "AppShell phase 2 — Page Actions moved to AppShell slot: WorkspacePageActionsBridge + AppShellPageActionsHost (portal в tab row / global fallback); убран локальный рендер PageWorkspaceTabControls; pin active state, descriptor guard.",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "AppShell phase 1: общая оболочка shared/appShell/AppShell — GlobalWorkspaceTabsBar глобально для авторизованных маршрутов; AppShellFrame регистрирует geometry chrome; подготовлен slot AppShellPageActions для переноса Закрепить/Свернуть.",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "Global Workspace Tabs UX: кнопки «Закрепить»/«Свернуть» перенесены в строку вкладок страницы (icon buttons 28px); нижняя панель закреплённых страниц — компактные browser-like вкладки (~32px), pin-иконка, закрытие на hover, горизонтальный скролл.",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "Global Workspace Tabs: закрепление и сворачивание страниц Office/Studio с персистентным хранением user_workspace_tabs; нижняя панель вкладок в AppShell, API /workspace-tabs.",
+    },
     {
       date: "2026-06-09",
       text:
@@ -387,6 +507,200 @@ export const platformDevelopmentManifest = {
   ],
 
   platformChangelog: [
+    {
+      date: "2026-06-10",
+      version: null,
+      title: "YASII — single presentation state machine",
+      summary:
+        "YASII now uses a single presentation state (closed, panel, page) in YasiiAssistantContext. Expanding the panel closes it before opening the page; minimizing the page no longer resurrects the floating panel underneath.",
+      nextStage: "AppShell Phase 5 — Page Descriptor Registry",
+    },
+    {
+      date: "2026-06-10",
+      version: null,
+      title: "YASII — unified window controls and workspace minimize",
+      summary:
+        "YASII panel header uses a single control order source: floating panel shows fullscreen, pin, close; workspace page adds minimize before fullscreen. Minimize uses existing workspace tabs architecture and preserves chat state in YasiiAssistantProvider.",
+      nextStage: "AppShell Phase 5 — Page Descriptor Registry",
+    },
+    {
+      date: "2026-06-10",
+      version: null,
+      title: "ProfileSidePanel — minimize overlay profile panel",
+      summary:
+        "Employee profile stays as ProfileSidePanel overlay. Minimize creates a profile_panel workspace tab without route navigation; tab click restores the panel via openProfileSidePanel().",
+      nextStage: "AppShell Phase 5 — Page Descriptor Registry",
+    },
+    {
+      date: "2026-06-10",
+      version: null,
+      title: "Workspace Tabs — remove false fallback warning and fix Studio section titles",
+      summary:
+        "Minimize no longer shows a fallback-route warning after a tab is created successfully. Studio section tabs display real section names such as \"Студия: Навигация\" instead of \"Студия: Раздел\".",
+      nextStage: "AppShell Phase 5 — Page Descriptor Registry",
+    },
+    {
+      date: "2026-06-09",
+      version: null,
+      title: "Workspace Tabs — fix CMS page titles and minimize fallback route warning",
+      summary:
+        "CMS pages show real page titles in bottom tabs, and minimize no longer shows fallback-route warnings for valid AppShell pages.",
+      nextStage: "AppShell Phase 5 — Page Descriptor Registry",
+    },
+    {
+      date: "2026-06-09",
+      version: null,
+      title: "Workspace Tabs — Russian display titles for minimized pages",
+      summary:
+        "Bottom workspace tabs show user-friendly Russian titles such as \"Студия: Объекты\" instead of technical names or page IDs.",
+      nextStage: "AppShell Phase 5 — Page Descriptor Registry",
+    },
+    {
+      date: "2026-06-09",
+      version: null,
+      title: "Workspace Tabs — preserve tab order on activation",
+      summary:
+        "Clicking a minimized tab activates it without changing its position in the bottom tabs bar. Stable ordering by sort_order + created_at; new minimized tabs append to the end.",
+      nextStage: "AppShell Phase 5 — Page Descriptor Registry",
+    },
+    {
+      date: "2026-06-09",
+      version: null,
+      title: "AppShell — fix sidebar footer and bottom tabs layout",
+      summary:
+        "Sidebar footer stays at the bottom, and bottom tabs render only under the main content area without creating a gray strip inside the sidebar. Full-height sidebar; bottom tabs reserve space only in main workspace.",
+      nextStage: "AppShell Phase 5 — Page Descriptor Registry",
+    },
+    {
+      date: "2026-06-09",
+      version: null,
+      title: "AppShell — fix main content horizontal offset after nested layout removal",
+      summary:
+        "Main content aligns correctly inside the AppShell after removing nested layouts. AppShellFrame flex sidebar/main replaces absolute left offset on main; embedded pages use full width without duplicate sidebar compensation.",
+      nextStage: "AppShell Phase 5 — Page Descriptor Registry",
+    },
+    {
+      date: "2026-06-09",
+      version: null,
+      title: "AppShell — remove nested layout architecture globally",
+      summary:
+        "All AppShell pages render inside a single shell without nested headers, duplicate scrolls, or screen-in-screen layout. shellLayoutMode (shell | embedded), PortalLayout embedded branch, DesignerShell ShellLayoutModeProvider, unified AppShell viewport height.",
+      nextStage: "AppShell Phase 5 — Page Descriptor Registry",
+    },
+    {
+      date: "2026-06-09",
+      version: null,
+      title: "AppShell — fix minimize coverage for Studio Administration and Studio pages",
+      summary:
+        "Minimize is available on Administration, nested Administration pages, and Studio menu pages. PortalPageView в DesignerShell рендерится без вложенного PortalLayout; кнопка «Свернуть» попадает в AppHeader DesignerShell через studio_admin и studio_page_editor contracts.",
+      nextStage: "AppShell Phase 5 — Page Descriptor Registry",
+    },
+    {
+      date: "2026-06-09",
+      version: null,
+      title: "AppShell — fix nested contract ownership and bottom tabs layout",
+      summary:
+        "Minimize remains available across Studio/Admin navigation. Owner-based registration stacks for Page Layout Contract, AppShell chrome and AppHeader toolbar slots restore parent state after nested PortalLayout unmount. Workspace tabs bar stays inside main content area and does not overlap sidebar.",
+      nextStage: "AppShell Phase 5 — Page Descriptor Registry",
+    },
+    {
+      date: "2026-06-09",
+      version: null,
+      title: "AppShell — full platform minimize coverage",
+      summary:
+        "All full-page AppShell routes support minimize through AppHeader. Добавлены Page Layout Contract регистрации для Studio (Pages, Trash, Workspaces, Workspace Detail, Relations/Views/Navigation/Processes/Publishing placeholders, Page Editor), Administration и Yasii workspace. Новые pageType: studio_pages, studio_trash, studio_workspaces, studio_workspace_detail, studio_section, studio_page_editor, studio_admin, yasii_workspace.",
+      nextStage: "AppShell Phase 5 — Page Descriptor Registry",
+    },
+    {
+      date: "2026-06-08",
+      version: null,
+      title: "AppShell — global minimize button in AppHeader",
+      summary:
+        "Кнопка «Свернуть страницу» отображается только в глобальной шапке AppHeader (между поиском и уведомлениями) для всех minimizable страниц. Все pageType используют toolbarZoneId app-header; локальные AppShellPageActionsSlot удалены из object/chat/studio/dashboard headers. Profile получил AppHeaderRenderer для доступа к глобальному minimize.",
+      nextStage: "AppShell Phase 5 — Page Descriptor Registry",
+    },
+    {
+      date: "2026-06-08",
+      version: null,
+      title: "AppShell Phase 4.1 — Expand Page Layout Contract coverage to all Group A pages",
+      summary:
+        "Закрыты пробелы Group A: PortalPageView (office_page), PortalLibraryRuntimePage (office_library), ObjectTypesPage (studio_object_list), ObjectTypeDataPage (studio_object_data). Все основные пользовательские страницы поддерживают Minimize через app-header или studio-object-header. Удалена мёртвая зона WORKSPACE_TABS.",
+      nextStage: "AppShell Phase 5 — Page Descriptor Registry",
+    },
+    {
+      date: "2026-06-08",
+      version: null,
+      title: "AppShell — unified minimize button placement across page headers",
+      summary:
+        "Унифицировано визуальное размещение «Свернуть страницу»: единые классы app-shell-page-minimize-control и app-shell-page-actions-anchor; слот всегда справа в header, отделён от контекстных кнопок (Chat, Object Runtime, Studio, Dashboard). Архитектура Page Layout Contract не изменена.",
+      nextStage:
+        "AppShell Phase 5 — расширение Page Layout Contract на все страницы и единый Page Descriptor Registry",
+    },
+    {
+      date: "2026-06-08",
+      version: null,
+      title: "AppShell Phase 4 — Page Layout Contract for minimize workspace tabs",
+      summary:
+        "Создан Page Layout Contract (shared/appShell/pageLayoutContract): страницы регистрируют pageType, toolbarZoneId, canMinimize и fallbackRoute; AppShellPageActionsHost порталит только «Свернуть страницу» в единственный slot по contract.toolbarZoneId без priority; MVP-подключение для Office workspace, Object Runtime/Plan, Chat, Studio Object, Dashboard и Profile.",
+      nextStage:
+        "AppShell Phase 5 — расширение Page Layout Contract на все страницы и единый Page Descriptor Registry",
+    },
+    {
+      date: "2026-06-10",
+      version: null,
+      title: "AppShell phase 3 rollback — удалён отдельный PageToolbar",
+      summary:
+        "Откат AppShellPageToolbar: убрана фиксированная полоса 36px между header и контентом, сняты paddingTop/pageToolbarHeight компенсации в AppShellFrame; сохранены Host/Bridge/Slot API для следующего этапа встраивания minimize в toolbar-зоны страниц.",
+      nextStage: "AppShell phase 4 — Page Layout Contract for minimize workspace tabs",
+    },
+    {
+      date: "2026-06-10",
+      version: null,
+      title: "AppShell phase 3 — unified PageToolbar and minimize-only workspace tabs",
+      summary:
+        "Единый AppShellPageToolbar (36px) под shell header для всех поддерживаемых страниц; AppShellPageActionsHost рендерит только в toolbar; убраны конкурирующие slots (app-header, object-runtime, chat, dashboard, profile) и кнопка «Закрепить»; нижняя панель — «Рабочие страницы».",
+      nextStage: "Откат отдельного PageToolbar",
+    },
+    {
+      date: "2026-06-10",
+      version: null,
+      title: "AppShell phase 2.1 — Page Actions в toolbar-зонах страниц",
+      summary:
+        "Pin/Minimize перенесены из floating global slot и tab rows в существующие правые toolbar-зоны: AppHeader, object top panel actions, Chat header, Dashboard tab bar, Profile; priority-based AppShellPageActionsSlot + единый bridge в AppShell.",
+      nextStage: "AppShell phase 3 — unified PageToolbar",
+    },
+    {
+      date: "2026-06-09",
+      version: null,
+      title: "AppShell phase 2 — Page Actions moved to AppShell slot",
+      summary:
+        "PageWorkspaceTabControls регистрируются через WorkspacePageActionsBridge и AppShellPageActionsHost (portal в tab row, global fallback для Profile/Dashboard/страниц без tab row); убраны локальные кнопки; pin active state + descriptor guard.",
+      nextStage: "AppShell phase 3 — unified header/page descriptor registry",
+    },
+    {
+      date: "2026-06-09",
+      version: null,
+      title: "AppShell phase 1: глобальная нижняя панель вкладок",
+      summary:
+        "Создан shared/appShell/AppShell — тонкая оболочка вокруг авторизованных маршрутов; GlobalWorkspaceTabsBar перенесён из AppShellFrame; AppShellChromeContext синхронизирует left offset с sidebar; подготовлен AppShellPageActions slot.",
+      nextStage: "Перенос PageWorkspaceTabControls в AppShellPageActions",
+    },
+    {
+      date: "2026-06-09",
+      version: null,
+      title: "Global Workspace Tabs: компактный UX закреплённых страниц",
+      summary:
+        "Кнопки закрепления и сворачивания перенесены в строку вкладок страницы (Office workspace, object tabs, Studio Object Type) как icon buttons без отдельной строки; нижняя панель — browser-like вкладки 32px с pin, × на hover и горизонтальным скроллом.",
+      nextStage: "Overflow menu для большого числа закреплённых вкладок",
+    },
+    {
+      date: "2026-06-09",
+      version: null,
+      title: "Global Workspace Tabs: закрепление страниц Office/Studio",
+      summary:
+        "Backend user_workspace_tabs + API /workspace-tabs; GlobalWorkspaceTabsProvider, нижняя панель вкладок, закрепить/свернуть текущую страницу с восстановлением маршрута.",
+      nextStage: "Компактный UX панели вкладок",
+    },
     {
       date: "2026-06-08",
       version: null,
@@ -1893,6 +2207,318 @@ export const platformDevelopmentManifest = {
   },
 
   platformHistory: [
+    {
+      key: "yasii-single-presentation-state-machine",
+      date: "2026-06-10",
+      title: "YASII — single presentation state machine",
+      type: "quality",
+      description:
+        "Устранено двойное состояние ЯСИИ (панель + страница): YasiiAssistantContext хранит presentation closed|panel|page; enterYasiiPage/leaveYasiiPageToPanel/leaveYasiiPageMinimized; YasiiLauncher рендерит панель только при panel; route sync сбрасывает page при уходе с /yasii без collapse-to-panel.",
+      impact:
+        "Minimizing the YASII workspace page no longer reveals a stale floating panel; panel and page cannot be active at the same time.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: ["AppShell Phase 5 — единый Page Descriptor Registry"],
+      relatedAdr: null,
+    },
+    {
+      key: "yasii-unified-window-controls-workspace-minimize",
+      date: "2026-06-10",
+      title: "YASII — unified window controls and workspace minimize",
+      type: "quality",
+      description:
+        "Единый источник порядка системных кнопок ЯСИИ (yasiiPanelWindowControls): панель ↗ 📌 ✕, страница /yasii − ↗ 📌 ✕. Minimize на workspace-странице вызывает minimizeCurrentPage (GlobalWorkspaceTabs + Page Layout Contract); история чата и pinned-состояние сохраняются в YasiiAssistantProvider.",
+      impact:
+        "YASII workspace page can be minimized to bottom tab \"Ясии: Ассистент\" without losing chat context; floating panel controls follow platform-standard order.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: ["AppShell Phase 5 — единый Page Descriptor Registry"],
+      relatedAdr: null,
+    },
+    {
+      key: "profile-side-panel-minimize-overlay",
+      date: "2026-06-10",
+      title: "ProfileSidePanel — minimize overlay profile panel",
+      type: "quality",
+      description:
+        "Личный кабинет сотрудника остаётся overlay ProfileSidePanel. Кнопка «Свернуть» в панели создаёт workspace tab page_type=profile_panel с context_json { panelType, userId, userName, panelState } без navigate. Клик по вкладке «Профиль: <имя>» вызывает openProfileSidePanel() и восстанавливает panelState.",
+      impact:
+        "Employee profile minimize works as overlay panel tab without /profile route, Page Layout Contract, or AppHeader minimize.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: ["AppShell Phase 5 — единый Page Descriptor Registry"],
+      relatedAdr: null,
+    },
+    {
+      key: "workspace-tabs-false-fallback-warning-studio-section-titles",
+      date: "2026-06-10",
+      title: "Workspace Tabs — remove false fallback warning and fix Studio section titles",
+      type: "quality",
+      description:
+        "Убрано ложное предупреждение minimize после успешного создания вкладки; сравнение fallback route переведено на pathname. Studio sections получили единый словарь sectionTitle и передают title/sectionTitle в Page Layout Contract и context_json.",
+      impact:
+        "Minimize no longer shows a fallback-route warning after a tab is created successfully. Studio section tabs display real section names such as \"Студия: Навигация\" instead of \"Студия: Раздел\".",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: ["AppShell Phase 5 — единый Page Descriptor Registry"],
+      relatedAdr: null,
+    },
+    {
+      key: "workspace-tabs-fix-cms-page-titles-fallback-route",
+      date: "2026-06-09",
+      title: "Workspace Tabs — fix CMS page titles and minimize fallback route warning",
+      type: "quality",
+      description:
+        "PortalPageView передаёт реальное название CMS-страницы в Page Layout Contract (title, context.pageTitle, fallbackRoute). resolveMinimizeNavigateRoute вычисляет безопасный parent route, если fallback совпадает с текущим; предупреждение minimize показывается только при отсутствии маршрута.",
+      impact:
+        "CMS pages show real page titles in bottom tabs, and minimize no longer shows fallback-route warnings for valid AppShell pages.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: ["AppShell Phase 5 — единый Page Descriptor Registry"],
+      relatedAdr: null,
+    },
+    {
+      key: "workspace-tabs-russian-display-titles",
+      date: "2026-06-09",
+      title: "Workspace Tabs — Russian display titles for minimized pages",
+      type: "quality",
+      description:
+        "Введён единый resolver resolveWorkspaceTabDisplayTitle: нижние вкладки показывают русские названия в формате «Контекст: Название». Title берётся из Page Layout Contract, route и context_json; технические pageType/pageId/object key игнорируются при наличии пользовательского title.",
+      impact:
+        "Bottom workspace tabs show user-friendly Russian titles such as \"Студия: Объекты\" instead of technical names or page IDs.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: ["AppShell Phase 5 — единый Page Descriptor Registry"],
+      relatedAdr: null,
+    },
+    {
+      key: "workspace-tabs-preserve-tab-order-on-activation",
+      date: "2026-06-09",
+      title: "Workspace Tabs — preserve tab order on activation",
+      type: "quality",
+      description:
+        "Исправлено UX-поведение нижней панели: клик по свернутой вкладке больше не переносит её в начало. Display order стабилизирован по sort_order и created_at; activation обновляет last_opened_at без reorder; backend list query синхронизирован.",
+      impact:
+        "Clicking a minimized tab activates it without changing its position in the bottom tabs bar.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: ["AppShell Phase 5 — единый Page Descriptor Registry"],
+      relatedAdr: null,
+    },
+    {
+      key: "app-shell-fix-sidebar-footer-bottom-tabs",
+      date: "2026-06-09",
+      title: "AppShell — fix sidebar footer and bottom tabs layout",
+      type: "quality",
+      description:
+        "Исправлена нижняя зона AppShell: app-shell__main больше не укорачивается на высоту bottom tabs; sidebar занимает полную высоту; padding-bottom для вкладок применяется только к app-shell-frame__workspace; bottom tabs остаются fixed под main area через workspaceLeftOffset.",
+      impact:
+        "Sidebar footer stays at the bottom, and bottom tabs render only under the main content area without creating a gray strip inside the sidebar.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: ["AppShell Phase 5 — единый Page Descriptor Registry"],
+      relatedAdr: null,
+    },
+    {
+      key: "app-shell-fix-main-content-horizontal-offset",
+      date: "2026-06-09",
+      title: "AppShell — fix main content horizontal offset after nested layout removal",
+      type: "quality",
+      description:
+        "Устранено смещение контента вправо после удаления nested layout: AppShellFrame использует flex row (sidebar + main) вместо absolute main с left: sidebarWidth и width: 100%; embedded content и Platform Dashboard больше не резервируют ширину sidebar повторно.",
+      impact:
+        "Main content aligns correctly inside the AppShell after removing nested layouts.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: ["AppShell Phase 5 — единый Page Descriptor Registry"],
+      relatedAdr: null,
+    },
+    {
+      key: "app-shell-remove-nested-layout-globally",
+      date: "2026-06-09",
+      title: "AppShell — remove nested layout architecture globally",
+      type: "architecture",
+      description:
+        "Глобально устранена двойная вложенность layout: shellLayoutMode (shell | embedded), ShellLayoutModeProvider в DesignerShell, PortalLayout embedded branch без AppShellFrame, PortalPageView content-only в Studio, AppShell viewport height без padding-bottom scroll trap, AppShellFrame заполняет родительский main area.",
+      impact:
+        "All AppShell pages render inside a single shell without nested headers, duplicate scrolls, or screen-in-screen layout.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: ["AppShell Phase 5 — единый Page Descriptor Registry"],
+      relatedAdr: null,
+    },
+    {
+      key: "app-shell-studio-admin-page-minimize",
+      date: "2026-06-09",
+      title: "AppShell — fix minimize coverage for Studio Administration and Studio pages",
+      type: "quality",
+      description:
+        "PortalPageView внутри DesignerShell больше не создаёт вложенный PortalLayout/AppShellFrame для /administration и /page/:pageId. Minimize рендерится в видимом AppHeader DesignerShell. Вынесена resolvePortalPageViewLayoutContractOverrides с studio_admin и studio_page_editor (canMinimize=true, app-header).",
+      impact:
+        "Minimize is available on Administration, nested Administration pages, and Studio menu pages.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: ["AppShell Phase 5 — единый Page Descriptor Registry"],
+      relatedAdr: null,
+    },
+    {
+      key: "app-shell-nested-contract-ownership-bottom-tabs",
+      date: "2026-06-09",
+      title: "AppShell — fix nested contract ownership and bottom tabs layout",
+      type: "quality",
+      description:
+        "Исправлена потеря Page Layout Contract и AppHeader actions при переходах Studio → Administration: вместо single-slot clearContract/resetChrome внедрены owner-based registration stacks (contract, chrome, toolbar slots). Unmount вложенного PortalLayout/AppShellFrame восстанавливает contract/chrome/slot родительского DesignerShell. Нижняя панель Workspace Tabs учитывает workspaceLeftOffset из восстановленного chrome stack.",
+      impact:
+        "Minimize remains available across Studio/Admin navigation. Workspace tabs bar stays inside main content area and does not overlap sidebar.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: ["AppShell Phase 5 — единый Page Descriptor Registry"],
+      relatedAdr: null,
+    },
+    {
+      key: "app-shell-full-platform-minimize-coverage",
+      date: "2026-06-09",
+      title: "AppShell — full platform minimize coverage",
+      type: "architecture",
+      description:
+        "Расширено покрытие Page Layout Contract на все полноценные страницы AppShell: Studio (Pages, Trash, Workspaces, Workspace Detail, section placeholders, Page Editor), Administration (users/roles/org-structure/departments/system), Yasii workspace. Единое правило: полноценная страница → contract → canMinimize → кнопка в AppHeader. Group A/B разделение снято.",
+      impact:
+        "All full-page AppShell routes support minimize through AppHeader; пользователь видит одинаковое поведение в Office, Studio, Administration, Profile, Yasii и Dashboard.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: ["AppShell Phase 5 — единый Page Descriptor Registry"],
+      relatedAdr: null,
+    },
+    {
+      key: "app-shell-global-minimize-app-header",
+      date: "2026-06-08",
+      title: "AppShell — global minimize button in AppHeader",
+      type: "quality",
+      description:
+        "Кнопка «Свернуть страницу» стала глобальным действием платформы: единственный slot app-header в AppHeaderRenderer (Поиск → Свернуть → Уведомления). Все minimizable pageType переведены на toolbarZoneId app-header. Локальные slots удалены из PortalObjectRuntimeHeader, ChatHeader, ObjectTypeWorkspaceHeader, PlatformDevelopmentPage; Profile получил AppHeaderRenderer.",
+      impact:
+        "Minimize button is displayed in one global position after search and before notifications for all minimizable pages; локальные toolbar страниц больше не содержат кнопку сворачивания.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: ["AppShell Phase 5 — единый Page Descriptor Registry"],
+      relatedAdr: null,
+    },
+    {
+      key: "app-shell-phase-4-1-group-a-coverage",
+      date: "2026-06-08",
+      title: "AppShell Phase 4.1 — Expand Page Layout Contract coverage to all Group A pages",
+      type: "architecture",
+      description:
+        "Расширено покрытие Page Layout Contract на все Group A страницы: office_page (PortalPageView /portal/:id/page/:pageId), office_library (PortalLibraryRuntimePage), studio_object_list (ObjectTypesPage), studio_object_data (ObjectTypeDataPage). Добавлены pageType OFFICE_PAGE, OFFICE_LIBRARY, STUDIO_OBJECT_LIST, STUDIO_OBJECT_DATA. Удалена неиспользуемая toolbar zone WORKSPACE_TABS из pageLayoutContractTypes.",
+      impact:
+        "Office CMS, Document Libraries, Studio Object Types list и Studio Object Data теперь поддерживают «Свернуть страницу» так же, как workspace, object runtime, chat, dashboard и profile.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: ["AppShell Phase 5 — единый Page Descriptor Registry"],
+      relatedAdr: null,
+    },
+    {
+      key: "app-shell-unified-minimize-placement",
+      date: "2026-06-08",
+      title: "AppShell — unified minimize button placement across page headers",
+      type: "quality",
+      description:
+        "Унифицировано визуальное размещение кнопки «Свернуть страницу» на всех страницах с Page Layout Contract: единый компонент app-shell-page-minimize-control (28×28px, Minus icon), anchor app-shell-page-actions-anchor с разделителем слева; слот перенесён в правую часть header и отделён от контекстных действий (звонок/видео в Chat, top panel в Object Runtime, Save/Publish в Studio, refresh в Dashboard). Пустой anchor скрывается через :has().",
+      impact:
+        "Office, Object Runtime/Plan, Chat, Studio Object, Dashboard и Profile — кнопка «Свернуть» в одном визуальном положении справа; нет смешения с локальными toolbar и нет отдельной полосы.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "app-shell-phase-4-page-layout-contract",
+      date: "2026-06-08",
+      title: "AppShell Phase 4 — Page Layout Contract for minimize workspace tabs",
+      type: "architecture",
+      description:
+        "Добавлен Page Layout Contract (PageLayoutContractProvider, useRegisterPageLayoutContract, useResolvedPageLayoutContract): страница объявляет pageType, toolbarZoneId, canMinimize и fallbackRoute. AppShellPageActionsHost выбирает единственный slot по contract.toolbarZoneId; priority slots удалены. PageWorkspaceTabControls — только «Свернуть страницу»; minimize создаёт/обновляет workspace tab с is_minimized=true и переходит на fallbackRoute. MVP-регистрации: Office workspace (app-header), Object Runtime/Plan (object-runtime-header), Chat (chat-header), Studio Object (studio-object-header), Dashboard (dashboard-toolbar), Profile (profile-toolbar).",
+      impact:
+        "Кнопка «Свернуть» стабильно попадает в toolbar-зону текущей страницы без отдельной полосы и без конкуренции priority slots; неизвестные страницы без контракта не показывают кнопку (dev warning only).",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: ["AppShell Phase 5 — единый Page Descriptor Registry"],
+      relatedAdr: null,
+    },
+    {
+      key: "app-shell-phase-3-rollback-page-toolbar",
+      date: "2026-06-10",
+      title: "AppShell phase 3 rollback — удалён отдельный PageToolbar",
+      type: "quality",
+      description:
+        "Удалён AppShellPageToolbar как визуальный слой (фиксированная полоса 36px с одной кнопкой «Свернуть»). Сняты pageToolbarHeight/registerPageToolbarHeight и paddingTop в AppShellFrame. Восстановлена полная высота рабочей области. Сохранены AppShellPageActionsHost, WorkspacePageActionsBridge и AppShellPageActionsSlot (registerToolbarSlot без priority) для встраивания actions в существующие toolbar-зоны страниц.",
+      impact:
+        "Контент Office/Studio/Chat/Dashboard/Profile поднят обратно; исчезла пустая горизонтальная полоса. Minimize возвращён в phase 4 через Page Layout Contract.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "app-shell-phase-3-unified-page-toolbar",
+      date: "2026-06-10",
+      title: "AppShell phase 3 — unified PageToolbar and minimize-only workspace tabs",
+      type: "architecture",
+      description:
+        "Создан AppShellPageToolbar — единая зона page-level actions под shell header (fixed, 36px). AppShellPageActionsHost порталит PageWorkspaceTabControls только в toolbar; удалены priority slots из AppHeader, object runtime header, Chat, Dashboard и Profile. Из UI убрана кнопка «Закрепить»; осталось только «Свернуть страницу» (is_minimized=true, is_pinned=false). Нижняя панель переименована в «Рабочие страницы», pin-иконка убрана.",
+      impact:
+        "На Office, Studio, Chat, Dashboard и Profile кнопка сворачивания всегда в одном месте; нет конкуренции с локальными toolbar (Save/Publish, звонок, Обновить). UX нижней панели — свернутые рабочие страницы, а не «закреплённые».",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "app-shell-phase-2-1-page-toolbar",
+      date: "2026-06-10",
+      title: "AppShell phase 2.1 — Page Actions в toolbar-зонах страниц",
+      type: "quality",
+      description:
+        "Убран floating global slot Page Actions; кнопки закрепления/сворачивания встроены в правые toolbar-зоны через priority AppShellPageActionsSlot: AppHeader (Office/Studio), object top panel (Plan/Table/Card), Chat actions, Dashboard refresh bar, Profile. Порядок: [pin][minimize][остальные действия].",
+      impact:
+        "Page Actions воспринимаются как часть действий текущей страницы; нет коллизии со скроллбаром и случайного позиционирования на разных экранах.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "app-shell-phase-2-page-actions",
+      date: "2026-06-09",
+      title: "AppShell phase 2 — Page Actions moved to AppShell slot",
+      type: "architecture",
+      description:
+        "PageWorkspaceTabControls перенесены в AppShellPageActions: tab rows монтируют AppShellPageActionsSlot + WorkspacePageActionsBridge; host рендерит через portal; GlobalPageActionsFallback покрывает страницы без tab row (Profile, Dashboard, списки Studio). Добавлен isWorkspaceTabDescriptorSupported и pin active state.",
+      impact:
+        "Единый UX закрепления/сворачивания страниц на Office, Studio и остальных зонах платформы без дублирования кнопок и без новой строки интерфейса.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "app-shell-phase-1",
+      date: "2026-06-09",
+      title: "AppShell phase 1: тонкая глобальная оболочка",
+      type: "architecture",
+      description:
+        "Добавлен shared/appShell/AppShell как единая оболочка авторизованной части приложения: main + bottomTabs (GlobalWorkspaceTabsBar). AppShellFrame (Office/Studio) регистрирует chrome geometry через AppShellChromeContext; подготовлен AppShellPageActions slot для сквозных действий страницы.",
+      impact:
+        "Нижняя панель рабочих вкладок доступна на всех авторизованных маршрутах (Office, Studio, Dashboard, Profile, Chat) без дублирования в layout-компонентах; навигация и маршруты не изменены.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "global-workspace-tabs-compact-ux",
+      date: "2026-06-09",
+      title: "Global Workspace Tabs: компактный UX панели закреплённых страниц",
+      type: "quality",
+      description:
+        "Убрана отдельная строка с текстовыми кнопками «Закрепить»/«Свернуть» в AppShell; icon buttons (28px, view-engine-toolbar) встроены справа в строки вкладок WorkspaceRuntimeTabsBar, PortalObjectRuntimeHeader и ObjectTypeTabs. Нижняя панель — browser-like вкладки ~32px, pin-иконка, закрытие на hover, nowrap + horizontal scroll.",
+      impact:
+        "Office и Studio сохраняют вертикальное пространство; закреплённые страницы воспринимаются как вспомогательный механизм навигации, а не отдельный тяжёлый toolbar.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "global-workspace-tabs-v1",
+      date: "2026-06-09",
+      title: "Global Workspace Tabs: закрепление и сворачивание страниц",
+      type: "milestone",
+      description:
+        "Добавлена персистентная модель user_workspace_tabs, API GET/POST/PATCH/DELETE /workspace-tabs, reorder и open; frontend GlobalWorkspaceTabsProvider, нижняя панель вкладок, закрепить/свернуть текущую страницу Office и Studio.",
+      impact:
+        "Пользователь может держать несколько рабочих контекстов (объекты, пространства, настройки Studio) и быстро переключаться между ними без потери маршрута.",
+      relatedContours: ["Object Platform", "Designer Foundation"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
     {
       key: "plan-studio-office-info-parity",
       date: "2026-06-09",

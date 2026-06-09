@@ -27,8 +27,11 @@ import { useHeaderSearchContext } from "../shared/search/useHeaderSearchContext"
 import { useHeaderSearchController } from "../shared/search/useHeaderSearchController";
 
 import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../shared/navigation/navigationReload";
-
-
+import {
+  PAGE_LAYOUT_PAGE_TYPE,
+  PAGE_LAYOUT_TOOLBAR_ZONE,
+  useResolvedPageLayoutContract,
+} from "../shared/appShell/pageLayoutContract";
 
 function findLibraryNavigationItem(items, libraryId) {
 
@@ -69,6 +72,11 @@ function findLibraryNavigationItem(items, libraryId) {
 
 
 export default function PortalLibraryRuntimePage() {
+  useResolvedPageLayoutContract({
+    pageType: PAGE_LAYOUT_PAGE_TYPE.OFFICE_LIBRARY,
+    toolbarZoneId: PAGE_LAYOUT_TOOLBAR_ZONE.APP_HEADER,
+    canMinimize: true,
+  });
 
   const navigate = useNavigate();
 

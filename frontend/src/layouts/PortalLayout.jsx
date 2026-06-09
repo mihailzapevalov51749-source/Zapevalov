@@ -1,4 +1,5 @@
 import { cloneElement, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 
 import NotificationOverlayHost from "../modules/notifications/components/NotificationOverlayHost";
 import FileViewerOverlayHost from "../shared/files/components/FileViewerOverlayHost";
@@ -14,8 +15,15 @@ import {
 import { resolveAppSidebarWidth } from "../shared/shell/shellSidebarGeometry";
 import { usePlatformSidebarControls } from "../shared/shell/sidebar/usePlatformSidebarControls";
 import { useShellSidebarState } from "../shared/shell/useShellSidebarState";
+import { useShellLayoutMode } from "../shared/shell/ShellLayoutModeContext.jsx";
+import {
+  resolvePortalLayoutMode,
+  shouldCreateTopLevelShell,
+  SHELL_LAYOUT_MODE,
+} from "../shared/shell/shellLayoutMode.js";
 
 export default function PortalLayout({
+  layoutMode,
   portalId = 1,
   navigation,
   activePageId,
@@ -33,6 +41,14 @@ export default function PortalLayout({
   onNavigationEditModeChange,
   children,
 }) {
+  const location = useLocation();
+  const inheritedLayoutMode = useShellLayoutMode();
+  const resolvedLayoutMode = resolvePortalLayoutMode(
+    location.pathname,
+    layoutMode || inheritedLayoutMode,
+  );
+  const createTopLevelShell = shouldCreateTopLevelShell(resolvedLayoutMode);
+
   const { sidebarCollapsed, toggleSidebarCollapsed } = useShellSidebarState();
   const canEditNavigationMenu = canManageNavigationMenu(getStoredCurrentUser());
   const sidebarControls = usePlatformSidebarControls({
@@ -164,9 +180,23 @@ export default function PortalLayout({
         })
       : children;
 
+  if (!createTopLevelShell) {
+    return (
+      <div
+        className="portal-layout portal-layout--embedded"
+        data-shell-layout-mode={SHELL_LAYOUT_MODE.EMBEDDED}
+      >
+        <div className="portal-layout__embedded-workspace" data-page-scroll>
+          {workspace}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <AppShellFrame
+        data-shell-layout-mode={SHELL_LAYOUT_MODE.SHELL}
         headerContract={headerContract}
         sidebarContract={runtimeSidebarContract}
         platformZone="office"

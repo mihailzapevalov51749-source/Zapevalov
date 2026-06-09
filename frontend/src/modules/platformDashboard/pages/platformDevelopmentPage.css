@@ -25,10 +25,10 @@
   --pd-tab-height: 36px;
   --pd-workspace-height: min(780px, calc(100vh - 148px));
 
-  width: min(95%, 2400px);
+  width: 100%;
   max-width: 100%;
   min-height: 0;
-  margin: 0 auto;
+  margin: 0;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;

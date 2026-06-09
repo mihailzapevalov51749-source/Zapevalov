@@ -5,14 +5,16 @@ import { getMe } from "../../../../api/authApi";
 import CreateMenuItemModal from "../../../../modules/navigation/components/CreateMenuItemModal";
 import NavigationDeleteDialogs from "../../../../modules/navigation/components/NavigationDeleteDialogs";
 import { canManageNavigationMenu } from "../../constants/designerRoles";
-import ProfileSidePanel from "../../../../profile/components/ProfileSidePanel";
 import useNotifications from "../../../../modules/notifications/hooks/useNotifications";
 import useNotificationNavigationOrchestrator from "../../../../modules/notifications/hooks/useNotificationNavigationOrchestrator";
 import NotificationOverlayHost from "../../../../modules/notifications/components/NotificationOverlayHost";
+import { useProfileSidePanel } from "../../../../profile/ProfileSidePanelProvider.jsx";
 import { useDesignerShell } from "../../context/DesignerShellContext";
 import { TRANSITION_TOKENS } from "../../../../shared/layout/transitionTokens";
 import { createDesignerHeaderContract } from "../../../../shared/shell/header";
 import AppShellFrame from "../../../../shared/shell/AppShellFrame";
+import { ShellLayoutModeProvider } from "../../../../shared/shell/ShellLayoutModeContext.jsx";
+import { SHELL_LAYOUT_MODE } from "../../../../shared/shell/shellLayoutMode.js";
 import { createDesignerSidebarContract } from "../../../../shared/shell/sidebar";
 import { usePlatformSidebarControls } from "../../../../shared/shell/sidebar/usePlatformSidebarControls";
 import {
@@ -274,6 +276,7 @@ function buildDesignerMetaNavigation(tenantId, isSuperadmin) {
 
 export default function DesignerShell() {
   const { tenantId, user } = useDesignerShell();
+  const { openProfileSidePanel } = useProfileSidePanel();
   const resolvedPortalId = Number(tenantId) || 1;
   const navigate = useNavigate();
   const location = useLocation();
@@ -283,7 +286,6 @@ export default function DesignerShell() {
     return Number.isFinite(parsed) && parsed >= 0.8 && parsed <= 1.4 ? parsed : 1;
   });
   const [headerUser, setHeaderUser] = useState(() => getCachedHeaderUser());
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isPageEditMode, setIsPageEditMode] = useState(false);
   const [activeObjectTypeName, setActiveObjectTypeName] = useState("");
   const [activeObjectAdapterLabel, setActiveObjectAdapterLabel] = useState("");
@@ -751,7 +753,7 @@ export default function DesignerShell() {
           headerSearch.clearResults?.();
           return;
         case "profile":
-          setIsProfileOpen(true);
+          openProfileSidePanel();
           return;
         case "breadcrumb-navigate":
         case "context-path-navigate":
@@ -797,6 +799,7 @@ export default function DesignerShell() {
     },
     [
       navigate,
+      openProfileSidePanel,
       isDesignerCustomPage,
       location.pathname,
       resolvedPortalId,
@@ -941,36 +944,38 @@ export default function DesignerShell() {
 
   return (
     <>
-      <AppShellFrame
-        headerContract={designerHeaderContract}
-        sidebarContract={designerSidebarContract}
-        platformZone="studio"
-        onHeaderAction={handleHeaderAction}
-        onSidebarItemAction={handleSidebarItemAction}
-        onSidebarAction={sidebarControls.handleSidebarAction}
-        sidebarTransition={TRANSITION_TOKENS.shell.sidebarWidth}
-        workspaceTransition={TRANSITION_TOKENS.shell.workspaceLeft}
-        workspace={
-          <YasiiSurfaceContextProvider value={yasiiSurfaceContext}>
-            <div
-              className="designer-root"
-              data-platform-zone="studio"
-        style={{
-          flex: "1 1 auto",
-          height: "100%",
-          minHeight: 0,
-          minWidth: 0,
-          overflowX: "hidden",
-          overflowY: "auto",
-          padding: "20px 24px 32px",
-          boxSizing: "border-box",
-        }}
-            >
-              <Outlet />
-            </div>
-          </YasiiSurfaceContextProvider>
-        }
-      />
+      <ShellLayoutModeProvider mode={SHELL_LAYOUT_MODE.EMBEDDED}>
+        <AppShellFrame
+          headerContract={designerHeaderContract}
+          sidebarContract={designerSidebarContract}
+          platformZone="studio"
+          onHeaderAction={handleHeaderAction}
+          onSidebarItemAction={handleSidebarItemAction}
+          onSidebarAction={sidebarControls.handleSidebarAction}
+          sidebarTransition={TRANSITION_TOKENS.shell.sidebarWidth}
+          workspaceTransition={TRANSITION_TOKENS.shell.workspaceLeft}
+          workspace={
+            <YasiiSurfaceContextProvider value={yasiiSurfaceContext}>
+              <div
+                className="designer-root"
+                data-platform-zone="studio"
+                style={{
+                  flex: "1 1 auto",
+                  height: "100%",
+                  minHeight: 0,
+                  minWidth: 0,
+                  overflowX: "hidden",
+                  overflowY: "auto",
+                  padding: "20px 24px 32px",
+                  boxSizing: "border-box",
+                }}
+              >
+                <Outlet />
+              </div>
+            </YasiiSurfaceContextProvider>
+          }
+        />
+      </ShellLayoutModeProvider>
       <SearchResultsOverlay
         isVisible={headerSearch.isOverlayVisible}
         isLoading={headerSearch.isLoading}
@@ -1009,14 +1014,6 @@ export default function DesignerShell() {
         onCloseNotice={sidebarControls.clearDeleteNotice}
       />
       <NotificationOverlayHost />
-      <ProfileSidePanel
-        isOpen={isProfileOpen}
-        onClose={() => {
-          setIsProfileOpen(false);
-          loadHeaderUser();
-          window.dispatchEvent(new CustomEvent("user:profile-updated"));
-        }}
-      />
     </>
   );
 }

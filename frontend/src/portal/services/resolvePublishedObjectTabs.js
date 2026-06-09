@@ -1,10 +1,27 @@
 /**
  * Published Object Tabs (Studio → «Вкладки объекта») for Office runtime header.
- * Excludes table user representations and internal base-state keys.
+ * Excludes table user representations, internal base-state keys, and system views.
+ *
+ * TODO(platform): split User Views vs System Views at catalog/contract level.
+ * User Views (Office tab bar): table, plan, card, kanban, timeline, calendar, list, …
+ * System Views (runtime engines only): quick_form, action_form, system_form, …
  */
 
 import { readObjectTabSettings, readViewSettingsJsonFromPublishedView } from "../../modules/objectViews/services/objectTabSettings";
 import { INTERNAL_OBJECT_TAB_DISPLAY_KEYS } from "../../modules/objectViews/services/resolveObjectTabDisplayLabel";
+
+/** View types kept in published catalog but hidden from Office object tab bar. */
+const OFFICE_HIDDEN_SYSTEM_VIEW_TYPES = new Set(["quick_form"]);
+
+function readViewType(view) {
+  return String(view?.view_type || view?.viewType || "table")
+    .trim()
+    .toLowerCase();
+}
+
+function isOfficeUserTabView(view) {
+  return !OFFICE_HIDDEN_SYSTEM_VIEW_TYPES.has(readViewType(view));
+}
 
 function readTabLabel(view) {
   const candidates = [view?.name, view?.title, view?.label];
@@ -34,6 +51,7 @@ export function resolvePublishedObjectTabs(objectType) {
   const views = Array.isArray(objectType?.views) ? objectType.views : [];
 
   const tabs = views
+    .filter(isOfficeUserTabView)
     .map((view) => {
       const key = readTabKey(view);
 
@@ -53,9 +71,7 @@ export function resolvePublishedObjectTabs(objectType) {
       return {
         key,
         name,
-        viewType: String(view?.view_type || view?.viewType || "table")
-          .trim()
-          .toLowerCase(),
+        viewType: readViewType(view),
         isDefault: Boolean(view?.is_default ?? view?.isDefault),
         sortOrder: Number(view?.sort_order ?? view?.sortOrder ?? 0),
         isActive: view?.is_active !== false && view?.isActive !== false,

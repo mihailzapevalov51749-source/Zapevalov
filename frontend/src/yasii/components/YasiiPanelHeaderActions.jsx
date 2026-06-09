@@ -1,14 +1,23 @@
+import { Minus, X } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import pinIcon from "../../assets/icons/Pin.png";
 import expandIcon from "../../assets/noteicons/expand.png";
 import collapseIcon from "../../assets/noteicons/collapse.png";
+import { usePageLayoutContract } from "../../shared/appShell/pageLayoutContract/PageLayoutContractContext.jsx";
 import { getLastRuntimePath } from "../../shared/appMode/appModeStorage.js";
+import { useGlobalWorkspaceTabs } from "../../shared/workspaceTabs/GlobalWorkspaceTabsProvider";
 import { useYasiiAssistantSession } from "../context/YasiiAssistantContext.jsx";
+import {
+  YASII_PANEL_CONTROL,
+  resolveYasiiPanelControlOrder,
+} from "../panel/yasiiPanelWindowControls.js";
 import {
   readYasiiPreWorkspacePath,
   writeYasiiPreWorkspacePath,
 } from "../workspace/yasiiWorkspaceModeStorage.js";
+import YasiiPanelControlButton from "./YasiiPanelControlButton.jsx";
 
 export default function YasiiPanelHeaderActions({
   layoutMode = "floating",
@@ -17,8 +26,16 @@ export default function YasiiPanelHeaderActions({
   const navigate = useNavigate();
   const location = useLocation();
   const session = useYasiiAssistantSession();
+  const { contract } = usePageLayoutContract();
+  const { minimizeCurrentPage, loading: tabsLoading } = useGlobalWorkspaceTabs();
+  const [minimizeBusy, setMinimizeBusy] = useState(false);
+
   const isPinned = session?.isPinned ?? false;
   const isWorkspace = layoutMode === "workspace";
+  const controlOrder = useMemo(
+    () => resolveYasiiPanelControlOrder(layoutMode),
+    [layoutMode],
+  );
 
   const handleTogglePin = () => {
     session?.togglePinned?.();
@@ -27,32 +44,62 @@ export default function YasiiPanelHeaderActions({
   const handleExpandOrCollapse = () => {
     if (isWorkspace) {
       const returnPath = readYasiiPreWorkspacePath() || getLastRuntimePath();
-      session?.setFloatingOpen?.(true);
+      session?.leaveYasiiPageToPanel?.();
       navigate(returnPath);
       return;
     }
 
     const returnPath = `${location.pathname}${location.search}${location.hash}`;
     writeYasiiPreWorkspacePath(returnPath);
+    session?.enterYasiiPage?.();
     navigate("/yasii");
   };
 
-  return (
-    <div className="yasii-panel-header__actions">
-      <button
-        type="button"
-        className="yasii-panel-header__action"
-        aria-label="Закрыть ЯСИИ"
-        title="Закрыть ЯСИИ"
-        onClick={onClose}
+  const handleMinimize = useCallback(async () => {
+    if (!contract?.canMinimize || minimizeBusy || tabsLoading) {
+      return;
+    }
+
+    setMinimizeBusy(true);
+
+    try {
+      session?.leaveYasiiPageMinimized?.();
+
+      await minimizeCurrentPage({
+        fallbackRoute: contract.fallbackRoute,
+        pageTitle: contract.title,
+        context: contract.context,
+        route: contract.route,
+        moduleKey: contract.moduleKey,
+        pageType: contract.pageType,
+      });
+    } finally {
+      setMinimizeBusy(false);
+    }
+  }, [contract, minimizeBusy, minimizeCurrentPage, tabsLoading]);
+
+  const controls = {
+    [YASII_PANEL_CONTROL.MINIMIZE]: isWorkspace ? (
+      <YasiiPanelControlButton
+        key={YASII_PANEL_CONTROL.MINIMIZE}
+        title="Свернуть страницу"
+        ariaLabel="Свернуть страницу"
+        disabled={minimizeBusy || tabsLoading}
+        onClick={handleMinimize}
       >
-        ×
-      </button>
-      <button
-        type="button"
-        className="yasii-panel-header__action"
-        aria-label={isWorkspace ? "Свернуть ЯСИИ" : "Развернуть ЯСИИ"}
+        <Minus
+          size={18}
+          strokeWidth={2}
+          aria-hidden
+          className="yasii-panel-header__action-icon"
+        />
+      </YasiiPanelControlButton>
+    ) : null,
+    [YASII_PANEL_CONTROL.FULLSCREEN]: (
+      <YasiiPanelControlButton
+        key={YASII_PANEL_CONTROL.FULLSCREEN}
         title={isWorkspace ? "Свернуть ЯСИИ" : "Развернуть ЯСИИ"}
+        ariaLabel={isWorkspace ? "Свернуть ЯСИИ" : "Развернуть ЯСИИ"}
         onMouseDown={(event) => event.preventDefault()}
         onClick={handleExpandOrCollapse}
       >
@@ -62,13 +109,15 @@ export default function YasiiPanelHeaderActions({
           className="yasii-panel-header__action-icon"
           aria-hidden="true"
         />
-      </button>
-      <button
-        type="button"
-        className={`yasii-panel-header__action${isPinned ? " yasii-panel-header__action--active" : ""}`}
-        aria-label={isPinned ? "Открепить ЯСИИ" : "Закрепить ЯСИИ"}
+      </YasiiPanelControlButton>
+    ),
+    [YASII_PANEL_CONTROL.PIN]: (
+      <YasiiPanelControlButton
+        key={YASII_PANEL_CONTROL.PIN}
+        active={isPinned}
         title={isPinned ? "Открепить ЯСИИ" : "Закрепить ЯСИИ"}
-        aria-pressed={isPinned}
+        ariaLabel={isPinned ? "Открепить ЯСИИ" : "Закрепить ЯСИИ"}
+        ariaPressed={isPinned}
         onMouseDown={(event) => event.preventDefault()}
         onClick={handleTogglePin}
       >
@@ -78,7 +127,28 @@ export default function YasiiPanelHeaderActions({
           className="yasii-panel-header__action-icon"
           aria-hidden="true"
         />
-      </button>
+      </YasiiPanelControlButton>
+    ),
+    [YASII_PANEL_CONTROL.CLOSE]: (
+      <YasiiPanelControlButton
+        key={YASII_PANEL_CONTROL.CLOSE}
+        title="Закрыть ЯСИИ"
+        ariaLabel="Закрыть ЯСИИ"
+        onClick={onClose}
+      >
+        <X
+          size={18}
+          strokeWidth={2}
+          aria-hidden
+          className="yasii-panel-header__action-icon"
+        />
+      </YasiiPanelControlButton>
+    ),
+  };
+
+  return (
+    <div className="yasii-panel-header__actions">
+      {controlOrder.map((controlId) => controls[controlId]).filter(Boolean)}
     </div>
   );
 }
