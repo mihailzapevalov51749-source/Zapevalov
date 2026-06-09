@@ -122,10 +122,45 @@ export default function PortalObjectDataPage({
     return resolveDefaultPublishedObjectTabKey(objectTabs, activeObjectTabKey);
   }, [objectTabs, activeObjectTabKey, fixedObjectTabKey]);
 
-  const activeObjectTab = useMemo(
-    () => findPublishedObjectTab(objectTabs, resolvedObjectTabKey),
-    [objectTabs, resolvedObjectTabKey],
-  );
+  const activeObjectTab = useMemo(() => {
+    const publishedTab = findPublishedObjectTab(objectTabs, resolvedObjectTabKey);
+
+    if (publishedTab) {
+      return publishedTab;
+    }
+
+    const fixedKey = String(fixedObjectTabKey || "").trim();
+
+    if (!fixedKey || fixedKey !== resolvedObjectTabKey) {
+      return null;
+    }
+
+    const views = Array.isArray(objectType?.views) ? objectType.views : [];
+    const rawView = views.find(
+      (view) =>
+        String(view?.key ?? "").trim() === fixedKey &&
+        view?.is_active !== false &&
+        view?.isActive !== false,
+    );
+
+    if (!rawView) {
+      return null;
+    }
+
+    const viewType = String(rawView?.view_type || rawView?.viewType || "table")
+      .trim()
+      .toLowerCase();
+
+    return {
+      key: fixedKey,
+      name: String(rawView?.name || rawView?.title || fixedKey).trim(),
+      viewType,
+      isDefault: Boolean(rawView?.is_default ?? rawView?.isDefault),
+      sortOrder: Number(rawView?.sort_order ?? rawView?.sortOrder ?? 0),
+      isActive: true,
+      menuInTab: false,
+    };
+  }, [objectTabs, resolvedObjectTabKey, fixedObjectTabKey, objectType?.views]);
 
   const location = useLocation();
   const { currentDescriptor } = useGlobalWorkspaceTabs();

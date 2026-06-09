@@ -5,6 +5,7 @@ import {
   canApplyOfficeDefaultUserView,
   hasExplicitOfficeRepresentationRequest,
   isExplicitRepresentationRequestKey,
+  isFixedObjectTabSelection,
   isObjectTabKey,
   resolveInitialOfficeSelectedViewKey,
   resolveOfficeObjectTabSelectionKey,
@@ -113,5 +114,24 @@ describe("object tab key vs representation key", () => {
         defaultKey: "postavlennye",
       }),
     ).toBe(true);
+  });
+
+  it("fixed plan object tab is treated as manual selection", () => {
+    expect(isFixedObjectTabSelection("idei_razvitiya")).toBe(true);
+    expect(isFixedObjectTabSelection("default_table")).toBe(false);
+    expect(isFixedObjectTabSelection(TABLE_BASE_STATE_KEY)).toBe(false);
+  });
+
+  it("office default user view does not override fixed plan object tab", () => {
+    expect(
+      canApplyOfficeDefaultUserView({
+        isOfficeUserViews: true,
+        loading: false,
+        userManuallySelected: false,
+        initialDefaultApplied: false,
+        defaultKey: "postavlennye",
+        requestedObjectTabKey: "idei_razvitiya",
+      }),
+    ).toBe(false);
   });
 });

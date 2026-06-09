@@ -19,6 +19,77 @@ function isCardSettingsModalKey(modalKey) {
   return String(modalKey || "").trim() === CARD_SETTINGS_MODAL_KEY;
 }
 
+function bindModalPointerSession(startEvent, { onMove, onEnd }) {
+  let ended = false;
+  const captureTarget =
+    startEvent.target instanceof Element ? startEvent.target : null;
+  const pointerId = startEvent.pointerId;
+
+  const finish = () => {
+    if (ended) {
+      return;
+    }
+
+    ended = true;
+
+    window.removeEventListener("mousemove", handleMove, true);
+    window.removeEventListener("mouseup", finish, true);
+    window.removeEventListener("pointermove", handleMove, true);
+    window.removeEventListener("pointerup", finish, true);
+    window.removeEventListener("pointercancel", finish, true);
+    window.removeEventListener("blur", finish, true);
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
+
+    if (
+      captureTarget &&
+      pointerId != null &&
+      typeof captureTarget.releasePointerCapture === "function" &&
+      typeof captureTarget.hasPointerCapture === "function" &&
+      captureTarget.hasPointerCapture(pointerId)
+    ) {
+      try {
+        captureTarget.releasePointerCapture(pointerId);
+      } catch {
+        // ignore release errors
+      }
+    }
+
+    onEnd?.();
+  };
+
+  function handleMove(moveEvent) {
+    onMove(moveEvent);
+  }
+
+  function handleVisibilityChange() {
+    if (document.visibilityState === "hidden") {
+      finish();
+    }
+  }
+
+  if (
+    captureTarget &&
+    pointerId != null &&
+    typeof captureTarget.setPointerCapture === "function"
+  ) {
+    try {
+      captureTarget.setPointerCapture(pointerId);
+    } catch {
+      // ignore capture errors
+    }
+  }
+
+  window.addEventListener("mousemove", handleMove, true);
+  window.addEventListener("mouseup", finish, true);
+  window.addEventListener("pointermove", handleMove, true);
+  window.addEventListener("pointerup", finish, true);
+  window.addEventListener("pointercancel", finish, true);
+  window.addEventListener("blur", finish, true);
+  document.addEventListener("visibilitychange", handleVisibilityChange);
+
+  return finish;
+}
+
 /** @deprecated use PLATFORM_MODAL_STANDARD_MIN_WIDTH */
 export const PLATFORM_MODAL_MIN_WIDTH = PLATFORM_MODAL_STANDARD_MIN_WIDTH;
 export const PLATFORM_MODAL_MIN_HEIGHT = 300;
@@ -419,31 +490,27 @@ export default function usePlatformModalLayout({
       const startY = event.clientY;
       const origin = { ...boundsRef.current };
 
-      function onMove(moveEvent) {
-        const nextBounds = applyBounds({
-          ...origin,
-          x: origin.x + (moveEvent.clientX - startX),
-          y: origin.y + (moveEvent.clientY - startY),
-        });
-
-        if (isCardSettingsModalKey(modalKeyRef.current)) {
-          debugCardSettingsModal("drag move", nextBounds);
-        }
-      }
-
-      function onUp() {
-        window.removeEventListener("mousemove", onMove);
-        window.removeEventListener("mouseup", onUp);
-        document.body.style.userSelect = "";
-        document.body.style.cursor = "";
-        persistRef.current();
-      }
-
       document.body.style.userSelect = "none";
       document.body.style.cursor = "grabbing";
 
-      window.addEventListener("mousemove", onMove);
-      window.addEventListener("mouseup", onUp);
+      bindModalPointerSession(event, {
+        onMove: (moveEvent) => {
+          const nextBounds = applyBounds({
+            ...origin,
+            x: origin.x + (moveEvent.clientX - startX),
+            y: origin.y + (moveEvent.clientY - startY),
+          });
+
+          if (isCardSettingsModalKey(modalKeyRef.current)) {
+            debugCardSettingsModal("drag move", nextBounds);
+          }
+        },
+        onEnd: () => {
+          document.body.style.userSelect = "";
+          document.body.style.cursor = "";
+          persistRef.current();
+        },
+      });
     },
     [applyBounds],
   );
@@ -461,33 +528,29 @@ export default function usePlatformModalLayout({
       const startY = event.clientY;
       const origin = { ...boundsRef.current };
 
-      function onMove(moveEvent) {
-        let nextWidth = origin.width;
-        let nextHeight = origin.height;
+      bindModalPointerSession(event, {
+        onMove: (moveEvent) => {
+          let nextWidth = origin.width;
+          let nextHeight = origin.height;
 
-        if (direction.includes("e")) {
-          nextWidth = origin.width + (moveEvent.clientX - startX);
-        }
+          if (direction.includes("e")) {
+            nextWidth = origin.width + (moveEvent.clientX - startX);
+          }
 
-        if (direction.includes("s")) {
-          nextHeight = origin.height + (moveEvent.clientY - startY);
-        }
+          if (direction.includes("s")) {
+            nextHeight = origin.height + (moveEvent.clientY - startY);
+          }
 
-        applyBounds({
-          ...origin,
-          width: nextWidth,
-          height: nextHeight,
-        });
-      }
-
-      function onUp() {
-        window.removeEventListener("mousemove", onMove);
-        window.removeEventListener("mouseup", onUp);
-        persistRef.current();
-      }
-
-      window.addEventListener("mousemove", onMove);
-      window.addEventListener("mouseup", onUp);
+          applyBounds({
+            ...origin,
+            width: nextWidth,
+            height: nextHeight,
+          });
+        },
+        onEnd: () => {
+          persistRef.current();
+        },
+      });
     },
     [applyBounds],
   );

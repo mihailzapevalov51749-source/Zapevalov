@@ -56,10 +56,8 @@ import useObjectEntitiesBulkDelete from "./hooks/useObjectEntitiesBulkDelete";
 import ObjectEntityDeleteConfirmModal from "./components/ObjectEntityDeleteConfirmModal";
 import ObjectEntityDeleteScenarioModal from "./components/ObjectEntityDeleteScenarioModal";
 import { applyObjectTableDisplayPositions } from "./services/applyObjectTableDisplayPositions";
-import {
-  hasHierarchySubtasksFeature,
-  resolvePrimaryHierarchySubtaskRelationKey,
-} from "../../../shared/relation/hierarchyRelationProfile.js";
+import { hasHierarchySubtasksFeature } from "../../../shared/relation/hierarchyRelationProfile.js";
+import { resolveConfiguredHierarchyRelationKey } from "../../../shared/relation/resolveConfiguredHierarchyRelationKey.js";
 import {
   formatCreateChildMenuLabel,
   resolveHierarchyLabelsFromCatalog,
@@ -508,6 +506,11 @@ export default function ObjectTableView({
     ? String(publishedTableViewKey || "default_table").trim()
     : String(activeViewKey || publishedTableViewKey || "default_table").trim();
 
+  const activeSortRules = effectiveContract?.query?.sort?.rules || [];
+  const preferHierarchySiblingOrder = !(
+    Array.isArray(activeSortRules) && activeSortRules.length > 0
+  );
+
   const hierarchyTable = useObjectTableHierarchyRows({
     tenantId,
     objectTypeKey,
@@ -517,6 +520,7 @@ export default function ObjectTableView({
     enabled: hierarchyDataEnabled,
     previewMode: isPreviewMode,
     previewHierarchyInstances: query.previewHierarchyInstances,
+    preferHierarchySiblingOrder,
   });
 
   useEffect(() => {
@@ -724,8 +728,6 @@ export default function ObjectTableView({
     patchSession: sessionApi?.patchSession,
   });
 
-  const activeSortRules = effectiveContract?.query?.sort?.rules || [];
-
   const handleToggleSort = (columnKey) => {
     toggleColumnSort(columnKey);
     query.resetOffset?.();
@@ -741,7 +743,7 @@ export default function ObjectTableView({
   );
 
   const hierarchyRelationKey = useMemo(
-    () => resolvePrimaryHierarchySubtaskRelationKey(query.catalog, objectTypeKey),
+    () => resolveConfiguredHierarchyRelationKey(query.catalog, objectTypeKey),
     [query.catalog, objectTypeKey],
   );
 

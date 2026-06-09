@@ -184,6 +184,34 @@ function getToken() {
   return localStorage.getItem("token");
 }
 
+function parseInviteErrorDetail(responseText) {
+  if (!responseText) return "";
+
+  try {
+    const payload = JSON.parse(responseText);
+    const detail = payload?.detail;
+
+    if (typeof detail === "string" && detail.trim()) {
+      return detail.trim();
+    }
+
+    if (Array.isArray(detail) && detail.length > 0) {
+      const messages = detail
+        .map((item) => item?.msg || item?.message || "")
+        .filter(Boolean);
+
+      if (messages.length > 0) {
+        return messages.join(" ");
+      }
+    }
+  } catch {
+    // not JSON — use raw text below
+  }
+
+  const trimmed = String(responseText).trim();
+  return trimmed.startsWith("{") ? "" : trimmed;
+}
+
 async function sendUserInvite(userId) {
   const token = getToken();
 
@@ -197,7 +225,10 @@ async function sendUserInvite(userId) {
 
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(text || "Ошибка отправки приглашения");
+    const detail = parseInviteErrorDetail(text);
+    const error = new Error(detail || "Ошибка отправки приглашения");
+    error.detail = detail;
+    throw error;
   }
 
   return response.json();
@@ -283,7 +314,7 @@ export default function UserEditorCard({
   }, [user?.id]);
 
   const canSendInvite = Boolean(
-    user?.id && !user?.isNew && user?.email && user?.temp_password
+    user?.id && !user?.isNew && String(user?.email || "").trim()
   );
 
   const canDeleteUser = Boolean(user?.id && !user?.isNew && onDelete);
@@ -304,7 +335,12 @@ export default function UserEditorCard({
       setInviteSent(true);
     } catch (error) {
       console.error(error);
-      setInviteError("Не удалось отправить приглашение.");
+      const detail = error?.detail || error?.message || "";
+      setInviteError(
+        detail
+          ? `Не удалось отправить приглашение. ${detail}`
+          : "Не удалось отправить приглашение."
+      );
       setInviteSent(false);
     } finally {
       setInviteSending(false);
@@ -508,7 +544,7 @@ export default function UserEditorCard({
                 ? "Отправка..."
                 : inviteSent
                 ? "Отправлено"
-                : "Отправить"}
+                : "Отправить приглашение"}
             </button>
           )}
         </div>

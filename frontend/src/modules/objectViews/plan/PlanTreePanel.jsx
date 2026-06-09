@@ -1,14 +1,28 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 import PlanTreeNode from "./PlanTreeNode.jsx";
 import PlanTreeContextMenu from "./PlanTreeContextMenu.jsx";
 import { isPlanTreeDescendant } from "./planHierarchyMove.js";
+import { buildPlanTreeContextMenuActions } from "./buildPlanTreeContextMenuActions.js";
+import {
+  PLAN_TREE_CONTEXT_TARGET,
+  createPlanTreeContextTarget,
+  resolvePlanTreeContextMenuLabel,
+} from "./planTreeContextTarget.js";
+import {
+  computePlanTreeDropPosition,
+  PLAN_TREE_DROP_POSITION,
+  resolvePlanTreeDropDescriptor,
+} from "./planTreeDragDrop.js";
+import { logPlanTreeDropDebug, logPlanTreeHoverDebug } from "./planTreeMoveDebug.js";
 import {
   PLAN_DATA_EMPTY_HINT,
   PLAN_DATA_EMPTY_TITLE,
   PLAN_TREE_EMPTY_FALLBACK_MESSAGE,
 } from "./planEmptyStateMessages.js";
+
+const TREE_NODE_SELECTOR = ".object-plan-view__tree-node";
 
 export default function PlanTreePanel({
   roots = [],
@@ -19,40 +33,89 @@ export default function PlanTreePanel({
   onToggleExpandAll,
   onSelectNode,
   onToggleExpand,
-  onReparentNode,
+  onMoveNode,
   onContextMenuAction,
   onCreateRoot,
   canCreate = false,
+  hasClipboard = false,
   isDataEmpty = false,
   previewMode = false,
   emptyMessage = PLAN_TREE_EMPTY_FALLBACK_MESSAGE,
+  rootAnchorId = null,
 }) {
   const [dragNodeId, setDragNodeId] = useState(null);
-  const [dropTargetId, setDropTargetId] = useState(null);
+  const [dropHint, setDropHint] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
+  const activeDropDescriptorRef = useRef(null);
 
   const contextMenuActions = useMemo(() => {
-    if (previewMode) {
+    if (!contextMenu) {
       return [];
     }
 
-    return [
-      { id: "create", label: "+ Создать" },
-      { id: "rename", label: "Переименовать" },
-      { id: "duplicate", label: "Дублировать" },
-      { id: "create_task", label: "Создать задачу" },
-      { id: "create_issue", label: "Создать проблему" },
-      { id: "delete", label: "Удалить", tone: "danger" },
-    ];
-  }, [previewMode]);
+    return buildPlanTreeContextMenuActions({
+      targetType: contextMenu.targetType,
+      previewMode,
+      canCreate,
+      hasClipboard,
+    });
+  }, [contextMenu, previewMode, canCreate, hasClipboard]);
 
-  const emptyContextMenuActions = useMemo(() => {
-    if (previewMode || !canCreate) {
-      return [];
+  const contextMenuLabel = useMemo(() => {
+    if (!contextMenu) {
+      return resolvePlanTreeContextMenuLabel(PLAN_TREE_CONTEXT_TARGET.TREE);
     }
 
-    return [{ id: "create_root", label: "Создать запись" }];
-  }, [previewMode, canCreate]);
+    return resolvePlanTreeContextMenuLabel(contextMenu.targetType);
+  }, [contextMenu]);
+
+  const openContextMenu = useCallback((event, target) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setContextMenu({
+      ...target,
+      x: event.clientX,
+      y: event.clientY,
+    });
+  }, []);
+
+  const handleNodeContextMenu = useCallback(
+    (event, node) => {
+      if (previewMode) {
+        return;
+      }
+
+      onSelectNode?.(node.id);
+      openContextMenu(
+        event,
+        createPlanTreeContextTarget(PLAN_TREE_CONTEXT_TARGET.NODE, node.id),
+      );
+    },
+    [previewMode, onSelectNode, openContextMenu],
+  );
+
+  const handleTreeBackgroundContextMenu = useCallback(
+    (event) => {
+      if (previewMode) {
+        return;
+      }
+
+      if (event.target.closest(TREE_NODE_SELECTOR)) {
+        return;
+      }
+
+      openContextMenu(
+        event,
+        createPlanTreeContextTarget(PLAN_TREE_CONTEXT_TARGET.TREE),
+      );
+    },
+    [previewMode, openContextMenu],
+  );
+
+  const clearDropHint = useCallback(() => {
+    activeDropDescriptorRef.current = null;
+    setDropHint(null);
+  }, []);
 
   const handleDragStart = useCallback((event, nodeId) => {
     event.dataTransfer.effectAllowed = "move";
@@ -60,138 +123,184 @@ export default function PlanTreePanel({
     setDragNodeId(nodeId);
   }, []);
 
-  const handleDragOver = useCallback(
-    (event, targetId) => {
-      if (!dragNodeId || dragNodeId === targetId) {
-        return;
+  const canDropOnTarget = useCallback(
+    (sourceId, targetId) => {
+      if (!sourceId || !targetId || sourceId === targetId) {
+        return false;
       }
 
-      if (isPlanTreeDescendant(nodesById, dragNodeId, targetId)) {
+      return !isPlanTreeDescendant(nodesById, sourceId, targetId);
+    },
+    [nodesById],
+  );
+
+  const resolveDropDescriptor = useCallback(
+    (sourceId, targetId, position) =>
+      resolvePlanTreeDropDescriptor({
+        sourceId,
+        targetId,
+        position,
+        nodesById,
+        roots,
+        rootAnchorId,
+      }),
+    [nodesById, roots, rootAnchorId],
+  );
+
+  const handleDragOver = useCallback(
+    (event, targetId, rowElement) => {
+      const sourceId = dragNodeId;
+
+      if (!sourceId || !canDropOnTarget(sourceId, targetId)) {
         return;
       }
 
       event.preventDefault();
+      event.stopPropagation();
       event.dataTransfer.dropEffect = "move";
-      setDropTargetId(targetId);
+
+      const position = computePlanTreeDropPosition(event, rowElement);
+      const descriptor = resolveDropDescriptor(sourceId, targetId, position);
+
+      if (!descriptor) {
+        activeDropDescriptorRef.current = null;
+        setDropHint(null);
+        return;
+      }
+
+      activeDropDescriptorRef.current = descriptor;
+      logPlanTreeHoverDebug(descriptor);
+      setDropHint(descriptor);
     },
-    [dragNodeId, nodesById],
+    [dragNodeId, canDropOnTarget, resolveDropDescriptor],
   );
 
-  const handleDragLeave = useCallback((_event, targetId) => {
-    setDropTargetId((current) => (current === targetId ? null : current));
+  const handleDragLeave = useCallback((event, targetId) => {
+    if (event.currentTarget.contains(event.relatedTarget)) {
+      return;
+    }
+
+    setDropHint((current) => (current?.targetId === targetId ? null : current));
   }, []);
 
   const handleDrop = useCallback(
-    (event, targetId) => {
+    (event, targetId, rowElement) => {
       event.preventDefault();
+      event.stopPropagation();
+
       const sourceId = dragNodeId || event.dataTransfer.getData("text/plain");
+      const position = computePlanTreeDropPosition(event, rowElement);
+      const fromEvent = resolveDropDescriptor(sourceId, targetId, position);
+      const activeDescriptor = activeDropDescriptorRef.current;
+      const descriptor =
+        activeDescriptor &&
+        activeDescriptor.sourceId === sourceId &&
+        activeDescriptor.targetId === targetId &&
+        activeDescriptor.position === position
+          ? activeDescriptor
+          : fromEvent;
 
       setDragNodeId(null);
-      setDropTargetId(null);
+      clearDropHint();
 
-      if (!sourceId || !targetId || sourceId === targetId) {
+      if (!sourceId || !targetId || !descriptor || !canDropOnTarget(sourceId, targetId)) {
         return;
       }
 
-      if (isPlanTreeDescendant(nodesById, sourceId, targetId)) {
-        return;
-      }
-
-      void onReparentNode?.(sourceId, targetId);
+      logPlanTreeDropDebug(descriptor);
+      void onMoveNode?.(sourceId, descriptor);
     },
-    [dragNodeId, nodesById, onReparentNode],
+    [dragNodeId, canDropOnTarget, onMoveNode, resolveDropDescriptor, clearDropHint],
   );
 
   const handleDragEnd = useCallback(() => {
     setDragNodeId(null);
-    setDropTargetId(null);
-  }, []);
+    clearDropHint();
+  }, [clearDropHint]);
 
-  const handleDropToRoot = useCallback(
-    (event) => {
-      event.preventDefault();
-      const sourceId = dragNodeId || event.dataTransfer.getData("text/plain");
-
-      setDragNodeId(null);
-      setDropTargetId(null);
-
-      if (!sourceId) {
-        return;
-      }
-
-      void onReparentNode?.(sourceId, null);
-    },
-    [dragNodeId, onReparentNode],
-  );
-
-  const handlePanelDragOver = useCallback(
+  const handleRootEndDragOver = useCallback(
     (event) => {
       if (!dragNodeId) {
         return;
       }
 
       event.preventDefault();
+      event.stopPropagation();
       event.dataTransfer.dropEffect = "move";
-      setDropTargetId("__root__");
-    },
-    [dragNodeId],
-  );
 
-  const handleContextMenu = useCallback(
-    (event, node) => {
-      if (previewMode) {
+      const descriptor = resolveDropDescriptor(
+        dragNodeId,
+        null,
+        PLAN_TREE_DROP_POSITION.ROOT_END,
+      );
+
+      if (!descriptor) {
+        activeDropDescriptorRef.current = null;
+        setDropHint(null);
         return;
       }
 
-      event.preventDefault();
-      event.stopPropagation();
-      onSelectNode?.(node.id);
-      setContextMenu({
-        nodeId: node.id,
-        x: event.clientX,
-        y: event.clientY,
-      });
+      activeDropDescriptorRef.current = descriptor;
+      logPlanTreeHoverDebug(descriptor);
+      setDropHint(descriptor);
     },
-    [previewMode, onSelectNode],
+    [dragNodeId, resolveDropDescriptor],
   );
 
-  const handleEmptyContextMenu = useCallback(
+  const handleRootEndDrop = useCallback(
     (event) => {
-      if (previewMode || !canCreate) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const sourceId = dragNodeId || event.dataTransfer.getData("text/plain");
+      const activeDescriptor = activeDropDescriptorRef.current;
+      const descriptor =
+        activeDescriptor &&
+        activeDescriptor.sourceId === sourceId &&
+        activeDescriptor.position === PLAN_TREE_DROP_POSITION.ROOT_END
+          ? activeDescriptor
+          : resolveDropDescriptor(sourceId, null, PLAN_TREE_DROP_POSITION.ROOT_END);
+
+      setDragNodeId(null);
+      clearDropHint();
+
+      if (!sourceId || !descriptor) {
         return;
       }
 
-      event.preventDefault();
-      event.stopPropagation();
-      setContextMenu({
-        isEmpty: true,
-        x: event.clientX,
-        y: event.clientY,
-      });
+      logPlanTreeDropDebug(descriptor);
+      void onMoveNode?.(sourceId, descriptor);
     },
-    [previewMode, canCreate],
+    [dragNodeId, onMoveNode, resolveDropDescriptor, clearDropHint],
   );
 
   const handleContextMenuSelect = useCallback(
     (actionId) => {
-      if (contextMenu?.isEmpty) {
-        if (actionId === "create_root") {
-          onCreateRoot?.();
-        }
-
+      if (!contextMenu) {
         return;
       }
 
-      const nodeId = contextMenu?.nodeId;
-
-      if (!nodeId) {
-        return;
-      }
-
-      void onContextMenuAction?.(actionId, nodeId);
+      void onContextMenuAction?.(actionId, {
+        targetType: contextMenu.targetType,
+        targetId: contextMenu.targetId,
+      });
     },
-    [contextMenu?.isEmpty, contextMenu?.nodeId, onContextMenuAction, onCreateRoot],
+    [contextMenu, onContextMenuAction],
   );
+
+  const contextMenuElement = (
+    <PlanTreeContextMenu
+      open={Boolean(contextMenu && contextMenuActions.length)}
+      position={contextMenu ? { x: contextMenu.x, y: contextMenu.y } : null}
+      actions={contextMenuActions}
+      menuLabel={contextMenuLabel}
+      onSelectAction={handleContextMenuSelect}
+      onClose={() => setContextMenu(null)}
+    />
+  );
+
+  const isRootEndDropTarget =
+    dropHint?.position === PLAN_TREE_DROP_POSITION.ROOT_END;
 
   if (!roots.length) {
     const emptyTitle = isDataEmpty ? PLAN_DATA_EMPTY_TITLE : emptyMessage;
@@ -204,7 +313,7 @@ export default function PlanTreePanel({
     return (
       <div
         className="object-plan-view__tree-panel object-plan-view__tree-panel--empty"
-        onContextMenu={handleEmptyContextMenu}
+        onContextMenu={handleTreeBackgroundContextMenu}
       >
         <div className="object-plan-view__tree-empty">
           <h4 className="object-plan-view__tree-empty-title">{emptyTitle}</h4>
@@ -220,27 +329,15 @@ export default function PlanTreePanel({
           ) : null}
         </div>
 
-        <PlanTreeContextMenu
-          open={Boolean(contextMenu?.isEmpty)}
-          position={contextMenu?.isEmpty ? { x: contextMenu.x, y: contextMenu.y } : null}
-          actions={emptyContextMenuActions}
-          onSelectAction={handleContextMenuSelect}
-          onClose={() => setContextMenu(null)}
-        />
+        {contextMenuElement}
       </div>
     );
   }
 
   return (
     <div
-      className={`object-plan-view__tree-panel${
-        dropTargetId === "__root__" ? " is-root-drop-target" : ""
-      }`}
-      onDragOver={handlePanelDragOver}
-      onDragLeave={() => {
-        setDropTargetId((current) => (current === "__root__" ? null : current));
-      }}
-      onDrop={handleDropToRoot}
+      className="object-plan-view__tree-panel"
+      onContextMenu={handleTreeBackgroundContextMenu}
     >
       <div className="object-plan-view__tree-columns" aria-hidden="true">
         <div className="object-plan-view__tree-columns-name">
@@ -258,11 +355,15 @@ export default function PlanTreePanel({
           </button>
           <span className="object-plan-view__tree-columns-name-label">Название</span>
         </div>
-        <span className="object-plan-view__tree-columns-readiness">Готовность</span>
+        <span className="object-plan-view__tree-columns-readiness">Прогресс</span>
         <span className="object-plan-view__tree-columns-status">Статус</span>
       </div>
 
-      <div className="object-plan-view__tree-list" role="tree">
+      <div
+        className="object-plan-view__tree-list"
+        role="tree"
+        onContextMenu={handleTreeBackgroundContextMenu}
+      >
         {roots.map((node) => (
           <PlanTreeNode
             key={node.id}
@@ -270,7 +371,7 @@ export default function PlanTreePanel({
             selectedNodeId={selectedNodeId}
             expandedNodeIds={expandedNodeIds}
             dragNodeId={dragNodeId}
-            dropTargetId={dropTargetId}
+            dropHint={dropHint}
             onSelectNode={onSelectNode}
             onToggleExpand={onToggleExpand}
             onDragStart={handleDragStart}
@@ -278,18 +379,29 @@ export default function PlanTreePanel({
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onDragEnd={handleDragEnd}
-            onContextMenu={handleContextMenu}
+            onContextMenu={handleNodeContextMenu}
           />
         ))}
+        <div
+          className={`object-plan-view__tree-list-filler${
+            isRootEndDropTarget ? " is-root-end-drop-target" : ""
+          }`}
+          aria-hidden="true"
+          onDragOver={handleRootEndDragOver}
+          onDragLeave={(event) => {
+            if (event.currentTarget.contains(event.relatedTarget)) {
+              return;
+            }
+
+            setDropHint((current) =>
+              current?.position === PLAN_TREE_DROP_POSITION.ROOT_END ? null : current,
+            );
+          }}
+          onDrop={handleRootEndDrop}
+        />
       </div>
 
-      <PlanTreeContextMenu
-        open={Boolean(contextMenu)}
-        position={contextMenu ? { x: contextMenu.x, y: contextMenu.y } : null}
-        actions={contextMenuActions}
-        onSelectAction={handleContextMenuSelect}
-        onClose={() => setContextMenu(null)}
-      />
+      {contextMenuElement}
     </div>
   );
 }

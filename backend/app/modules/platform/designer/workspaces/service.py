@@ -26,6 +26,10 @@ from app.modules.platform.designer.object_types.menu_placements.schemas import (
     RUNTIME_MENU_SCOPE,
     MenuPlacementInput,
 )
+from app.modules.platform.designer.pages.page_status_normalization import (
+    resolve_workspace_home_page_target_status,
+    sync_workspace_home_page_status,
+)
 
 
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
@@ -472,12 +476,13 @@ def _create_workspace_home_page(
     title: str,
     description: str | None,
     sort_order: int,
+    workspace: DesignerWorkspace,
 ) -> Page:
     page = Page(
         portal_id=tenant_id,
         title=title.strip(),
         description=(description or "").strip() or None,
-        status="draft",
+        status=resolve_workspace_home_page_target_status(workspace),
         is_home=False,
         is_visible=True,
         sort_order=sort_order,
@@ -509,6 +514,7 @@ def ensure_workspace_home_page(
         title=workspace.title,
         description=workspace.description,
         sort_order=workspace.sort_order,
+        workspace=workspace,
     )
     workspace.home_page_id = page.id
     ensure_workspace_home_tab(db, tenant_id=tenant_id, workspace_id=workspace.id)
@@ -647,6 +653,7 @@ def create_workspace(
         title=workspace.title,
         description=workspace.description,
         sort_order=workspace.sort_order,
+        workspace=workspace,
     )
     workspace.home_page_id = page.id
     ensure_workspace_home_tab(db, tenant_id=tenant_id, workspace_id=workspace.id)
@@ -816,6 +823,7 @@ def publish_workspace_menu_placements(
         )
     preferred = next((item for item in results if item.menu_scope == DESIGNER_MENU_SCOPE), None)
     workspace.navigation_item_id = preferred.navigation_item_id if preferred else (results[0].navigation_item_id if results else None)
+    sync_workspace_home_page_status(db, workspace)
     db.commit()
     return results
 

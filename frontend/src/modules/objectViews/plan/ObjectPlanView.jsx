@@ -11,9 +11,8 @@ import {
   resolvePlanStatusFieldKeyFromProjection,
   resolvePlanTitleFieldKey,
 } from "./resolvePlanProjectionFields.js";
-import {
-  resolvePlanHierarchyRelation,
-} from "./planHierarchyRelation.js";
+import { resolvePlanHierarchyRelation } from "./planHierarchyRelation.js";
+import { resolvePlanTreeHierarchyRelationKey } from "../../../shared/relation/resolvePlanTreeHierarchyRelationKey.js";
 import usePlanHierarchy from "./usePlanHierarchy.js";
 import PlanViewShell from "./PlanViewShell.jsx";
 import PlanTreePanel from "./PlanTreePanel.jsx";
@@ -22,7 +21,20 @@ import usePlanTreePanelResize from "./usePlanTreePanelResize.js";
 import PlanViewEmptyState from "./PlanViewEmptyState.jsx";
 import PlanViewMissingRelationEmptyState from "./PlanViewMissingRelationEmptyState.jsx";
 import { resolvePlanStatusField } from "./planFieldUtils.js";
-import { reparentPlanNode } from "./planHierarchyMove.js";
+import {
+  isPlanTreeDescendant,
+  movePlanTreeNode,
+  reparentPlanNode,
+} from "./planHierarchyMove.js";
+import {
+  buildPlanTreeMoveDescriptor,
+  PLAN_TREE_DROP_POSITION,
+  validatePlanTreeDrop,
+} from "./planTreeDragDrop.js";
+import { resolveEffectivePlanTreeParentId } from "./planTreeRootAnchor.js";
+import { ensurePlanTreeRootOrder } from "./planTreeRootOrderApi.js";
+import { duplicatePlanTreeNode } from "./duplicatePlanTreeNode.js";
+import { executePlanTreeContextMenuAction } from "./executePlanTreeContextMenuAction.js";
 import { resolveFirstVisiblePlanTabKey } from "./planLayoutSettings.js";
 import { PLAN_TREE_EMPTY_FALLBACK_MESSAGE } from "./planEmptyStateMessages.js";
 import { logPlanDebug } from "./planViewDebug.js";
@@ -112,16 +124,23 @@ export default function ObjectPlanView({
 
 
 
-  const hierarchyRelationKey = String(planPresentation?.hierarchyRelationKey || "").trim();
-
   const catalog = query?.catalog ?? null;
+  const configuredHierarchyRelationKey = String(
+    planPresentation?.hierarchyRelationKey || "",
+  ).trim();
+  const hierarchyRelationKey = useMemo(
+    () =>
+      resolvePlanTreeHierarchyRelationKey(
+        catalog,
+        objectTypeKey,
+        configuredHierarchyRelationKey,
+      ),
+    [catalog, objectTypeKey, configuredHierarchyRelationKey],
+  );
 
   const hierarchyRelation = useMemo(
-
     () => resolvePlanHierarchyRelation(catalog, hierarchyRelationKey, objectTypeKey),
-
     [catalog, hierarchyRelationKey, objectTypeKey],
-
   );
 
 
@@ -264,6 +283,8 @@ function ObjectPlanViewConfigured({
 
   const [moveError, setMoveError] = useState("");
 
+  const [planTreeCutNodeId, setPlanTreeCutNodeId] = useState(null);
+
   const [activeWorkTab, setActiveWorkTab] = useState("info");
 
   useEffect(() => {
@@ -328,6 +349,7 @@ function ObjectPlanViewConfigured({
     error,
     planEntityCount,
     hierarchyInstances,
+    rootAnchorId,
     reload: reloadHierarchy,
   } = usePlanHierarchy({
     tenantId,
@@ -342,14 +364,50 @@ function ObjectPlanViewConfigured({
     enabled: hierarchyEnabled,
   });
 
-  const entityCard = useObjectEntityCard({
-    tenantId,
-    objectTypeKey,
-    catalog,
-    listItems: items,
-    titleFieldKey,
-    enabled: Boolean(tenantId && objectTypeKey && !previewMode),
-    onSaved: async (entity, meta) => {
+  const handlePlanEntitySaved = useCallback(
+    async (entity, meta) => {
+      if (meta?.created) {
+        const createdId = String(entity?.id ?? "").trim();
+        const parentEntityId = String(meta?.parentEntityId ?? "").trim();
+        const isRootCreate = !parentEntityId && !meta?.subtaskLinked;
+
+        if (createdId && isRootCreate && hierarchyRelationKey) {
+          let anchorId = String(rootAnchorId ?? "").trim();
+
+          if (!anchorId && tenantId && objectTypeKey) {
+            try {
+              const ensured = await ensurePlanTreeRootOrder(
+                tenantId,
+                objectTypeKey,
+                hierarchyRelationKey,
+              );
+              anchorId = String(ensured?.anchorEntityId ?? "").trim();
+            } catch {
+              // Bootstrap anchor id only; root link is skipped if unavailable.
+            }
+          }
+
+          if (anchorId) {
+            try {
+              await reparentPlanNode({
+                tenantId,
+                relationKey: hierarchyRelationKey,
+                relationDefinition: hierarchyRelation,
+                instances: hierarchyInstances,
+                nodeId: createdId,
+                newParentId: anchorId,
+              });
+            } catch (linkError) {
+              setMoveError(
+                linkError instanceof Error
+                  ? linkError.message
+                  : "Запись создана, но не удалось добавить её в план",
+              );
+            }
+          }
+        }
+      }
+
       await query?.reload?.();
       await reloadHierarchy();
 
@@ -361,6 +419,26 @@ function ObjectPlanViewConfigured({
         }
       }
     },
+    [
+      hierarchyInstances,
+      hierarchyRelation,
+      hierarchyRelationKey,
+      objectTypeKey,
+      query,
+      reloadHierarchy,
+      rootAnchorId,
+      tenantId,
+    ],
+  );
+
+  const entityCard = useObjectEntityCard({
+    tenantId,
+    objectTypeKey,
+    catalog,
+    listItems: items,
+    titleFieldKey,
+    enabled: Boolean(tenantId && objectTypeKey && !previewMode),
+    onSaved: handlePlanEntitySaved,
   });
 
   const handleCreateRootRecord = useCallback(() => {
@@ -542,199 +620,267 @@ function ObjectPlanViewConfigured({
 
 
 
-  const handleReparentNode = useCallback(
-
-    async (nodeId, newParentId) => {
-
+  const handleMoveNode = useCallback(
+    async (sourceId, dropTarget) => {
       if (previewMode) {
-
         return;
-
       }
 
+      const hasResolvedDescriptor =
+        dropTarget &&
+        Number.isFinite(dropTarget.index) &&
+        dropTarget.position;
 
+      const descriptor = hasResolvedDescriptor
+        ? {
+            targetId: dropTarget.targetId ?? null,
+            position: dropTarget.position,
+            parentId: dropTarget.parentId ?? null,
+            index: dropTarget.index,
+          }
+        : buildPlanTreeMoveDescriptor({
+            sourceId,
+            targetId: dropTarget?.targetId ?? null,
+            position: dropTarget?.position,
+            nodesById: tree.nodesById,
+            roots: tree.roots,
+            rootAnchorId,
+          });
+      const validation = validatePlanTreeDrop(sourceId, descriptor, tree.nodesById);
 
-      setMovingNodeId(nodeId);
+      if (!validation.valid || !descriptor) {
+        return;
+      }
 
+      setMovingNodeId(sourceId);
       setMoveError("");
 
-
-
       try {
-
-        await reparentPlanNode({
-
+        await movePlanTreeNode({
           tenantId,
-
           relationKey: hierarchyRelationKey,
-
           relationDefinition: hierarchyRelation,
-
           instances: hierarchyInstances,
-
-          nodeId,
-
-          newParentId,
-
+          nodesById: tree.nodesById,
+          roots: tree.roots,
+          rootAnchorId,
+          sourceId,
+          descriptor,
         });
-
-
 
         await refreshPlanData();
 
-
-
-        if (newParentId) {
-
+        if (
+          descriptor.position === PLAN_TREE_DROP_POSITION.INSIDE &&
+          descriptor.parentId
+        ) {
           setExpandedNodeIds((previous) => {
-
             const next = new Set(previous);
-
-            next.add(newParentId);
-
+            next.add(descriptor.parentId);
             return next;
-
           });
-
         }
-
-      } catch (reparentError) {
-
+      } catch (moveError) {
         setMoveError(
-
-          reparentError instanceof Error
-
-            ? reparentError.message
-
-            : "Не удалось переместить запись",
-
+          moveError instanceof Error ? moveError.message : "Не удалось переместить запись",
         );
-
       } finally {
-
         setMovingNodeId(null);
-
       }
-
     },
-
     [
-
       previewMode,
-
+      tree.nodesById,
+      tree.roots,
       tenantId,
-
       hierarchyRelationKey,
-
       hierarchyRelation,
-
       hierarchyInstances,
-
+      rootAnchorId,
       refreshPlanData,
-
     ],
-
   );
 
 
 
-  const handleContextMenuAction = useCallback(
-    async (actionId, nodeId) => {
-      const normalizedId = String(nodeId || "").trim();
-      const node = tree.nodesById.get(normalizedId);
-
-      if (!normalizedId || !node || previewMode) {
-        return;
-      }
-
-      if (actionId === "create" || actionId === "create_task") {
-        if (hierarchyRelationKey) {
-          entityCard.beginCreateSubtask(hierarchyRelationKey, {
-            parentEntityId: normalizedId,
-          });
-        } else {
-          entityCard.openCreateCard();
-        }
-        return;
-      }
-
-      if (actionId === "rename") {
-        void entityCard.openCard(normalizedId);
-        return;
-      }
-
-      if (actionId === "duplicate") {
-        const entityValues =
-          node.entity?.values && typeof node.entity.values === "object"
-            ? { ...node.entity.values }
-            : {};
-
-        try {
-          const created = await runtimeWriteGateway.createEntity({
-            tenantId,
-            objectTypeKey,
-            values: entityValues,
-          });
-
-          const createdId = String(created?.id ?? created?.entity_id ?? "").trim();
-
-          if (createdId && node.parentId) {
-            await reparentPlanNode({
+  const duplicatePlanNode = useCallback(
+    async (sourceNode, newParentId = null) => {
+      try {
+        return await duplicatePlanTreeNode({
+          sourceNode,
+          newParentId,
+          createEntity: (values) =>
+            runtimeWriteGateway.createEntity({
               tenantId,
-              relationKey: hierarchyRelationKey,
-              relationDefinition: hierarchyRelation,
-              instances: hierarchyInstances,
-              nodeId: createdId,
-              newParentId: node.parentId,
-            });
-          }
-
-          await refreshPlanData();
-
-          if (createdId) {
-            setSelectedNodeId(createdId);
-          }
-        } catch (duplicateError) {
-          setMoveError(
-            duplicateError instanceof Error
-              ? duplicateError.message
-              : "Не удалось дублировать запись",
-          );
-        }
-
-        return;
-      }
-
-      if (actionId === "delete") {
-        const confirmed = window.confirm("Удалить запись из плана?");
-
-        if (!confirmed) {
-          return;
-        }
-
-        try {
-          await deleteRuntimeEntity(tenantId, objectTypeKey, normalizedId);
-          await refreshPlanData();
-          setSelectedNodeId(null);
-        } catch (deleteError) {
-          setMoveError(
-            deleteError instanceof Error
-              ? deleteError.message
-              : "Не удалось удалить запись",
-          );
-        }
+              objectTypeKey,
+              values,
+            }),
+          reparentNode: String(newParentId ?? "").trim()
+            ? (createdId, parentId) =>
+                reparentPlanNode({
+                  tenantId,
+                  relationKey: hierarchyRelationKey,
+                  relationDefinition: hierarchyRelation,
+                  instances: hierarchyInstances,
+                  nodeId: createdId,
+                  newParentId: parentId,
+                })
+            : undefined,
+          refreshTree: refreshPlanData,
+          onCreated: setSelectedNodeId,
+        });
+      } catch (duplicateError) {
+        setMoveError(
+          duplicateError instanceof Error
+            ? duplicateError.message
+            : "Не удалось дублировать запись",
+        );
+        return null;
       }
     },
     [
-      tree.nodesById,
-      previewMode,
-      hierarchyRelationKey,
-      entityCard,
       tenantId,
       objectTypeKey,
+      hierarchyRelationKey,
       hierarchyRelation,
       hierarchyInstances,
       refreshPlanData,
+    ],
+  );
+
+  const handleCreateChildNode = useCallback(
+    (parentNodeId) => {
+      const normalizedId = String(parentNodeId ?? "").trim();
+
+      if (!normalizedId) {
+        return;
+      }
+
+      if (hierarchyRelationKey) {
+        entityCard.beginCreateSubtask(hierarchyRelationKey, {
+          parentEntityId: normalizedId,
+        });
+        return;
+      }
+
+      entityCard.openCreateCard();
+    },
+    [hierarchyRelationKey, entityCard],
+  );
+
+  const handlePastePlanNode = useCallback(
+    async (parentNodeId) => {
+      const sourceId = String(planTreeCutNodeId ?? "").trim();
+
+      if (!sourceId || previewMode) {
+        return;
+      }
+
+      const logicalParentId = parentNodeId ? String(parentNodeId).trim() : null;
+      const newParentId = resolveEffectivePlanTreeParentId(logicalParentId, rootAnchorId);
+
+      if (newParentId === sourceId) {
+        return;
+      }
+
+      if (newParentId && isPlanTreeDescendant(tree.nodesById, sourceId, newParentId)) {
+        return;
+      }
+
+      try {
+        await reparentPlanNode({
+          tenantId,
+          relationKey: hierarchyRelationKey,
+          relationDefinition: hierarchyRelation,
+          instances: hierarchyInstances,
+          nodeId: sourceId,
+          newParentId,
+        });
+        setPlanTreeCutNodeId(null);
+        await refreshPlanData();
+        setSelectedNodeId(sourceId);
+      } catch (pasteError) {
+        setMoveError(
+          pasteError instanceof Error ? pasteError.message : "Не удалось вставить запись",
+        );
+      }
+    },
+    [
+      planTreeCutNodeId,
+      previewMode,
+      tree.nodesById,
+      tenantId,
+      hierarchyRelationKey,
+      hierarchyRelation,
+      hierarchyInstances,
+      rootAnchorId,
+      refreshPlanData,
+    ],
+  );
+
+  const handleContextMenuAction = useCallback(
+    async (actionId, context) => {
+      await executePlanTreeContextMenuAction({
+        actionId,
+        context,
+        previewMode,
+        handlers: {
+          createRootNode: handleCreateRootRecord,
+          createChildNode: handleCreateChildNode,
+          pasteToTree: () => handlePastePlanNode(null),
+          refreshTree: refreshPlanData,
+          renameNode: (nodeId) => {
+            void entityCard.openCard(nodeId);
+          },
+          openNodeProperties: (nodeId) => {
+            void entityCard.openCard(nodeId);
+          },
+          cutNode: (nodeId) => {
+            setPlanTreeCutNodeId(nodeId);
+          },
+          pasteToNode: handlePastePlanNode,
+          duplicateNode: async (nodeId) => {
+            const node = tree.nodesById.get(nodeId);
+
+            if (!node) {
+              return;
+            }
+
+            await duplicatePlanNode(node, node.parentId);
+          },
+          deleteNode: async (nodeId) => {
+            const confirmed = window.confirm("Удалить запись из плана?");
+
+            if (!confirmed) {
+              return;
+            }
+
+            try {
+              await deleteRuntimeEntity(tenantId, objectTypeKey, nodeId);
+              await refreshPlanData();
+              setSelectedNodeId(null);
+            } catch (deleteError) {
+              setMoveError(
+                deleteError instanceof Error
+                  ? deleteError.message
+                  : "Не удалось удалить запись",
+              );
+            }
+          },
+        },
+      });
+    },
+    [
+      previewMode,
+      handleCreateRootRecord,
+      handleCreateChildNode,
+      handlePastePlanNode,
+      refreshPlanData,
+      entityCard,
+      tree.nodesById,
+      duplicatePlanNode,
+      tenantId,
+      objectTypeKey,
     ],
   );
 
@@ -900,7 +1046,7 @@ function ObjectPlanViewConfigured({
 
             onToggleExpand={handleToggleExpand}
 
-            onReparentNode={handleReparentNode}
+            onMoveNode={handleMoveNode}
 
             onContextMenuAction={handleContextMenuAction}
 
@@ -908,11 +1054,15 @@ function ObjectPlanViewConfigured({
 
             canCreate={entityCard.canCreate}
 
+            hasClipboard={Boolean(planTreeCutNodeId)}
+
             isDataEmpty={showPlanDataEmpty}
 
             previewMode={previewMode}
 
             emptyMessage={treeEmptyMessage}
+
+            rootAnchorId={rootAnchorId}
 
           />
 

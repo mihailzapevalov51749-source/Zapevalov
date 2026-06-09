@@ -28,9 +28,16 @@ import {
   isTableBaseStateKey,
   TABLE_BASE_STATE_KEY,
 } from "./table/preferences/tableBaseState";
+import { logPlanDebug } from "./plan/planViewDebug.js";
+import { resolvePlanPresentationFromContract } from "./plan/planViewContract.js";
 import ObjectTableView from "./table/ObjectTableView";
 import ObjectPlanView from "./plan/ObjectPlanView.jsx";
 import ObjectQuickFormView from "./quickForm/ObjectQuickFormView.jsx";
+import {
+  isPlanContractMismatch,
+  isPlanViewType,
+  resolvePlanAdapterContract,
+} from "./services/resolvePlanAdapterContract.js";
 import { useObjectTypePreviewTab } from "../designer/context/ObjectTypePreviewTabContext.jsx";
 
 const UNSUPPORTED_VIEW_PLACEHOLDER_STYLE = {
@@ -301,8 +308,94 @@ export default function ObjectViewHost({
 
   const activeContract = session.effectiveContract || resolvedContractForSession;
 
+  const planAdapterResolution = useMemo(
+    () =>
+      resolvePlanAdapterContract({
+        viewType,
+        objectTabKey: resolvedObjectTabKey,
+        contract: catalogSyncedResolvedContract,
+        tabLookupViews: definitions.tabLookupViews,
+        runtimeCatalog,
+        objectTypeKey,
+        publishedTableViewKey: definitions.publishedTableViewKey,
+        studioPreviewMode: mode === "studio-preview",
+        activeViewKey: definitions.activeViewKey,
+      }),
+    [
+      viewType,
+      resolvedObjectTabKey,
+      catalogSyncedResolvedContract,
+      definitions.tabLookupViews,
+      definitions.publishedTableViewKey,
+      definitions.activeViewKey,
+      runtimeCatalog,
+      objectTypeKey,
+      mode,
+    ],
+  );
+
+  const planAdapterContract = planAdapterResolution.contract;
+
+  useEffect(() => {
+    if (!isOfficeRuntime || !isPlanViewType(viewType) || definitions.loading) {
+      return;
+    }
+
+    const planPresentation = resolvePlanPresentationFromContract(planAdapterContract);
+
+    logPlanDebug("PLAN_OFFICE_CONTRACT", {
+      objectTypeKey,
+      objectTabKey: resolvedObjectTabKey,
+      viewType,
+      selectedViewKey: definitions.activeViewKey,
+      resolvedContractKey: planAdapterContract?.key ?? null,
+      resolvedContractViewType: planAdapterContract?.viewType ?? null,
+      hierarchyRelationKey: planPresentation.hierarchyRelationKey,
+      recovered: planAdapterResolution.recovered,
+      blocked: planAdapterResolution.blocked,
+    });
+
+    if (
+      import.meta.env.DEV &&
+      isPlanContractMismatch({
+        viewType,
+        objectTabKey: resolvedObjectTabKey,
+        contract: catalogSyncedResolvedContract,
+        activeViewKey: definitions.activeViewKey,
+      }) &&
+      !planAdapterResolution.recovered
+    ) {
+      console.warn(
+        "[ObjectViewHost] Blocked Plan render: viewType=plan but resolvedContract is not a plan view",
+        {
+          objectTypeKey,
+          objectTabKey: resolvedObjectTabKey,
+          selectedViewKey: definitions.activeViewKey,
+          resolvedContractKey: catalogSyncedResolvedContract?.key,
+          resolvedContractViewType: catalogSyncedResolvedContract?.viewType,
+        },
+      );
+    }
+  }, [
+    isOfficeRuntime,
+    viewType,
+    definitions.loading,
+    definitions.activeViewKey,
+    objectTypeKey,
+    resolvedObjectTabKey,
+    planAdapterContract,
+    catalogSyncedResolvedContract,
+    planAdapterResolution.recovered,
+    planAdapterResolution.blocked,
+  ]);
+
   const resolvedViewType = String(
-    viewType || catalogSyncedResolvedContract?.viewType || definitions.viewType || "table",
+    isPlanViewType(viewType)
+      ? planAdapterResolution.viewType
+      : viewType ||
+          catalogSyncedResolvedContract?.viewType ||
+          definitions.viewType ||
+          "table",
   )
     .trim()
     .toLowerCase();
@@ -665,7 +758,7 @@ export default function ObjectViewHost({
           objectTypeId={objectTypeId}
           mode={mode}
           query={query}
-          resolvedContract={catalogSyncedResolvedContract}
+          resolvedContract={planAdapterContract}
           objectTypeKey={objectTypeKey}
           minHeight={minHeight}
           planPreviewEditor={planPreviewEditor}

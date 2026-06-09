@@ -1,6 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { listRelationInstancesByKey } from "../../../api/runtimeRelationsApi.js";
+import { resolvePlanTreeHierarchyRelationKey } from "../../../shared/relation/resolvePlanTreeHierarchyRelationKey.js";
+import { ensurePlanTreeRootOrder } from "./planTreeRootOrderApi.js";
+import { logPlanTreeApiError } from "./planTreeMoveDebug.js";
 import { buildHierarchyEdgeMaps } from "../table/services/buildHierarchyEdgeMaps.js";
 import { buildPlanTree } from "./buildPlanTree.js";
 import { buildPlanPreviewMock } from "./buildPlanPreviewMock.js";
@@ -50,13 +53,31 @@ export default function usePlanHierarchy({
   previewMode = false,
   enabled = true,
 }) {
-  const hierarchyRelationKey = String(planPresentation?.hierarchyRelationKey || "").trim();
+  const configuredHierarchyRelationKey = String(
+    planPresentation?.hierarchyRelationKey || "",
+  ).trim();
+  const hierarchyRelationKey = useMemo(
+    () =>
+      resolvePlanTreeHierarchyRelationKey(
+        catalog,
+        objectTypeKey,
+        configuredHierarchyRelationKey,
+      ),
+    [catalog, objectTypeKey, configuredHierarchyRelationKey],
+  );
 
   const [instances, setInstances] = useState([]);
   const [hierarchyLoading, setHierarchyLoading] = useState(false);
   const [hierarchyError, setHierarchyError] = useState("");
   const [supplementaryItems, setSupplementaryItems] = useState([]);
   const [entitiesLoading, setEntitiesLoading] = useState(false);
+  const [rootAnchorId, setRootAnchorId] = useState(null);
+  const rootOrderEnsureKeyRef = useRef("");
+
+  useEffect(() => {
+    setRootAnchorId(null);
+    rootOrderEnsureKeyRef.current = "";
+  }, [objectTypeKey, hierarchyRelationKey]);
 
   const loadInstances = useCallback(async () => {
     if (!enabled) {
@@ -83,8 +104,45 @@ export default function usePlanHierarchy({
     setHierarchyError("");
 
     try {
-      const data = await listRelationInstancesByKey(tenantId, hierarchyRelationKey);
-      setInstances(Array.isArray(data) ? data : []);
+      let data = await listRelationInstancesByKey(tenantId, hierarchyRelationKey);
+      data = Array.isArray(data) ? data : [];
+
+      const ensureKey = `${objectTypeKey}:${hierarchyRelationKey}`;
+
+      if (
+        objectTypeKey &&
+        hierarchyRelationKey &&
+        rootOrderEnsureKeyRef.current !== ensureKey
+      ) {
+        const ensureUrl = `/runtime/plan-tree/tenants/${tenantId}/object-types/${objectTypeKey}/hierarchy/${hierarchyRelationKey}/ensure-root-order`;
+
+        try {
+          const ensured = await ensurePlanTreeRootOrder(
+            tenantId,
+            objectTypeKey,
+            hierarchyRelationKey,
+          );
+          const anchorId = String(ensured?.anchorEntityId ?? "").trim();
+
+          if (anchorId) {
+            setRootAnchorId(anchorId);
+            rootOrderEnsureKeyRef.current = ensureKey;
+          }
+
+          data = await listRelationInstancesByKey(tenantId, hierarchyRelationKey);
+          data = Array.isArray(data) ? data : [];
+        } catch (ensureError) {
+          logPlanTreeApiError({
+            url: ensureUrl,
+            method: "POST",
+            payload: null,
+            response: ensureError?.response?.data,
+            error: ensureError,
+          });
+        }
+      }
+
+      setInstances(data);
     } catch (loadError) {
       setInstances([]);
       setHierarchyError(
@@ -95,7 +153,7 @@ export default function usePlanHierarchy({
     } finally {
       setHierarchyLoading(false);
     }
-  }, [enabled, previewMode, tenantId, hierarchyRelationKey]);
+  }, [enabled, previewMode, tenantId, hierarchyRelationKey, objectTypeKey]);
 
   useEffect(() => {
     void loadInstances();
@@ -189,6 +247,7 @@ export default function usePlanHierarchy({
       statusFieldKey,
       statusField,
       progressFieldKey,
+      rootAnchorId,
     });
   }, [
     enabled,
@@ -202,6 +261,7 @@ export default function usePlanHierarchy({
     statusFieldKey,
     statusField,
     progressFieldKey,
+    rootAnchorId,
   ]);
 
   const edgeMaps = useMemo(
@@ -226,6 +286,7 @@ export default function usePlanHierarchy({
     loading: enabled ? hierarchyLoading || entitiesLoading : false,
     error: enabled ? hierarchyError : "",
     reload: loadInstances,
+    rootAnchorId,
     ...edgeMaps,
   };
 }

@@ -88,6 +88,54 @@ def workspace_tab_placement_visible(
     return _workspace_is_active(workspace)
 
 
+def resolve_workspace_home_page_target_status(
+    workspace: DesignerWorkspace | None,
+) -> str:
+    """Target pages.status for a workspace system home page (workspace_home placement)."""
+    if workspace is None:
+        return PAGE_STATUS_DRAFT
+
+    placements = [
+        PlacementRecord(
+            kind="workspace_home",
+            visible=workspace_home_placement_visible(workspace),
+            detail=f'workspace "{workspace.title}" status={workspace.status}',
+        )
+    ]
+    target_status, _reason = compute_target_status(placements)
+    return target_status
+
+
+def sync_workspace_home_page_status(
+    db: Session,
+    workspace: DesignerWorkspace,
+) -> bool:
+    """Align workspace home page status with workspace_home placement model."""
+    if workspace.home_page_id is None:
+        return False
+
+    page = (
+        db.query(Page)
+        .filter(
+            Page.id == workspace.home_page_id,
+            Page.portal_id == workspace.tenant_id,
+            Page.deleted_at.is_(None),
+        )
+        .first()
+    )
+    if page is None:
+        return False
+
+    target_status = resolve_workspace_home_page_target_status(workspace)
+    current_status = normalize_page_status(page.status)
+    if current_status == target_status:
+        return False
+
+    page.status = target_status
+    db.flush()
+    return True
+
+
 def compute_target_status(
     placements: list[PlacementRecord],
 ) -> tuple[str, str]:

@@ -1,3 +1,5 @@
+import { resolvePlanTreeRootIds } from "../../plan/planTreeRootAnchor.js";
+
 /**
  * Flattens visible table rows into tree display order (DFS), with hierarchy metadata on each row.
  *
@@ -14,22 +16,41 @@
  * @param {Map<string, string>} params.parentByChild
  * @param {Map<string, string[]>} params.childrenByParent
  * @param {Set<string>} params.expandedRowIds
+ * @param {string | null | undefined} [params.rootAnchorId]
+ * @param {boolean} [params.preferHierarchySiblingOrder]
  */
 export function buildObjectTableHierarchyDisplayRows({
   flatRows,
   parentByChild,
   childrenByParent,
   expandedRowIds,
+  rootAnchorId = null,
+  preferHierarchySiblingOrder = true,
 }) {
   const safeRows = Array.isArray(flatRows) ? flatRows : [];
   const rowById = new Map(safeRows.map((row) => [String(row.id), row]));
   const rowIds = new Set(rowById.keys());
   const flatOrder = new Map(safeRows.map((row, index) => [String(row.id), index]));
+  const normalizedAnchorId = String(rootAnchorId ?? "").trim();
 
-  const sortChildIds = (childIds) =>
-    [...childIds].sort(
-      (a, b) => (flatOrder.get(a) ?? 0) - (flatOrder.get(b) ?? 0),
+  const sortChildIds = (parentId, childIds) => {
+    const filtered = childIds.filter((childId) => rowIds.has(childId));
+
+    if (!preferHierarchySiblingOrder) {
+      return [...filtered].sort(
+        (a, b) => (flatOrder.get(a) ?? 0) - (flatOrder.get(b) ?? 0),
+      );
+    }
+
+    const orderFromMap = parentId
+      ? childrenByParent.get(parentId) || []
+      : [];
+    const orderIndex = new Map(orderFromMap.map((id, index) => [id, index]));
+
+    return [...filtered].sort(
+      (a, b) => (orderIndex.get(a) ?? 0) - (orderIndex.get(b) ?? 0),
     );
+  };
 
   /** @type {import("../../../../shared/viewEngine/contracts").ViewEngineRow[]} */
   const displayRows = [];
@@ -67,6 +88,7 @@ export function buildObjectTableHierarchyDisplayRows({
     }
 
     const childIds = sortChildIds(
+      id,
       (childrenByParent.get(id) || []).filter((childId) => rowIds.has(childId)),
     );
 
@@ -79,19 +101,43 @@ export function buildObjectTableHierarchyDisplayRows({
     });
   }
 
-  const roots = safeRows.filter((row) => {
-    const id = String(row.id);
-    const parentId = parentByChild.get(id);
+  const entitiesById = rowById;
+  let rootIds = preferHierarchySiblingOrder
+    ? resolvePlanTreeRootIds({
+        parentByChild,
+        childrenByParent,
+        entitiesById,
+        rootAnchorId: normalizedAnchorId || null,
+      }).filter((id) => rowIds.has(id))
+    : [];
 
-    return !parentId || !rowIds.has(parentId);
+  if (!rootIds.length) {
+    rootIds = safeRows
+      .filter((row) => {
+        const id = String(row.id);
+        const parentId = parentByChild.get(id);
+
+        return !parentId || !rowIds.has(parentId);
+      })
+      .map((row) => String(row.id));
+  }
+
+  if (!preferHierarchySiblingOrder) {
+    rootIds.sort(
+      (a, b) => (flatOrder.get(a) ?? 0) - (flatOrder.get(b) ?? 0),
+    );
+  }
+
+  rootIds.forEach((id) => {
+    const row = rowById.get(id);
+
+    if (!row) {
+      return;
+    }
+
+    rootCounter += 1;
+    walk(row, 0, String(rootCounter));
   });
-
-  roots
-    .sort((a, b) => (flatOrder.get(String(a.id)) ?? 0) - (flatOrder.get(String(b.id)) ?? 0))
-    .forEach((row) => {
-      rootCounter += 1;
-      walk(row, 0, String(rootCounter));
-    });
 
   for (const row of safeRows) {
     const id = String(row.id);

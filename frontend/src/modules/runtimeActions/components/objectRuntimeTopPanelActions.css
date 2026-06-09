@@ -41,3 +41,13 @@
 .object-runtime-top-panel-actions--error .object-runtime-top-panel-actions__status {
   color: #b91c1c;
 }
+
+.object-runtime-top-panel-actions--overflow {
+  flex: 0 0 auto;
+}
+
+.object-runtime-top-panel-actions__overflow-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

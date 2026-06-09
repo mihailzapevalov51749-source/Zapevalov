@@ -1,11 +1,13 @@
 import { ChevronDown, ChevronRight, FileText, Folder } from "lucide-react";
 
+import { PLAN_TREE_DROP_POSITION } from "./planTreeDragDrop.js";
+
 export default function PlanTreeNode({
   node,
   selectedNodeId,
   expandedNodeIds,
   dragNodeId,
-  dropTargetId,
+  dropHint = null,
   onSelectNode,
   onToggleExpand,
   onDragStart,
@@ -20,25 +22,43 @@ export default function PlanTreeNode({
   const isExpanded = expandedNodeIds.has(node.id);
   const isSelected = selectedNodeId === node.id;
   const isDragging = dragNodeId === node.id;
-  const isDropTarget = dropTargetId === node.id;
+  const isDropBefore =
+    dropHint?.targetId === node.id && dropHint?.position === PLAN_TREE_DROP_POSITION.BEFORE;
+  const isDropAfter =
+    dropHint?.targetId === node.id && dropHint?.position === PLAN_TREE_DROP_POSITION.AFTER;
+  const isDropInside =
+    dropHint?.targetId === node.id && dropHint?.position === PLAN_TREE_DROP_POSITION.INSIDE;
   const NodeIcon = hasChildren ? Folder : FileText;
   const depthIndent = Math.max(0, Number(node.depth) || 0) * 12;
+  const dropLineIndentPx = 8 + (Number(dropHint?.insertDepth) || 0) * 12;
 
   return (
     <div className="object-plan-view__tree-node-wrap" role="none">
       <div
-        className={`object-plan-view__tree-node${isSelected ? " is-selected" : ""}${
-          isDragging ? " is-dragging" : ""
-        }${isDropTarget ? " is-drop-target" : ""}`}
-        style={{ paddingLeft: `${8 + depthIndent}px` }}
+        className={[
+          "object-plan-view__tree-node",
+          isSelected ? "is-selected" : "",
+          isDragging ? "is-dragging" : "",
+          isDropBefore ? "is-drop-before" : "",
+          isDropAfter ? "is-drop-after" : "",
+          isDropInside ? "is-drop-inside" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+        style={{
+          paddingLeft: `${8 + depthIndent}px`,
+          ...(isDropBefore || isDropAfter
+            ? { "--plan-tree-drop-line-indent": `${dropLineIndentPx}px` }
+            : null),
+        }}
         role="treeitem"
         aria-selected={isSelected}
         aria-expanded={hasChildren ? isExpanded : undefined}
         draggable={Boolean(onDragStart)}
         onDragStart={(event) => onDragStart?.(event, node.id)}
-        onDragOver={(event) => onDragOver?.(event, node.id)}
+        onDragOver={(event) => onDragOver?.(event, node.id, event.currentTarget)}
         onDragLeave={(event) => onDragLeave?.(event, node.id)}
-        onDrop={(event) => onDrop?.(event, node.id)}
+        onDrop={(event) => onDrop?.(event, node.id, event.currentTarget)}
         onDragEnd={onDragEnd}
         onContextMenu={(event) => onContextMenu?.(event, node)}
       >
@@ -102,7 +122,7 @@ export default function PlanTreeNode({
               selectedNodeId={selectedNodeId}
               expandedNodeIds={expandedNodeIds}
               dragNodeId={dragNodeId}
-              dropTargetId={dropTargetId}
+              dropHint={dropHint}
               onSelectNode={onSelectNode}
               onToggleExpand={onToggleExpand}
               onDragStart={onDragStart}

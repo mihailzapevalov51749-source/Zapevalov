@@ -73,6 +73,27 @@ describe("buildObjectTableHierarchyDisplayRows", () => {
     expect(display[0].hierarchy.isExpanded).toBe(false);
   });
 
+  it("prefers hierarchy sibling order over flat row order when enabled", () => {
+    const flatRows = [row("b"), row("a")];
+    const parentByChild = new Map([
+      ["a", "anchor"],
+      ["b", "anchor"],
+    ]);
+    const childrenByParent = new Map([["anchor", ["a", "b"]]]);
+
+    const display = buildObjectTableHierarchyDisplayRows({
+      flatRows,
+      parentByChild,
+      childrenByParent,
+      expandedRowIds: new Set(),
+      rootAnchorId: "anchor",
+      preferHierarchySiblingOrder: true,
+    });
+
+    expect(display.map((item) => item.id)).toEqual(["a", "b"]);
+    expect(display.map((item) => item.hierarchy.hierarchyNumber)).toEqual(["1", "2"]);
+  });
+
   it("promotes filtered child without parent on page to root", () => {
     const flatRows = [row("child-only")];
     const parentByChild = new Map([["child-only", "parent-off-page"]]);

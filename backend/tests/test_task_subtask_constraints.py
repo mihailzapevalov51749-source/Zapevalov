@@ -48,15 +48,9 @@ def test_task_subtask_allows_multiple_children_same_parent() -> None:
     metadata = _task_subtask_metadata()
     db = MagicMock()
 
-    with (
-        patch(
-            "app.modules.platform.runtime.relation_instances.task_subtask_constraints.repository.find_active_incoming_for_target",
-            return_value=None,
-        ),
-        patch(
-            "app.modules.platform.runtime.relation_instances.task_subtask_constraints.repository.list_active_edges_by_relation_key",
-            return_value=[],
-        ),
+    with patch(
+        "app.modules.platform.runtime.relation_instances.task_subtask_constraints.repository.list_by_relation_key",
+        return_value=[],
     ):
         validators.validate_relation_instance_create(
             relation_metadata=metadata,
@@ -68,15 +62,9 @@ def test_task_subtask_allows_multiple_children_same_parent() -> None:
             tenant_id=1,
         )
 
-    with (
-        patch(
-            "app.modules.platform.runtime.relation_instances.task_subtask_constraints.repository.find_active_incoming_for_target",
-            return_value=None,
-        ),
-        patch(
-            "app.modules.platform.runtime.relation_instances.task_subtask_constraints.repository.list_active_edges_by_relation_key",
-            return_value=[(parent_id, child_b)],
-        ),
+    with patch(
+        "app.modules.platform.runtime.relation_instances.task_subtask_constraints.repository.list_by_relation_key",
+        return_value=[],
     ):
         validators.validate_relation_instance_create(
             relation_metadata=metadata,
@@ -95,16 +83,11 @@ def test_task_subtask_rejects_second_parent() -> None:
     child_x = uuid4()
     existing = MagicMock()
     existing.source_entity_id = parent_a
+    existing.target_entity_id = child_x
 
-    with (
-        patch(
-            "app.modules.platform.runtime.relation_instances.task_subtask_constraints.repository.find_active_incoming_for_target",
-            return_value=existing,
-        ),
-        patch(
-            "app.modules.platform.runtime.relation_instances.task_subtask_constraints.repository.list_active_edges_by_relation_key",
-            return_value=[(parent_a, child_x)],
-        ),
+    with patch(
+        "app.modules.platform.runtime.relation_instances.task_subtask_constraints.repository.list_by_relation_key",
+        return_value=[existing],
     ):
         with pytest.raises(ValueError, match="уже есть родительская"):
             from app.modules.platform.runtime.relation_instances.task_subtask_constraints import (
@@ -142,9 +125,12 @@ def test_task_subtask_rejects_cycle() -> None:
     b_id = uuid4()
     c_id = uuid4()
 
+    edge_ab = MagicMock(source_entity_id=a_id, target_entity_id=b_id)
+    edge_bc = MagicMock(source_entity_id=b_id, target_entity_id=c_id)
+
     with patch(
-        "app.modules.platform.runtime.relation_instances.task_subtask_constraints.repository.list_active_edges_by_relation_key",
-        return_value=[(a_id, b_id), (b_id, c_id)],
+        "app.modules.platform.runtime.relation_instances.task_subtask_constraints.repository.list_by_relation_key",
+        return_value=[edge_ab, edge_bc],
     ):
         assert (
             would_create_task_subtask_cycle(
@@ -153,6 +139,7 @@ def test_task_subtask_rejects_cycle() -> None:
                 TASK_SUBTASK_RELATION_KEY,
                 c_id,
                 a_id,
+                relation_settings_json={"semantic_profile": "task_subtask"},
             )
             is True
         )
@@ -163,9 +150,12 @@ def test_task_subtask_cycle_helper_allows_non_cyclic_chain() -> None:
     b_id = uuid4()
     c_id = uuid4()
 
+    edge_ab = MagicMock(source_entity_id=a_id, target_entity_id=b_id)
+    edge_bc = MagicMock(source_entity_id=b_id, target_entity_id=c_id)
+
     with patch(
-        "app.modules.platform.runtime.relation_instances.task_subtask_constraints.repository.list_active_edges_by_relation_key",
-        return_value=[(a_id, b_id), (b_id, c_id)],
+        "app.modules.platform.runtime.relation_instances.task_subtask_constraints.repository.list_by_relation_key",
+        return_value=[edge_ab, edge_bc],
     ):
         assert (
             would_create_task_subtask_cycle(
@@ -174,6 +164,7 @@ def test_task_subtask_cycle_helper_allows_non_cyclic_chain() -> None:
                 TASK_SUBTASK_RELATION_KEY,
                 a_id,
                 c_id,
+                relation_settings_json={"semantic_profile": "task_subtask"},
             )
             is False
         )

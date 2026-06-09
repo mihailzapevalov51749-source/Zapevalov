@@ -2,17 +2,21 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
+import logging
 import os
 import secrets
 import smtplib
+import socket
 import string
 from email.mime.text import MIMEText
 
+logger = logging.getLogger(__name__)
+
 from app.db.session import get_db
 from app.modules.auth.dependencies import get_current_user
-from app.modules.auth.security import hash_password
+from app.modules.auth.security import hash_password, verify_password
 from app.modules.users.models import User, Role
-from app.modules.users.schemas import UserResponse, UserUpdate
+from app.modules.users.schemas import ChangePasswordRequest, UserResponse, UserUpdate
 
 router = APIRouter(tags=["Users"])
 
@@ -30,6 +34,41 @@ def generate_temp_password(length: int = 10) -> str:
     return "".join(secrets.choice(chars) for _ in range(length))
 
 
+def build_invite_email_message(to_email: str, login: str, password: str) -> MIMEText:
+    subject = "Приглашение в систему ЯсноПро"
+
+    body = f"""Здравствуйте!
+
+Для вас создана учётная запись в системе ЯсноПро.
+
+ЯсноПро — платформа для совместной работы, управления задачами, коммуникаций и организации рабочих процессов.
+
+Для входа используйте следующие данные:
+
+Ссылка для входа:
+{PORTAL_LOGIN_URL}
+
+Логин:
+{login}
+
+Временный пароль:
+{password}
+
+После первого входа рекомендуем изменить пароль в настройках профиля.
+
+Если у вас возникли вопросы или сложности со входом, обратитесь к администратору системы.
+
+С уважением,
+Команда ЯсноПро
+"""
+
+    message = MIMEText(body, "plain", "utf-8")
+    message["Subject"] = subject
+    message["From"] = SMTP_FROM
+    message["To"] = to_email
+    return message
+
+
 def send_invite_email(to_email: str, login: str, password: str):
     if not SMTP_HOST or not SMTP_USER or not SMTP_PASSWORD or not SMTP_FROM:
         raise HTTPException(
@@ -37,21 +76,7 @@ def send_invite_email(to_email: str, login: str, password: str):
             detail="SMTP не настроен. Проверьте SMTP_HOST, SMTP_USER, SMTP_PASSWORD, SMTP_FROM.",
         )
 
-    subject = "Доступ к корпоративному порталу"
-
-    body = f"""Вам предоставлен доступ к корпоративному порталу.
-
-Ссылка для входа: {PORTAL_LOGIN_URL}
-Логин: {login}
-Пароль: {password}
-
-Рекомендуем сменить пароль после первого входа.
-"""
-
-    message = MIMEText(body, "plain", "utf-8")
-    message["Subject"] = subject
-    message["From"] = SMTP_FROM
-    message["To"] = to_email
+    message = build_invite_email_message(to_email, login, password)
 
     try:
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as server:
@@ -60,16 +85,36 @@ def send_invite_email(to_email: str, login: str, password: str):
             server.ehlo()
             server.login(SMTP_USER, SMTP_PASSWORD)
             server.send_message(message)
-    except smtplib.SMTPAuthenticationError:
+    except smtplib.SMTPAuthenticationError as error:
+        logger.exception("SMTP authentication failed for invite to %s", to_email)
         raise HTTPException(
             status_code=500,
             detail="Ошибка SMTP-аутентификации. Проверьте пароль приложения и доступ к SMTP.",
-        )
-    except Exception as error:
+        ) from error
+    except (TimeoutError, socket.timeout) as error:
+        logger.exception("SMTP timeout for invite to %s", to_email)
         raise HTTPException(
             status_code=500,
-            detail=f"Ошибка отправки письма: {error}",
-        )
+            detail="Таймаут SMTP. Сервер не ответил вовремя. Попробуйте позже.",
+        ) from error
+    except (smtplib.SMTPConnectError, ConnectionRefusedError, OSError) as error:
+        logger.exception("SMTP connection failed for invite to %s", to_email)
+        raise HTTPException(
+            status_code=500,
+            detail="Ошибка подключения к SMTP. Проверьте SMTP_HOST и SMTP_PORT.",
+        ) from error
+    except smtplib.SMTPException as error:
+        logger.exception("SMTP send failed for invite to %s", to_email)
+        raise HTTPException(
+            status_code=500,
+            detail="Ошибка отправки письма. Проверьте настройки SMTP и адрес получателя.",
+        ) from error
+    except Exception as error:
+        logger.exception("Unexpected invite email error for %s", to_email)
+        raise HTTPException(
+            status_code=500,
+            detail="Ошибка отправки письма. Попробуйте позже или обратитесь к администратору.",
+        ) from error
 
 
 def serialize_user(user: User) -> dict:
@@ -163,17 +208,17 @@ def admin_send_user_invite(
         raise HTTPException(status_code=400, detail="У пользователя не указан email")
 
     temp_password = generate_temp_password()
-    user.hashed_password = hash_password(temp_password)
-
-    db.add(user)
-    db.commit()
-    db.refresh(user)
 
     send_invite_email(
         to_email=user.email,
         login=user.email,
         password=temp_password,
     )
+
+    user.hashed_password = hash_password(temp_password)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
 
     return {
         "status": "ok",
@@ -216,6 +261,53 @@ def update_me(
     db.refresh(current_user)
 
     return serialize_user(current_user)
+
+
+@router.patch("/users/me/password")
+def change_my_password(
+    payload: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    current_password = (payload.current_password or "").strip()
+    new_password = (payload.new_password or "").strip()
+    confirm_password = (payload.confirm_password or "").strip()
+
+    if not current_password or not new_password or not confirm_password:
+        raise HTTPException(status_code=400, detail="Заполните все поля пароля")
+
+    if new_password != confirm_password:
+        raise HTTPException(
+            status_code=400,
+            detail="Новый пароль и повтор пароля не совпадают",
+        )
+
+    if len(new_password) < 8:
+        raise HTTPException(
+            status_code=400,
+            detail="Пароль должен содержать не менее 8 символов",
+        )
+
+    if new_password == current_password:
+        raise HTTPException(
+            status_code=400,
+            detail="Новый пароль должен отличаться от текущего",
+        )
+
+    if not verify_password(current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=400,
+            detail="Текущий пароль указан неверно",
+        )
+
+    current_user.hashed_password = hash_password(new_password)
+    db.add(current_user)
+    db.commit()
+
+    return {
+        "status": "ok",
+        "message": "Пароль успешно изменён",
+    }
 
 
 @router.get("/users/", response_model=list[UserResponse])

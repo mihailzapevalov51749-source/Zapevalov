@@ -29,6 +29,7 @@ import {
 } from "../utils/navigationReload";
 import { resolveObjectTypeLifecycleState } from "../utils/objectTypeLifecycleState";
 import { dispatchDesignerObjectSchemaChanged } from "../utils/designerObjectSchemaChanged";
+import { logPlanDebug } from "../../objectViews/plan/planViewDebug.js";
 import {
   PAGE_LAYOUT_PAGE_TYPE,
   PAGE_LAYOUT_TOOLBAR_ZONE,
@@ -173,17 +174,22 @@ export default function ObjectTypeWorkspacePage() {
     const hadPublishedBefore = Boolean(objectType?.last_published_at || objectType?.lastPublishedAt);
 
     try {
-      if (isViewsDirty) {
-        if (planViewsDirty && planViewsSaveRef.current) {
-          await planViewsSaveRef.current();
-        } else if (tableViewsDirty && tableViewsSaveRef.current) {
-          await tableViewsSaveRef.current();
-        } else {
-          window.alert(
-            "Есть несохранённые изменения вкладок. Сохраните их перед публикацией.",
-          );
-          return;
-        }
+      if (planViewsSaveRef.current) {
+        await planViewsSaveRef.current({ flushBeforePublish: true });
+      }
+
+      if (tableViewsDirty && tableViewsSaveRef.current) {
+        await tableViewsSaveRef.current();
+      } else if (
+        isViewsDirty &&
+        !tableViewsDirty &&
+        !planViewsDirty &&
+        !planViewsSaveRef.current
+      ) {
+        window.alert(
+          "Есть несохранённые изменения вкладок. Сохраните их перед публикацией.",
+        );
+        return;
       }
 
       if (isDraftDirty && generalSaveRef.current) {
@@ -192,6 +198,12 @@ export default function ObjectTypeWorkspacePage() {
       }
 
       const publishResult = await designerApi.publishCatalog(tenantId);
+
+      logPlanDebug("PLAN_PUBLISH_SNAPSHOT", {
+        catalogVersion: publishResult?.catalog_version ?? null,
+        tenantId,
+        objectTypeId,
+      });
 
       setCatalogVersion(publishResult?.catalog_version ?? null);
 
@@ -247,13 +259,12 @@ export default function ObjectTypeWorkspacePage() {
   }, [handleUpdatePublication, lifecycle.publishAction]);
 
   const handleBeforePublish = useCallback(async () => {
-    if (isViewsDirty) {
-      if (planViewsDirty && planViewsSaveRef.current) {
-        await planViewsSaveRef.current();
-      } else if (tableViewsDirty && tableViewsSaveRef.current) {
-        await tableViewsSaveRef.current();
-      }
-      return;
+    if (planViewsSaveRef.current) {
+      await planViewsSaveRef.current({ flushBeforePublish: true });
+    }
+
+    if (tableViewsDirty && tableViewsSaveRef.current) {
+      await tableViewsSaveRef.current();
     }
 
     if (!isDraftDirty || !generalSaveRef.current) {
@@ -262,7 +273,7 @@ export default function ObjectTypeWorkspacePage() {
 
     await generalSaveRef.current();
     setIsDraftDirty(false);
-  }, [isDraftDirty, isViewsDirty, planViewsDirty, tableViewsDirty]);
+  }, [isDraftDirty, tableViewsDirty]);
 
   const handleMenuPlacementSuccess = useCallback(
     async ({ catalogVersion: nextCatalogVersion } = {}) => {

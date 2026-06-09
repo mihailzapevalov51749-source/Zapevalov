@@ -62,6 +62,21 @@ export function resolveInitialOfficeSelectedViewKey({
 }
 
 /**
+ * Fixed Studio object tab (plan, card, …) — not default_table / table base state.
+ *
+ * @param {string | null | undefined} objectTabKey
+ */
+export function isFixedObjectTabSelection(objectTabKey) {
+  const normalized = String(objectTabKey || "").trim();
+
+  return Boolean(
+    normalized &&
+      normalized !== "default_table" &&
+      !isTableBaseStateKey(normalized),
+  );
+}
+
+/**
  * Maps published object tab route key to internal selected view key (Office).
  *
  * @param {string | null | undefined} objectTabKey
@@ -110,7 +125,12 @@ export function canApplyOfficeDefaultUserView({
   userManuallySelected = false,
   initialDefaultApplied = false,
   defaultKey = null,
+  requestedObjectTabKey = null,
 } = {}) {
+  if (isFixedObjectTabSelection(requestedObjectTabKey)) {
+    return false;
+  }
+
   return (
     isOfficeUserViews &&
     !loading &&

@@ -18,6 +18,7 @@ import mentorIcon from "../../assets/icons/mentor.png";
 import AppShellPageMinimizeButton from "../../shared/appShell/AppShellPageMinimizeButton.jsx";
 import "../../shared/appShell/pageToolbarActions.css";
 import ConfirmSavePopover from "./ConfirmSavePopover";
+import ChangePasswordModal from "./ChangePasswordModal";
 import { styles } from "../styles/profileSidePanelStyles";
 import "../styles/profileSidePanelHeaderActions.css";
 
@@ -126,6 +127,18 @@ const smallPasswordButtonStyle = {
   whiteSpace: "nowrap",
 };
 
+const passwordSuccessMessageStyle = {
+  marginTop: 12,
+  padding: "9px 10px",
+  borderRadius: 10,
+  background: "#f0fdf4",
+  border: "1px solid #bbf7d0",
+  color: "#166534",
+  fontSize: 12,
+  lineHeight: 1.35,
+  fontWeight: 700,
+};
+
 const avatarIconButtonStyle = {
   width: 38,
   height: 38,
@@ -164,6 +177,8 @@ export default function ProfileSidePanel({
   const [isAvatarUploading, setIsAvatarUploading] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("contacts");
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
 
   const avatarSettings = normalizeAvatarSettings(form.avatar_settings);
 
@@ -413,6 +428,16 @@ export default function ProfileSidePanel({
     window.location.reload();
   };
 
+  const handleOverlayClick = (event) => {
+    if (isPasswordModalOpen) {
+      return;
+    }
+
+    if (event.target === event.currentTarget) {
+      onClose?.();
+    }
+  };
+
   if (!isOpen) return null;
 
   const handleMinimize = () => {
@@ -616,12 +641,25 @@ export default function ProfileSidePanel({
                 <div style={accountHeaderRowStyle}>
                   <div style={styles.accountTitle}>АККАУНТ</div>
 
-                  {isEdit && (
-                    <button type="button" style={smallPasswordButtonStyle}>
+                  {isEdit ? (
+                    <button
+                      type="button"
+                      style={smallPasswordButtonStyle}
+                      onClick={() => {
+                        setPasswordChangeSuccess(false);
+                        setIsPasswordModalOpen(true);
+                      }}
+                    >
                       Сменить пароль
                     </button>
-                  )}
+                  ) : null}
                 </div>
+
+                {passwordChangeSuccess ? (
+                  <div style={passwordSuccessMessageStyle}>
+                    Пароль успешно изменён
+                  </div>
+                ) : null}
 
                 <div style={styles.accountRow}>
                   <span style={styles.accountLabel}>Статус</span>
@@ -786,8 +824,13 @@ export default function ProfileSidePanel({
   );
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
+    <div style={styles.overlay} onClick={handleOverlayClick}>
       {panel}
+      <ChangePasswordModal
+        open={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+        onSuccess={() => setPasswordChangeSuccess(true)}
+      />
     </div>
   );
 }

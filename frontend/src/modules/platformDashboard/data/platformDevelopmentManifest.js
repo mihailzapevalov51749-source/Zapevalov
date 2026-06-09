@@ -1,5 +1,5 @@
 export const platformDevelopmentManifest = {
-  updatedAt: "2026-06-10T18:00:00",
+  updatedAt: "2026-06-09T22:45:00",
 
   title: "Развитие платформы ЯсноПро",
 
@@ -16,7 +16,7 @@ export const platformDevelopmentManifest = {
 
   readiness: {
     targetPlatformPercent: 45,
-    currentPhasePercent: 95,
+    currentPhasePercent: 97,
     capabilities: [
       {
         name: "Модель объектов",
@@ -28,9 +28,9 @@ export const platformDevelopmentManifest = {
       {
         name: "Представления",
         status: "ready",
-        percent: 85,
+        percent: 86,
         businessMeaning:
-          "Табличный вид, фильтры, персональные представления и рабочая вкладка «План» с inline-редактированием ключевых полей.",
+          "Табличный вид, фильтры, персональные представления и рабочая вкладка «План» с компактной правой карточкой записи.",
       },
       {
         name: "Карточка объекта",
@@ -148,6 +148,21 @@ export const platformDevelopmentManifest = {
 
   achievements: [
     {
+      date: "2026-06-09",
+      text:
+        "Plan View — compact right record header in Office: название записи до 2 строк (line-clamp), действия record_toolbar в overflow «…» без постоянного резерва ширины; колонка дерева «Готовность» переименована в «Прогресс» (label only, key progress).",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "Plan Tree — improve drag-and-drop root placement UX and synchronize highlighted drop target with executed move: child→root через before/after корневого узла; единый drop descriptor для hover/drop/move; getPlanTreeChildrenIds учитывает скрытый root anchor; линия вставки на уровне корня или дочернего уровня.",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "Plan Tree — fix root reorder persistence and table order synchronization: anchor per relationKey, ensure-root-order + reorder-siblings для root before/after/root-end; таблица и колонка № используют тот же порядок relation instances, что и План; исправлен 422 task_subtask при DnD в «Проблемы».",
+    },
+    {
       date: "2026-06-10",
       text:
         "YASII — single presentation state machine: единый источник истины presentation (closed | panel | page) в YasiiAssistantContext; при развороте панель закрывается, при minimize страницы панель не появляется; исключено одновременное существование панели и страницы.",
@@ -246,6 +261,16 @@ export const platformDevelopmentManifest = {
       date: "2026-06-10",
       text:
         "AppShell phase 2.1: Page Actions перенесены в правые toolbar-зоны страниц (AppHeader, object top panel, Chat, Dashboard, Profile) через priority slots + portal; убран floating global slot и tab-row placement.",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "Plan Tree — root-level drag-and-drop reorder: technical root anchor + relation sibling order (created_at); API ensure-root-order / reorder-siblings; root before/after/root-end сохраняются после refresh.",
+    },
+    {
+      date: "2026-06-09",
+      text:
+        "Plan Tree drag & drop: before / after / inside / root-end с визуальной подсветкой; reorder соседей через relation instances; movePlanTreeNode + planTreeDragDrop.test.js; Office → вкладка План.",
     },
     {
       date: "2026-06-09",
@@ -507,6 +532,23 @@ export const platformDevelopmentManifest = {
   ],
 
   platformChangelog: [
+    {
+      date: "2026-06-09",
+      version: null,
+      title:
+        "Plan Tree — improve drag-and-drop root placement UX and synchronize highlighted drop target with executed move",
+      summary:
+        "Child nodes can become root siblings via before/after on a root row (not only empty area/root-end). PlanTreePanel builds one validated drop descriptor for hover and drop; ObjectPlanView passes it unchanged to movePlanTreeNode. getPlanTreeChildrenIds resolves siblings under the hidden root anchor; drop line indent reflects insertion level.",
+      nextStage: "AppShell Phase 5 — Page Descriptor Registry",
+    },
+    {
+      date: "2026-06-09",
+      version: null,
+      title: "Plan Tree — fix root reorder persistence and table order synchronization",
+      summary:
+        "Root reorder uses relation-scoped anchor (tenant + objectType + relationKey), ensure-root-order retries until anchor is ready, reorder-siblings returns 422 with diagnostics; table follows Plan hierarchy sibling order and № column when user sort is off; task_subtask validation respects hierarchy parent/child sides (fixes 422 on «Проблемы»).",
+      nextStage: "AppShell Phase 5 — Page Descriptor Registry",
+    },
     {
       date: "2026-06-10",
       version: null,
@@ -1004,7 +1046,7 @@ export const platformDevelopmentManifest = {
     docVersion: "1.0",
     activeSubPhaseKey: "object-view-architecture-unification",
     currentStatus:
-      "Plan View: дерево слева — навигация и индикаторы; inline-редактирование полей — только на вкладке Инфо справа (RuntimeFieldCell + persistRuntimeEntityFieldUpdate).",
+      "Plan View: дерево слева — навигация и индикаторы; правая карточка — заголовок записи до 2 строк и overflow действий; inline-редактирование полей — на вкладке Инфо (RuntimeFieldCell + persistRuntimeEntityFieldUpdate).",
     nextStage: "Этап 6 — Финальная унификация",
     planLegacyDeprecationMetrics: {
       title: "Plan Views",
@@ -1076,6 +1118,26 @@ export const platformDevelopmentManifest = {
       },
       projectionTitleFieldRecommendation: "keep — object-type entity display layer; nodeTitle is Plan-view role",
     },
+    planWorkAreaHeaderUx: {
+      title: "Plan Work Area — compact record header",
+      completedAt: "2026-06-09T22:45:00+00:00",
+      location: "Office → Plan View → PlanWorkArea header",
+      titleClamp: "2 lines (-webkit-line-clamp)",
+      actionsPresentation: "record_toolbar → ObjectRuntimeTopPanelActions menuPresentation=overflow",
+      progressColumnLabel: "Прогресс (was Готовность)",
+      dataKeysUnchanged: ["progress", "readiness"],
+      components: [
+        "PlanWorkArea",
+        "ObjectRuntimeRecordToolbarActions",
+        "ObjectRuntimeTopPanelActions",
+        "planProgressLabels",
+      ],
+      uiSurfaces: [
+        "Plan tree column header",
+        "Plan work area record title",
+        "Plan info section label resolver",
+      ],
+    },
     planInlineFieldEditing: {
       title: "Plan Inline Field Editing",
       completedAt: "2026-06-09T00:00:00+00:00",
@@ -1123,7 +1185,7 @@ export const platformDevelopmentManifest = {
       layout: "tree + resizable work area",
       treeFeatures: [
         "hierarchy numbering (1, 1.1, 1.2)",
-        "compact columns: Название / Готовность / Статус",
+        "compact columns: Название / Прогресс / Статус",
         "context menu (ПКМ)",
         "resize handle 280-600px with localStorage",
       ],
@@ -2207,6 +2269,33 @@ export const platformDevelopmentManifest = {
   },
 
   platformHistory: [
+    {
+      key: "plan-tree-dnd-root-placement-sync",
+      date: "2026-06-09",
+      title:
+        "Plan Tree — improve drag-and-drop root placement UX and synchronize highlighted drop target with executed move",
+      type: "quality",
+      description:
+        "Исправлен getPlanTreeChildrenIds для скрытого root anchor (раньше siblingIds=[] и descriptor=null). PlanTreePanel хранит полный descriptor в hover/drop ref; drop пересчитывает position из события и использует тот же descriptor, что подсвечен. Линия вставки (--plan-tree-drop-line-indent) отражает уровень корня или дочернего sibling.",
+      impact:
+        "4→before 2 и 1.1→before 2 выполняют то, что показывает подсветка; вывод дочернего в корень без перетаскивания в пустую область; root-end остаётся только для append в конец.",
+      relatedContours: ["Object Platform", "Представления"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
+    {
+      key: "plan-tree-root-reorder-table-sync",
+      date: "2026-06-09",
+      title: "Plan Tree — fix root reorder persistence and table order synchronization",
+      type: "quality",
+      description:
+        "Root anchor scoped by relationKey; ensure-root-order retries until anchor is bound; reorder-siblings maps missing edges to HTTP 422; table and № column follow hierarchy sibling order from relation instances when user sort is off; task_subtask domain validation uses hierarchy parent/child sides.",
+      impact:
+        "Plan root reorder persists after refresh; table row order matches Plan; drag-and-drop in «Проблемы» no longer fails with opaque 422 from wrong task_subtask validation.",
+      relatedContours: ["Object Platform", "Представления"],
+      relatedDebt: [],
+      relatedAdr: null,
+    },
     {
       key: "yasii-single-presentation-state-machine",
       date: "2026-06-10",

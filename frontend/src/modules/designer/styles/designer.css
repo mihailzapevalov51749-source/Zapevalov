@@ -544,6 +544,7 @@
 
 .designer-error {
   color: #dc2626;
+  white-space: pre-line;
 }
 
 .designer-workspace-layout {

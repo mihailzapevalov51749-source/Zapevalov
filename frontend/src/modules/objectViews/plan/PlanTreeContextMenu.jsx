@@ -17,6 +17,7 @@ export default function PlanTreeContextMenu({
   open = false,
   position = null,
   actions = [],
+  menuLabel = "Меню дерева плана",
   onSelectAction,
   onClose,
 }) {
@@ -64,7 +65,7 @@ export default function PlanTreeContextMenu({
       ref={menuRef}
       className="view-engine-toolbar__portal-menu object-context-menu object-plan-view__tree-context-menu"
       role="menu"
-      aria-label="Меню записи плана"
+      aria-label={menuLabel}
       style={{
         position: "fixed",
         top: clamped.y,

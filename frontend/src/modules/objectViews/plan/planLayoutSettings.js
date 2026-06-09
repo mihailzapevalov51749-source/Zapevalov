@@ -1,4 +1,8 @@
 import { PLAN_ROLE_KEYS } from "../services/objectViewRoleMapping.js";
+import {
+  PLAN_PROGRESS_COLUMN_LABEL,
+  resolvePlanProgressDisplayLabel,
+} from "./planProgressLabels.js";
 
 export const PLAN_INFO_SECTION_ROLE_KEYS = {
   status: PLAN_ROLE_KEYS.NODE_STATUS,
@@ -16,7 +20,7 @@ export const DEFAULT_PLAN_LAYOUT_TABS = [
 
 export const DEFAULT_PLAN_LAYOUT_INFO_SECTIONS = [
   { key: "status", label: "Статус", visible: true, order: 10, system: true },
-  { key: "progress", label: "Готовность", visible: true, order: 20, system: true },
+  { key: "progress", label: PLAN_PROGRESS_COLUMN_LABEL, visible: true, order: 20, system: true },
   { key: "description", label: "Описание", visible: true, order: 30, system: true },
   { key: "checklist", label: "Чек-лист", visible: true, order: 40, system: true },
   { key: "fields", label: "Основные поля", visible: true, order: 50, system: true },
@@ -237,6 +241,10 @@ export function resolvePlanInfoSectionLabel(section, roleLabels = {}) {
 
   if (roleLabel && defaultSection && sectionLabel === defaultSection.label) {
     return roleLabel;
+  }
+
+  if (sectionKey === "progress") {
+    return resolvePlanProgressDisplayLabel(sectionLabel);
   }
 
   return sectionLabel;

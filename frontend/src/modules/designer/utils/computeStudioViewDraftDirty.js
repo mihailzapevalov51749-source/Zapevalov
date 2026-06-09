@@ -19,7 +19,16 @@ export function computeStudioViewDraftDirty({
   planSettings = null,
   fieldOptions = [],
 } = {}) {
-  if (!view || !draft) {
+  if (!view) {
+    return false;
+  }
+
+  if (!draft) {
+    if (view.view_type === "plan" && planSettings) {
+      const savedPlan = readPlanSettingsFromView(view.settings_json || {});
+      return JSON.stringify(savedPlan) !== JSON.stringify(planSettings);
+    }
+
     return false;
   }
 

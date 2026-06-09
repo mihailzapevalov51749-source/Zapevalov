@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { listRelationInstancesByKey } from "../../../../api/runtimeRelationsApi.js";
-import {
-  hasHierarchySubtasksFeature,
-  resolvePrimaryHierarchySubtaskRelationKey,
-} from "../../../../shared/relation/hierarchyRelationProfile.js";
+import { resolveConfiguredHierarchyRelationKey } from "../../../../shared/relation/resolveConfiguredHierarchyRelationKey.js";
+import { hasHierarchySubtasksFeature } from "../../../../shared/relation/hierarchyRelationProfile.js";
+import { ensurePlanTreeRootOrder } from "../../plan/planTreeRootOrderApi.js";
+import { logPlanTreeApiError } from "../../plan/planTreeMoveDebug.js";
 import { buildHierarchyEdgeMaps } from "../services/buildHierarchyEdgeMaps.js";
 import { buildObjectTableHierarchyDisplayRows } from "../services/buildObjectTableHierarchyDisplayRows.js";
 import { resolveExpandableHierarchyRowIds } from "../services/resolveExpandableHierarchyRowIds.js";
@@ -32,9 +32,10 @@ export default function useObjectTableHierarchyRows({
   enabled = true,
   previewMode = false,
   previewHierarchyInstances = null,
+  preferHierarchySiblingOrder = true,
 }) {
   const hierarchyRelationKey = useMemo(
-    () => resolvePrimaryHierarchySubtaskRelationKey(catalog, objectTypeKey),
+    () => resolveConfiguredHierarchyRelationKey(catalog, objectTypeKey),
     [catalog, objectTypeKey],
   );
 
@@ -65,8 +66,15 @@ export default function useObjectTableHierarchyRows({
   });
 
   const [instances, setInstances] = useState([]);
+  const [rootAnchorId, setRootAnchorId] = useState(null);
   const [edgesLoading, setEdgesLoading] = useState(false);
   const [edgesError, setEdgesError] = useState("");
+  const rootOrderEnsureKeyRef = useRef("");
+
+  useEffect(() => {
+    setRootAnchorId(null);
+    rootOrderEnsureKeyRef.current = "";
+  }, [objectTypeKey, hierarchyRelationKey]);
 
   const relationDefinition = useMemo(
     () => findCatalogRelation(catalog, hierarchyRelationKey),
@@ -76,6 +84,7 @@ export default function useObjectTableHierarchyRows({
   const loadEdges = useCallback(async () => {
     if (!treeEnabled || !hierarchyRelationKey) {
       setInstances([]);
+      setRootAnchorId(null);
       setEdgesError("");
       return;
     }
@@ -93,11 +102,44 @@ export default function useObjectTableHierarchyRows({
     setEdgesError("");
 
     try {
-      const items = await listRelationInstancesByKey(
+      let items = await listRelationInstancesByKey(
         tenantId,
         hierarchyRelationKey,
       );
-      setInstances(Array.isArray(items) ? items : []);
+      items = Array.isArray(items) ? items : [];
+
+      const ensureKey = `${objectTypeKey}:${hierarchyRelationKey}`;
+
+      if (objectTypeKey && rootOrderEnsureKeyRef.current !== ensureKey) {
+        const ensureUrl = `/runtime/plan-tree/tenants/${tenantId}/object-types/${objectTypeKey}/hierarchy/${hierarchyRelationKey}/ensure-root-order`;
+
+        try {
+          const ensured = await ensurePlanTreeRootOrder(
+            tenantId,
+            objectTypeKey,
+            hierarchyRelationKey,
+          );
+          const anchorId = String(ensured?.anchorEntityId ?? "").trim();
+
+          if (anchorId) {
+            setRootAnchorId(anchorId);
+            rootOrderEnsureKeyRef.current = ensureKey;
+          }
+
+          items = await listRelationInstancesByKey(tenantId, hierarchyRelationKey);
+          items = Array.isArray(items) ? items : [];
+        } catch (ensureError) {
+          logPlanTreeApiError({
+            url: ensureUrl,
+            method: "POST",
+            payload: null,
+            response: ensureError?.response?.data,
+            error: ensureError,
+          });
+        }
+      }
+
+      setInstances(items);
     } catch (error) {
       setInstances([]);
       setEdgesError(
@@ -109,6 +151,7 @@ export default function useObjectTableHierarchyRows({
   }, [
     treeEnabled,
     tenantId,
+    objectTypeKey,
     hierarchyRelationKey,
     previewMode,
     previewHierarchyInstances,
@@ -144,6 +187,8 @@ export default function useObjectTableHierarchyRows({
       parentByChild,
       childrenByParent,
       expandedRowIds,
+      rootAnchorId,
+      preferHierarchySiblingOrder,
     });
   }, [
     treeEnabled,
@@ -151,6 +196,8 @@ export default function useObjectTableHierarchyRows({
     parentByChild,
     childrenByParent,
     expandedRowIds,
+    rootAnchorId,
+    preferHierarchySiblingOrder,
   ]);
 
   return {
@@ -159,6 +206,7 @@ export default function useObjectTableHierarchyRows({
     displayRows,
     parentByChild,
     childrenByParent,
+    rootAnchorId,
     expandableRowIds,
     edgesLoading,
     edgesError,

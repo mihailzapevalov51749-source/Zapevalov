@@ -38,6 +38,12 @@ class UserCreate(BaseModel):
     role_id: int | None = None
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+    confirm_password: str
+
+
 class UserUpdate(BaseModel):
     full_name: str | None = None
     phone: str | None = None

@@ -27,6 +27,7 @@ import { resolveOfficeDefaultViewKey } from "../table/preferences/resolveOfficeD
 import {
   canApplyOfficeDefaultUserView,
   hasExplicitOfficeRepresentationRequest,
+  isFixedObjectTabSelection,
   resolveInitialOfficeSelectedViewKey,
   resolveOfficeObjectTabSelectionKey,
   shouldApplyRequestedRepresentationSelection,
@@ -145,7 +146,8 @@ export default function useObjectViewDefinitions({
   const [officeUserViewState, setOfficeUserViewState] = useState(null);
   const userManuallySelectedViewRef = useRef(
     isOfficeUserViews
-      ? hasExplicitOfficeRepresentationRequest(requestedRepresentationKey)
+      ? hasExplicitOfficeRepresentationRequest(requestedRepresentationKey) ||
+          isFixedObjectTabSelection(requestedObjectTabKey)
       : hasExplicitDesignerRequestedViewKey(requestedViewKey),
   );
   const initialDefaultAppliedRef = useRef(false);
@@ -198,7 +200,7 @@ export default function useObjectViewDefinitions({
         const rawList = await designerApi.listViews(tenantId, objectTypeId);
         list = Array.isArray(rawList) ? rawList : [];
       } else {
-        const catalog = await getPublishedCatalog(tenantId);
+        const catalog = await getPublishedCatalog(tenantId, { cacheBust: true });
         const objectType = (catalog?.object_types || []).find(
           (item) => item?.key === objectTypeKey,
         );
@@ -347,6 +349,7 @@ export default function useObjectViewDefinitions({
         userManuallySelected: userManuallySelectedViewRef.current,
         initialDefaultApplied: initialDefaultAppliedRef.current,
         defaultKey,
+        requestedObjectTabKey,
       })
     ) {
       if (
@@ -365,7 +368,7 @@ export default function useObjectViewDefinitions({
 
     initialDefaultAppliedRef.current = true;
     setSelectedViewKey(defaultKey);
-  }, [isOfficeUserViews, loading, officeUserViewState]);
+  }, [isOfficeUserViews, loading, officeUserViewState, requestedObjectTabKey]);
 
   const fallbackViews = useMemo(() => {
     if (views.length) {
@@ -412,6 +415,10 @@ export default function useObjectViewDefinitions({
       return tabMatch;
     }
 
+    if (isFixedObjectTabSelection(selectedViewKey)) {
+      return null;
+    }
+
     // Office user table representations live in merged `views`, not only tabLookupViews.
     const lookupViews = fallbackViews.length ? fallbackViews : tabLookupSource;
 
@@ -448,6 +455,17 @@ export default function useObjectViewDefinitions({
     }
 
     if (!activeView?.contract) {
+      if (isFixedObjectTabSelection(selectedViewKey)) {
+        const fixedTabMatch = resolveActiveObjectTabView(
+          tabLookupViews,
+          selectedViewKey,
+        );
+
+        if (fixedTabMatch?.contract) {
+          return fixedTabMatch.contract;
+        }
+      }
+
       return normalizeObjectViewDefinition(null, {
         viewKey: TABLE_BASE_STATE_KEY,
         pageSize,

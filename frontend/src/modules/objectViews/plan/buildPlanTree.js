@@ -15,6 +15,10 @@ import {
 import { resolvePlanFieldDisplayValue } from "./planFieldUtils.js";
 import { assignPlanTreeHierarchyNumbers } from "./planTreeNumbering.js";
 import { resolveEntityDisplayTitle } from "../../objectEntities/services/resolveEntityDisplayTitle.js";
+import {
+  isPlanTreeRootAnchorTitle,
+  resolvePlanTreeRootIds,
+} from "./planTreeRootAnchor.js";
 
 function findCatalogRelation(catalog, relationKey) {
   const relations = Array.isArray(catalog?.relations) ? catalog.relations : [];
@@ -73,6 +77,7 @@ function buildInstanceByChildId(instances, relationDefinition) {
  *   statusField?: Record<string, unknown> | null,
  *   catalog?: object | null,
  *   objectTypeKey?: string | null,
+ *   rootAnchorId?: string | null,
  * }} params
  */
 export function buildPlanTree({
@@ -85,6 +90,7 @@ export function buildPlanTree({
   statusFieldKey = null,
   statusField = null,
   progressFieldKey = null,
+  rootAnchorId = null,
 }) {
   const relationKey = String(planPresentation?.hierarchyRelationKey || "").trim();
   if (!relationKey) {
@@ -139,6 +145,11 @@ export function buildPlanTree({
     }
 
     const entity = entitiesById.get(normalizedId) || { id: normalizedId };
+
+    if (isPlanTreeRootAnchorTitle(resolveNodeTitle(entity))) {
+      return null;
+    }
+
     const childIds = childrenByParent.get(normalizedId) || [];
     const children = childIds
       .map((childId) => buildNode(childId, depth + 1))
@@ -195,14 +206,19 @@ export function buildPlanTree({
     return node;
   }
 
-  const allChildIds = new Set(parentByChild.keys());
-  const allEntityIds = new Set([...entitiesById.keys(), ...allChildIds]);
-
-  const rootIds = [...allEntityIds].filter((id) => !parentByChild.has(id));
+  const rootIds = resolvePlanTreeRootIds({
+    parentByChild,
+    childrenByParent,
+    entitiesById,
+    rootAnchorId,
+  });
 
   if (!rootIds.length && entitiesById.size) {
     for (const id of entitiesById.keys()) {
-      rootIds.push(id);
+      const entity = entitiesById.get(id);
+      if (entity && !isPlanTreeRootAnchorTitle(resolveNodeTitle(entity))) {
+        rootIds.push(id);
+      }
     }
   }
 

@@ -20,8 +20,13 @@ import {
 import { readObjectTabSettings } from "../../objectViews/services/objectTabSettings";
 import { buildStudioPlanViewDraftSettings } from "../utils/buildStudioPlanViewDraftSettings.js";
 import { buildStudioPreviewCatalogFromDesignerFields } from "../utils/buildStudioPreviewCatalogFromDesignerFields.js";
-import { computeStudioViewDraftDirty } from "../utils/computeStudioViewDraftDirty.js";
+import {
+  buildPlanViewDraftFromView,
+  hasPendingPlanViewChanges,
+  readPlanHierarchyRelationKey,
+} from "../utils/planViewStudioSave.js";
 import { saveStudioViewDraft } from "../utils/saveStudioViewDraft.js";
+import { logPlanDebug } from "../../objectViews/plan/planViewDebug.js";
 import {
   canHidePlanTab,
   normalizePlanLayoutSettings,
@@ -221,38 +226,124 @@ export function PlanViewStudioProvider({
     [objectTypeKey, fields],
   );
 
-  const isPlanViewDirty = useMemo(() => {
-    if (selectedView?.view_type !== "plan" || !draft) {
-      return false;
-    }
-
-    return computeStudioViewDraftDirty({
-      view: selectedView,
-      draft,
-      planSettings,
-      fieldOptions,
-    });
-  }, [selectedView, draft, planSettings, fieldOptions]);
+  const isPlanViewDirty = useMemo(
+    () =>
+      hasPendingPlanViewChanges({
+        view: selectedView,
+        draft,
+        planSettings,
+        fieldOptions,
+        normalizeProjection,
+      }),
+    [selectedView, draft, planSettings, fieldOptions, normalizeProjection],
+  );
 
   useEffect(() => {
     onDirtyChange?.(isPlanViewDirty);
   }, [isPlanViewDirty, onDirtyChange]);
 
-  const savePlanViewDraft = useCallback(async () => {
-    if (!selectedView || selectedView.view_type !== "plan" || !draft) {
-      return;
-    }
+  const savePlanViewDraft = useCallback(
+    async (options = {}) => {
+      const { flushBeforePublish = false } = options;
 
-    await saveStudioViewDraft({
-      tenantId,
-      view: selectedView,
+      if (!selectedView || selectedView.view_type !== "plan") {
+        if (flushBeforePublish) {
+          return null;
+        }
+
+        throw new Error("Не выбрано представление «План» для сохранения.");
+      }
+
+      const effectiveDraft =
+        draft ?? buildPlanViewDraftFromView(selectedView, normalizeProjection);
+
+      if (!effectiveDraft) {
+        throw new Error(
+          "Черновик представления «План» ещё не готов. Подождите загрузку и повторите сохранение.",
+        );
+      }
+
+      const effectivePlanSettings =
+        planSettings ?? readPlanSettingsFromView(effectiveDraft.settings_json);
+
+      const pending = hasPendingPlanViewChanges({
+        view: selectedView,
+        draft: effectiveDraft,
+        planSettings: effectivePlanSettings,
+        fieldOptions,
+        normalizeProjection,
+      });
+
+      if (!pending) {
+        if (flushBeforePublish) {
+          logPlanDebug("PLAN_PUBLISH_INPUT", {
+            viewKey: selectedView.key,
+            hierarchyRelationKey: readPlanHierarchyRelationKey(
+              readPlanSettingsFromView(selectedView.settings_json || {}),
+            ),
+            action: "skip_already_saved",
+          });
+        }
+
+        return null;
+      }
+
+      logPlanDebug("PLAN_PUBLISH_INPUT", {
+        viewKey: selectedView.key,
+        hierarchyRelationKey: readPlanHierarchyRelationKey(effectivePlanSettings),
+        action: flushBeforePublish ? "flush_before_publish" : "save",
+      });
+
+      const savedView = await saveStudioViewDraft({
+        tenantId,
+        view: selectedView,
+        draft: effectiveDraft,
+        planSettings: effectivePlanSettings,
+      });
+
+      const savedSettingsJson =
+        savedView?.settings_json && typeof savedView.settings_json === "object"
+          ? savedView.settings_json
+          : effectiveDraft.settings_json;
+      const savedPlan = readPlanSettingsFromView(savedSettingsJson);
+
+      logPlanDebug("PLAN_VIEW_SAVE_RESULT", {
+        viewKey: selectedView.key,
+        hierarchyRelationKey: readPlanHierarchyRelationKey(savedPlan),
+      });
+
+      loadedViewSnapshotRef.current = `${selectedView.key}\0${JSON.stringify(savedSettingsJson)}`;
+
+      setDraft({
+        ...effectiveDraft,
+        name: savedView?.name ?? effectiveDraft.name,
+        key: savedView?.key ?? effectiveDraft.key,
+        view_type: savedView?.view_type ?? effectiveDraft.view_type,
+        is_active: savedView?.is_active ?? effectiveDraft.is_active,
+        description: savedView?.description ?? effectiveDraft.description,
+        settings_json: savedSettingsJson,
+        projection: normalizeProjection(savedSettingsJson),
+        roleMapping: readRoleMappingFromSettings(savedSettingsJson),
+        tabSettings: readObjectTabSettings(savedSettingsJson),
+      });
+      setPlanSettings(savedPlan);
+
+      await loadViews();
+      await onSchemaChanged?.({ viewKey: effectiveDraft.key });
+
+      return savedView;
+    },
+    [
+      selectedView,
       draft,
       planSettings,
-    });
-
-    await loadViews();
-    await onSchemaChanged?.({ viewKey: draft.key });
-  }, [selectedView, draft, planSettings, tenantId, loadViews, onSchemaChanged]);
+      fieldOptions,
+      normalizeProjection,
+      tenantId,
+      loadViews,
+      onSchemaChanged,
+    ],
+  );
 
   useEffect(() => {
     if (selectedView?.view_type !== "plan") {

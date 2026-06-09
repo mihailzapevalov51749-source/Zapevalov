@@ -103,6 +103,62 @@ def test_workspace_home_visible_is_published() -> None:
     assert status == "published"
 
 
+def test_resolve_workspace_home_page_target_status_active_is_published() -> None:
+    workspace = SimpleNamespace(title="Workspace", status="active")
+    assert normalization.resolve_workspace_home_page_target_status(workspace) == "published"
+
+
+def test_resolve_workspace_home_page_target_status_archived_is_hidden() -> None:
+    workspace = SimpleNamespace(title="Workspace", status="archived")
+    assert normalization.resolve_workspace_home_page_target_status(workspace) == "hidden"
+
+
+class _SyncFakeQuery(_FakeQuery):
+    def first(self):
+        rows = self.all()
+        return rows[0] if rows else None
+
+
+class _SyncFakeSession:
+    def __init__(self, page):
+        self._page = page
+        self.flushed = False
+
+    def query(self, model):
+        name = getattr(model, "__name__", "")
+        if name == "Page":
+            return _SyncFakeQuery([self._page])
+        raise AssertionError(f"Unexpected model: {model}")
+
+    def flush(self):
+        self.flushed = True
+
+
+def test_sync_workspace_home_page_status_promotes_draft_to_published() -> None:
+    page = _page(1, "draft")
+    page.portal_id = 10
+    workspace = SimpleNamespace(home_page_id=1, tenant_id=10, title="Workspace", status="active")
+    db = _SyncFakeSession(page)
+
+    changed = normalization.sync_workspace_home_page_status(db, workspace)
+
+    assert changed is True
+    assert page.status == "published"
+    assert db.flushed is True
+
+
+def test_sync_workspace_home_page_status_skips_when_already_aligned() -> None:
+    page = _page(1, "published")
+    page.portal_id = 10
+    workspace = SimpleNamespace(home_page_id=1, tenant_id=10, title="Workspace", status="active")
+    db = _SyncFakeSession(page)
+
+    changed = normalization.sync_workspace_home_page_status(db, workspace)
+
+    assert changed is False
+    assert db.flushed is False
+
+
 def test_workspace_tab_hidden_is_hidden() -> None:
     placements = [normalization.PlacementRecord(kind="workspace_tab", visible=False, detail="hidden")]
     status, _reason = normalization.compute_target_status(placements)

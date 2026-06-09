@@ -23,6 +23,7 @@ describe("ObjectRuntimeRecordToolbarActions", () => {
     assert.match(recordToolbarSource, /ObjectRuntimeTopPanelActions/);
     assert.match(recordToolbarSource, /placementKey="record_toolbar"/);
     assert.match(recordToolbarSource, /requireEntityId/);
+    assert.match(recordToolbarSource, /menuPresentation="overflow"/);
   });
 
   it("requires entityId before enabling runtime fetch", () => {

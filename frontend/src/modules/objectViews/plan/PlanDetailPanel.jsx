@@ -3,6 +3,7 @@ import { Copy, Pencil, Plus } from "lucide-react";
 import { EntityCardInlineField } from "../../../shared/entityCardShell";
 import ObjectEntityChecklist from "../../objectEntities/components/ObjectEntityChecklist.jsx";
 import { getPlanEntityFieldValue } from "./planEntityUtils.js";
+import { PLAN_PROGRESS_COLUMN_LABEL } from "./planProgressLabels.js";
 
 function DetailRow({ label, value, children }) {
   return (
@@ -113,7 +114,7 @@ export default function PlanDetailPanel({
           )}
         </DetailRow>
 
-        <DetailRow label="Готовность">
+        <DetailRow label={PLAN_PROGRESS_COLUMN_LABEL}>
           <div className="object-plan-view__progress-wrap">
             <div className="object-plan-view__progress">
               <div

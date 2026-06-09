@@ -19,6 +19,7 @@ export default function ObjectRuntimeRecordToolbarActions({
       enabled={enabled}
       catalog={catalog}
       ariaLabel="Действия записи"
+      menuPresentation="overflow"
       modalKey={`runtime_action_form_record_toolbar_${objectTypeKey || "object"}_${normalizedEntityId || "none"}`}
     />
   );

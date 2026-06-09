@@ -374,7 +374,18 @@ export default function DesignerTrashPage() {
     setIsSubmitting(true);
     setActionError("");
     try {
-      await designerApi.restoreDesignerTrashItems(tenantId, refs);
+      const response = await designerApi.restoreDesignerTrashItems(tenantId, refs);
+      const failed = (response?.results || []).filter((item) => !item.success);
+      if (failed.length) {
+        setActionError(
+          failed
+            .map((item) => item.error || "Не удалось восстановить")
+            .filter(Boolean)
+            .join("\n"),
+        );
+        await loadTrash();
+        return;
+      }
       setSelectedIds(new Set());
       setSelectedKey(null);
       await loadTrash();

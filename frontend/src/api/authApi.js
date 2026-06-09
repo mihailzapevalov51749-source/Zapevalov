@@ -43,9 +43,37 @@ function getJsonAuthHeaders() {
   };
 }
 
+function extractApiDetail(responseText) {
+  if (!responseText) return "";
+
+  try {
+    const payload = JSON.parse(responseText);
+    const detail = payload?.detail;
+
+    if (typeof detail === "string" && detail.trim()) {
+      return detail.trim();
+    }
+
+    if (Array.isArray(detail) && detail.length > 0) {
+      const messages = detail
+        .map((item) => item?.msg || item?.message || "")
+        .filter(Boolean);
+
+      if (messages.length > 0) {
+        return messages.join(" ");
+      }
+    }
+  } catch {
+    // not JSON
+  }
+
+  const trimmed = String(responseText).trim();
+  return trimmed.startsWith("{") ? "" : trimmed;
+}
+
 async function parseError(response, fallbackMessage) {
   const errorText = await response.text();
-  return errorText || fallbackMessage;
+  return extractApiDetail(errorText) || errorText || fallbackMessage;
 }
 
 export async function login(email, password) {
@@ -121,6 +149,32 @@ export async function updateMe(payload) {
     const errorMessage = await parseError(
       response,
       "Не удалось обновить данные пользователя"
+    );
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+}
+
+export async function changeMyPassword({
+  current_password,
+  new_password,
+  confirm_password,
+}) {
+  const response = await fetch(`${API_BASE_URL}/users/me/password`, {
+    method: "PATCH",
+    headers: getJsonAuthHeaders(),
+    body: JSON.stringify({
+      current_password,
+      new_password,
+      confirm_password,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorMessage = await parseError(
+      response,
+      "Не удалось изменить пароль"
     );
     throw new Error(errorMessage);
   }

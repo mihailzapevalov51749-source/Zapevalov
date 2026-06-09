@@ -13,6 +13,7 @@ from app.modules.platform.designer.field_definitions.models import DesignerField
 from app.modules.platform.designer.object_types.models import DesignerObjectType
 from app.modules.platform.designer.relation_definitions.models import DesignerRelationDefinition
 from app.modules.platform.designer.shared.soft_delete import apply_soft_delete, restore_soft_deleted
+from app.modules.platform.designer.trash.restore_conflict import ensure_restore_allowed
 from app.modules.platform.designer.trash.dependency_resolution_service import (
     dependency_resolution_service,
 )
@@ -368,10 +369,19 @@ def collect_purge_dependencies(
     )
 
 
+def _http_exception_error_message(exc: HTTPException) -> str:
+    if isinstance(exc.detail, str):
+        return exc.detail
+    if isinstance(exc.detail, dict):
+        return str(exc.detail.get("message") or exc.detail.get("error") or exc.detail)
+    return str(exc.detail)
+
+
 def restore_trash_item(db: Session, *, tenant_id: int, kind: TrashEntityKind, entity_id: str) -> None:
     entity = _load_entity(db, tenant_id=tenant_id, kind=kind, entity_id=entity_id, require_deleted=True)
     if entity is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Элемент корзины не найден")
+    ensure_restore_allowed(db, tenant_id=tenant_id, kind=kind, entity=entity)
     restore_soft_deleted(entity)
     db.commit()
 
@@ -402,9 +412,13 @@ def restore_trash_bulk(db: Session, *, tenant_id: int, items: list[TrashItemRef]
             restore_trash_item(db, tenant_id=tenant_id, kind=item.kind, entity_id=item.id)
             results.append(TrashBulkResultItem(kind=item.kind, id=item.id, success=True))
         except HTTPException as exc:
-            detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
             results.append(
-                TrashBulkResultItem(kind=item.kind, id=item.id, success=False, error=detail),
+                TrashBulkResultItem(
+                    kind=item.kind,
+                    id=item.id,
+                    success=False,
+                    error=_http_exception_error_message(exc),
+                ),
             )
     return TrashBulkResponse(results=results)
 
@@ -416,9 +430,13 @@ def purge_trash_bulk(db: Session, *, tenant_id: int, items: list[TrashItemRef]) 
             purge_trash_item(db, tenant_id=tenant_id, kind=item.kind, entity_id=item.id)
             results.append(TrashBulkResultItem(kind=item.kind, id=item.id, success=True))
         except HTTPException as exc:
-            detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
             results.append(
-                TrashBulkResultItem(kind=item.kind, id=item.id, success=False, error=detail),
+                TrashBulkResultItem(
+                    kind=item.kind,
+                    id=item.id,
+                    success=False,
+                    error=_http_exception_error_message(exc),
+                ),
             )
     return TrashBulkResponse(results=results)
 
