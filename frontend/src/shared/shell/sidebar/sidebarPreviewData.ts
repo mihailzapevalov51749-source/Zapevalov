@@ -54,13 +54,6 @@ const RUNTIME_PREVIEW_NAVIGATION = [
     ],
   },
   {
-    id: "runtime-tasks",
-    title: "Мои задачи",
-    type: "system_page",
-    route: "/runtime/tasks",
-    path: "/runtime/tasks",
-  },
-  {
     id: "runtime-reports",
     title: "Отчеты",
     type: "universal_table",

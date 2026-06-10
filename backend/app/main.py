@@ -53,6 +53,9 @@ from app.modules.quality_issues.router import (
 from app.modules.platform_dashboard.router import (
     router as platform_dashboard_router,
 )
+from app.modules.platform_event_journal.router import (
+    router as platform_event_journal_router,
+)
 
 from app.modules.chats.router import router as chats_router
 
@@ -142,6 +145,9 @@ app.include_router(quality_issues_router)
 
 # PLATFORM DASHBOARD
 app.include_router(platform_dashboard_router)
+
+# PLATFORM EVENT JOURNAL
+app.include_router(platform_event_journal_router)
 
 # PLATFORM DESIGNER
 app.include_router(platform_designer_router)

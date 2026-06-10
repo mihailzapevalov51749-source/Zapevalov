@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
 
+import TenantRegistryTypeBadge from "../../../controlPlane/components/TenantRegistryTypeBadge";
+
 const toneColorMap = {
   success: "#16A34A",
   warning: "#EA580C",
@@ -41,29 +43,144 @@ function normalizeAvatarSettings(settings) {
   return DEFAULT_AVATAR_SETTINGS;
 }
 
+function isKpiMetricValue(value) {
+  if (value === "…") {
+    return true;
+  }
+
+  const normalized = String(value ?? "").trim();
+  if (!normalized) {
+    return false;
+  }
+
+  return /^[\d\s]+$/.test(normalized);
+}
+
+function isKpiMetric(metric) {
+  if (metric?.kind === "status") {
+    return false;
+  }
+
+  if (metric?.kind === "kpi") {
+    return true;
+  }
+
+  return isKpiMetricValue(metric?.value);
+}
+
+function normalizeStatusEntries(status, statuses = []) {
+  const entries = [];
+
+  if (status) {
+    if (typeof status === "string") {
+      entries.push({ text: status, tone: "muted" });
+    } else {
+      entries.push(status);
+    }
+  }
+
+  if (Array.isArray(statuses)) {
+    entries.push(...statuses.filter(Boolean));
+  }
+
+  return entries;
+}
+
+function KpiBlock({ metric }) {
+  const toneColor = toneColorMap[metric.tone] || "#0F172A";
+
+  return (
+    <div style={metricItemStyle}>
+      <div
+        style={{
+          ...metricValueStyle,
+          color: toneColor,
+        }}
+      >
+        {metric.value ?? "—"}
+      </div>
+      <div style={metricLabelStyle}>{metric.label}</div>
+    </div>
+  );
+}
+
+function StatusBlock({ entries = [] }) {
+  if (!entries.length) {
+    return null;
+  }
+
+  return (
+    <div style={statusBlockStyle}>
+      {entries.map((entry, index) => {
+        const toneColor = toneColorMap[entry.tone] || "#64748B";
+        const label = String(entry.label || "").trim();
+        const text = String(entry.text || entry.value || "").trim();
+
+        return (
+          <div
+            key={entry.id || `${label}-${text}-${index}`}
+            style={statusLineStyle}
+          >
+            <span style={{ ...statusDotStyle, color: toneColor }}>●</span>
+            <span style={statusTextStyle}>
+              {label ? `${label}: ${text}` : text}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function AdminLauncherCard({
   title,
   subtitle,
   description,
   actionLabel,
   metrics = [],
+  status,
+  statuses = [],
   previewTitle,
   previewItems = [],
+  metricsColumns = 3,
+  previewLimit = 4,
   route,
   onNavigate,
   icon,
 }) {
   const [isHovered, setIsHovered] = useState(false);
 
-  const visibleMetrics = useMemo(
-    () => metrics.filter(Boolean).slice(0, 3),
-    [metrics]
+  const kpiMetrics = useMemo(
+    () => metrics.filter((metric) => metric && isKpiMetric(metric)),
+    [metrics],
   );
 
-  const visiblePreviewItems = useMemo(
-    () => previewItems.filter(Boolean).slice(0, 4),
-    [previewItems]
+  const visibleKpiMetrics = useMemo(
+    () => kpiMetrics.slice(0, metricsColumns),
+    [kpiMetrics, metricsColumns],
   );
+
+  const statusEntries = useMemo(() => {
+    const fromMetrics = metrics
+      .filter((metric) => metric && !isKpiMetric(metric))
+      .map((metric) => ({
+        label: metric.label === "Статус" ? "" : metric.label,
+        text: metric.value,
+        tone: metric.tone,
+      }));
+
+    return normalizeStatusEntries(status, [...statuses, ...fromMetrics]);
+  }, [metrics, status, statuses]);
+
+  const visiblePreviewItems = useMemo(
+    () => previewItems.filter(Boolean).slice(0, previewLimit),
+    [previewItems, previewLimit],
+  );
+
+  const metricsGridColumns = `repeat(${Math.max(visibleKpiMetrics.length, 1)}, minmax(0, 1fr))`;
+  const hasKpiBlock = visibleKpiMetrics.length > 0;
+  const hasStatusBlock = statusEntries.length > 0;
+  const hasInsightsBlock = hasKpiBlock || hasStatusBlock;
 
   return (
     <button
@@ -99,24 +216,25 @@ export default function AdminLauncherCard({
         <div style={descriptionStyle}>{description}</div>
       ) : null}
 
-      {visibleMetrics.length > 0 ? (
-        <div style={metricsGridStyle}>
-          {visibleMetrics.map((metric) => (
-            <div key={metric.label} style={metricItemStyle}>
-              <div
-                style={{
-                  ...metricValueStyle,
-                  color: toneColorMap[metric.tone] || "#0F172A",
-                }}
-              >
-                {metric.value ?? "—"}
-              </div>
-
-              <div style={metricLabelStyle}>
-                {metric.label}
-              </div>
+      {hasInsightsBlock ? (
+        <div style={insightsBlockStyle}>
+          {hasKpiBlock ? (
+            <div
+              style={{
+                ...metricsGridStyle,
+                gridTemplateColumns: metricsGridColumns,
+                marginTop: 0,
+                paddingTop: 0,
+                borderTop: "none",
+              }}
+            >
+              {visibleKpiMetrics.map((metric) => (
+                <KpiBlock key={metric.label} metric={metric} />
+              ))}
             </div>
-          ))}
+          ) : null}
+
+          {hasStatusBlock ? <StatusBlock entries={statusEntries} /> : null}
         </div>
       ) : null}
 
@@ -130,6 +248,32 @@ export default function AdminLauncherCard({
 
           <div style={previewListStyle}>
             {visiblePreviewItems.map((item, index) => {
+              const isCompanyPreview = Boolean(item.tenantType);
+
+              if (isCompanyPreview) {
+                return (
+                  <div
+                    key={item.id || item.label || index}
+                    style={companyPreviewItemStyle}
+                  >
+                    <div style={previewItemTitleStyle}>
+                      {item.title || "—"}
+                    </div>
+
+                    <TenantRegistryTypeBadge
+                      tenantId={item.tenantId}
+                      tenantType={item.tenantType}
+                    />
+
+                    {item.meta ? (
+                      <div style={previewMetaStyle}>
+                        {item.meta}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              }
+
               const avatarSettings = normalizeAvatarSettings(
                 item.avatarSettings
               );
@@ -326,13 +470,19 @@ const descriptionStyle = {
   color: "#475569",
 };
 
-const metricsGridStyle = {
+const insightsBlockStyle = {
   marginTop: 18,
+  paddingTop: 14,
+  borderTop: "1px solid #EDF2F7",
+  display: "flex",
+  flexDirection: "column",
+  gap: 10,
+};
+
+const metricsGridStyle = {
   display: "grid",
   gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
   gap: 10,
-  paddingTop: 14,
-  borderTop: "1px solid #EDF2F7",
 };
 
 const metricItemStyle = {
@@ -353,6 +503,32 @@ const metricLabelStyle = {
   fontWeight: 600,
   color: "#64748B",
   lineHeight: 1.25,
+};
+
+const statusBlockStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: 6,
+};
+
+const statusLineStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  minHeight: 20,
+};
+
+const statusDotStyle = {
+  fontSize: 10,
+  lineHeight: 1,
+  flexShrink: 0,
+};
+
+const statusTextStyle = {
+  fontSize: 12,
+  fontWeight: 600,
+  lineHeight: 1.35,
+  color: "#64748B",
 };
 
 const previewBlockStyle = {
@@ -378,6 +554,14 @@ const previewItemStyle = {
   minWidth: 0,
   display: "grid",
   gridTemplateColumns: "24px minmax(0, 1fr) auto",
+  alignItems: "center",
+  gap: 8,
+};
+
+const companyPreviewItemStyle = {
+  minWidth: 0,
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) auto auto",
   alignItems: "center",
   gap: 8,
 };

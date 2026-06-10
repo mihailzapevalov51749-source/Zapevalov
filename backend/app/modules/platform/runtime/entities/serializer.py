@@ -35,6 +35,7 @@ def serialize_entity(
         record_number=record_number,
         recordNumber=record_number,
         system_number=record_number,
+        is_system=bool(getattr(entity, "is_system", False)),
         created_at=entity.created_at,
         updated_at=entity.updated_at,
         deleted_at=entity.deleted_at,

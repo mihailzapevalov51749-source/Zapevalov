@@ -1,0 +1,1 @@
+"""Navigation System Entity registry."""

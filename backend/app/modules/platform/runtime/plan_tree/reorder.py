@@ -128,6 +128,9 @@ def collect_orphan_root_entity_ids(
         if entity.id == anchor_entity_id:
             continue
 
+        if entity.is_system:
+            continue
+
         if entity.id in child_ids:
             continue
 

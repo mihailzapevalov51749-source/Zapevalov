@@ -28,6 +28,10 @@ import { useHeaderSearchController } from "../shared/search/useHeaderSearchContr
 
 import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../shared/navigation/navigationReload";
 import {
+  readLeftMenuScale,
+  writeLeftMenuScale,
+} from "../shared/uiStorage/leftMenuScaleStorage.js";
+import {
   resolvePortalIdFromPath,
   resolvePortalNavigationClickTarget,
 } from "./utils/portalObjectRoutes";
@@ -155,13 +159,11 @@ export default function PortalLibraryRuntimePage() {
 
 
 
-  const [menuScale, setMenuScale] = useState(() => {
+  const [menuScale, setMenuScale] = useState(() => readLeftMenuScale(portalId));
 
-    const saved = localStorage.getItem("leftMenuScale");
-
-    return saved ? Number(saved) : 1;
-
-  });
+  useEffect(() => {
+    setMenuScale(readLeftMenuScale(portalId));
+  }, [portalId]);
 
   const [runtimeHeaderModel, setRuntimeHeaderModel] = useState(null);
 
@@ -345,9 +347,9 @@ export default function PortalLibraryRuntimePage() {
 
     setMenuScale(rounded);
 
-    localStorage.setItem("leftMenuScale", String(rounded));
+    writeLeftMenuScale(portalId, rounded);
 
-  }, []);
+  }, [portalId]);
 
 
 

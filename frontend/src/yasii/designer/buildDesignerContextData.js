@@ -18,6 +18,7 @@ const SECTION_ENTITY_TYPES = {
   views: "views",
   administration: "administration",
   platform: "platform",
+  "event-journal": "event_journal",
 };
 
 function resolveDesignerTabKey(pathname) {

@@ -1,5 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime
-from sqlalchemy.orm import relationship
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.sql import func
 
 from app.db.base import Base
@@ -16,6 +15,26 @@ class Portal(Base):
     logo_url = Column(String(500), nullable=True)
     is_active = Column(Boolean, default=True)
 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    tenant_type = Column(
+        String(32),
+        nullable=False,
+        default="CLIENT",
+        server_default="CLIENT",
+        index=True,
+    )
+    template_version = Column(
+        String(32),
+        nullable=False,
+        default="1.0.0",
+        server_default="1.0.0",
+    )
+    tenant_status = Column(
+        String(32),
+        nullable=False,
+        default="ACTIVE",
+        server_default="ACTIVE",
+    )
+    source_tenant_id = Column(Integer, ForeignKey("portals.id", ondelete="SET NULL"), nullable=True)
+    notes = Column(Text, nullable=True)
 
-    # связи добавим позже
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -320,7 +320,8 @@ def _component_checks(ctx: ScanContext, slug: str) -> list[EvidenceItem]:
                 "ui_integration",
                 "UI",
                 20,
-                frontend_has_marker(frontend, "AdminTenantsPage"),
+                frontend_has_marker(frontend, "AdminTenantsPage")
+                and frontend_has_marker(frontend, "TenantAdministrationRouter"),
             ),
             ("persistence", "Persistence", 15, backend_has_table(backend, "customer_companies")),
             (

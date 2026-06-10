@@ -15,14 +15,14 @@ import {
 export function resolveStudioToOfficePath(pathname) {
   const tenantId = resolveTenantIdFromPathname(pathname);
   if (tenantId) {
-    const stored = getStoredRuntimePath();
+    const stored = getStoredRuntimePath(tenantId);
     if (stored && pathBelongsToTenant(stored, tenantId)) {
       return stored;
     }
     return buildDefaultRuntimePath(tenantId);
   }
 
-  return getStoredRuntimePath() || buildDefaultRuntimePath(1);
+  return getStoredRuntimePath(1) || buildDefaultRuntimePath(1);
 }
 
 /**
@@ -32,7 +32,7 @@ export function resolveOfficeToStudioPath(pathname, tenantIdFallback = 1) {
   const tenantFromUrl = resolveTenantIdFromPathname(pathname);
   const tenantId = tenantFromUrl ?? Number(tenantIdFallback) ?? 1;
 
-  const stored = getStoredDesignerPath();
+  const stored = getStoredDesignerPath(tenantId);
   if (stored && pathBelongsToTenant(stored, tenantId)) {
     return stored;
   }
@@ -42,11 +42,12 @@ export function resolveOfficeToStudioPath(pathname, tenantIdFallback = 1) {
 
 /** Root `/` entry — last path allowed only when URL has no tenant. */
 export function resolveRootEntryPath() {
-  return getStoredRuntimePath() || buildDefaultRuntimePath(1);
+  return getStoredRuntimePath(1) || buildDefaultRuntimePath(1);
 }
+
 export function resolveRuntimeFallbackPath(tenantId) {
   const normalizedTenantId = Number(tenantId) > 0 ? Number(tenantId) : 1;
-  const stored = getStoredRuntimePath();
+  const stored = getStoredRuntimePath(normalizedTenantId);
   if (stored && pathBelongsToTenant(stored, normalizedTenantId)) {
     return stored;
   }
@@ -60,7 +61,7 @@ export function resolveYasiiReturnPath(preWorkspacePath) {
     return trimmed;
   }
 
-  const stored = getStoredRuntimePath();
+  const stored = getStoredRuntimePath(1);
   const tenantId = resolveTenantIdFromPathname(stored) ?? 1;
   return resolveRuntimeFallbackPath(tenantId);
 }

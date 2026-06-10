@@ -214,6 +214,12 @@ def create_object_type(
         entity.id,
         current_user=current_user,
     )
+    view_service.ensure_default_quick_form_view(
+        db,
+        tenant_id,
+        entity.id,
+        current_user=current_user,
+    )
 
     return _to_read(entity, db)
 

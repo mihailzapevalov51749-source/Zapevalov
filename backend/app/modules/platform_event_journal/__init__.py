@@ -1,0 +1,1 @@
+"""Platform Event Journal module."""

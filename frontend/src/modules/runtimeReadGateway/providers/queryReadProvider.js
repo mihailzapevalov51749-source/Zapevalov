@@ -1,4 +1,5 @@
 import * as runtimeQueryApi from "../../designer/api/runtimeQueryApi";
+import { filterUserVisibleRuntimeEntities } from "../../../shared/runtime/runtimeSystemRecords";
 import {
   createObjectListResult,
   createProjectionResult,
@@ -32,7 +33,7 @@ export const queryReadProvider = {
       tenantId: response?.tenant_id ?? tenantId,
       objectTypeKey: response?.object_type_key ?? objectTypeKey,
       viewKey,
-      items: response?.items || [],
+      items: filterUserVisibleRuntimeEntities(response?.items || []),
       pagination: response?.pagination || {},
       projection: null,
       warnings: [],

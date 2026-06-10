@@ -24,14 +24,6 @@ const DESIGNER_NAVIGATION = [
     label: "Объекты",
   },
   {
-    id: "designer-relations",
-    label: "Связи",
-  },
-  {
-    id: "designer-views",
-    label: "Представления",
-  },
-  {
     id: "designer-users",
     label: "Пользователи",
   },

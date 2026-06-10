@@ -24,30 +24,25 @@ describe("yasiiEmbeddedApi endpoints", () => {
   });
 });
 
-describe("Platform Dashboard embedded integration wiring", () => {
-  it("uses floating launcher with surface context provider", () => {
-    const hookSource = readSource("./hooks/useYasiiEmbeddedQuery.js");
-    const panelSource = readSource("./components/YasiiEmbeddedPanel.jsx");
-    const floatingSource = readSource("./components/YasiiFloatingButton.jsx");
-    const pageSource = readFileSync(
-      join(__dirname, "../modules/platformDashboard/pages/PlatformDevelopmentPage.jsx"),
+describe("Platform event journal routing", () => {
+  it("mounts journal page instead of legacy dashboard page", () => {
+    const appSource = readFileSync(
+      join(__dirname, "../App.jsx"),
+      "utf8",
+    );
+    const journalSource = readFileSync(
+      join(__dirname, "../modules/platformDashboard/pages/PlatformEventJournalPage.jsx"),
       "utf8",
     );
 
-    assert.match(hookSource, /sendEmbeddedQuery/);
-    assert.doesNotMatch(hookSource, /sendYasiiQuery/);
-    assert.match(panelSource, /resolveEmbeddedSurface/);
-    assert.match(floatingSource, /YasiiLauncher/);
-    assert.match(floatingSource, /useYasiiResolvedSurface/);
-    assert.match(floatingSource, /useYasiiResolvedSurface/);
-    assert.doesNotMatch(floatingSource, /hideOnPlatformDashboard/);
-    assert.match(pageSource, /YasiiSurfaceContextProvider/);
-    assert.match(pageSource, /buildPlatformDashboardMetadata/);
-    assert.doesNotMatch(pageSource, /PlatformDashboardYasiiEntry/);
-    assert.doesNotMatch(pageSource, /sendYasiiQuery/);
-    assert.doesNotMatch(pageSource, /\/yasii\/query/);
+    assert.match(appSource, /PlatformEventJournalPage/);
+    assert.doesNotMatch(appSource, /PlatformDevelopmentPage/);
+    assert.doesNotMatch(journalSource, /YasiiSurfaceContextProvider/);
+    assert.doesNotMatch(journalSource, /buildPlatformDashboardMetadata/);
   });
+});
 
+describe("YASII embedded panel wiring", () => {
   it("does not route dashboard panel through legacy query API", () => {
     const panelSource = readSource("./components/YasiiEmbeddedPanel.jsx");
     assert.doesNotMatch(panelSource, /\/yasii\/query/);

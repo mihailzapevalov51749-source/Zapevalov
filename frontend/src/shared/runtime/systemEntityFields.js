@@ -6,6 +6,7 @@ export const SYSTEM_ENTITY_FIELD_KEY_PREFIX = "__system_";
 
 export const SYSTEM_ENTITY_FIELD_KEYS = {
   id: `${SYSTEM_ENTITY_FIELD_KEY_PREFIX}id`,
+  isSystem: `${SYSTEM_ENTITY_FIELD_KEY_PREFIX}is_system`,
   recordNumber: `${SYSTEM_ENTITY_FIELD_KEY_PREFIX}record_number`,
   createdBy: `${SYSTEM_ENTITY_FIELD_KEY_PREFIX}created_by`,
   createdAt: `${SYSTEM_ENTITY_FIELD_KEY_PREFIX}created_at`,

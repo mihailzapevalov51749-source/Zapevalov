@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-import {
-  buildAdministrationPath,
-  resolveStudioTenantIdFromPath,
-} from "../config/adminPaths";
+import { buildControlPlaneClientsPath } from "../../controlPlane/config/controlPlanePaths";
+import ClientsSectionNav from "../clients/ClientsSectionNav";
 import AdminTenantDeleteModal from "./AdminTenantDeleteModal";
 import { adminTenantsStyles as styles } from "./adminTenantsStyles";
 import { createPortal, deletePortal, listPortals } from "./portalsApi";
@@ -39,7 +38,7 @@ function CreateTenantModal({ isOpen, onClose, onCreated }) {
     const trimmedName = name.trim();
 
     if (!trimmedName) {
-      setError("Укажите название тенанта");
+      setError("Укажите название компании");
       return;
     }
 
@@ -55,8 +54,8 @@ function CreateTenantModal({ isOpen, onClose, onCreated }) {
       const detail =
         requestError?.response?.data?.detail ||
         requestError?.message ||
-        "Не удалось создать тенант";
-      setError(typeof detail === "string" ? detail : "Не удалось создать тенант");
+        "Не удалось создать компанию";
+      setError(typeof detail === "string" ? detail : "Не удалось создать компанию");
     } finally {
       setIsSaving(false);
     }
@@ -81,8 +80,8 @@ function CreateTenantModal({ isOpen, onClose, onCreated }) {
         onClick={(event) => event.stopPropagation()}
         onSubmit={handleSubmit}
       >
-        <div style={styles.kicker}>Управление платформой</div>
-        <h2 style={{ ...styles.title, fontSize: 20 }}>Создать tenant</h2>
+        <div style={styles.kicker}>Клиенты ЯсноПро</div>
+        <h2 style={{ ...styles.title, fontSize: 20 }}>Создать компанию</h2>
 
         <div style={styles.field}>
           <label style={styles.label} htmlFor="tenant-name">
@@ -127,10 +126,7 @@ function CreateTenantModal({ isOpen, onClose, onCreated }) {
 }
 
 export default function AdminTenantsPage() {
-  const studioTenantId = useMemo(
-    () => resolveStudioTenantIdFromPath(window.location.pathname),
-    [],
-  );
+  const navigate = useNavigate();
   const [portals, setPortals] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -150,8 +146,8 @@ export default function AdminTenantsPage() {
       const detail =
         requestError?.response?.data?.detail ||
         requestError?.message ||
-        "Не удалось загрузить список тенантов";
-      setError(typeof detail === "string" ? detail : "Не удалось загрузить список тенантов");
+        "Не удалось загрузить список компаний";
+      setError(typeof detail === "string" ? detail : "Не удалось загрузить список компаний");
       setPortals([]);
     } finally {
       setIsLoading(false);
@@ -162,17 +158,10 @@ export default function AdminTenantsPage() {
     loadPortals();
   }, [loadPortals]);
 
-  const navigateTo = (path) => {
-    window.history.pushState({}, "", path);
-    window.dispatchEvent(new PopStateEvent("popstate"));
-  };
-
   const handleCreated = (portal) => {
     setIsCreateOpen(false);
     loadPortals();
-    navigateTo(
-      buildAdministrationPath(studioTenantId, `tenants/${portal.id}`),
-    );
+    navigate(buildControlPlaneClientsPath(`companies/${portal.id}`));
   };
 
   const openTenantRuntime = (portalId) => {
@@ -180,7 +169,7 @@ export default function AdminTenantsPage() {
   };
 
   const openTenantCard = (portalId) => {
-    navigateTo(buildAdministrationPath(studioTenantId, `tenants/${portalId}`));
+    navigate(buildControlPlaneClientsPath(`companies/${portalId}`));
   };
 
   const openDeleteModal = (portal) => {
@@ -215,8 +204,8 @@ export default function AdminTenantsPage() {
       const detail =
         requestError?.response?.data?.detail ||
         requestError?.message ||
-        "Не удалось удалить tenant";
-      setDeleteError(typeof detail === "string" ? detail : "Не удалось удалить tenant");
+        "Не удалось удалить компанию";
+      setDeleteError(typeof detail === "string" ? detail : "Не удалось удалить компанию");
     } finally {
       setIsDeleting(false);
     }
@@ -226,11 +215,11 @@ export default function AdminTenantsPage() {
     <div style={styles.page}>
       <div style={styles.header}>
         <div>
-          <div style={styles.kicker}>Управление платформой</div>
-          <h1 style={styles.title}>Тенанты</h1>
+          <div style={styles.kicker}>Control Plane</div>
+          <h1 style={styles.title}>Клиенты ЯсноПро</h1>
           <p style={styles.subtitle}>
-            Ручное создание и проверка технических порталов (таблица portals).
-            При создании структура автоматически клонируется из portal 1.
+            Компании, использующие платформу ЯсноПро. Создание, управление и
+            контроль клиентских организаций.
           </p>
         </div>
         <button
@@ -238,9 +227,11 @@ export default function AdminTenantsPage() {
           style={styles.primaryButton}
           onClick={() => setIsCreateOpen(true)}
         >
-          Создать
+          Создать компанию
         </button>
       </div>
+
+      <ClientsSectionNav />
 
       <section style={styles.card}>
         {error ? <div style={styles.error}>{error}</div> : null}
@@ -263,7 +254,7 @@ export default function AdminTenantsPage() {
               {portals.length === 0 ? (
                 <tr>
                   <td style={styles.td} colSpan={6}>
-                    Тенанты не найдены. Нажмите «Создать», чтобы добавить первый portal.
+                    Компании не найдены. Нажмите «Создать компанию», чтобы добавить первую.
                   </td>
                 </tr>
               ) : (
@@ -296,7 +287,7 @@ export default function AdminTenantsPage() {
                           style={styles.linkButton}
                           onClick={() => openTenantRuntime(portal.id)}
                         >
-                          Открыть tenant
+                          Открыть Office
                         </button>
                         <button
                           type="button"

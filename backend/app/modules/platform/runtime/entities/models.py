@@ -1,6 +1,7 @@
 import uuid
 
 from sqlalchemy import (
+    Boolean,
     Column,
     DateTime,
     ForeignKey,
@@ -69,6 +70,13 @@ class RuntimeEntity(Base):
         server_default="1",
     )
     record_number = Column(Integer, nullable=False, index=True)
+    is_system = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default=text("false"),
+    )
+    plan_root_relation_key = Column(String(64), nullable=True)
     deleted_at = Column(DateTime(timezone=True), nullable=True)
 
     values = relationship(
@@ -82,6 +90,18 @@ class RuntimeEntity(Base):
         Index("ix_runtime_entities_tenant_catalog_version", "tenant_id", "catalog_version"),
         Index("ix_runtime_entities_tenant_status", "tenant_id", "status"),
         Index("ix_runtime_entities_tenant_deleted_at", "tenant_id", "deleted_at"),
+        Index(
+            "ix_runtime_entities_tenant_object_type_is_system",
+            "tenant_id",
+            "object_type_key",
+            "is_system",
+        ),
+        Index(
+            "ix_runtime_entities_plan_root_relation_key",
+            "tenant_id",
+            "object_type_key",
+            "plan_root_relation_key",
+        ),
         UniqueConstraint(
             "tenant_id",
             "object_type_key",

@@ -4,16 +4,11 @@ import { LAYOUT_MODES } from "../../layout/layoutModes";
 import { resolveWorkspaceLeftOffset } from "../../layout/shellGeometry";
 import { Z_INDEX_TOKENS } from "../../layout/zIndexTokens";
 import FileViewerWorkspace from "./FileViewerWorkspace";
+import { readShellSidebarCollapsedForCurrentUrl } from "../../shell/useShellSidebarState";
 import { normalizeFileViewerId } from "./fileViewerDiscussionUtils";
 
-const SIDEBAR_SETTINGS_KEY = "yasnopro-sidebar-collapsed";
-
 function readSidebarCollapsed() {
-  try {
-    return localStorage.getItem(SIDEBAR_SETTINGS_KEY) === "true";
-  } catch {
-    return false;
-  }
+  return readShellSidebarCollapsedForCurrentUrl();
 }
 
 const WORKSPACE_TOP_OFFSET = 0;

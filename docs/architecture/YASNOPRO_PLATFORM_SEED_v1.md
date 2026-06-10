@@ -60,6 +60,7 @@ Platform Seed:
 
 | Документ | Slug | Статус |
 |----------|------|--------|
+| [platform/tenant-environment-strategy.md](./platform/tenant-environment-strategy.md) | `tenant-environment-strategy` | accepted |
 | [YASNOPRO_SCOPE_TENANT_MODEL.md](./YASNOPRO_SCOPE_TENANT_MODEL.md) | `yasnopro-scope-tenant-model` | active |
 | [YASNOPRO_PLATFORM_BASELINE_v1.md](./YASNOPRO_PLATFORM_BASELINE_v1.md) | `yasnopro-platform-baseline-v1` | active |
 | [adr/ADR-006-platform-seed-v1.md](./adr/ADR-006-platform-seed-v1.md) | `adr-006-platform-seed-v1` | accepted |

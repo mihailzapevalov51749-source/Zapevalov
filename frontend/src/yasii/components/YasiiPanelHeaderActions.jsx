@@ -15,6 +15,7 @@ import {
 } from "../panel/yasiiPanelWindowControls.js";
 import {
   readYasiiPreWorkspacePath,
+  resolveYasiiTenantId,
   writeYasiiPreWorkspacePath,
 } from "../workspace/yasiiWorkspaceModeStorage.js";
 import YasiiPanelControlButton from "./YasiiPanelControlButton.jsx";
@@ -30,6 +31,7 @@ export default function YasiiPanelHeaderActions({
   const { minimizeCurrentPage, loading: tabsLoading } = useGlobalWorkspaceTabs();
   const [minimizeBusy, setMinimizeBusy] = useState(false);
 
+  const tenantId = resolveYasiiTenantId(location.pathname);
   const isPinned = session?.isPinned ?? false;
   const isWorkspace = layoutMode === "workspace";
   const controlOrder = useMemo(
@@ -43,14 +45,16 @@ export default function YasiiPanelHeaderActions({
 
   const handleExpandOrCollapse = () => {
     if (isWorkspace) {
-      const returnPath = resolveYasiiReturnPath(readYasiiPreWorkspacePath());
+      const returnPath = resolveYasiiReturnPath(
+        readYasiiPreWorkspacePath(tenantId, location.pathname),
+      );
       session?.leaveYasiiPageToPanel?.();
       navigate(returnPath);
       return;
     }
 
     const returnPath = `${location.pathname}${location.search}${location.hash}`;
-    writeYasiiPreWorkspacePath(returnPath);
+    writeYasiiPreWorkspacePath(returnPath, tenantId, location.pathname);
     session?.enterYasiiPage?.();
     navigate("/yasii");
   };

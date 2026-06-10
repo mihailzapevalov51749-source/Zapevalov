@@ -1,11 +1,40 @@
+import {
+  buildControlPlaneClientsPath,
+  buildControlPlaneRoute,
+  CONTROL_PLANE_BASE,
+} from "../../controlPlane/config/controlPlanePaths.js";
+import { buildTenantAdminPath } from "./tenantAdminPaths.js";
+
+export {
+  buildControlPlaneClientsPath,
+  buildControlPlaneRoute,
+  CONTROL_PLANE_BASE,
+};
+
+export {
+  buildTenantAdminPath,
+  resolveStudioTenantIdFromPath,
+  isTenantAdministrationPath,
+} from "./tenantAdminPaths.js";
+
 export function buildAdministrationPath(tenantId, segment = "") {
-  const normalizedTenantId = Number(tenantId) > 0 ? Number(tenantId) : 1;
-  const base = `/designer/tenant/${normalizedTenantId}/administration`;
-  const normalizedSegment = String(segment || "").replace(/^\//, "");
-  return normalizedSegment ? `${base}/${normalizedSegment}` : base;
+  return buildTenantAdminPath(tenantId, segment);
 }
 
-export function resolveStudioTenantIdFromPath(pathname = window.location.pathname) {
-  const match = String(pathname || "").match(/\/designer\/tenant\/(\d+)/);
-  return match ? Number(match[1]) : 1;
+export function buildClientsPath(_tenantId, segment = "") {
+  const normalizedSegment = String(segment || "").replace(/^\//, "");
+  return buildControlPlaneClientsPath(normalizedSegment);
+}
+
+export function buildControlPlanePath(_tenantId, segment = "") {
+  const normalizedSegment = String(segment || "").replace(/^\//, "");
+  if (!normalizedSegment) {
+    return buildControlPlaneClientsPath("registry");
+  }
+  if (normalizedSegment.startsWith("tenants/")) {
+    return buildControlPlaneClientsPath(
+      `registry/${normalizedSegment.replace(/^tenants\//, "")}`,
+    );
+  }
+  return buildControlPlaneClientsPath(`registry/${normalizedSegment}`);
 }

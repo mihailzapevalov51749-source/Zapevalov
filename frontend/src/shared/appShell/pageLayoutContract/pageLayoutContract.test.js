@@ -420,8 +420,8 @@ describe("full platform page contract registrations", () => {
       toolbarZoneToken: "APP_HEADER",
     },
     {
-      file: join(contractDir, "../../../modules/platformDashboard/pages/PlatformDevelopmentPage.jsx"),
-      pageTypeToken: "DASHBOARD",
+      file: join(contractDir, "../../../modules/platformDashboard/pages/PlatformEventJournalPage.jsx"),
+      pageTypeToken: "STUDIO_SECTION",
       toolbarZoneToken: "APP_HEADER",
     },
     {

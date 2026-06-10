@@ -223,7 +223,7 @@ export function resolveDesignerRouteOwner(pathname, navigationItems = [], tenant
   if (isDesignerPlatformRoute(normalizedPath)) {
     return {
       kind: DESIGNER_ROUTE_OWNER_KIND.ROOT_SECTION,
-      sectionKey: "platform",
+      sectionKey: "event-journal",
       tenantId: resolvedTenantId,
     };
   }

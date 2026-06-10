@@ -240,6 +240,22 @@ export async function getAdminUsers() {
   return response.json();
 }
 
+export async function getAdminRoles() {
+  const response = await fetch(`${API_BASE_URL}/admin/roles`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    const errorMessage = await parseError(
+      response,
+      "Не удалось загрузить роли"
+    );
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+}
+
 export async function createAdminUser(payload) {
   const response = await fetch(`${API_BASE_URL}/admin/users`, {
     method: "POST",

@@ -76,6 +76,7 @@ def search_entities_in_object_type(
             RuntimeEntity.tenant_id == tenant_id,
             RuntimeEntity.object_type_key == object_type_key,
             RuntimeEntity.deleted_at.is_(None),
+            RuntimeEntity.is_system.is_(False),
             func.lower(title_text).like(func.lower(pattern)),
         )
         .limit(max(limit * 5, limit))

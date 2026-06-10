@@ -11,6 +11,15 @@ import { theme } from "../../../styles/theme";
 import { LAYOUT_TOKENS } from "../../../shared/layout/layoutTokens";
 
 import { resolveDesignerSidebarItemActive } from "../../../shared/shell/designer/designerNavigationResolver";
+import {
+  readMenuCollapsedState,
+  writeMenuCollapsedState,
+} from "../../../shared/uiStorage/menuCollapsedStorage.js";
+import {
+  readControlPlaneMenuState,
+  writeControlPlaneMenuState,
+} from "../../../shared/uiStorage/controlPlaneUiStorage.js";
+import { isControlPlanePath } from "../../controlPlane/config/controlPlanePaths.js";
 
 const BASE = {
   rowHeight: 40,
@@ -24,20 +33,24 @@ const BASE = {
 };
 
 const PROTECTED_TITLES = ["главная страница", "мои задачи"];
-const MENU_COLLAPSE_STORAGE_KEY = "yasnopro-menu-collapsed";
 
-function getCollapsedState() {
-  try {
-    return JSON.parse(
-      localStorage.getItem(MENU_COLLAPSE_STORAGE_KEY) || "{}"
-    );
-  } catch {
-    return {};
-  }
+function isControlPlaneMenuPath(pathname = "") {
+  return isControlPlanePath(pathname);
 }
 
-function saveCollapsedState(state) {
-  localStorage.setItem(MENU_COLLAPSE_STORAGE_KEY, JSON.stringify(state));
+function getCollapsedState(tenantId) {
+  if (isControlPlaneMenuPath(window.location.pathname)) {
+    return readControlPlaneMenuState();
+  }
+  return readMenuCollapsedState(tenantId);
+}
+
+function saveCollapsedState(tenantId, state) {
+  if (isControlPlaneMenuPath(window.location.pathname)) {
+    writeControlPlaneMenuState(state);
+    return;
+  }
+  writeMenuCollapsedState(tenantId, state);
 }
 
 function isProtectedMenuTitle(title) {
@@ -120,17 +133,27 @@ export default function MenuItem({
   sidebarCollapsed = false,
   sidebarMode = "runtime",
   routeOwner = null,
+  tenantId = 1,
 }) {
   const iconSource = useMemo(() => resolveSidebarNavigationIconSource(item), [item]);
 
   const [isHovered, setIsHovered] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
-    const state = getCollapsedState();
+    const state = getCollapsedState(tenantId);
     if (state[item.id] !== undefined) {
       return Boolean(state[item.id]);
     }
     return !activeSidebarParentIds.includes(String(item.id));
   });
+
+  useEffect(() => {
+    const state = getCollapsedState(tenantId);
+    if (state[item.id] !== undefined) {
+      setIsCollapsed(Boolean(state[item.id]));
+      return;
+    }
+    setIsCollapsed(!activeSidebarParentIds.includes(String(item.id)));
+  }, [tenantId, item.id, activeSidebarParentIds]);
 
   const isProtectedTitle = isProtectedMenuTitle(item?.title);
 
@@ -294,9 +317,9 @@ export default function MenuItem({
     if (isSection) {
       setIsCollapsed((prev) => {
         const next = !prev;
-        const state = getCollapsedState();
+        const state = getCollapsedState(tenantId);
         state[item.id] = next;
-        saveCollapsedState(state);
+        saveCollapsedState(tenantId, state);
         return next;
       });
       return;

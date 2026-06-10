@@ -62,14 +62,20 @@ import {
   shouldSuppressCanvasContextMenu,
 } from "./utils/pageCanvasContextMenuUtils";
 
-import AdminUsersPage from "../modules/admin/users/AdminUsersPage";
-import AdminTenantsPage from "../modules/admin/tenants/AdminTenantsPage";
-import AdminTenantDetailPage from "../modules/admin/tenants/AdminTenantDetailPage";
 import AdminOrgStructurePage from "../modules/admin/orgStructure/AdminOrgStructurePage";
-import AdminRolesPage from "../modules/admin/roles/AdminRolesPage";
 import AdminDepartmentsPage from "../modules/admin/departments/AdminDepartmentsPage";
 import AdminDashboardPage from "../modules/admin/pages/AdminDashboardPage";
-import AdminSystemPage from "../modules/admin/system/AdminSystemPage";
+import TenantAdminPlaceholderPage from "../modules/admin/components/TenantAdminPlaceholderPage";
+import {
+  resolveTenantAdminPage,
+  TENANT_ADMIN_PAGE_META,
+} from "../modules/admin/routes/resolveTenantAdminPage";
+import {
+  buildControlPlaneClientsPath,
+  buildControlPlaneRoute,
+  resolveStudioTenantIdFromPath,
+} from "../modules/admin/config/adminPaths";
+import { isPlatformAdminLegacySuffix } from "../modules/controlPlane/config/controlPlanePaths";
 
 import CorporateChatPage from "../modules/chats/pages/CorporateChatPage";
 
@@ -92,6 +98,10 @@ import { resolveSidebarWidth, resolveWorkspaceLeftOffset } from "../shared/layou
 import { SHELL_FEATURE_FLAGS } from "../shared/shell/shellFeatureFlags";
 import { resolveAppSidebarWidth } from "../shared/shell/shellSidebarGeometry";
 import { readShellSidebarCollapsed } from "../shared/shell/useShellSidebarState";
+import {
+  readLeftMenuScale,
+  writeLeftMenuScale,
+} from "../shared/uiStorage/leftMenuScaleStorage.js";
 import { emitRuntimeShadowSnapshot } from "../shared/shell/shadow/runtime";
 import SearchResultsOverlay from "../shared/search/SearchResultsOverlay";
 import { useHeaderSearchContext } from "../shared/search/useHeaderSearchContext";
@@ -227,37 +237,174 @@ function registerPageEntities(sections, pageId) {
   }
 }
 
+function AdminPathRedirect({ targetPath }) {
+  useEffect(() => {
+    if (!targetPath) {
+      return;
+    }
+
+    window.history.replaceState({}, "", targetPath);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }, [targetPath]);
+
+  return null;
+}
+
 function getAdminPageByPath(pathname) {
   const normalizedPath = pathname.replace(/\/+$/, "");
   const studioAdminPrefixMatch = normalizedPath.match(
-    /^\/designer\/tenant\/\d+\/administration(\/.*)?$/
+    /^\/designer\/tenant\/\d+\/administration(\/.*)?$/,
   );
   const suffix = studioAdminPrefixMatch ? studioAdminPrefixMatch[1] || "" : "";
   const adminPath = studioAdminPrefixMatch
     ? `/admin${suffix}`
     : normalizedPath;
+  const studioTenantId = resolveStudioTenantIdFromPath(pathname);
+  const isTenantAdminContext = Boolean(studioAdminPrefixMatch);
 
-  if (adminPath === "/admin") return <AdminDashboardPage />;
-  const tenantsDetailMatch = adminPath.match(/^\/admin\/tenants\/(\d+)$/);
-  if (tenantsDetailMatch) {
-    return <AdminTenantDetailPage portalId={Number(tenantsDetailMatch[1])} />;
+  if (isTenantAdminContext) {
+    const tenantSuffix = String(suffix || "").replace(/^\//, "");
+
+    if (!tenantSuffix) {
+      return (
+        <AdminDashboardPage variant="tenant" tenantId={studioTenantId} />
+      );
+    }
+
+    if (isPlatformAdminLegacySuffix(tenantSuffix)) {
+      if (tenantSuffix === "control-plane/tenants") {
+        return (
+          <AdminPathRedirect targetPath={buildControlPlaneClientsPath("registry")} />
+        );
+      }
+
+      const legacyRegistryDetail = tenantSuffix.match(
+        /^control-plane\/tenants\/(\d+)$/,
+      );
+      if (legacyRegistryDetail) {
+        return (
+          <AdminPathRedirect
+            targetPath={buildControlPlaneClientsPath(
+              `registry/${legacyRegistryDetail[1]}`,
+            )}
+          />
+        );
+      }
+
+      if (tenantSuffix === "tenants") {
+        return (
+          <AdminPathRedirect targetPath={buildControlPlaneClientsPath("companies")} />
+        );
+      }
+
+      const legacyCompanyDetail = tenantSuffix.match(/^tenants\/(\d+)$/);
+      if (legacyCompanyDetail) {
+        return (
+          <AdminPathRedirect
+            targetPath={buildControlPlaneClientsPath(
+              `companies/${legacyCompanyDetail[1]}`,
+            )}
+          />
+        );
+      }
+
+      if (tenantSuffix === "clients" || tenantSuffix.startsWith("clients/")) {
+        return (
+          <AdminPathRedirect
+            targetPath={buildControlPlaneRoute(
+              tenantSuffix === "clients" ? "clients" : tenantSuffix,
+            )}
+          />
+        );
+      }
+    }
+
+    const tenantPage = resolveTenantAdminPage(tenantSuffix);
+    if (tenantPage) {
+      return tenantPage;
+    }
+
+    return (
+      <TenantAdminPlaceholderPage
+        title="Администрирование компании"
+        description="Раздел в разработке."
+      />
+    );
   }
-  if (adminPath === "/admin/tenants") return <AdminTenantsPage />;
-  if (adminPath === "/admin/users") return <AdminUsersPage />;
-  if (adminPath === "/admin/org-structure") return <AdminOrgStructurePage />;
-  if (adminPath === "/admin/roles") return <AdminRolesPage />;
-  if (adminPath === "/admin/departments") return <AdminDepartmentsPage />;
-  if (adminPath === "/admin/system-settings") return <AdminSystemPage />;
-  if (adminPath === "/admin/system") return <AdminSystemPage />;
+
+  if (adminPath === "/admin") {
+    return <AdminDashboardPage variant="platform" />;
+  }
+
+  const legacyRegistryDetailMatch = adminPath.match(
+    /^\/admin\/control-plane\/tenants\/(\d+)$/,
+  );
+  if (legacyRegistryDetailMatch) {
+    return (
+      <AdminPathRedirect
+        targetPath={buildControlPlaneClientsPath(
+          `registry/${legacyRegistryDetailMatch[1]}`,
+        )}
+      />
+    );
+  }
+  if (adminPath === "/admin/control-plane/tenants") {
+    return (
+      <AdminPathRedirect targetPath={buildControlPlaneClientsPath("registry")} />
+    );
+  }
+
+  const legacyTenantsDetailMatch = adminPath.match(/^\/admin\/tenants\/(\d+)$/);
+  if (legacyTenantsDetailMatch) {
+    return (
+      <AdminPathRedirect
+        targetPath={buildControlPlaneClientsPath(
+          `companies/${legacyTenantsDetailMatch[1]}`,
+        )}
+      />
+    );
+  }
+  if (adminPath === "/admin/tenants") {
+    return (
+      <AdminPathRedirect targetPath={buildControlPlaneClientsPath("companies")} />
+    );
+  }
+
+  if (
+    adminPath === "/admin/clients"
+    || adminPath === "/admin/clients/companies"
+    || adminPath.match(/^\/admin\/clients\/companies\/\d+$/)
+    || adminPath === "/admin/clients/registry"
+    || adminPath.match(/^\/admin\/clients\/registry\/\d+$/)
+  ) {
+    const clientsSuffix = adminPath.replace(/^\/admin\/clients\/?/, "");
+    return (
+      <AdminPathRedirect
+        targetPath={buildControlPlaneClientsPath(clientsSuffix)}
+      />
+    );
+  }
+
+  if (adminPath === "/admin/users") {
+    return <AdminPathRedirect targetPath={buildControlPlaneRoute("platform-users")} />;
+  }
+  if (adminPath === "/admin/roles") {
+    return <AdminPathRedirect targetPath={buildControlPlaneRoute("platform-roles")} />;
+  }
+  if (adminPath === "/admin/system-settings" || adminPath === "/admin/system") {
+    return <AdminPathRedirect targetPath={buildControlPlaneRoute("settings")} />;
+  }
   if (adminPath === "/admin/modules") {
-    return <SystemMessage>Раздел в разработке</SystemMessage>;
+    return <AdminPathRedirect targetPath={buildControlPlaneRoute("modules")} />;
   }
   if (adminPath === "/admin/integrations") {
-    return <SystemMessage>Раздел в разработке</SystemMessage>;
+    return <AdminPathRedirect targetPath={buildControlPlaneRoute("integrations")} />;
   }
   if (adminPath === "/admin/audit-log" || adminPath === "/admin/audit") {
-    return <SystemMessage>Раздел в разработке</SystemMessage>;
+    return <AdminPathRedirect targetPath={buildControlPlaneRoute("audit-log")} />;
   }
+  if (adminPath === "/admin/org-structure") return <AdminOrgStructurePage />;
+  if (adminPath === "/admin/departments") return <AdminDepartmentsPage />;
   if (adminPath === "/admin/ai-assistants") {
     return <SystemMessage>Раздел в разработке</SystemMessage>;
   }
@@ -288,31 +435,76 @@ function getSystemPageMeta({
           };
   }
 
-  if (adminPath === "/admin") {
+  const isTenantAdminContext = Boolean(studioAdminPrefixMatch);
+  const tenantSuffix = isTenantAdminContext
+    ? String(studioAdminPrefixMatch[1] || "").replace(/^\//, "")
+    : "";
+
+  if (isTenantAdminContext && !tenantSuffix) {
     return {
-      title: "Администрирование",
-      subtitle: "Управление платформой и настройками системы",
+      title: "Администрирование компании",
+      subtitle: "Управление пользователями, ролями и настройками компании",
     };
   }
 
-  if (adminPath === "/admin/tenants" || adminPath.match(/^\/admin\/tenants\/\d+$/)) {
+  if (isTenantAdminContext && tenantSuffix) {
+    const tenantMeta = TENANT_ADMIN_PAGE_META[tenantSuffix];
+    if (tenantMeta) {
+      return {
+        title: tenantMeta.title,
+        subtitle: tenantMeta.subtitle,
+      };
+    }
     return {
-      title: "Тенанты",
-      subtitle: "Управление платформой → технические порталы (portals)",
+      title: "Администрирование компании",
+      subtitle: "Управление на уровне компании",
+    };
+  }
+
+  if (adminPath === "/admin") {
+    return {
+      title: "Управление платформой",
+      subtitle: "Control Plane — глобальное администрирование ЯсноПро",
+    };
+  }
+
+  if (
+    adminPath === "/admin/clients"
+    || adminPath === "/admin/clients/companies"
+    || adminPath.match(/^\/admin\/clients\/companies\/\d+$/)
+    || adminPath === "/admin/tenants"
+    || adminPath.match(/^\/admin\/tenants\/\d+$/)
+  ) {
+    return {
+      title: "Клиенты ЯсноПро",
+      subtitle:
+        "Компании, использующие платформу ЯсноПро. Создание, управление и контроль клиентских организаций.",
+    };
+  }
+
+  if (
+    adminPath === "/admin/clients/registry"
+    || adminPath.match(/^\/admin\/clients\/registry\/\d+$/)
+    || adminPath === "/admin/control-plane/tenants"
+    || adminPath.match(/^\/admin\/control-plane\/tenants\/\d+$/)
+  ) {
+    return {
+      title: "Tenant Registry",
+      subtitle: "Клиенты ЯсноПро → read-only реестр окружений платформы",
     };
   }
 
   if (adminPath === "/admin/users") {
     return {
-      title: "Пользователи системы",
-      subtitle: "Аккаунты, профили, статусы и привязка к сотрудникам",
+      title: "Пользователи платформы",
+      subtitle: "Глобальные аккаунты входа в платформу ЯсноПро",
     };
   }
 
   if (adminPath === "/admin/roles") {
     return {
-      title: "Роли и доступы",
-      subtitle: "Настройка прав и политик безопасности",
+      title: "Роли платформы",
+      subtitle: "Глобальные права и политики безопасности платформы",
     };
   }
 
@@ -332,26 +524,26 @@ function getSystemPageMeta({
 
   if (adminPath === "/admin/system-settings" || adminPath === "/admin/system") {
     return {
-      title: "Настройка системы",
-      subtitle: "Общие параметры платформы",
+      title: "Настройки платформы",
+      subtitle: "Глобальные параметры платформы",
     };
   }
   if (adminPath === "/admin/modules") {
     return {
-      title: "Модули",
-      subtitle: "",
+      title: "Модули платформы",
+      subtitle: "Управление платформой",
     };
   }
   if (adminPath === "/admin/integrations") {
     return {
-      title: "Интеграции",
-      subtitle: "",
+      title: "Интеграции платформы",
+      subtitle: "Управление платформой",
     };
   }
   if (adminPath === "/admin/audit-log" || adminPath === "/admin/audit") {
     return {
-      title: "Журнал событий",
-      subtitle: "",
+      title: "Журнал платформы",
+      subtitle: "Управление платформой",
     };
   }
   if (adminPath === "/admin/ai-assistants") {
@@ -398,8 +590,8 @@ function getSystemPageMeta({
 
   if (isAdminPage) {
     return {
-      title: "Администрирование",
-      subtitle: "Управление платформой",
+      title: "Управление платформой",
+      subtitle: "Control Plane",
     };
   }
 
@@ -470,10 +662,11 @@ export default function PortalPageView() {
 
   const [isDeletingSection, setIsDeletingSection] = useState(false);
 
-  const [menuScale, setMenuScale] = useState(() => {
-    const saved = localStorage.getItem("leftMenuScale");
-    return saved ? Number(saved) : 1;
-  });
+  const [menuScale, setMenuScale] = useState(() => readLeftMenuScale(portalId));
+
+  useEffect(() => {
+    setMenuScale(readLeftMenuScale(portalId));
+  }, [portalId]);
 
   const [pageTitleDraft, setPageTitleDraft] = useState("");
   const [pageSettingsAnchor, setPageSettingsAnchor] = useState(null);
@@ -784,8 +977,8 @@ export default function PortalPageView() {
     const rounded = Number(normalized.toFixed(1));
 
     setMenuScale(rounded);
-    localStorage.setItem("leftMenuScale", String(rounded));
-  }, []);
+    writeLeftMenuScale(portalId, rounded);
+  }, [portalId]);
 
   const handleUnifiedHeaderModel = useCallback((nextModel) => {
     setRuntimeHeaderModel((previous) => {
@@ -899,7 +1092,7 @@ export default function PortalPageView() {
       return;
     }
 
-    const collapsed = readShellSidebarCollapsed();
+    const collapsed = readShellSidebarCollapsed(portalId);
     const useAppSidebarRenderer = SHELL_FEATURE_FLAGS.appSidebarRenderer;
     const sidebarWidth = useAppSidebarRenderer
       ? resolveAppSidebarWidth(collapsed)

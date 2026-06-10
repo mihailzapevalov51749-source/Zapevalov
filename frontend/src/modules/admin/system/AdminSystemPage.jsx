@@ -1,4 +1,5 @@
-export default function AdminSystemPage() {
+export default function AdminSystemPage({ variant = "tenant" }) {
+  void variant;
   return (
     <div style={pageStyle}>
       <div style={tabsStyle}>

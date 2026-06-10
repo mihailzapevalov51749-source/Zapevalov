@@ -170,7 +170,8 @@ async function deleteUser(userId) {
   });
 }
 
-export default function AdminUsersPage() {
+export default function AdminUsersPage({ variant = "tenant" } = {}) {
+  void variant; // platform | tenant — API scope split отложен
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState(ROLE_OPTIONS_FALLBACK);
   const [selectedUser, setSelectedUser] = useState(null);

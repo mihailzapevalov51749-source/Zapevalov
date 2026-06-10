@@ -67,6 +67,7 @@ class EntityRead(BaseModel):
     record_number: int
     recordNumber: int | None = None
     system_number: int | None = None
+    is_system: bool = False
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None = None

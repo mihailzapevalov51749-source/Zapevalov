@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { LAYOUT_MODES } from "../../layout/layoutModes";
 import { resolveWorkspaceLeftOffset } from "../../layout/shellGeometry";
+import { readShellSidebarCollapsedForCurrentUrl } from "../../shell/useShellSidebarState";
 import {
   CLOSE_FILE_VIEWER_EVENT,
   OPEN_FILE_VIEWER_EVENT,
@@ -51,13 +52,7 @@ export default function FileViewerOverlayHost({
       return workspaceLeftOffset;
     }
 
-    let collapsed = false;
-
-    try {
-      collapsed = localStorage.getItem("yasnopro-sidebar-collapsed") === "true";
-    } catch {
-      collapsed = false;
-    }
+    const collapsed = readShellSidebarCollapsedForCurrentUrl();
 
     return resolveWorkspaceLeftOffset({
       mode: LAYOUT_MODES.RUNTIME,

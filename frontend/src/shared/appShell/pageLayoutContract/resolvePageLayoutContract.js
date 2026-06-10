@@ -67,9 +67,17 @@ function mapDescriptorPageType(descriptor, location) {
 
 
 
-  if (pathname.includes("/platform")) {
+  if (pathname.includes("/event-journal")) {
 
-    return PAGE_LAYOUT_PAGE_TYPE.DASHBOARD;
+    return PAGE_LAYOUT_PAGE_TYPE.STUDIO_SECTION;
+
+  }
+
+
+
+  if (pathname.match(/\/designer\/tenant\/\d+\/platform(?:\/|$)/)) {
+
+    return PAGE_LAYOUT_PAGE_TYPE.STUDIO_SECTION;
 
   }
 

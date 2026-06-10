@@ -11,6 +11,7 @@ SYSTEM_FIELD_KEY_PREFIX = "__system_"
 
 SYSTEM_FIELD_KEYS = {
     "id": f"{SYSTEM_FIELD_KEY_PREFIX}id",
+    "is_system": f"{SYSTEM_FIELD_KEY_PREFIX}is_system",
     "record_number": f"{SYSTEM_FIELD_KEY_PREFIX}record_number",
     "created_by": f"{SYSTEM_FIELD_KEY_PREFIX}created_by",
     "created_at": f"{SYSTEM_FIELD_KEY_PREFIX}created_at",
@@ -32,6 +33,7 @@ RUNTIME_ENTITY_SORT_FIELDS = frozenset(
 )
 
 SYSTEM_FIELD_ORDER_FOR_ALL_VIEW = (
+    SYSTEM_FIELD_KEYS["is_system"],
     SYSTEM_FIELD_KEYS["record_number"],
     SYSTEM_FIELD_KEYS["record_version"],
     SYSTEM_FIELD_KEYS["created_by"],
@@ -42,6 +44,15 @@ SYSTEM_FIELD_ORDER_FOR_ALL_VIEW = (
 )
 
 SYSTEM_FIELD_CATALOG_DEFINITIONS: tuple[dict[str, Any], ...] = (
+    {
+        "key": SYSTEM_FIELD_KEYS["is_system"],
+        "name": "Системная запись",
+        "field_type": FieldType.BOOLEAN.value,
+        "is_system": True,
+        "is_required": True,
+        "is_readonly": True,
+        "sort_order": 999,
+    },
     {
         "key": SYSTEM_FIELD_KEYS["record_number"],
         "name": "№ записи",
@@ -163,6 +174,7 @@ def merge_catalog_fields_with_system(fields: list[dict[str, Any]] | None) -> lis
 def system_values_from_entity(entity: RuntimeEntity) -> dict[str, Any]:
     return {
         SYSTEM_FIELD_KEYS["id"]: str(entity.id),
+        SYSTEM_FIELD_KEYS["is_system"]: bool(getattr(entity, "is_system", False)),
         SYSTEM_FIELD_KEYS["record_number"]: entity.record_number,
         SYSTEM_FIELD_KEYS["created_by"]: entity.created_by,
         SYSTEM_FIELD_KEYS["created_at"]: entity.created_at.isoformat()

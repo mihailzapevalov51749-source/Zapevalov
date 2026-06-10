@@ -4314,8 +4314,8 @@ TENANT_STRUCTURE_CLONE_MVP_CHANGELOG_SLUG = (
 )
 
 _TENANT_STRUCTURE_CLONE_MVP_CHANGELOG_DESCRIPTION = (
-    "Tenant Structure Clone MVP: сервис clone_tenant_structure копирует структуру эталонного "
-    "tenant (portal 1) в новый portal — pages, navigation, designer object catalog, workspaces, "
+    "Tenant Structure Clone MVP: сервис clone_tenant_structure копирует структуру Platform Template "
+    "tenant 2 в новый portal — pages, navigation, designer object catalog, workspaces, "
     "actions; без runtime data; publish_tenant_catalog после clone. UI: Студия → "
     "Администрирование → Тенанты — автоклонирование при создании."
 )
@@ -4350,6 +4350,877 @@ def _ensure_tenant_structure_clone_mvp_dashboard_notes(
     ):
         added += 1
         journal_lines.append(_TENANT_STRUCTURE_CLONE_MVP_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+BOOTSTRAP_SOURCE_PLATFORM_TEMPLATE_CHANGELOG_SLUG = (
+    "control-plane-bootstrap-source-platform-template-20260610"
+)
+
+_BOOTSTRAP_SOURCE_PLATFORM_TEMPLATE_CHANGELOG_DESCRIPTION = (
+    "Bootstrap Source Switched to Platform Template: PortalCreate.bootstrap_from_tenant_id "
+    "default = 2 (Platform Template); новые tenant клонируются из эталона tenant 2, "
+    "а не из production tenant 1. UI: Студия → Администрирование → Тенанты."
+)
+
+
+def _ensure_bootstrap_source_platform_template_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "control-plane")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=BOOTSTRAP_SOURCE_PLATFORM_TEMPLATE_CHANGELOG_SLUG,
+        title="Bootstrap Source Switched to Platform Template",
+        description=_BOOTSTRAP_SOURCE_PLATFORM_TEMPLATE_CHANGELOG_DESCRIPTION,
+        result=_BOOTSTRAP_SOURCE_PLATFORM_TEMPLATE_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={"ui_location": "Студия → Администрирование → Тенанты"},
+    ):
+        added += 1
+        journal_lines.append(_BOOTSTRAP_SOURCE_PLATFORM_TEMPLATE_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+TENANT_ENVIRONMENT_BADGE_CHANGELOG_SLUG = "control-plane-tenant-environment-badge-20260610"
+
+_TENANT_ENVIRONMENT_BADGE_CHANGELOG_DESCRIPTION = (
+    "Tenant Environment Badge: визуальное обозначение роли tenant из URL — бейдж рядом с "
+    "логотипом в AppSidebar, цветная полоса 4px сверху AppShell, document.title "
+    "[PROD|TEMPLATE|DEMO|CLIENT|OLD TEMPLATE] YasnoPro; Office, Studio, runtime."
+)
+
+
+def _ensure_tenant_environment_badge_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "control-plane")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=TENANT_ENVIRONMENT_BADGE_CHANGELOG_SLUG,
+        title="Tenant Environment Badge",
+        description=_TENANT_ENVIRONMENT_BADGE_CHANGELOG_DESCRIPTION,
+        result=_TENANT_ENVIRONMENT_BADGE_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={
+            "ui_location": (
+                "AppShell top bar, sidebar brand badge, document.title; "
+                "/portal/{tenantId}, /designer/tenant/{tenantId}"
+            ),
+        },
+    ):
+        added += 1
+        journal_lines.append(_TENANT_ENVIRONMENT_BADGE_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+PLAN_ROOT_ANCHOR_UNIQUENESS_CHANGELOG_SLUG = "plan-root-anchor-uniqueness-20260610"
+
+_PLAN_ROOT_ANCHOR_UNIQUENESS_CHANGELOG_DESCRIPTION = (
+    "Plan Root Anchor Uniqueness: structural registry plan_root_relation_key on runtime_entities; "
+    "partial unique index (tenant, object_type, relation); pg_advisory_xact_lock + reconcile "
+    "дубликатов; запрет anchor→anchor relations; самовосстановление при legacy/duplicate anchors."
+)
+
+
+def _ensure_plan_root_anchor_uniqueness_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "object-card")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=PLAN_ROOT_ANCHOR_UNIQUENESS_CHANGELOG_SLUG,
+        title="Plan Root Anchor Uniqueness",
+        description=_PLAN_ROOT_ANCHOR_UNIQUENESS_CHANGELOG_DESCRIPTION,
+        result=_PLAN_ROOT_ANCHOR_UNIQUENESS_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={
+            "ui_location": (
+                "backend plan_tree/root_anchor.py, anchor_registry.py; "
+                "runtime_entities.plan_root_relation_key"
+            ),
+        },
+    ):
+        added += 1
+        journal_lines.append(_PLAN_ROOT_ANCHOR_UNIQUENESS_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+DEFAULT_QUICK_FORM_ENSURE_CHANGELOG_SLUG = "default-quick-form-ensure-20260610"
+
+_DEFAULT_QUICK_FORM_ENSURE_CHANGELOG_DESCRIPTION = (
+    "Default Quick Form Ensure: ensure_default_quick_form_view по ключу "
+    "default_quick_form (tenant + object type); pg_advisory_xact_lock; reconcile "
+    "дубликатов; IntegrityError retry; bootstrap при создании Object Type; "
+    "защита reserved key в create_view."
+)
+
+
+def _ensure_default_quick_form_ensure_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "object-card")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=DEFAULT_QUICK_FORM_ENSURE_CHANGELOG_SLUG,
+        title="Default Quick Form Ensure",
+        description=_DEFAULT_QUICK_FORM_ENSURE_CHANGELOG_DESCRIPTION,
+        result=_DEFAULT_QUICK_FORM_ENSURE_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={
+            "ui_location": (
+                "backend designer/view_definitions/service.py, "
+                "quick_form_view_registry.py"
+            ),
+        },
+    ):
+        added += 1
+        journal_lines.append(_DEFAULT_QUICK_FORM_ENSURE_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+WORKSPACE_HOME_ENSURE_CHANGELOG_SLUG = "workspace-home-ensure-20260610"
+
+_WORKSPACE_HOME_ENSURE_CHANGELOG_DESCRIPTION = (
+    "Workspace Home Ensure: инвариант 1 workspace = 1 Home Tab (slug=home, is_system) "
+    "+ 1 Home Page (home_page_id) + 1 root section (sort_order=0); pg_advisory_xact_lock; "
+    "reconcile дубликатов Home Tab и root sections; восстановление битых home_page_id."
+)
+
+
+def _ensure_workspace_home_ensure_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "runtime-entity")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=WORKSPACE_HOME_ENSURE_CHANGELOG_SLUG,
+        title="Workspace Home Ensure",
+        description=_WORKSPACE_HOME_ENSURE_CHANGELOG_DESCRIPTION,
+        result=_WORKSPACE_HOME_ENSURE_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={
+            "ui_location": (
+                "backend designer/workspaces/workspace_home/registry.py; "
+                "designer/workspaces/service.py"
+            ),
+        },
+    ):
+        added += 1
+        journal_lines.append(_WORKSPACE_HOME_ENSURE_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+TENANT_ENVIRONMENT_MODEL_CHANGELOG_SLUG = "tenant-environment-model-20260610"
+
+_TENANT_ENVIRONMENT_MODEL_CHANGELOG_DESCRIPTION = (
+    "Tenant Environment Model: portals.tenant_type, template_version, tenant_status, "
+    "source_tenant_id, notes; GET /portals/{id}/environment; backend resolver с legacy "
+    "fallback; frontend badge через tenant_type; миграция tenant 1=DEV, 2=TEMPLATE, "
+    "3=DEMO, 13=LEGACY_TEMPLATE, 4+=CLIENT."
+)
+
+
+def _ensure_tenant_environment_model_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "control-plane")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=TENANT_ENVIRONMENT_MODEL_CHANGELOG_SLUG,
+        title="Tenant Environment Model",
+        description=_TENANT_ENVIRONMENT_MODEL_CHANGELOG_DESCRIPTION,
+        result=_TENANT_ENVIRONMENT_MODEL_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={
+            "ui_location": (
+                "backend app/modules/tenant_environment/; portals API; "
+                "frontend shared/tenantEnvironment/"
+            ),
+        },
+    ):
+        added += 1
+        journal_lines.append(_TENANT_ENVIRONMENT_MODEL_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+UI_STORAGE_TENANT_ISOLATION_P0P1_CHANGELOG_SLUG = (
+    "ui-storage-tenant-isolation-p0p1-20260610"
+)
+
+_UI_STORAGE_TENANT_ISOLATION_P0P1_CHANGELOG_DESCRIPTION = (
+    "UI Storage Scope Standard P0/P1: frontend/shared/uiStorage с ключами "
+    "ui:tenant:{tenantId}:{key}; tenant-scoped sidebarCollapsed, leftMenuScale, "
+    "menuCollapsed, systemMenuSettings, lastRuntimePath/lastDesignerPath; "
+    "one-time legacy migration; устранено пересечение UI state между tenant."
+)
+
+
+def _ensure_ui_storage_tenant_isolation_p0p1_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "control-plane")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=UI_STORAGE_TENANT_ISOLATION_P0P1_CHANGELOG_SLUG,
+        title="UI Storage Scope — Tenant Isolation P0/P1",
+        description=_UI_STORAGE_TENANT_ISOLATION_P0P1_CHANGELOG_DESCRIPTION,
+        result=_UI_STORAGE_TENANT_ISOLATION_P0P1_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={
+            "ui_location": (
+                "frontend/src/shared/uiStorage/; "
+                "docs/architecture/platform/configuration-and-ui-state-scope-standard.md"
+            ),
+        },
+    ):
+        added += 1
+        journal_lines.append(_UI_STORAGE_TENANT_ISOLATION_P0P1_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+UI_STORAGE_TENANT_ISOLATION_P2_CHANGELOG_SLUG = (
+    "ui-storage-tenant-isolation-p2-20260610"
+)
+
+_UI_STORAGE_TENANT_ISOLATION_P2_CHANGELOG_DESCRIPTION = (
+    "UI Storage Scope Standard P2: tenant-scoped modalPreferences (Platform Modal "
+    "bounds), planTreeWidth:{scopeKey}, yasiiPinned и yasiiPreWorkspacePath; "
+    "one-time legacy migration; завершены подтверждённые P2 нарушения "
+    "Tenant Isolation."
+)
+
+
+def _ensure_ui_storage_tenant_isolation_p2_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "control-plane")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=UI_STORAGE_TENANT_ISOLATION_P2_CHANGELOG_SLUG,
+        title="UI Storage Scope — Tenant Isolation P2",
+        description=_UI_STORAGE_TENANT_ISOLATION_P2_CHANGELOG_DESCRIPTION,
+        result=_UI_STORAGE_TENANT_ISOLATION_P2_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={
+            "ui_location": (
+                "frontend/src/shared/platformModal/modalUiPreferences.js; "
+                "frontend/src/modules/objectViews/plan/planTreePanelWidthStorage.js; "
+                "frontend/src/yasii/workspace/yasiiWorkspaceModeStorage.js"
+            ),
+        },
+    ):
+        added += 1
+        journal_lines.append(_UI_STORAGE_TENANT_ISOLATION_P2_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+TENANT_REGISTRY_V1_CHANGELOG_SLUG = "control-plane-tenant-registry-v1-20260610"
+
+_TENANT_REGISTRY_V1_CHANGELOG_DESCRIPTION = (
+    "Control Plane — Tenant Registry v1: read-only реестр всех tenant в Studio "
+    "Administration; GET /control-plane/tenants (+ /summary, /{id}); фильтры "
+    "type/status, поиск ID/Name; карточка tenant с notes; доступ admin/superadmin; "
+    "основа для будущего Clone Tenant и Version Management."
+)
+
+
+CLIENTS_UX_REFACTOR_CHANGELOG_SLUG = "control-plane-clients-ux-refactor-20260610"
+
+_CLIENTS_UX_REFACTOR_CHANGELOG_DESCRIPTION = (
+    "Control Plane UX — Клиенты ЯсноПро: единая карточка на главной Administration "
+    "(всего / активных / отключённых / архивных, последние компании, «Все компании →»); "
+    "раздел /admin/clients с вкладками Обзор, Компании, Tenant Registry; "
+    "редиректы со старых /admin/tenants и /admin/control-plane/tenants; "
+    "термин tenant оставлен в коде, API и Tenant Registry."
+)
+
+
+CONTROL_PLANE_INDEPENDENCE_AUDIT_CHANGELOG_SLUG = (
+    "control-plane-independence-audit-20260610"
+)
+
+_CONTROL_PLANE_INDEPENDENCE_AUDIT_CHANGELOG_DESCRIPTION = (
+    "Control Plane Independence Audit: полный аудит зависимостей Control Plane от Tenant 1 "
+    "(routing, navigation, workspace, pages, portal, auth, API, storage, data model, bootstrap risk). "
+    "Вердикт B — backend API (/control-plane/*, customer_companies, portals CRUD) независим от "
+    "конкретного tenant; UI shell встроен в Studio → /designer/tenant/{id}/administration; "
+    "portal 1 защищён от удаления (SYSTEM_TENANT_ID); для полного отделения нужен root route "
+    "/control-plane и вынос shell из Designer tenant context."
+)
+
+
+def _ensure_control_plane_independence_audit_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "control-plane")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=CONTROL_PLANE_INDEPENDENCE_AUDIT_CHANGELOG_SLUG,
+        title="Control Plane Independence Audit",
+        description=_CONTROL_PLANE_INDEPENDENCE_AUDIT_CHANGELOG_DESCRIPTION,
+        result=_CONTROL_PLANE_INDEPENDENCE_AUDIT_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.ANALYSIS.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={
+            "ui_location": (
+                "docs/architecture/control-plane-independence-audit-20260610.md; "
+                "frontend/src/modules/controlPlane/; "
+                "backend/app/modules/control_plane/"
+            ),
+            "audit_verdict": "B",
+        },
+    ):
+        added += 1
+        journal_lines.append(_CONTROL_PLANE_INDEPENDENCE_AUDIT_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+PLATFORM_TENANT_ADMIN_SPLIT_CHANGELOG_SLUG = "control-plane-platform-tenant-admin-split-20260610"
+
+_PLATFORM_TENANT_ADMIN_SPLIT_CHANGELOG_DESCRIPTION = (
+    "Platform vs Tenant Administration Split: Control Plane (/control-plane/*) — только "
+    "platform-level (clients, platform-users, platform-roles, modules, settings, integrations, "
+    "audit-log); Tenant Administration "
+    "(/designer/tenant/{id}/administration/*) — users, roles, settings, modules, integrations, "
+    "audit-log компании; Studio sidebar — два пункта; selective redirects; "
+    "ui:tenant:{tenantId}:administration:* storage scope."
+)
+
+
+def _ensure_platform_tenant_admin_split_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "control-plane")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=PLATFORM_TENANT_ADMIN_SPLIT_CHANGELOG_SLUG,
+        title="Platform vs Tenant Administration Split",
+        description=_PLATFORM_TENANT_ADMIN_SPLIT_CHANGELOG_DESCRIPTION,
+        result=_PLATFORM_TENANT_ADMIN_SPLIT_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={
+            "ui_location": (
+                "frontend/src/modules/admin/routes/TenantAdministrationRouter.jsx; "
+                "frontend/src/modules/controlPlane/config/controlPlanePaths.js; "
+                "frontend/src/modules/designer/components/shell/DesignerShell.jsx"
+            ),
+        },
+    ):
+        added += 1
+        journal_lines.append(_PLATFORM_TENANT_ADMIN_SPLIT_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+CONTROL_PLANE_SHELL_PHASE1_CHANGELOG_SLUG = "control-plane-shell-phase1-20260610"
+
+_CONTROL_PLANE_SHELL_PHASE1_CHANGELOG_DESCRIPTION = (
+    "Control Plane Independence — Platform Shell Phase 1: независимые маршруты "
+    "/control-plane/* без tenantId; ControlPlaneShell (AppShellFrame, header, sidebar, "
+    "search, notifications); platform-scoped UI storage "
+    "(ui:platform:controlPlane:*); redirects со старых /admin и Studio Administration."
+)
+
+
+def _ensure_control_plane_shell_phase1_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "control-plane")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=CONTROL_PLANE_SHELL_PHASE1_CHANGELOG_SLUG,
+        title="Control Plane Independence — Platform Shell",
+        description=_CONTROL_PLANE_SHELL_PHASE1_CHANGELOG_DESCRIPTION,
+        result=_CONTROL_PLANE_SHELL_PHASE1_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={
+            "ui_location": (
+                "frontend/src/modules/controlPlane/shell/ControlPlaneShell.jsx; "
+                "frontend/src/modules/controlPlane/layout/ControlPlaneLayout.jsx"
+            ),
+        },
+    ):
+        added += 1
+        journal_lines.append(_CONTROL_PLANE_SHELL_PHASE1_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+def _ensure_clients_ux_refactor_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "control-plane")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=CLIENTS_UX_REFACTOR_CHANGELOG_SLUG,
+        title="Control Plane UX — Клиенты ЯсноПро",
+        description=_CLIENTS_UX_REFACTOR_CHANGELOG_DESCRIPTION,
+        result=_CLIENTS_UX_REFACTOR_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={
+            "ui_location": (
+                "frontend/src/modules/admin/clients/; "
+                "frontend/src/modules/admin/config/adminSections.js"
+            ),
+        },
+    ):
+        added += 1
+        journal_lines.append(_CLIENTS_UX_REFACTOR_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+def _ensure_tenant_registry_v1_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "control-plane")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=TENANT_REGISTRY_V1_CHANGELOG_SLUG,
+        title="Control Plane — Tenant Registry v1",
+        description=_TENANT_REGISTRY_V1_CHANGELOG_DESCRIPTION,
+        result=_TENANT_REGISTRY_V1_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={
+            "ui_location": (
+                "backend app/modules/control_plane/tenant_registry/; "
+                "frontend/src/modules/controlPlane/"
+            ),
+        },
+    ):
+        added += 1
+        journal_lines.append(_TENANT_REGISTRY_V1_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+SYSTEM_ENTITY_REGISTRY_V1_CHANGELOG_SLUG = "system-entity-registry-v1-20260610"
+
+_SYSTEM_ENTITY_REGISTRY_V1_CHANGELOG_DESCRIPTION = (
+    "System Entity Registry v1: SYSTEM_ENTITY_CATALOG для 7 ADR-007 entities; "
+    "audit_all_system_entities + generate_system_entity_compliance_report; "
+    "CLI scripts/audit_system_entities.py; агрегация audit_plan_root_anchors, "
+    "audit_default_quick_form_views, audit_workspace_home_entities, "
+    "audit_navigation_system_items без переноса бизнес-логики."
+)
+
+
+def _ensure_system_entity_registry_v1_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "object-platform")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=SYSTEM_ENTITY_REGISTRY_V1_CHANGELOG_SLUG,
+        title="System Entity Registry v1",
+        description=_SYSTEM_ENTITY_REGISTRY_V1_CHANGELOG_DESCRIPTION,
+        result=_SYSTEM_ENTITY_REGISTRY_V1_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={
+            "ui_location": (
+                "backend app/modules/platform/system_entity_registry/; "
+                "docs/architecture/system-entity-registry.md; ADR-007"
+            ),
+        },
+    ):
+        added += 1
+        journal_lines.append(_SYSTEM_ENTITY_REGISTRY_V1_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+NAVIGATION_SYSTEM_ITEMS_ENSURE_CHANGELOG_SLUG = "navigation-system-items-ensure-20260610"
+
+_NAVIGATION_SYSTEM_ITEMS_ENSURE_CHANGELOG_DESCRIPTION = (
+    "Navigation System Items Ensure: system_key как источник истины для designer system menu "
+    "и workspace placements; pg_advisory_xact_lock; reconcile дубликатов; partial unique index "
+    "(portal_id, system_key); recovery metadata и orphan placement cleanup."
+)
+
+
+def _ensure_navigation_system_items_ensure_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "control-plane")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=NAVIGATION_SYSTEM_ITEMS_ENSURE_CHANGELOG_SLUG,
+        title="Navigation System Items Ensure",
+        description=_NAVIGATION_SYSTEM_ITEMS_ENSURE_CHANGELOG_DESCRIPTION,
+        result=_NAVIGATION_SYSTEM_ITEMS_ENSURE_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={
+            "ui_location": (
+                "backend navigation/system_registry/registry.py; "
+                "navigation/service.py; designer/workspaces/service.py"
+            ),
+        },
+    ):
+        added += 1
+        journal_lines.append(_NAVIGATION_SYSTEM_ITEMS_ENSURE_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+PLAN_VIEW_CYCLE_GUARD_CHANGELOG_SLUG = "plan-view-cycle-guard-20260610"
+
+_PLAN_VIEW_CYCLE_GUARD_CHANGELOG_DESCRIPTION = (
+    "Plan View Cycle Guard: buildPlanTree защищён от циклов (visited/active stack), "
+    "self-parent и system-to-system relation edges отфильтрованы; system records не "
+    "рендерятся как пользовательские узлы; fallback-сообщение при цикле; исправлены "
+    "corrupt relation instances tenant 1 / idei / ierarhiya_idey."
+)
+
+
+def _ensure_plan_view_cycle_guard_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "object-card")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=PLAN_VIEW_CYCLE_GUARD_CHANGELOG_SLUG,
+        title="Plan View Cycle Guard",
+        description=_PLAN_VIEW_CYCLE_GUARD_CHANGELOG_DESCRIPTION,
+        result=_PLAN_VIEW_CYCLE_GUARD_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={
+            "ui_location": (
+                "Office Plan View / buildPlanTree / ObjectPlanView; "
+                "/portal/{tenantId}/workspaces/..."
+            ),
+        },
+    ):
+        added += 1
+        journal_lines.append(_PLAN_VIEW_CYCLE_GUARD_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+RUNTIME_SYSTEM_RECORDS_CHANGELOG_SLUG = "runtime-system-records-20260610"
+
+_RUNTIME_SYSTEM_RECORDS_CHANGELOG_DESCRIPTION = (
+    "Runtime System Records: колонка runtime_entities.is_system; Plan Root "
+    "(__plan_tree_root__#*) создаётся как системная запись; user surfaces "
+    "(Object Table, search, lookup, relation picker, entity card) скрывают System Records; "
+    "Plan View и hierarchy engine продолжают использовать якорь через internal API."
+)
+
+
+def _ensure_runtime_system_records_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "runtime-entity")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=RUNTIME_SYSTEM_RECORDS_CHANGELOG_SLUG,
+        title="Runtime System Records",
+        description=_RUNTIME_SYSTEM_RECORDS_CHANGELOG_DESCRIPTION,
+        result=_RUNTIME_SYSTEM_RECORDS_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={
+            "ui_location": (
+                "Office Object Table, search, relation picker, entity card; "
+                "backend runtime query/search/entities APIs"
+            ),
+        },
+    ):
+        added += 1
+        journal_lines.append(_RUNTIME_SYSTEM_RECORDS_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+REMOVED_SYSTEM_MENU_ITEMS_CHANGELOG_SLUG = "control-plane-removed-system-menu-items-20260610"
+
+_REMOVED_SYSTEM_MENU_ITEMS_CHANGELOG_DESCRIPTION = (
+    "Removed System Menu Items: из левого меню убраны системные пункты — Office «Мои задачи»; "
+    "Studio «Связи», «Вкладки», «Навигация», «Публикация». Генерация удалена в DesignerShell, "
+    "AppSidebarRenderer и navigation service; фильтрация legacy-пунктов из API для всех tenant."
+)
+
+
+def _ensure_removed_system_menu_items_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "control-plane")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=REMOVED_SYSTEM_MENU_ITEMS_CHANGELOG_SLUG,
+        title="Removed System Menu Items",
+        description=_REMOVED_SYSTEM_MENU_ITEMS_CHANGELOG_DESCRIPTION,
+        result=_REMOVED_SYSTEM_MENU_ITEMS_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={
+            "ui_location": (
+                "Office AppSidebar, Studio DesignerShell sidebar; "
+                "/portal/{tenantId}, /designer/tenant/{tenantId}"
+            ),
+        },
+    ):
+        added += 1
+        journal_lines.append(_REMOVED_SYSTEM_MENU_ITEMS_CHANGELOG_DESCRIPTION)
 
     return added, journal_lines
 
@@ -6856,6 +7727,276 @@ def refresh_platform_dashboard(db: Session, repo_root=None, initiated_by=None) -
         changed_work_items = [
             *changed_work_items,
             *tenant_structure_clone_mvp_journal_lines,
+        ]
+
+    (
+        bootstrap_source_platform_template_added,
+        bootstrap_source_platform_template_journal_lines,
+    ) = _ensure_bootstrap_source_platform_template_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += bootstrap_source_platform_template_added
+    if bootstrap_source_platform_template_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *bootstrap_source_platform_template_journal_lines,
+        ]
+
+    (
+        tenant_environment_badge_added,
+        tenant_environment_badge_journal_lines,
+    ) = _ensure_tenant_environment_badge_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += tenant_environment_badge_added
+    if tenant_environment_badge_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *tenant_environment_badge_journal_lines,
+        ]
+
+    (
+        plan_root_anchor_uniqueness_added,
+        plan_root_anchor_uniqueness_journal_lines,
+    ) = _ensure_plan_root_anchor_uniqueness_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += plan_root_anchor_uniqueness_added
+    if plan_root_anchor_uniqueness_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *plan_root_anchor_uniqueness_journal_lines,
+        ]
+
+    (
+        default_quick_form_ensure_added,
+        default_quick_form_ensure_journal_lines,
+    ) = _ensure_default_quick_form_ensure_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += default_quick_form_ensure_added
+    if default_quick_form_ensure_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *default_quick_form_ensure_journal_lines,
+        ]
+
+    (
+        workspace_home_ensure_added,
+        workspace_home_ensure_journal_lines,
+    ) = _ensure_workspace_home_ensure_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += workspace_home_ensure_added
+    if workspace_home_ensure_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *workspace_home_ensure_journal_lines,
+        ]
+
+    (
+        navigation_system_items_ensure_added,
+        navigation_system_items_ensure_journal_lines,
+    ) = _ensure_navigation_system_items_ensure_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += navigation_system_items_ensure_added
+    if navigation_system_items_ensure_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *navigation_system_items_ensure_journal_lines,
+        ]
+
+    (
+        system_entity_registry_v1_added,
+        system_entity_registry_v1_journal_lines,
+    ) = _ensure_system_entity_registry_v1_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += system_entity_registry_v1_added
+    if system_entity_registry_v1_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *system_entity_registry_v1_journal_lines,
+        ]
+
+    (
+        tenant_environment_model_added,
+        tenant_environment_model_journal_lines,
+    ) = _ensure_tenant_environment_model_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += tenant_environment_model_added
+    if tenant_environment_model_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *tenant_environment_model_journal_lines,
+        ]
+
+    (
+        ui_storage_tenant_isolation_p0p1_added,
+        ui_storage_tenant_isolation_p0p1_journal_lines,
+    ) = _ensure_ui_storage_tenant_isolation_p0p1_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += ui_storage_tenant_isolation_p0p1_added
+    if ui_storage_tenant_isolation_p0p1_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *ui_storage_tenant_isolation_p0p1_journal_lines,
+        ]
+
+    (
+        ui_storage_tenant_isolation_p2_added,
+        ui_storage_tenant_isolation_p2_journal_lines,
+    ) = _ensure_ui_storage_tenant_isolation_p2_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += ui_storage_tenant_isolation_p2_added
+    if ui_storage_tenant_isolation_p2_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *ui_storage_tenant_isolation_p2_journal_lines,
+        ]
+
+    (
+        tenant_registry_v1_added,
+        tenant_registry_v1_journal_lines,
+    ) = _ensure_tenant_registry_v1_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += tenant_registry_v1_added
+    if tenant_registry_v1_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *tenant_registry_v1_journal_lines,
+        ]
+
+    (
+        control_plane_shell_phase1_added,
+        control_plane_shell_phase1_journal_lines,
+    ) = _ensure_control_plane_shell_phase1_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += control_plane_shell_phase1_added
+    if control_plane_shell_phase1_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *control_plane_shell_phase1_journal_lines,
+        ]
+
+    (
+        platform_tenant_admin_split_added,
+        platform_tenant_admin_split_journal_lines,
+    ) = _ensure_platform_tenant_admin_split_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += platform_tenant_admin_split_added
+    if platform_tenant_admin_split_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *platform_tenant_admin_split_journal_lines,
+        ]
+
+    (
+        clients_ux_refactor_added,
+        clients_ux_refactor_journal_lines,
+    ) = _ensure_clients_ux_refactor_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += clients_ux_refactor_added
+    if clients_ux_refactor_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *clients_ux_refactor_journal_lines,
+        ]
+
+    (
+        control_plane_independence_audit_added,
+        control_plane_independence_audit_journal_lines,
+    ) = _ensure_control_plane_independence_audit_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += control_plane_independence_audit_added
+    if control_plane_independence_audit_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *control_plane_independence_audit_journal_lines,
+        ]
+
+    (
+        plan_view_cycle_guard_added,
+        plan_view_cycle_guard_journal_lines,
+    ) = _ensure_plan_view_cycle_guard_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += plan_view_cycle_guard_added
+    if plan_view_cycle_guard_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *plan_view_cycle_guard_journal_lines,
+        ]
+
+    (
+        runtime_system_records_added,
+        runtime_system_records_journal_lines,
+    ) = _ensure_runtime_system_records_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += runtime_system_records_added
+    if runtime_system_records_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *runtime_system_records_journal_lines,
+        ]
+
+    (
+        removed_system_menu_items_added,
+        removed_system_menu_items_journal_lines,
+    ) = _ensure_removed_system_menu_items_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += removed_system_menu_items_added
+    if removed_system_menu_items_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *removed_system_menu_items_journal_lines,
         ]
 
     (

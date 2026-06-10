@@ -17,6 +17,7 @@ export default function MenuTree({
   sidebarCollapsed = false,
   sidebarMode = "runtime",
   routeOwner = null,
+  tenantId = 1,
 }) {
   const [openedEditorItemId, setOpenedEditorItemId] = useState(null);
 
@@ -71,6 +72,7 @@ export default function MenuTree({
           sidebarCollapsed={sidebarCollapsed}
           sidebarMode={sidebarMode}
           routeOwner={routeOwner}
+          tenantId={tenantId}
         />
       ))}
     </nav>

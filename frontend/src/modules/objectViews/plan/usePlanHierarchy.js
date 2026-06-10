@@ -38,6 +38,7 @@ const EMPTY_PLAN_TREE = Object.freeze({
   roots: [],
   nodesById: new Map(),
   hasHierarchy: false,
+  hasCycle: false,
 });
 
 export default function usePlanHierarchy({
@@ -237,18 +238,27 @@ export default function usePlanHierarchy({
       return buildPlanPreviewMock();
     }
 
-    return buildPlanTree({
-      items: planTreeItems,
-      hierarchyInstances: instances,
-      catalog,
-      objectTypeKey,
-      planPresentation,
-      titleFieldKey,
-      statusFieldKey,
-      statusField,
-      progressFieldKey,
-      rootAnchorId,
-    });
+    try {
+      return buildPlanTree({
+        items: planTreeItems,
+        hierarchyInstances: instances,
+        catalog,
+        objectTypeKey,
+        planPresentation,
+        titleFieldKey,
+        statusFieldKey,
+        statusField,
+        progressFieldKey,
+        rootAnchorId,
+      });
+    } catch (buildError) {
+      console.error("[PlanTree] Failed to build plan tree", buildError);
+      return {
+        ...EMPTY_PLAN_TREE,
+        hasHierarchy: true,
+        hasCycle: true,
+      };
+    }
   }, [
     enabled,
     previewMode,

@@ -72,6 +72,24 @@ def get_by_key(
     *,
     include_deleted: bool = False,
 ) -> DesignerViewDefinition | None:
+    views = list_by_key(
+        db,
+        tenant_id,
+        object_type_id,
+        key,
+        include_deleted=include_deleted,
+    )
+    return views[0] if views else None
+
+
+def list_by_key(
+    db: Session,
+    tenant_id: int,
+    object_type_id: UUID,
+    key: str,
+    *,
+    include_deleted: bool = False,
+) -> list[DesignerViewDefinition]:
     query = db.query(DesignerViewDefinition).filter(
         DesignerViewDefinition.tenant_id == tenant_id,
         DesignerViewDefinition.object_type_id == object_type_id,
@@ -81,7 +99,14 @@ def get_by_key(
     if not include_deleted:
         query = query.filter(DesignerViewDefinition.deleted_at.is_(None))
 
-    return query.first()
+    return (
+        query.order_by(
+            DesignerViewDefinition.created_at.asc(),
+            DesignerViewDefinition.sort_order.asc(),
+            DesignerViewDefinition.id.asc(),
+        )
+        .all()
+    )
 
 
 def list_views_by_ids(

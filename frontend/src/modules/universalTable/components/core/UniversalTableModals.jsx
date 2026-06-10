@@ -1,6 +1,7 @@
 import FileViewerModal from "../../../../shared/files/components/FileViewerModal";
 import { LAYOUT_MODES } from "../../../../shared/layout/layoutModes";
 import { resolveWorkspaceLeftOffset } from "../../../../shared/layout/shellGeometry";
+import { readShellSidebarCollapsedForCurrentUrl } from "../../../../shared/shell/useShellSidebarState";
 
 import EntityCardModal from "../entityCard/EntityCardModal";
 import TableFiltersModal from "../filters/TableFiltersModal";
@@ -56,7 +57,7 @@ export default function UniversalTableModals({
   // TODO: Phase 2 — remove explicitWorkspaceLeftOffset after overlay geometry is aligned with shell geometry.
   const workspaceLeftOffset = resolveWorkspaceLeftOffset({
     mode: LAYOUT_MODES.RUNTIME,
-    collapsed: localStorage.getItem("yasnopro-sidebar-collapsed") === "true",
+    collapsed: readShellSidebarCollapsedForCurrentUrl(),
     explicitWorkspaceLeftOffset: 240,
   });
 

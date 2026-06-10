@@ -14,8 +14,12 @@ export default function AdminDashboardGrid({
           description={section.description}
           actionLabel={section.actionLabel}
           metrics={section.metrics}
+          status={section.status}
+          statuses={section.statuses}
           previewTitle={section.previewTitle}
           previewItems={section.previewItems}
+          metricsColumns={section.metricsColumns}
+          previewLimit={section.previewLimit}
           route={section.route}
           icon={section.icon}
           onNavigate={onNavigate}

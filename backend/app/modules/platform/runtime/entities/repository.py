@@ -5,6 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from app.modules.platform.runtime.entities.models import RuntimeEntity, RuntimeEntityValue
+from app.modules.platform.runtime.system_records import apply_user_visible_entity_filter
 
 
 def get_next_record_number(
@@ -79,7 +80,7 @@ def list_entities(
     tenant_id: int,
     object_type_key: str,
 ) -> list[RuntimeEntity]:
-    return (
+    query = (
         db.query(RuntimeEntity)
         .options(joinedload(RuntimeEntity.values))
         .filter(
@@ -87,9 +88,8 @@ def list_entities(
             RuntimeEntity.object_type_key == object_type_key,
             RuntimeEntity.deleted_at.is_(None),
         )
-        .order_by(RuntimeEntity.created_at.desc())
-        .all()
     )
+    return apply_user_visible_entity_filter(query).order_by(RuntimeEntity.created_at.desc()).all()
 
 
 def get_entity_value_row(

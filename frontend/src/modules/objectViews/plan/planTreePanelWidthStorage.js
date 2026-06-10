@@ -1,54 +1,88 @@
-const STORAGE_PREFIX = "yasnopro.plan.treePanelWidth";
+import { resolveTenantIdFromPathname } from "../../../shared/tenantContext/tenantContextResolver.js";
+import {
+  readTenantUiPref,
+  writeTenantUiPref,
+} from "../../../shared/uiStorage/uiPreferencesStorage.js";
+import { migrateLegacyStringPref } from "../../../shared/uiStorage/uiStorageMigration.js";
+import {
+  buildLegacyPlanTreeWidthKey,
+  buildPlanTreeWidthPrefKey,
+} from "../../../shared/uiStorage/uiStorageKeys.js";
+
 export const PLAN_TREE_PANEL_MIN_WIDTH = 280;
 export const PLAN_TREE_PANEL_MAX_WIDTH = 600;
 export const PLAN_TREE_PANEL_DEFAULT_WIDTH = 360;
 
-function buildStorageKey(scopeKey = "default") {
-  return `${STORAGE_PREFIX}:${String(scopeKey || "default").trim() || "default"}`;
+function resolveStorageTenantId(tenantId) {
+  const normalized = Number(tenantId);
+  if (Number.isFinite(normalized) && normalized > 0) {
+    return normalized;
+  }
+
+  if (typeof window !== "undefined") {
+    return resolveTenantIdFromPathname(window.location.pathname) ?? 1;
+  }
+
+  return 1;
+}
+
+function clampWidth(width) {
+  const parsed = Number(width);
+  if (!Number.isFinite(parsed)) {
+    return PLAN_TREE_PANEL_DEFAULT_WIDTH;
+  }
+
+  return Math.min(
+    PLAN_TREE_PANEL_MAX_WIDTH,
+    Math.max(PLAN_TREE_PANEL_MIN_WIDTH, Math.round(parsed)),
+  );
 }
 
 /**
  * @param {string} [scopeKey]
+ * @param {number|string|null|undefined} [tenantId]
  */
-export function readPlanTreePanelWidth(scopeKey) {
+export function readPlanTreePanelWidth(scopeKey, tenantId) {
   if (typeof window === "undefined") {
     return PLAN_TREE_PANEL_DEFAULT_WIDTH;
   }
 
-  try {
-    const raw = window.localStorage.getItem(buildStorageKey(scopeKey));
-    const parsed = Number(raw);
+  const resolvedTenantId = resolveStorageTenantId(tenantId);
+  const prefKey = buildPlanTreeWidthPrefKey(scopeKey);
+  const legacyKey = buildLegacyPlanTreeWidthKey(scopeKey);
 
-    if (!Number.isFinite(parsed)) {
+  try {
+    const raw = migrateLegacyStringPref(
+      resolvedTenantId,
+      prefKey,
+      legacyKey,
+      null,
+    );
+
+    if (raw === null) {
       return PLAN_TREE_PANEL_DEFAULT_WIDTH;
     }
 
-    return Math.min(
-      PLAN_TREE_PANEL_MAX_WIDTH,
-      Math.max(PLAN_TREE_PANEL_MIN_WIDTH, Math.round(parsed)),
-    );
+    return clampWidth(raw);
   } catch {
-    return PLAN_TREE_PANEL_DEFAULT_WIDTH;
+    const fallback = readTenantUiPref(resolvedTenantId, prefKey, null);
+    return fallback === null ? PLAN_TREE_PANEL_DEFAULT_WIDTH : clampWidth(fallback);
   }
 }
 
 /**
  * @param {number} width
  * @param {string} [scopeKey]
+ * @param {number|string|null|undefined} [tenantId]
  */
-export function writePlanTreePanelWidth(width, scopeKey) {
+export function writePlanTreePanelWidth(width, scopeKey, tenantId) {
   if (typeof window === "undefined") {
     return;
   }
 
-  const normalized = Math.min(
-    PLAN_TREE_PANEL_MAX_WIDTH,
-    Math.max(PLAN_TREE_PANEL_MIN_WIDTH, Math.round(Number(width) || PLAN_TREE_PANEL_DEFAULT_WIDTH)),
-  );
+  const resolvedTenantId = resolveStorageTenantId(tenantId);
+  const prefKey = buildPlanTreeWidthPrefKey(scopeKey);
+  const normalized = clampWidth(width);
 
-  try {
-    window.localStorage.setItem(buildStorageKey(scopeKey), String(normalized));
-  } catch {
-    // localStorage may be unavailable
-  }
+  writeTenantUiPref(resolvedTenantId, prefKey, String(normalized));
 }

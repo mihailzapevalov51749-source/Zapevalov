@@ -237,6 +237,9 @@ Runtime Entity is the business source of truth.
 
 | Документ | Slug | Статус |
 |----------|------|--------|
+| [platform/control-plane-architecture.md](./platform/control-plane-architecture.md) | `control-plane-architecture` | **accepted** |
+| [platform/tenant-environment-strategy.md](./platform/tenant-environment-strategy.md) | `tenant-environment-strategy` | **accepted** |
+| [platform/configuration-and-ui-state-scope-standard.md](./platform/configuration-and-ui-state-scope-standard.md) | `configuration-and-ui-state-scope-standard` | **accepted** |
 | [YASNOPRO_SCOPE_TENANT_MODEL.md](./YASNOPRO_SCOPE_TENANT_MODEL.md) | `yasnopro-scope-tenant-model` | active |
 | [YASNOPRO_PLATFORM_SEED_v1.md](./YASNOPRO_PLATFORM_SEED_v1.md) | `platform-seed-v1` | **accepted** |
 | [adr/ADR-006-platform-seed-v1.md](./adr/ADR-006-platform-seed-v1.md) | `adr-006-platform-seed-v1` | accepted |
@@ -245,7 +248,13 @@ Runtime Entity is the business source of truth.
 | Company Provisioning | `company-provisioning` | planned |
 | Platform Bootstrap | `platform-bootstrap` | planned |
 
-**Точка входа:** [YASNOPRO_PLATFORM_SEED_v1.md](./YASNOPRO_PLATFORM_SEED_v1.md) — что получает каждая новая компания; portal 1 **не** является эталоном Seed.
+**Точка входа (Control Plane):** [platform/control-plane-architecture.md](./platform/control-plane-architecture.md) — назначение, состав разделов, разделение с Tenant Administration.
+
+**Точка входа (окружения):** [platform/tenant-environment-strategy.md](./platform/tenant-environment-strategy.md) — роли DEV / TEMPLATE / DEMO / CLIENT, Control Plane, жизненный цикл изменений.
+
+**Точка входа (настройки и UI State):** [platform/configuration-and-ui-state-scope-standard.md](./platform/configuration-and-ui-state-scope-standard.md) — уровни Configuration vs UI State, scoped storage keys.
+
+**Точка входа (состав компании):** [YASNOPRO_PLATFORM_SEED_v1.md](./YASNOPRO_PLATFORM_SEED_v1.md) — что получает каждая новая компания; portal 1 **не** является эталоном Seed.
 
 ---
 

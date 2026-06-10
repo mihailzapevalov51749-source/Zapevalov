@@ -17,6 +17,10 @@ import {
   PAGE_LAYOUT_TOOLBAR_ZONE,
   useResolvedPageLayoutContract,
 } from "../../shared/appShell/pageLayoutContract";
+import {
+  readLeftMenuScale,
+  writeLeftMenuScale,
+} from "../../shared/uiStorage/leftMenuScaleStorage.js";
 
 const DEFAULT_PORTAL_ID = 1;
 
@@ -46,10 +50,11 @@ export default function YasiiWorkspacePage() {
     scope: "runtime",
   });
 
-  const [menuScale, setMenuScale] = useState(() => {
-    const saved = localStorage.getItem("leftMenuScale");
-    return saved ? Number(saved) : 1;
-  });
+  const [menuScale, setMenuScale] = useState(() => readLeftMenuScale(portalId));
+
+  useEffect(() => {
+    setMenuScale(readLeftMenuScale(portalId));
+  }, [portalId]);
 
   useEffect(() => {
     const handlePortalNavigationReload = () => {
@@ -128,7 +133,9 @@ export default function YasiiWorkspacePage() {
   );
 
   const handleCloseWorkspace = useCallback(() => {
-    const returnPath = resolveYasiiReturnPath(readYasiiPreWorkspacePath());
+    const returnPath = resolveYasiiReturnPath(
+      readYasiiPreWorkspacePath(portalId, location.pathname),
+    );
     session?.leaveYasiiPageMinimized?.();
     navigate(returnPath);
   }, [navigate, session]);
@@ -137,8 +144,8 @@ export default function YasiiWorkspacePage() {
     const normalized = Math.min(1.4, Math.max(0.8, nextScale));
     const rounded = Number(normalized.toFixed(1));
     setMenuScale(rounded);
-    localStorage.setItem("leftMenuScale", String(rounded));
-  }, []);
+    writeLeftMenuScale(portalId, rounded);
+  }, [portalId]);
 
   return (
     <PortalLayout

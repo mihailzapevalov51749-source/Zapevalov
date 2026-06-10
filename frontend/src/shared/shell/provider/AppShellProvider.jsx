@@ -7,7 +7,9 @@ import {
   useRef,
   useState,
 } from "react";
+import { useLocation } from "react-router-dom";
 
+import { resolveTenantIdFromPathname } from "../../tenantContext/tenantContextResolver.js";
 import {
   readShellSidebarCollapsed,
   writeShellSidebarCollapsed,
@@ -40,13 +42,18 @@ export default function AppShellProvider({
   children,
 }) {
   const [sources, setSourcesState] = useState(initialSources);
+  const location = useLocation();
+  const tenantId =
+    Number(sources?.tenantId) > 0
+      ? Number(sources.tenantId)
+      : resolveTenantIdFromPathname(location.pathname) ?? 1;
   const stateRef = useRef(null);
   const sourcesRef = useRef(initialSources);
   const actionBridgeRef = useRef(null);
 
   const [state, dispatch] = useReducer(
     appShellReducer,
-    createInitialAppShellState(mode, readShellSidebarCollapsed())
+    createInitialAppShellState(mode, readShellSidebarCollapsed(tenantId))
   );
 
   stateRef.current = state;
@@ -62,13 +69,13 @@ export default function AppShellProvider({
   useEffect(() => {
     dispatch({
       type: APP_SHELL_ACTION_TYPES.HYDRATE,
-      payload: { collapsed: readShellSidebarCollapsed() },
+      payload: { collapsed: readShellSidebarCollapsed(tenantId) },
     });
-  }, []);
+  }, [tenantId]);
 
   useEffect(() => {
-    writeShellSidebarCollapsed(state.collapsed);
-  }, [state.collapsed]);
+    writeShellSidebarCollapsed(tenantId, state.collapsed);
+  }, [state.collapsed, tenantId]);
 
   const setSources = useCallback((next) => {
     setSourcesState((previous) =>

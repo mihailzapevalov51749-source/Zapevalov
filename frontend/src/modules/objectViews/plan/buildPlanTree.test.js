@@ -208,6 +208,134 @@ describe("buildPlanTree", () => {
     assert.equal(tree.roots[0]?.rollupStatusCategory, "not_started");
   });
 
+  it("ignores self-parent relation instances", () => {
+    const items = [entity("node-a", "Node A")];
+
+    const tree = buildPlanTree({
+      items,
+      hierarchyInstances: [
+        {
+          relation_key: "podpunkt",
+          source_entity_id: "node-a",
+          target_entity_id: "node-a",
+        },
+      ],
+      catalog: CATALOG,
+      planPresentation: PRESENTATION,
+      ...buildTreeOptions(),
+    });
+
+    assert.equal(tree.roots.length, 1);
+    assert.equal(tree.roots[0]?.id, "node-a");
+    assert.equal(tree.hasCycle, false);
+  });
+
+  it("detects cycle A -> B -> A without stack overflow", () => {
+    const items = [entity("a", "A"), entity("b", "B")];
+
+    const tree = buildPlanTree({
+      items,
+      hierarchyInstances: [
+        {
+          relation_key: "podpunkt",
+          source_entity_id: "a",
+          target_entity_id: "b",
+        },
+        {
+          relation_key: "podpunkt",
+          source_entity_id: "b",
+          target_entity_id: "a",
+        },
+      ],
+      catalog: CATALOG,
+      planPresentation: PRESENTATION,
+      ...buildTreeOptions(),
+    });
+
+    assert.equal(tree.hasCycle, true);
+    assert.ok(tree.roots.length >= 1);
+    const cycleNode = [...tree.nodesById.values()].find((node) => node.cycleDetected);
+    assert.ok(cycleNode);
+  });
+
+  it("detects cycle A -> B -> C -> A without stack overflow", () => {
+    const items = [entity("a", "A"), entity("b", "B"), entity("c", "C")];
+
+    const tree = buildPlanTree({
+      items,
+      hierarchyInstances: [
+        { relation_key: "podpunkt", source_entity_id: "a", target_entity_id: "b" },
+        { relation_key: "podpunkt", source_entity_id: "b", target_entity_id: "c" },
+        { relation_key: "podpunkt", source_entity_id: "c", target_entity_id: "a" },
+      ],
+      catalog: CATALOG,
+      planPresentation: PRESENTATION,
+      ...buildTreeOptions(),
+    });
+
+    assert.equal(tree.hasCycle, true);
+    assert.ok(tree.roots.length >= 1);
+  });
+
+  it("does not render system root anchor as a user node", () => {
+    const anchorId = "anchor-1";
+    const items = [
+      {
+        id: anchorId,
+        is_system: true,
+        values: { title: "__plan_tree_root__#podpunkt" },
+      },
+      entity("child", "Child"),
+    ];
+
+    const tree = buildPlanTree({
+      items,
+      hierarchyInstances: [
+        {
+          relation_key: "podpunkt",
+          source_entity_id: anchorId,
+          target_entity_id: "child",
+        },
+      ],
+      catalog: CATALOG,
+      planPresentation: PRESENTATION,
+      rootAnchorId: anchorId,
+      ...buildTreeOptions(),
+    });
+
+    assert.equal(tree.roots.length, 1);
+    assert.equal(tree.roots[0]?.id, "child");
+    assert.equal(tree.nodesById.has(anchorId), false);
+  });
+
+  it("drops system-to-system hierarchy edges and does not crash", () => {
+    const anchorA = "anchor-a";
+    const anchorB = "anchor-b";
+
+    const tree = buildPlanTree({
+      items: [],
+      hierarchyInstances: [
+        {
+          relation_key: "podpunkt",
+          source_entity_id: anchorA,
+          target_entity_id: anchorB,
+        },
+        {
+          relation_key: "podpunkt",
+          source_entity_id: anchorB,
+          target_entity_id: anchorA,
+        },
+      ],
+      catalog: CATALOG,
+      planPresentation: PRESENTATION,
+      rootAnchorId: anchorA,
+      ...buildTreeOptions(),
+    });
+
+    assert.equal(tree.roots.length, 0);
+    assert.equal(tree.hasCycle, false);
+  });
+
   it("falls back to raw value when field definition is absent", () => {
     const items = [
       {

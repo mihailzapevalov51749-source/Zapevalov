@@ -7,36 +7,37 @@ import {
   resolveRuntimeFallbackPath,
   resolveStudioToOfficePath,
 } from "./appModeNavigation.js";
+import {
+  buildTenantUiStorageKey,
+  UI_PREF_KEYS,
+} from "../uiStorage/uiStorageKeys.js";
 
-const RUNTIME_KEY = "yasnopro-last-runtime-path";
-const DESIGNER_KEY = "yasnopro-last-designer-path";
+function runtimeKey(tenantId) {
+  return buildTenantUiStorageKey(tenantId, UI_PREF_KEYS.LAST_RUNTIME_PATH);
+}
+
+function designerKey(tenantId) {
+  return buildTenantUiStorageKey(tenantId, UI_PREF_KEYS.LAST_DESIGNER_PATH);
+}
 
 function ensureStorage() {
   if (typeof globalThis.sessionStorage?.clear !== "function") {
     const store = new Map();
     globalThis.sessionStorage = {
-      getItem: (key) => store.get(`s:${key}`) ?? null,
-      setItem: (key, value) => store.set(`s:${key}`, String(value)),
-      removeItem: (key) => store.delete(`s:${key}`),
-      clear: () => {
-        for (const key of [...store.keys()]) {
-          if (key.startsWith("s:")) store.delete(key);
-        }
-      },
+      getItem: (key) => store.get(key) ?? null,
+      setItem: (key, value) => store.set(key, String(value)),
+      removeItem: (key) => store.delete(key),
+      clear: () => store.clear(),
     };
   }
 
   if (typeof globalThis.localStorage?.clear !== "function") {
     const store = new Map();
     globalThis.localStorage = {
-      getItem: (key) => store.get(`l:${key}`) ?? null,
-      setItem: (key, value) => store.set(`l:${key}`, String(value)),
-      removeItem: (key) => store.delete(`l:${key}`),
-      clear: () => {
-        for (const key of [...store.keys()]) {
-          if (key.startsWith("l:")) store.delete(key);
-        }
-      },
+      getItem: (key) => store.get(key) ?? null,
+      setItem: (key, value) => store.set(key, String(value)),
+      removeItem: (key) => store.delete(key),
+      clear: () => store.clear(),
     };
   }
 }
@@ -52,7 +53,7 @@ describe("resolveStudioToOfficePath", () => {
   afterEach(clearStorage);
 
   it("uses tenant from designer URL when localStorage has another tenant (test 1 & 5)", () => {
-    localStorage.setItem(RUNTIME_KEY, "/portal/13/page/1");
+    localStorage.setItem(runtimeKey(13), "/portal/13/page/1");
 
     const path = resolveStudioToOfficePath(
       "/designer/tenant/1/administration/tenants",
@@ -62,8 +63,8 @@ describe("resolveStudioToOfficePath", () => {
   });
 
   it("uses stored runtime path when it belongs to URL tenant", () => {
-    sessionStorage.setItem(RUNTIME_KEY, "/portal/1/page/5");
-    localStorage.setItem(RUNTIME_KEY, "/portal/13/page/1");
+    sessionStorage.setItem(runtimeKey(1), "/portal/1/page/5");
+    localStorage.setItem(runtimeKey(13), "/portal/13/page/1");
 
     const path = resolveStudioToOfficePath("/designer/tenant/1/object-types");
 
@@ -71,7 +72,7 @@ describe("resolveStudioToOfficePath", () => {
   });
 
   it("uses portal id from runtime URL (test 3)", () => {
-    localStorage.setItem(RUNTIME_KEY, "/portal/1/page/1");
+    localStorage.setItem(runtimeKey(1), "/portal/1/page/1");
 
     const path = resolveStudioToOfficePath("/portal/13/page/1");
 
@@ -84,7 +85,7 @@ describe("resolveOfficeToStudioPath", () => {
   afterEach(clearStorage);
 
   it("uses portal id from runtime URL when localStorage has another tenant (test 2)", () => {
-    localStorage.setItem(DESIGNER_KEY, "/designer/tenant/13/object-types");
+    localStorage.setItem(designerKey(13), "/designer/tenant/13/object-types");
 
     const path = resolveOfficeToStudioPath("/portal/1/page/1", 13);
 
@@ -92,8 +93,8 @@ describe("resolveOfficeToStudioPath", () => {
   });
 
   it("uses stored designer path when it belongs to URL tenant", () => {
-    sessionStorage.setItem(DESIGNER_KEY, "/designer/tenant/13/pages");
-    localStorage.setItem(DESIGNER_KEY, "/designer/tenant/1/object-types");
+    sessionStorage.setItem(designerKey(13), "/designer/tenant/13/pages");
+    localStorage.setItem(designerKey(1), "/designer/tenant/1/object-types");
 
     const path = resolveOfficeToStudioPath("/portal/13/page/1", 1);
 
@@ -105,10 +106,11 @@ describe("resolveRootEntryPath", () => {
   beforeEach(clearStorage);
   afterEach(clearStorage);
 
-  it("uses last runtime path on root entry (test 4)", () => {
-    sessionStorage.setItem(RUNTIME_KEY, "/portal/13/page/2");
+  it("uses tenant 1 runtime path on root entry (test 4)", () => {
+    sessionStorage.setItem(runtimeKey(13), "/portal/13/page/2");
+    sessionStorage.setItem(runtimeKey(1), "/portal/1/page/2");
 
-    assert.equal(resolveRootEntryPath(), "/portal/13/page/2");
+    assert.equal(resolveRootEntryPath(), "/portal/1/page/2");
   });
 
   it("falls back to portal 1 when nothing stored", () => {
@@ -121,7 +123,7 @@ describe("resolveRuntimeFallbackPath", () => {
   afterEach(clearStorage);
 
   it("ignores stored path from another tenant", () => {
-    localStorage.setItem(RUNTIME_KEY, "/portal/13/page/1");
+    localStorage.setItem(runtimeKey(13), "/portal/13/page/1");
 
     assert.equal(resolveRuntimeFallbackPath(1), "/portal/1/page/1");
   });

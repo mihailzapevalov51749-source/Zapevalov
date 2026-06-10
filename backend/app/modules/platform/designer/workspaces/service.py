@@ -5,6 +5,7 @@ from urllib.parse import urlparse
 
 from fastapi import HTTPException, status
 from sqlalchemy import String, cast
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.modules.navigation.models import NavigationItem
@@ -29,6 +30,16 @@ from app.modules.platform.designer.object_types.menu_placements.schemas import (
 from app.modules.platform.designer.pages.page_status_normalization import (
     resolve_workspace_home_page_target_status,
     sync_workspace_home_page_status,
+)
+from app.modules.platform.designer.workspaces.workspace_home.constants import (
+    WORKSPACE_HOME_TAB_SLUG,
+    WORKSPACE_HOME_TAB_TITLE,
+)
+from app.modules.platform.designer.workspaces.workspace_home.registry import (
+    acquire_workspace_home_lock,
+    reconcile_duplicate_home_tabs,
+    reconcile_workspace_home_root_sections,
+    resolve_workspace_home_page,
 )
 
 
@@ -345,52 +356,18 @@ def ensure_workspace_home_tab(
     workspace_id: int,
 ) -> DesignerWorkspaceTab:
     workspace = _get_workspace_or_404(db, tenant_id=tenant_id, workspace_id=workspace_id)
-    home_tab = (
-        db.query(DesignerWorkspaceTab)
-        .filter(
-            DesignerWorkspaceTab.workspace_id == workspace.id,
-            DesignerWorkspaceTab.is_system.is_(True),
-            DesignerWorkspaceTab.slug == "home",
-        )
-        .first()
-    )
-    if home_tab is not None:
-        changed = False
-        if home_tab.title != "Главная":
-            home_tab.title = "Главная"
-            changed = True
-        if home_tab.sort_order != 0:
-            home_tab.sort_order = 0
-            changed = True
-        if not home_tab.is_visible:
-            home_tab.is_visible = True
-            changed = True
-        if home_tab.object_type_id is not None:
-            home_tab.object_type_id = None
-            changed = True
-        if str(home_tab.tab_type or "") != "page":
-            home_tab.tab_type = "page"
-            changed = True
-        if home_tab.target_type != "page":
-            home_tab.target_type = "page"
-            changed = True
-        expected_target_id = str(workspace.home_page_id) if workspace.home_page_id is not None else None
-        if home_tab.target_id != expected_target_id:
-            home_tab.target_id = expected_target_id
-            changed = True
-        if home_tab.url is not None:
-            home_tab.url = None
-            changed = True
-        if changed:
-            db.flush()
-        return home_tab
+    acquire_workspace_home_lock(db, workspace.id)
+
+    canonical = reconcile_duplicate_home_tabs(db, workspace)
+    if canonical is not None:
+        return canonical
 
     home_tab = DesignerWorkspaceTab(
         tenant_id=workspace.tenant_id,
         workspace_id=workspace.id,
-        title="Главная",
+        title=WORKSPACE_HOME_TAB_TITLE,
         description=None,
-        slug="home",
+        slug=WORKSPACE_HOME_TAB_SLUG,
         icon="home",
         sort_order=0,
         is_system=True,
@@ -403,8 +380,16 @@ def ensure_workspace_home_tab(
         open_in_new_tab=False,
         object_type_id=None,
     )
-    db.add(home_tab)
-    db.flush()
+    try:
+        with db.begin_nested():
+            db.add(home_tab)
+            db.flush()
+    except IntegrityError:
+        canonical = reconcile_duplicate_home_tabs(db, workspace)
+        if canonical is not None:
+            return canonical
+        raise
+
     return home_tab
 
 
@@ -426,8 +411,10 @@ def ensure_workspace_tabs(
             .filter(Page.id == workspace.home_page_id, Page.portal_id == tenant_id)
             .first()
         )
-        if page is not None and _ensure_home_page_default_section(
-            db, page=page, section_title=workspace.title
+        if page is not None and reconcile_workspace_home_root_sections(
+            db,
+            page=page,
+            section_title=workspace.title,
         ):
             changed = True
     before_count = db.query(DesignerWorkspaceTab.id).filter(DesignerWorkspaceTab.workspace_id == workspace_id).count()
@@ -445,28 +432,11 @@ def _ensure_home_page_default_section(
     page: Page,
     section_title: str,
 ) -> bool:
-    has_section = (
-        db.query(Section.id)
-        .filter(Section.page_id == page.id)
-        .limit(1)
-        .first()
+    return reconcile_workspace_home_root_sections(
+        db,
+        page=page,
+        section_title=section_title,
     )
-    if has_section is not None:
-        return False
-
-    db.add(
-        Section(
-            page_id=page.id,
-            title=(section_title or page.title or "Главная").strip() or "Главная",
-            description=None,
-            layout="one_column",
-            sort_order=0,
-            is_visible=True,
-            settings={},
-        )
-    )
-    db.flush()
-    return True
 
 
 def _create_workspace_home_page(
@@ -500,13 +470,20 @@ def ensure_workspace_home_page(
     workspace_id: int,
 ) -> DesignerWorkspace:
     workspace = _get_workspace_or_404(db, tenant_id=tenant_id, workspace_id=workspace_id)
-    if workspace.home_page_id is not None:
-        page = db.query(Page).filter(Page.id == workspace.home_page_id, Page.portal_id == tenant_id).first()
-        if page is not None:
-            if _ensure_home_page_default_section(db, page=page, section_title=workspace.title):
-                db.commit()
-                db.refresh(workspace)
-            return workspace
+    acquire_workspace_home_lock(db, workspace.id)
+
+    page = resolve_workspace_home_page(db, tenant_id=tenant_id, workspace=workspace)
+    if page is not None:
+        section_changed = reconcile_workspace_home_root_sections(
+            db,
+            page=page,
+            section_title=workspace.title,
+        )
+        ensure_workspace_home_tab(db, tenant_id=tenant_id, workspace_id=workspace.id)
+        if section_changed:
+            db.commit()
+            db.refresh(workspace)
+        return workspace
 
     page = _create_workspace_home_page(
         db,
@@ -765,51 +742,27 @@ def publish_workspace_menu_placements(
                     detail="Родитель должен быть в меню Офиса (runtime)",
                 )
 
-        system_key = _workspace_system_key(workspace_id, placement.menu_scope)
-        nav_item = (
-            db.query(NavigationItem)
-            .filter(NavigationItem.portal_id == tenant_id)
-            .filter(NavigationItem.system_key == system_key)
-            .first()
+        from app.modules.navigation.system_registry.registry import (
+            ensure_workspace_menu_placement,
         )
-        if nav_item is None:
-            placement_url = (
-                _workspace_runtime_route(tenant_id=tenant_id, slug=workspace.slug)
-                if placement.menu_scope == RUNTIME_MENU_SCOPE
-                else _workspace_route(tenant_id=tenant_id, slug=workspace.slug)
-            )
-            nav_item = NavigationItem(
-                portal_id=tenant_id,
-                parent_id=placement.parent_id,
-                type="workspace",
-                title=workspace.title,
-                url=placement_url,
-                sort_order=placement.sort_order,
-                is_visible=placement.is_visible and workspace.status == "active",
-                icon=workspace.icon,
-                icon_type=None,
-                icon_file_url=None,
-                color=None,
-                is_bold=False,
-                is_italic=False,
-                menu_scope=placement.menu_scope,
-                system_key=system_key,
-                is_system=False,
-                is_protected=False,
-            )
-            db.add(nav_item)
-            db.flush()
-        else:
-            nav_item.parent_id = placement.parent_id
-            nav_item.sort_order = placement.sort_order
-            nav_item.is_visible = placement.is_visible and workspace.status == "active"
-            nav_item.title = workspace.title
-            nav_item.url = (
-                _workspace_runtime_route(tenant_id=tenant_id, slug=workspace.slug)
-                if placement.menu_scope == RUNTIME_MENU_SCOPE
-                else _workspace_route(tenant_id=tenant_id, slug=workspace.slug)
-            )
-            nav_item.icon = workspace.icon
+
+        placement_url = (
+            _workspace_runtime_route(tenant_id=tenant_id, slug=workspace.slug)
+            if placement.menu_scope == RUNTIME_MENU_SCOPE
+            else _workspace_route(tenant_id=tenant_id, slug=workspace.slug)
+        )
+        nav_item = ensure_workspace_menu_placement(
+            db,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            menu_scope=placement.menu_scope,
+            parent_id=placement.parent_id,
+            sort_order=placement.sort_order,
+            is_visible=placement.is_visible and workspace.status == "active",
+            title=workspace.title,
+            url=placement_url,
+            icon=workspace.icon,
+        )
 
         results.append(
             WorkspaceMenuPlacementResult(

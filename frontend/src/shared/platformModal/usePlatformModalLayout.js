@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
+
+import { resolveTenantIdFromPathname } from "../tenantContext/tenantContextResolver.js";
 
 import { YASII_FLOATING_SAFE_RIGHT_PX } from "../layout/yasiiFloatingSafeArea";
 import {
@@ -261,6 +264,7 @@ function resolveInitialModalBounds(
   canCustomizeLayout,
   defaultBounds,
   clampOptions = {},
+  tenantId,
 ) {
   const defaults = clampOptions.keepFullyVisible
     ? computeCenteredModalBounds(defaultBounds, clampOptions)
@@ -270,7 +274,7 @@ function resolveInitialModalBounds(
     return defaults;
   }
 
-  const stored = loadModalBounds(modalKey);
+  const stored = loadModalBounds(modalKey, tenantId);
 
   if (!stored) {
     return defaults;
@@ -330,6 +334,10 @@ export default function usePlatformModalLayout({
   keepFullyVisible = false,
   viewportInset = 24,
 }) {
+  const location = useLocation();
+  const tenantId = resolveTenantIdFromPathname(location.pathname) ?? 1;
+  const tenantIdRef = useRef(tenantId);
+  tenantIdRef.current = tenantId;
   const clampOptionsRef = useRef({
     keepFullyVisible,
     viewportInset,
@@ -386,7 +394,7 @@ export default function usePlatformModalLayout({
     );
     boundsRef.current = next;
     setBounds(next);
-    saveModalBounds(modalKeyRef.current, next);
+    saveModalBounds(modalKeyRef.current, next, tenantIdRef.current);
 
     if (isCardSettingsModalKey(modalKeyRef.current)) {
       debugCardSettingsModal("persist bounds", next);
@@ -410,7 +418,9 @@ export default function usePlatformModalLayout({
 
     if (!wasOpenRef.current) {
       wasOpenRef.current = true;
-      const stored = canCustomizeLayout ? loadModalBounds(modalKey) : null;
+      const stored = canCustomizeLayout
+        ? loadModalBounds(modalKey, tenantId)
+        : null;
       const initial = resolveInitialModalBounds(
         modalKey,
         canCustomizeLayout,
@@ -418,6 +428,7 @@ export default function usePlatformModalLayout({
           ? CARD_SETTINGS_MODAL_DEFAULT_BOUNDS
           : defaultBoundsRef.current,
         clampOptionsRef.current,
+        tenantId,
       );
       const next = applyBounds(initial);
 
@@ -430,7 +441,7 @@ export default function usePlatformModalLayout({
       }
 
       if (canCustomizeLayout && stored) {
-        saveModalBounds(modalKey, next);
+        saveModalBounds(modalKey, next, tenantId);
       }
     }
 
@@ -443,7 +454,7 @@ export default function usePlatformModalLayout({
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [open, modalKey, canCustomizeLayout, applyBounds]);
+  }, [open, modalKey, canCustomizeLayout, applyBounds, tenantId]);
 
   useEffect(
     () => () => {
@@ -453,7 +464,7 @@ export default function usePlatformModalLayout({
           getViewportMetrics(),
           clampOptionsRef.current,
         );
-        saveModalBounds(modalKeyRef.current, next);
+        saveModalBounds(modalKeyRef.current, next, tenantIdRef.current);
       }
     },
     [],

@@ -21,6 +21,7 @@ import {
 import { Z_INDEX_TOKENS } from "../../../shared/layout/zIndexTokens";
 import { LAYOUT_MODES } from "../../../shared/layout/layoutModes";
 import { resolveWorkspaceLeftOffset } from "../../../shared/layout/shellGeometry";
+import { readShellSidebarCollapsedForCurrentUrl } from "../../../shared/shell/useShellSidebarState";
 import { apiClient } from "../../../api/apiClient";
 import {
   getLibraryDocumentByFileKey,
@@ -424,7 +425,7 @@ export default function NotificationOverlayHost() {
 
   const workspaceLeftOffset = resolveWorkspaceLeftOffset({
     mode: LAYOUT_MODES.RUNTIME,
-    collapsed: localStorage.getItem("yasnopro-sidebar-collapsed") === "true",
+    collapsed: readShellSidebarCollapsedForCurrentUrl(),
     explicitWorkspaceLeftOffset: 240,
   });
 

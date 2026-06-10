@@ -15,6 +15,7 @@ import {
 } from "../presentation/yasiiPresentationState.js";
 import {
   readYasiiPinned,
+  resolveYasiiTenantId,
   writeYasiiPinned,
   YASII_PINNED_CHANGED_EVENT,
 } from "../workspace/yasiiWorkspaceModeStorage.js";
@@ -53,16 +54,43 @@ function createWelcomeMessage(text = DEFAULT_WELCOME_MESSAGE) {
 }
 
 export function YasiiAssistantProvider({ children }) {
-  const [isPinned, setIsPinned] = useState(() => readYasiiPinned());
+  const location = useLocation();
+  const tenantId = resolveYasiiTenantId(location.pathname);
+
+  const [isPinned, setIsPinned] = useState(() =>
+    readYasiiPinned(tenantId, location.pathname),
+  );
   const [presentation, setPresentation] = useState(() =>
-    resolveInitialYasiiPresentation(readYasiiPinned()),
+    resolveInitialYasiiPresentation(
+      readYasiiPinned(tenantId, location.pathname),
+    ),
   );
   const [messages, setMessages] = useState(() => [createWelcomeMessage()]);
 
   const isFloatingOpen = isYasiiPanelPresentation(presentation);
 
   useEffect(() => {
+    const nextPinned = readYasiiPinned(tenantId, location.pathname);
+    setIsPinned(nextPinned);
+    setPresentation((current) => {
+      if (current === YASII_PRESENTATION.PAGE) {
+        return current;
+      }
+      return resolveInitialYasiiPresentation(nextPinned);
+    });
+  }, [tenantId, location.pathname]);
+
+  useEffect(() => {
     const handlePinnedChanged = (event) => {
+      const changedTenantId = Number(event?.detail?.tenantId);
+      if (
+        Number.isFinite(changedTenantId) &&
+        changedTenantId > 0 &&
+        changedTenantId !== tenantId
+      ) {
+        return;
+      }
+
       setIsPinned(Boolean(event?.detail?.pinned));
     };
 
@@ -70,7 +98,7 @@ export function YasiiAssistantProvider({ children }) {
     return () => {
       window.removeEventListener(YASII_PINNED_CHANGED_EVENT, handlePinnedChanged);
     };
-  }, []);
+  }, [tenantId]);
 
   const setFloatingOpen = useCallback((open) => {
     setPresentation((current) => {
@@ -101,7 +129,7 @@ export function YasiiAssistantProvider({ children }) {
   const togglePinned = useCallback(() => {
     const nextPinned = !isPinned;
     setIsPinned(nextPinned);
-    writeYasiiPinned(nextPinned);
+    writeYasiiPinned(nextPinned, tenantId, location.pathname);
 
     if (nextPinned) {
       setPresentation((current) =>
@@ -113,7 +141,7 @@ export function YasiiAssistantProvider({ children }) {
     setPresentation((current) =>
       current === YASII_PRESENTATION.PANEL ? YASII_PRESENTATION.CLOSED : current,
     );
-  }, [isPinned]);
+  }, [isPinned, tenantId, location.pathname]);
 
   const value = useMemo(
     () => ({

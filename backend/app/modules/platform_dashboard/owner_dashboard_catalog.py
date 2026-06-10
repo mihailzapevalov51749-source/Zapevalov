@@ -621,6 +621,30 @@ def _platform_stages() -> tuple[OwnerStageDefinition, ...]:
                     kind=OwnerSourceKind.PLATFORM_COMPONENT,
                     source_key="runtime-entity",
                 ),
+                _step(
+                    "oe-runtime-system-records",
+                    "Runtime System Records",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="runtime-entity",
+                    description=(
+                        "Платформенный признак is_system на runtime_entities: внутренние записи "
+                        "(Plan Root и будущие runtime nodes) скрыты из таблиц, поиска, lookup, "
+                        "relation picker и карточки; Plan View продолжает работать через движок."
+                    ),
+                ),
+                _step(
+                    "oe-workspace-home-ensure",
+                    "Workspace Home Ensure",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="runtime-entity",
+                    description=(
+                        "Инвариант Workspace Home: slug=home + is_system Home Tab; "
+                        "home_page_id Home Page; root section sort_order=0; "
+                        "pg_advisory_xact_lock; reconcile дубликатов и восстановление связей."
+                    ),
+                ),
             ),
             meta={"primary_components": ("object-type", "publish", "runtime-entity")},
         ),
@@ -663,6 +687,42 @@ def _platform_stages() -> tuple[OwnerStageDefinition, ...]:
                     data_kind=StepDataKind.REAL_DATA,
                     kind=OwnerSourceKind.PLATFORM_COMPONENT,
                     source_key="runtime-entity",
+                ),
+                _step(
+                    "ve-plan-view-cycle-guard",
+                    "Plan View Cycle Guard",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="object-card",
+                    description=(
+                        "Plan View: защита buildPlanTree от циклов и self-parent; "
+                        "system records исключены из пользовательского дерева; "
+                        "безопасный fallback при циклических relation instances."
+                    ),
+                ),
+                _step(
+                    "ve-plan-root-anchor-uniqueness",
+                    "Plan Root Anchor Uniqueness",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="object-card",
+                    description=(
+                        "Структурный инвариант plan root anchor: runtime_entities.plan_root_relation_key "
+                        "+ partial unique index; pg_advisory_xact_lock; reconcile дубликатов; "
+                        "запрет anchor→anchor relation instances."
+                    ),
+                ),
+                _step(
+                    "ve-default-quick-form-ensure",
+                    "Default Quick Form Ensure",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="object-card",
+                    description=(
+                        "ensure_default_quick_form_view: структурный ключ default_quick_form "
+                        "per tenant+object type; pg_advisory_xact_lock; reconcile дубликатов; "
+                        "IntegrityError retry; bootstrap при создании Object Type."
+                    ),
                 ),
             ),
             meta={"primary_components": ("object-card", "runtime-entity")},
@@ -930,9 +990,147 @@ def _platform_stages() -> tuple[OwnerStageDefinition, ...]:
                     kind=OwnerSourceKind.DOC_MILESTONE,
                     source_key="control-plane",
                     description=(
-                        "clone_tenant_structure(source, target): копия структуры эталонного portal "
-                        "(pages, navigation, designer catalog, workspaces) без runtime data; "
+                        "clone_tenant_structure(source, target): копия структуры Platform Template "
+                        "tenant 2 (pages, navigation, designer catalog, workspaces) без runtime data; "
                         "автозапуск при создании tenant в Студия → Администрирование → Тенанты."
+                    ),
+                ),
+                _step(
+                    "cp-bootstrap-source-platform-template",
+                    "Bootstrap Source Switched to Platform Template",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="control-plane",
+                    description=(
+                        "PortalCreate.bootstrap_from_tenant_id default = 2 (Platform Template); "
+                        "новые tenant клонируются из эталона, а не из production tenant 1."
+                    ),
+                ),
+                _step(
+                    "cp-tenant-environment-badge",
+                    "Tenant Environment Badge",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="control-plane",
+                    description=(
+                        "Визуальная метка tenant: бейдж рядом с логотипом, цветная полоса 4px сверху, "
+                        "document.title [ROLE] YasnoPro; роль из tenantId URL (PROD/TEMPLATE/DEMO/CLIENT/OLD TEMPLATE)."
+                    ),
+                ),
+                _step(
+                    "cp-tenant-environment-model",
+                    "Tenant Environment Model",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="control-plane",
+                    description=(
+                        "portals.tenant_type, template_version, tenant_status, source_tenant_id; "
+                        "GET /portals/{id}/environment; resolveTenantEnvironment по tenant_type "
+                        "с legacy fallback; миграция DEV/TEMPLATE/DEMO/LEGACY_TEMPLATE/CLIENT."
+                    ),
+                ),
+                _step(
+                    "cp-ui-storage-tenant-isolation-p0p1",
+                    "UI Storage Scope — Tenant Isolation P0/P1",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="control-plane",
+                    description=(
+                        "frontend/shared/uiStorage: ui:tenant:{tenantId}:{key}; tenant-scoped "
+                        "sidebarCollapsed, leftMenuScale, menuCollapsed, systemMenuSettings, "
+                        "lastRuntimePath/lastDesignerPath; one-time legacy migration; устранено "
+                        "протекание UI state между DEV/TEMPLATE/DEMO/CLIENT tenant."
+                    ),
+                ),
+                _step(
+                    "cp-ui-storage-tenant-isolation-p2",
+                    "UI Storage Scope — Tenant Isolation P2",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="control-plane",
+                    description=(
+                        "P2 scoped UI storage: modalPreferences (Platform Modal bounds), "
+                        "planTreeWidth:{scopeKey} для Plan Tree panel, yasiiPinned и "
+                        "yasiiPreWorkspacePath; one-time legacy migration; завершение "
+                        "подтверждённых нарушений Tenant Isolation в UI layer."
+                    ),
+                ),
+                _step(
+                    "cp-tenant-registry-v1",
+                    "Control Plane — Tenant Registry v1",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="control-plane",
+                    description=(
+                        "Первый модуль Control Plane: read-only Tenant Registry в Studio "
+                        "Administration; GET /control-plane/tenants (+ summary, detail); "
+                        "фильтры type/status, поиск ID/Name, карточка tenant с notes; "
+                        "доступ admin/superadmin; основа для Clone и Version Management."
+                    ),
+                ),
+                _step(
+                    "cp-platform-shell-phase1",
+                    "Control Plane Independence — Platform Shell",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="control-plane",
+                    description=(
+                        "Независимый Control Plane shell: маршруты /control-plane/* без tenantId; "
+                        "ControlPlaneShell на AppShellFrame (header, sidebar, search, notifications); "
+                        "platform-scoped UI storage; redirects с /admin и "
+                        "/designer/tenant/*/administration."
+                    ),
+                ),
+                _step(
+                    "cp-platform-tenant-admin-split",
+                    "Platform vs Tenant Administration Split",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="control-plane",
+                    description=(
+                        "Разделение Platform Administration (/control-plane/*) и Tenant Administration "
+                        "(/designer/tenant/{id}/administration/*); platform-users/platform-roles в CP; "
+                        "tenant users/roles/settings/modules/integrations/audit-log внутри tenant; "
+                        "Studio sidebar: «Администрирование компании» и «Управление платформой»; "
+                        "ui:platform:controlPlane:* vs ui:tenant:{id}:administration:*."
+                    ),
+                ),
+                _step(
+                    "cp-clients-ux-refactor",
+                    "Control Plane UX — Клиенты ЯсноПро",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="control-plane",
+                    description=(
+                        "UX Control Plane вокруг бизнес-сущности «Клиенты ЯсноПро»: единая "
+                        "карточка на главной Administration (метрики, последние компании); "
+                        "вложенная навигация Обзор / Компании / Tenant Registry; "
+                        "маршруты /admin/clients/*; термин tenant только в коде и API."
+                    ),
+                ),
+                _step(
+                    "cp-navigation-system-items-ensure",
+                    "Navigation System Items Ensure",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="control-plane",
+                    description=(
+                        "ensure_navigation_system_item: structural system_key registry для "
+                        "designer.objects/users/settings и designer.workspace.{id}.{scope}; "
+                        "pg_advisory_xact_lock; reconcile дубликатов; partial unique index; "
+                        "recovery URL/flags; деактивация orphan workspace placements."
+                    ),
+                ),
+                _step(
+                    "cp-removed-system-menu-items",
+                    "Removed System Menu Items",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="control-plane",
+                    description=(
+                        "Удалены системные пункты навигации: Office — «Мои задачи»; "
+                        "Studio — «Связи», «Вкладки», «Навигация», «Публикация»; "
+                        "фильтрация на frontend и backend для всех tenant."
                     ),
                 ),
                 _step(
@@ -949,6 +1147,18 @@ def _platform_stages() -> tuple[OwnerStageDefinition, ...]:
                     ),
                 ),
                 _step(
+                    "cp-independence-audit",
+                    "Control Plane Independence Audit",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="control-plane",
+                    description=(
+                        "Аудит зависимостей Control Plane от Tenant 1: routing, navigation, workspace, "
+                        "pages, portal, auth, API, storage, data model, bootstrap risk; вердикт B — "
+                        "backend API независим, UI shell встроен в /designer/tenant/{id}/administration."
+                    ),
+                ),
+                _step(
                     "cp-provisioning-service",
                     "Provisioning Service (компания → portal → superadmin → invite)",
                     data_kind=StepDataKind.PLACEHOLDER,
@@ -958,7 +1168,7 @@ def _platform_stages() -> tuple[OwnerStageDefinition, ...]:
             ),
             meta={
                 "primary_components": ("control-plane",),
-                "ui_location": "Управление платформой → Клиенты; Управление платформой → Тенанты",
+                "ui_location": "/control-plane → Клиенты ЯсноПро (Обзор / Компании / Tenant Registry)",
             },
         ),
     )
@@ -987,6 +1197,19 @@ def _development_stages() -> tuple[OwnerStageDefinition, ...]:
                     data_kind=StepDataKind.DOC_DATA,
                     kind=OwnerSourceKind.DOC_MILESTONE,
                     source_key="YASNOPRO_ARCHITECTURE_STATUS",
+                ),
+                _step(
+                    "arch-system-entity-registry-v1",
+                    "System Entity Registry v1",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="adr",
+                    description=(
+                        "Единый каталог SYSTEM_ENTITY_CATALOG (7 ADR-007 entities); "
+                        "audit_all_system_entities + generate_system_entity_compliance_report; "
+                        "CLI audit_system_entities; агрегация существующих audit_* без "
+                        "рефакторинга registry-модулей."
+                    ),
                 ),
             ),
         ),

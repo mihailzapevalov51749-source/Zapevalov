@@ -22,6 +22,10 @@ import {
   resolvePortalNavigationClickTarget,
 } from "./utils/portalObjectRoutes";
 import {
+  readLeftMenuScale,
+  writeLeftMenuScale,
+} from "../shared/uiStorage/leftMenuScaleStorage.js";
+import {
   PORTAL_OBJECT_VIEW_HEADER_EVENT,
 } from "./utils/portalObjectViewHeaderBridge";
 import {
@@ -57,10 +61,11 @@ export default function PortalWorkspaceRuntimePage() {
   const [loading, setLoading] = useState(true);
   const [pageExists, setPageExists] = useState(false);
   const loadRequestRef = useRef(0);
-  const [menuScale, setMenuScale] = useState(() => {
-    const saved = localStorage.getItem("leftMenuScale");
-    return saved ? Number(saved) : 1;
-  });
+  const [menuScale, setMenuScale] = useState(() => readLeftMenuScale(portalId));
+
+  useEffect(() => {
+    setMenuScale(readLeftMenuScale(portalId));
+  }, [portalId]);
   const [runtimeHeaderModel, setRuntimeHeaderModel] = useState(null);
   const [objectViewHeaderBridge, setObjectViewHeaderBridge] = useState(null);
   const { navigation, reloadNavigation } = useNavigationTree(portalId, {
@@ -413,7 +418,7 @@ export default function PortalWorkspaceRuntimePage() {
         const normalized = Math.min(1.4, Math.max(0.8, nextScale));
         const rounded = Number(normalized.toFixed(1));
         setMenuScale(rounded);
-        localStorage.setItem("leftMenuScale", String(rounded));
+        writeLeftMenuScale(portalId, rounded);
       }}
       headerContract={runtimeHeaderModel?.contract}
       onHeaderAction={runtimeHeaderModel?.onAction}

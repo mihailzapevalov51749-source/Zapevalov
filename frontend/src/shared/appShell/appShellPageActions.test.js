@@ -291,7 +291,7 @@ describe("AppShell page actions — Page Layout Contract phase 4", () => {
 
       join(appShellDir, "../../modules/designer/components/objectTypes/ObjectTypeWorkspaceHeader.jsx"),
 
-      join(appShellDir, "../../modules/platformDashboard/pages/PlatformDevelopmentPage.jsx"),
+      join(appShellDir, "../../modules/platformDashboard/pages/PlatformEventJournalPage.jsx"),
 
     ];
 

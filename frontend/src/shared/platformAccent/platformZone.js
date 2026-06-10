@@ -7,7 +7,7 @@ export const PLATFORM_ZONE_OFFICE = "office";
  */
 export function resolvePlatformZoneFromPathname(pathname = "") {
   const path = String(pathname || "").trim();
-  if (path.startsWith("/designer")) {
+  if (path.startsWith("/designer") || path.startsWith("/control-plane")) {
     return PLATFORM_ZONE_STUDIO;
   }
   return PLATFORM_ZONE_OFFICE;

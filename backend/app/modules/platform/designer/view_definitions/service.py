@@ -9,12 +9,25 @@ from app.modules.platform.designer.field_definitions.models import DesignerField
 from app.modules.platform.designer.object_types import repository as object_type_repository
 from app.modules.platform.designer.object_types.models import DesignerObjectType
 from app.modules.platform.designer.publish.object_view_contract import (
+    OBJECT_VIEW_SCHEMA_VERSION,
     ensure_plan_object_view_scaffold,
     preserve_object_tab_settings,
     read_menu_in_tab_from_settings,
 )
 from app.modules.platform.designer.view_definitions import repository
+from app.modules.platform.designer.view_definitions.constants import (
+    DEFAULT_QUICK_FORM_VIEW_KEY,
+    DEFAULT_QUICK_FORM_VIEW_NAME,
+    DEFAULT_QUICK_FORM_VIEW_SORT_ORDER,
+    DEFAULT_TABLE_VIEW_KEY,
+    DEFAULT_TABLE_VIEW_NAME,
+    TEXT_LIKE_FIELD_TYPES,
+)
 from app.modules.platform.designer.view_definitions.models import DesignerViewDefinition
+from app.modules.platform.designer.view_definitions.quick_form_view_registry import (
+    acquire_default_quick_form_view_lock,
+    reconcile_duplicate_default_quick_form_views,
+)
 from app.modules.platform.designer.view_definitions.schemas import (
     ViewDefinitionCreate,
     ViewDefinitionListItem,
@@ -23,10 +36,6 @@ from app.modules.platform.designer.view_definitions.schemas import (
     ViewDefinitionUpdate,
 )
 from app.modules.users.models import User
-
-DEFAULT_TABLE_VIEW_KEY = "default_table"
-DEFAULT_TABLE_VIEW_NAME = "Таблица"
-TEXT_LIKE_FIELD_TYPES = {"text", "textarea"}
 
 
 def _actor_user_id(current_user: User | None) -> int | None:
@@ -338,6 +347,183 @@ def create_default_table_view(
     return _to_read(entity, object_type)
 
 
+def _resolve_quick_form_title_field_key(fields: list[DesignerFieldDefinition]) -> str | None:
+    for field in fields:
+        settings = field.settings_json if isinstance(field.settings_json, dict) else {}
+        if settings.get("is_title") is True:
+            return str(field.key or "").strip() or None
+
+    for field in fields:
+        if str(field.field_type or "").lower() in TEXT_LIKE_FIELD_TYPES:
+            return str(field.key or "").strip() or None
+
+    return None
+
+
+def _build_quick_form_projection(
+    fields: list[DesignerFieldDefinition],
+) -> dict[str, Any]:
+    title_field_key = _resolve_quick_form_title_field_key(fields)
+    selected_keys: list[str] = []
+    seen: set[str] = set()
+
+    if title_field_key:
+        selected_keys.append(title_field_key)
+        seen.add(title_field_key)
+
+    for field in sorted(fields, key=lambda row: (row.sort_order or 0, row.key or "")):
+        key = str(field.key or "").strip()
+        if not key or key in seen:
+            continue
+
+        if field.is_system:
+            continue
+
+        if field.quick_create:
+            selected_keys.append(key)
+            seen.add(key)
+
+    return {
+        "fieldKeys": selected_keys,
+        "fieldOrder": list(selected_keys),
+        "titleFieldKey": title_field_key,
+    }
+
+
+def _build_quick_form_settings_json(projection: dict[str, Any]) -> dict[str, Any]:
+    object_view = {
+        "schemaVersion": OBJECT_VIEW_SCHEMA_VERSION,
+        "key": DEFAULT_QUICK_FORM_VIEW_KEY,
+        "viewType": "quick_form",
+        "projection": {
+            "fieldKeys": projection["fieldKeys"],
+            "fieldOrder": projection["fieldOrder"],
+            "titleFieldKey": projection["titleFieldKey"],
+            "infoFieldKeys": [],
+        },
+        "roleMapping": {},
+        "query": {
+            "filters": {
+                "conditions": [],
+                "savedFilters": [],
+                "quickFilters": [],
+                "defaultQuickFilterId": None,
+            },
+            "sort": {"rules": []},
+            "pagination": {"defaultPageSize": 20},
+        },
+        "presentation": {
+            "quickForm": {},
+        },
+    }
+
+    return {
+        "objectView": object_view,
+        "projection": {
+            "visible_fields": projection["fieldKeys"],
+            "field_order": projection["fieldOrder"],
+            "title_field": projection["titleFieldKey"],
+            "default_sort": {"field": None, "order": "desc"},
+        },
+    }
+
+
+def _list_quick_form_fields(
+    db: Session,
+    tenant_id: int,
+    object_type_id: UUID,
+) -> list[DesignerFieldDefinition]:
+    return (
+        db.query(DesignerFieldDefinition)
+        .filter(
+            DesignerFieldDefinition.tenant_id == tenant_id,
+            DesignerFieldDefinition.object_type_id == object_type_id,
+            DesignerFieldDefinition.deleted_at.is_(None),
+        )
+        .order_by(
+            DesignerFieldDefinition.sort_order.asc(),
+            DesignerFieldDefinition.key.asc(),
+        )
+        .all()
+    )
+
+
+def ensure_default_quick_form_view(
+    db: Session,
+    tenant_id: int,
+    object_type_id: UUID,
+    current_user: User | None = None,
+) -> ViewDefinitionRead | None:
+    """Ensure canonical system quick_form view exists for the object type."""
+    object_type = _get_object_type_or_404(db, tenant_id, object_type_id)
+
+    acquire_default_quick_form_view_lock(db, tenant_id, object_type_id)
+
+    canonical = reconcile_duplicate_default_quick_form_views(
+        db,
+        tenant_id,
+        object_type_id,
+    )
+    if canonical is not None:
+        return _to_read(canonical, object_type)
+
+    fields = _list_quick_form_fields(db, tenant_id, object_type_id)
+    projection = _build_quick_form_projection(fields)
+    if not projection["fieldKeys"]:
+        return None
+
+    user_id = _actor_user_id(current_user)
+    settings_json = _build_quick_form_settings_json(projection)
+
+    entity = DesignerViewDefinition(
+        tenant_id=tenant_id,
+        object_type_id=object_type_id,
+        key=DEFAULT_QUICK_FORM_VIEW_KEY,
+        name=DEFAULT_QUICK_FORM_VIEW_NAME,
+        description="Системное представление быстрого создания записи",
+        view_type="quick_form",
+        is_default=False,
+        is_system=True,
+        is_active=True,
+        sort_order=DEFAULT_QUICK_FORM_VIEW_SORT_ORDER,
+        settings_json=settings_json,
+        layout_json={},
+        filters_json={},
+        visibility_json={},
+        created_by=user_id,
+        updated_by=user_id,
+    )
+
+    try:
+        entity = repository.create_view(db, entity)
+    except IntegrityError:
+        db.rollback()
+        acquire_default_quick_form_view_lock(db, tenant_id, object_type_id)
+        canonical = reconcile_duplicate_default_quick_form_views(
+            db,
+            tenant_id,
+            object_type_id,
+        )
+        if canonical is not None:
+            return _to_read(canonical, object_type)
+
+        fallback_view = repository.get_by_key(
+            db,
+            tenant_id,
+            object_type_id,
+            DEFAULT_QUICK_FORM_VIEW_KEY,
+        )
+        if fallback_view:
+            return _to_read(fallback_view, object_type)
+
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Не удалось создать default quick form view",
+        )
+
+    return _to_read(entity, object_type)
+
+
 def list_views(
     db: Session,
     tenant_id: int,
@@ -373,6 +559,12 @@ def create_view(
     current_user: User | None,
 ) -> ViewDefinitionRead:
     object_type = _get_object_type_or_404(db, tenant_id, object_type_id)
+
+    if payload.key == DEFAULT_QUICK_FORM_VIEW_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="default_quick_form создаётся только через ensure_default_quick_form_view",
+        )
 
     settings_json = _validate_projection_metadata(
         settings_json=payload.settings_json or {},

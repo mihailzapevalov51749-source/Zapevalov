@@ -1,5 +1,14 @@
-const LAST_RUNTIME_PATH_KEY = "yasnopro-last-runtime-path";
-const LAST_DESIGNER_PATH_KEY = "yasnopro-last-designer-path";
+import {
+  pathBelongsToTenant,
+  resolveTenantIdFromPath,
+} from "../tenantContext/tenantContextResolver.js";
+import { migrateLegacyStringPrefIfAllowed } from "../uiStorage/uiStorageMigration.js";
+import {
+  buildTenantUiStorageKey,
+  LEGACY_UI_KEYS,
+  UI_PREF_KEYS,
+} from "../uiStorage/uiStorageKeys.js";
+
 const DEFAULT_RUNTIME_PATH = "/portal/1/page/1";
 const TECHNICAL_ROUTE_PREFIXES = ["/login", "/auth", "/error", "/not-found"];
 
@@ -23,7 +32,28 @@ function isTechnicalRoute(fullPath) {
   );
 }
 
-function writeStoredPath(storageKey, normalized) {
+function resolveStorageTenantId(tenantId, fullPath) {
+  const fromArg = Number(tenantId);
+  if (Number.isFinite(fromArg) && fromArg > 0) {
+    return fromArg;
+  }
+
+  return resolveTenantIdFromPath(fullPath) ?? null;
+}
+
+function buildRuntimePathKey(tenantId) {
+  return buildTenantUiStorageKey(tenantId, UI_PREF_KEYS.LAST_RUNTIME_PATH);
+}
+
+function buildDesignerPathKey(tenantId) {
+  return buildTenantUiStorageKey(tenantId, UI_PREF_KEYS.LAST_DESIGNER_PATH);
+}
+
+function writeStoredPath(tenantId, storageKey, normalized) {
+  if (!storageKey || !tenantId) {
+    return;
+  }
+
   try {
     sessionStorage.setItem(storageKey, normalized);
   } catch {
@@ -37,19 +67,61 @@ function writeStoredPath(storageKey, normalized) {
   }
 }
 
-function readStoredPath(storageKey) {
-  try {
-    return sessionStorage.getItem(storageKey) || localStorage.getItem(storageKey);
-  } catch {
+function readStoredPath(tenantId, prefKey, legacyKey) {
+  const resolvedTenantId = resolveStorageTenantId(tenantId);
+  if (!resolvedTenantId) {
     return null;
   }
+
+  const storageKey = buildTenantUiStorageKey(resolvedTenantId, prefKey);
+  if (!storageKey) {
+    return null;
+  }
+
+  try {
+    const sessionValue = sessionStorage.getItem(storageKey);
+    if (sessionValue) {
+      return sessionValue;
+    }
+  } catch {
+    // ignore
+  }
+
+  try {
+    const localValue = localStorage.getItem(storageKey);
+    if (localValue) {
+      return localValue;
+    }
+  } catch {
+    // ignore
+  }
+
+  const migrated = migrateLegacyStringPrefIfAllowed(
+    resolvedTenantId,
+    prefKey,
+    legacyKey,
+    null,
+    {
+      allowLegacyValue: (value) =>
+        pathBelongsToTenant(value, resolvedTenantId),
+    },
+  );
+
+  if (migrated) {
+    writeStoredPath(resolvedTenantId, storageKey, migrated);
+  }
+
+  return migrated;
 }
 
-export function saveLastRuntimePath(fullPath) {
+export function saveLastRuntimePath(fullPath, tenantId) {
   const normalized = normalizeFullPath(fullPath);
   const pathname = resolvePathname(normalized);
+  const resolvedTenantId = resolveStorageTenantId(tenantId, normalized);
+
   if (
-    !pathname
+    !resolvedTenantId
+    || !pathname
     || pathname.startsWith("/designer")
     || pathname === "/yasii"
     || pathname.startsWith("/yasii/")
@@ -58,27 +130,51 @@ export function saveLastRuntimePath(fullPath) {
     return;
   }
 
-  writeStoredPath(LAST_RUNTIME_PATH_KEY, normalized);
-}
-
-export function saveLastDesignerPath(fullPath) {
-  const normalized = normalizeFullPath(fullPath);
-  const pathname = resolvePathname(normalized);
-  if (!pathname.startsWith("/designer") || isTechnicalRoute(normalized)) {
+  if (!pathBelongsToTenant(normalized, resolvedTenantId)) {
     return;
   }
 
-  writeStoredPath(LAST_DESIGNER_PATH_KEY, normalized);
+  const storageKey = buildRuntimePathKey(resolvedTenantId);
+  writeStoredPath(resolvedTenantId, storageKey, normalized);
+}
+
+export function saveLastDesignerPath(fullPath, tenantId) {
+  const normalized = normalizeFullPath(fullPath);
+  const pathname = resolvePathname(normalized);
+  const resolvedTenantId = resolveStorageTenantId(tenantId, normalized);
+
+  if (
+    !resolvedTenantId
+    || !pathname.startsWith("/designer")
+    || isTechnicalRoute(normalized)
+  ) {
+    return;
+  }
+
+  if (!pathBelongsToTenant(normalized, resolvedTenantId)) {
+    return;
+  }
+
+  const storageKey = buildDesignerPathKey(resolvedTenantId);
+  writeStoredPath(resolvedTenantId, storageKey, normalized);
 }
 
 /** Raw stored runtime path for current tab (sessionStorage) with localStorage fallback. */
-export function getStoredRuntimePath() {
-  return readStoredPath(LAST_RUNTIME_PATH_KEY);
+export function getStoredRuntimePath(tenantId = 1) {
+  return readStoredPath(
+    tenantId,
+    UI_PREF_KEYS.LAST_RUNTIME_PATH,
+    LEGACY_UI_KEYS.LAST_RUNTIME_PATH,
+  );
 }
 
 /** Raw stored designer path for current tab (sessionStorage) with localStorage fallback. */
-export function getStoredDesignerPath() {
-  return readStoredPath(LAST_DESIGNER_PATH_KEY);
+export function getStoredDesignerPath(tenantId = 1) {
+  return readStoredPath(
+    tenantId,
+    UI_PREF_KEYS.LAST_DESIGNER_PATH,
+    LEGACY_UI_KEYS.LAST_DESIGNER_PATH,
+  );
 }
 
 export function getDesignerPath(tenantId = 1) {
@@ -86,12 +182,12 @@ export function getDesignerPath(tenantId = 1) {
 }
 
 /** @deprecated Prefer resolveStudioToOfficePath / resolveRuntimeFallbackPath. */
-export function getLastRuntimePath() {
-  return getStoredRuntimePath() || DEFAULT_RUNTIME_PATH;
+export function getLastRuntimePath(tenantId = 1) {
+  return getStoredRuntimePath(tenantId) || DEFAULT_RUNTIME_PATH;
 }
 
 /** @deprecated Prefer resolveOfficeToStudioPath / buildDefaultDesignerPath. */
 export function getLastDesignerPath(tenantId = 1) {
   const fallback = getDesignerPath(tenantId);
-  return getStoredDesignerPath() || fallback;
+  return getStoredDesignerPath(tenantId) || fallback;
 }

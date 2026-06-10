@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 from uuid import UUID
 
+from sqlalchemy import or_, type_coerce
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.modules.platform.runtime.catalog.service import PublishedObjectTypeMetadata
@@ -11,9 +15,12 @@ from app.modules.platform.runtime.entities.models import RuntimeEntity, RuntimeE
 from app.modules.platform.runtime.entities import repository as ent_repo
 from app.modules.platform.runtime.relation_instances import repository as rel_repo
 from app.modules.platform.runtime.relation_instances.models import RuntimeRelationInstance
-from sqlalchemy import or_, type_coerce
-from sqlalchemy.dialects.postgresql import JSONB
-
+from app.modules.platform.runtime.plan_tree.anchor_registry import (
+    acquire_plan_root_anchor_lock,
+    deactivate_anchor_to_anchor_relations,
+    list_active_plan_root_anchors,
+    reconcile_duplicate_plan_root_anchors,
+)
 from app.modules.platform.runtime.plan_tree.constants import (
     plan_tree_root_anchor_title,
     plan_tree_root_anchor_title_variants,
@@ -23,6 +30,8 @@ from app.modules.platform.shared.hierarchy_relation_profile import (
     hierarchy_parent_child_from_edge,
     resolve_hierarchy_relation_entity_sides,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _resolve_title_field_key(metadata: PublishedObjectTypeMetadata) -> str | None:
@@ -46,7 +55,7 @@ def _resolve_title_field_key(metadata: PublishedObjectTypeMetadata) -> str | Non
     return None
 
 
-def find_plan_tree_root_anchor(
+def find_plan_tree_root_anchor_by_title(
     db: Session,
     tenant_id: int,
     object_type_key: str,
@@ -54,6 +63,7 @@ def find_plan_tree_root_anchor(
     *,
     title_field_key: str | None,
 ) -> RuntimeEntity | None:
+    """Legacy lookup by title marker — used only to backfill structural registry."""
     if not title_field_key:
         return None
 
@@ -62,7 +72,7 @@ def find_plan_tree_root_anchor(
         for title_value in plan_tree_root_anchor_title_variants(relation_key)
     ]
 
-    row = (
+    return (
         db.query(RuntimeEntity)
         .join(
             RuntimeEntityValue,
@@ -76,10 +86,50 @@ def find_plan_tree_root_anchor(
             RuntimeEntityValue.field_key == title_field_key,
             or_(*title_matches),
         )
+        .order_by(RuntimeEntity.created_at.asc(), RuntimeEntity.record_number.asc())
         .first()
     )
 
-    return row
+
+def find_plan_tree_root_anchor(
+    db: Session,
+    tenant_id: int,
+    object_type_key: str,
+    relation_key: str,
+    *,
+    title_field_key: str | None = None,
+) -> RuntimeEntity | None:
+    normalized_relation_key = str(relation_key or "").strip()
+    anchors = list_active_plan_root_anchors(
+        db,
+        tenant_id,
+        object_type_key,
+        normalized_relation_key,
+    )
+
+    if anchors:
+        return anchors[0]
+
+    legacy = find_plan_tree_root_anchor_by_title(
+        db,
+        tenant_id,
+        object_type_key,
+        normalized_relation_key,
+        title_field_key=title_field_key,
+    )
+    if legacy is None:
+        return None
+
+    legacy.plan_root_relation_key = normalized_relation_key
+    legacy.is_system = True
+    ent_repo.commit(db)
+    return reconcile_duplicate_plan_root_anchors(
+        db,
+        tenant_id,
+        object_type_key,
+        normalized_relation_key,
+        object_type_id=legacy.object_type_id,
+    )
 
 
 def get_or_create_plan_tree_root_anchor(
@@ -88,55 +138,127 @@ def get_or_create_plan_tree_root_anchor(
     object_type_metadata: PublishedObjectTypeMetadata,
     relation_key: str,
 ) -> RuntimeEntity:
+    object_type_key = object_type_metadata.object_type_key
+    normalized_relation_key = str(relation_key or "").strip()
     title_field_key = _resolve_title_field_key(object_type_metadata)
-    existing = find_plan_tree_root_anchor(
-        db,
-        tenant_id,
-        object_type_metadata.object_type_key,
-        relation_key,
-        title_field_key=title_field_key,
-    )
 
-    if existing:
-        return existing
-
-    anchor_title = plan_tree_root_anchor_title(relation_key)
-
-    entity = RuntimeEntity(
-        tenant_id=tenant_id,
-        object_type_key=object_type_metadata.object_type_key,
-        object_type_id=object_type_metadata.object_type_id,
-        catalog_version=object_type_metadata.catalog_version,
-        status="active",
-        record_version=1,
-        record_number=ent_repo.get_next_record_number(
+    for attempt in range(2):
+        acquire_plan_root_anchor_lock(
             db,
             tenant_id,
-            object_type_metadata.object_type_key,
-        ),
-    )
-    ent_repo.create_entity(db, entity)
-
-    if title_field_key:
-        title_field = next(
-            (field for field in object_type_metadata.fields if field.get("key") == title_field_key),
-            None,
+            object_type_key,
+            normalized_relation_key,
         )
-        field_type = str(title_field.get("field_type") or "text") if title_field else "text"
-        ent_repo.insert_entity_value(
+
+        canonical = reconcile_duplicate_plan_root_anchors(
             db,
-            RuntimeEntityValue(
-                tenant_id=tenant_id,
-                entity_id=entity.id,
-                field_key=title_field_key,
-                field_type=field_type,
-                value_json=anchor_title,
+            tenant_id,
+            object_type_key,
+            normalized_relation_key,
+            object_type_id=object_type_metadata.object_type_id,
+        )
+        if canonical is not None:
+            deactivate_anchor_to_anchor_relations(
+                db,
+                tenant_id,
+                normalized_relation_key,
+                canonical_anchor_id=canonical.id,
+                object_type_key=object_type_key,
+            )
+            ent_repo.commit(db)
+            ent_repo.refresh_entity(db, canonical)
+            return canonical
+
+        legacy = find_plan_tree_root_anchor_by_title(
+            db,
+            tenant_id,
+            object_type_key,
+            normalized_relation_key,
+            title_field_key=title_field_key,
+        )
+        if legacy is not None:
+            legacy.plan_root_relation_key = normalized_relation_key
+            legacy.is_system = True
+            legacy.object_type_id = object_type_metadata.object_type_id
+            ent_repo.commit(db)
+            canonical = reconcile_duplicate_plan_root_anchors(
+                db,
+                tenant_id,
+                object_type_key,
+                normalized_relation_key,
+                object_type_id=object_type_metadata.object_type_id,
+            )
+            if canonical is not None:
+                deactivate_anchor_to_anchor_relations(
+                    db,
+                    tenant_id,
+                    normalized_relation_key,
+                    canonical_anchor_id=canonical.id,
+                    object_type_key=object_type_key,
+                )
+                ent_repo.commit(db)
+                ent_repo.refresh_entity(db, canonical)
+                return canonical
+
+        anchor_title = plan_tree_root_anchor_title(normalized_relation_key)
+
+        entity = RuntimeEntity(
+            tenant_id=tenant_id,
+            object_type_key=object_type_key,
+            object_type_id=object_type_metadata.object_type_id,
+            catalog_version=object_type_metadata.catalog_version,
+            status="active",
+            record_version=1,
+            is_system=True,
+            plan_root_relation_key=normalized_relation_key,
+            record_number=ent_repo.get_next_record_number(
+                db,
+                tenant_id,
+                object_type_key,
             ),
         )
 
-    ent_repo.commit(db)
-    ent_repo.refresh_entity(db, entity)
-    return entity
+        try:
+            ent_repo.create_entity(db, entity)
+
+            if title_field_key:
+                title_field = next(
+                    (
+                        field
+                        for field in object_type_metadata.fields
+                        if field.get("key") == title_field_key
+                    ),
+                    None,
+                )
+                field_type = (
+                    str(title_field.get("field_type") or "text") if title_field else "text"
+                )
+                ent_repo.insert_entity_value(
+                    db,
+                    RuntimeEntityValue(
+                        tenant_id=tenant_id,
+                        entity_id=entity.id,
+                        field_key=title_field_key,
+                        field_type=field_type,
+                        value_json=anchor_title,
+                    ),
+                )
+
+            ent_repo.commit(db)
+            ent_repo.refresh_entity(db, entity)
+            return entity
+        except IntegrityError:
+            db.rollback()
+            logger.warning(
+                "Plan root anchor create raced for tenant=%s object_type=%s relation=%s; retrying",
+                tenant_id,
+                object_type_key,
+                normalized_relation_key,
+            )
+            if attempt == 1:
+                raise
+
+    raise RuntimeError("Unable to resolve plan root anchor")
 
 
 def _anchor_child_ids(
@@ -193,6 +315,14 @@ def ensure_plan_tree_root_order(
         object_type_metadata,
         relation_key,
     )
+    deactivate_anchor_to_anchor_relations(
+        db,
+        tenant_id,
+        relation_key,
+        canonical_anchor_id=anchor.id,
+        object_type_key=object_type_metadata.object_type_key,
+        relation_settings_json=relation_settings_json,
+    )
     anchor_children = _anchor_child_ids(
         db,
         tenant_id,
@@ -211,9 +341,28 @@ def ensure_plan_tree_root_order(
 
     ordered_root_ids = [*anchor_children, *orphan_ids]
     parent_side, child_side = resolve_hierarchy_relation_entity_sides(relation_settings_json)
+    active_anchor_ids = {
+        str(item.id)
+        for item in list_active_plan_root_anchors(
+            db,
+            tenant_id,
+            object_type_metadata.object_type_key,
+            relation_key,
+        )
+    }
+    active_anchor_ids.add(str(anchor.id))
 
     for child_id in orphan_ids:
         if child_id in anchor_children:
+            continue
+
+        if str(child_id) in active_anchor_ids:
+            logger.warning(
+                "Skipping anchor-to-anchor link tenant=%s relation=%s child=%s",
+                tenant_id,
+                relation_key,
+                child_id,
+            )
             continue
 
         source_id, target_id = _build_relation_entity_ids(

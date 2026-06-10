@@ -5,6 +5,7 @@ import { uploadFile } from "../../files/api/filesApi";
 import FileViewerModal from "../../files/components/FileViewerModal";
 import { LAYOUT_MODES } from "../../layout/layoutModes";
 import { resolveWorkspaceLeftOffset } from "../../layout/shellGeometry";
+import { readShellSidebarCollapsedForCurrentUrl } from "../../shell/useShellSidebarState";
 
 import EmojiIcon from "../../../modules/comments/components/EmojiIcon";
 import MessageAvatar from "./MessageAvatar";
@@ -650,7 +651,7 @@ export default function MessageItem({
   // TODO: Phase 2 — remove explicitWorkspaceLeftOffset after overlay geometry is aligned with shell geometry.
   const workspaceLeftOffset = resolveWorkspaceLeftOffset({
     mode: LAYOUT_MODES.RUNTIME,
-    collapsed: localStorage.getItem("yasnopro-sidebar-collapsed") === "true",
+    collapsed: readShellSidebarCollapsedForCurrentUrl(),
     explicitWorkspaceLeftOffset: 240,
   });
 

@@ -24,113 +24,15 @@ import { findNavigationItemById } from "../../../portal/utils/portalPageUtils";
 
 import useMenuEditor from "../hooks/useMenuEditor";
 import useMenuDragAndDrop from "../hooks/useMenuDragAndDrop";
-
-const SYSTEM_MENU_SETTINGS_KEY = "systemMenuSettings";
-
-const PROTECTED_MENU_TITLES = ["главная страница", "мои задачи"];
-
-function getSystemMenuSettings() {
-  try {
-    return JSON.parse(localStorage.getItem(SYSTEM_MENU_SETTINGS_KEY)) || {};
-  } catch {
-    return {};
-  }
-}
-
-function saveSystemMenuSettings(settings) {
-  localStorage.setItem(SYSTEM_MENU_SETTINGS_KEY, JSON.stringify(settings));
-}
-
-function isProtectedMenuItem(item) {
-  const title = String(item?.title || "").trim().toLowerCase();
-
-  return (
-    PROTECTED_MENU_TITLES.includes(title) ||
-    item?.is_home === true ||
-    item?.isHome === true ||
-    item?.type === "home"
-  );
-}
-
-function applySystemSettings(item, settings) {
-  const itemSettings = settings[item.id] || {};
-
-  const nextItem = {
-    ...item,
-    ...itemSettings,
-    isSystem: true,
-    is_visible:
-      itemSettings.is_visible === undefined
-        ? item.is_visible
-        : itemSettings.is_visible,
-  };
-
-  if (Array.isArray(item.children)) {
-    nextItem.children = item.children.map((child) =>
-      applySystemSettings(child, settings)
-    );
-  }
-
-  return nextItem;
-}
-
-function applyProtectedMenuSettings(tree = [], systemSettings = {}) {
-  return tree.map((item) => {
-    const children = Array.isArray(item.children)
-      ? applyProtectedMenuSettings(item.children, systemSettings)
-      : item.children;
-
-    const nextItem = { ...item, children };
-
-    if (!isProtectedMenuItem(nextItem)) return nextItem;
-
-    return applySystemSettings({ ...nextItem, isSystem: true }, systemSettings);
-  });
-}
-
-function getMyTasksItem(systemSettings = {}) {
-  const item = {
-    id: "system-my-tasks",
-    title: "Мои задачи",
-    type: "system_page",
-    route: "/my-tasks",
-    isSystem: true,
-    is_visible: true,
-    is_hidden: false,
-    position: 2,
-  };
-
-  return applySystemSettings(item, systemSettings);
-}
-
-function insertMyTasksAfterMainPage(tree = [], myTasksItem) {
-  const hasMyTasksAlready = tree.some(
-    (item) =>
-      item?.id === "system-my-tasks" ||
-      String(item?.title || "").trim().toLowerCase() === "мои задачи"
-  );
-
-  if (hasMyTasksAlready) return tree;
-
-  const mainPageIndex = tree.findIndex((item) => {
-    const title = String(item?.title || "").trim().toLowerCase();
-
-    return (
-      title === "главная страница" ||
-      item?.is_home === true ||
-      item?.isHome === true ||
-      item?.type === "home"
-    );
-  });
-
-  if (mainPageIndex === -1) return [myTasksItem, ...tree];
-
-  return [
-    ...tree.slice(0, mainPageIndex + 1),
-    myTasksItem,
-    ...tree.slice(mainPageIndex + 1),
-  ];
-}
+import { filterRemovedOfficeMenuItems } from "../../../shared/navigation/removedSystemMenuItems";
+import {
+  applySystemMenuSettingsToTree,
+  isSystemMenuItem,
+} from "../../../shared/navigation/applySystemMenuSettingsToTree.js";
+import {
+  readSystemMenuSettings,
+  writeSystemMenuSettings,
+} from "../../../shared/uiStorage/systemMenuSettingsStorage.js";
 
 async function canLeaveCurrentPage() {
   return requestLegacyLeaveConfirmation();
@@ -152,8 +54,12 @@ export default function LeftSidebar({
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [systemMenuSettings, setSystemMenuSettings] = useState(() =>
-    getSystemMenuSettings()
+    readSystemMenuSettings(portalId)
   );
+
+  useEffect(() => {
+    setSystemMenuSettings(readSystemMenuSettings(portalId));
+  }, [portalId]);
 
   const editor = useMenuEditor({
     portalId,
@@ -187,15 +93,12 @@ export default function LeftSidebar({
   }, []);
 
   const finalTree = useMemo(() => {
-    const treeWithProtectedSettings = applyProtectedMenuSettings(
+    const treeWithProtectedSettings = applySystemMenuSettingsToTree(
       dragAndDrop.tree,
-      systemMenuSettings
+      systemMenuSettings,
     );
 
-    return insertMyTasksAfterMainPage(
-      treeWithProtectedSettings,
-      getMyTasksItem(systemMenuSettings)
-    );
+    return filterRemovedOfficeMenuItems(treeWithProtectedSettings);
   }, [dragAndDrop.tree, systemMenuSettings]);
 
   const handleSelectPage = async (item) => {
@@ -219,10 +122,8 @@ export default function LeftSidebar({
   };
 
   const handleUpdateItem = async (itemId, data) => {
-    const isSystemItem =
-      String(itemId).startsWith("system-") ||
-      data?.isSystem ||
-      isProtectedMenuItem(data);
+    const navigationItem = findNavigationItemById(items, itemId);
+    const isSystemItem = isSystemMenuItem(itemId, data, navigationItem);
 
     if (isSystemItem) {
       const safeData = {
@@ -242,7 +143,7 @@ export default function LeftSidebar({
       };
 
       setSystemMenuSettings(nextSettings);
-      saveSystemMenuSettings(nextSettings);
+      writeSystemMenuSettings(portalId, nextSettings);
 
       return;
     }
@@ -393,6 +294,7 @@ export default function LeftSidebar({
           dragAndDrop={dragAndDrop}
           scale={menuScale}
           sidebarCollapsed={collapsed}
+          tenantId={portalId}
         />
 
         {!collapsed && editor.isEditMode && (

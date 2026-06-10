@@ -9,11 +9,16 @@ import {
 
 /**
  * @param {string} [scopeKey]
+ * @param {number|string|null|undefined} [tenantId]
  */
-export default function usePlanTreePanelResize(scopeKey = "default") {
+export default function usePlanTreePanelResize(scopeKey = "default", tenantId) {
   const [treePanelWidth, setTreePanelWidth] = useState(() =>
-    readPlanTreePanelWidth(scopeKey),
+    readPlanTreePanelWidth(scopeKey, tenantId),
   );
+
+  useEffect(() => {
+    setTreePanelWidth(readPlanTreePanelWidth(scopeKey, tenantId));
+  }, [scopeKey, tenantId]);
   const resizingRef = useRef(false);
   const startXRef = useRef(0);
   const startWidthRef = useRef(treePanelWidth);
@@ -54,7 +59,7 @@ export default function usePlanTreePanelResize(scopeKey = "default") {
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
       setTreePanelWidth((current) => {
-        writePlanTreePanelWidth(current, scopeKey);
+        writePlanTreePanelWidth(current, scopeKey, tenantId);
         return current;
       });
     };
@@ -68,7 +73,7 @@ export default function usePlanTreePanelResize(scopeKey = "default") {
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
     };
-  }, [scopeKey]);
+  }, [scopeKey, tenantId]);
 
   return {
     treePanelWidth,

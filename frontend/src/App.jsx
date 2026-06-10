@@ -19,6 +19,7 @@ import {
   saveLastRuntimePath,
 } from "./shared/appMode/appModeStorage";
 import PlatformZoneTracker from "./shared/platformAccent/PlatformZoneTracker";
+import TenantEnvironmentTracker from "./shared/tenantEnvironment/TenantEnvironmentTracker";
 import {
   startTodayActiveTimePolling,
   stopTodayActiveTimePolling,
@@ -39,13 +40,19 @@ import DesignerPagesPage from "./modules/designer/pages/DesignerPagesPage";
 import DesignerTrashPage from "./modules/designer/pages/DesignerTrashPage";
 import DesignerWorkspacesPage from "./modules/designer/pages/DesignerWorkspacesPage";
 import DesignerWorkspaceDetailPage from "./modules/designer/pages/DesignerWorkspaceDetailPage";
-import PlatformDevelopmentPage from "./modules/platformDashboard/pages/PlatformDevelopmentPage";
+import PlatformEventJournalPage from "./modules/platformDashboard/pages/PlatformEventJournalPage";
+import PlatformStudioSectionGuard, {
+  PlatformStudioLegacyRedirect,
+} from "./modules/platformDashboard/pages/PlatformStudioSectionGuard";
 import AppShell from "./shared/appShell/AppShell.jsx";
 import { ProfileSidePanelProvider } from "./profile/ProfileSidePanelProvider.jsx";
 import { GlobalWorkspaceTabsProvider } from "./shared/workspaceTabs/GlobalWorkspaceTabsProvider.jsx";
 import { YasiiAssistantProvider } from "./yasii/context/YasiiAssistantContext.jsx";
 import YasiiWorkspacePage from "./yasii/pages/YasiiWorkspacePage.jsx";
 import { YasiiFloatingButton } from "./yasii";
+import ControlPlaneLayout from "./modules/controlPlane/layout/ControlPlaneLayout.jsx";
+import LegacyControlPlaneRedirect from "./modules/controlPlane/layout/LegacyControlPlaneRedirect.jsx";
+import TenantAdministrationRouter from "./modules/admin/routes/TenantAdministrationRouter.jsx";
 
 function isSuperadmin(user) {
   if (!user) return false;
@@ -137,12 +144,15 @@ export default function App() {
         <AppShell>
           <ModePathTracker />
           <PlatformZoneTracker />
+          <TenantEnvironmentTracker />
           <UserActivityBootstrap />
           <YasiiFloatingButton />
           <Routes>
       <Route path="/" element={<RootEntryRedirect />} />
 
       <Route path="/yasii" element={<YasiiWorkspacePage />} />
+
+      <Route path="/control-plane/*" element={<ControlPlaneLayout />} />
 
       <Route path="/onlyoffice-test" element={<OnlyOfficeTest />} />
 
@@ -243,15 +253,16 @@ export default function App() {
             path="publishing"
             element={<DesignerSectionPlaceholderPage title="Публикация" />}
           />
-          <Route path="platform/*" element={<PlatformDevelopmentPage />} />
           <Route
-            path="administration/*"
+            path="event-journal"
             element={
-              <ProtectedSuperadminRoute user={user}>
-                <PortalPageView />
-              </ProtectedSuperadminRoute>
+              <PlatformStudioSectionGuard>
+                <PlatformEventJournalPage />
+              </PlatformStudioSectionGuard>
             }
           />
+          <Route path="platform/*" element={<PlatformStudioLegacyRedirect />} />
+          <Route path="administration/*" element={<TenantAdministrationRouter />} />
           <Route path="object-types" element={<ObjectTypesPage />} />
           <Route
             path="object-types/:objectTypeId"
@@ -268,27 +279,9 @@ export default function App() {
         </Route>
       </Route>
 
-      <Route
-        path="/designer/administration/*"
-        element={
-          isSuperadmin(user) ? (
-            <Navigate to="/designer/tenant/1/administration" replace />
-          ) : (
-            <Navigate to="/" replace />
-          )
-        }
-      />
+      <Route path="/designer/administration/*" element={<LegacyControlPlaneRedirect />} />
 
-      <Route
-        path="/admin/*"
-        element={
-          isSuperadmin(user) ? (
-            <Navigate to="/designer/tenant/1/administration" replace />
-          ) : (
-            <Navigate to="/" replace />
-          )
-        }
-      />
+      <Route path="/admin/*" element={<LegacyControlPlaneRedirect />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

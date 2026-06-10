@@ -23,10 +23,10 @@ describe("yasii workspace modes", () => {
       return;
     }
 
-    writeYasiiPinned(true);
-    assert.equal(readYasiiPinned(), true);
-    writeYasiiPinned(false);
-    assert.equal(readYasiiPinned(), false);
+    writeYasiiPinned(true, 1, "/portal/1/page/1");
+    assert.equal(readYasiiPinned(1, "/portal/1/page/1"), true);
+    writeYasiiPinned(false, 1, "/portal/1/page/1");
+    assert.equal(readYasiiPinned(1, "/portal/1/page/1"), false);
   });
 
   it("resolves /yasii route to workspace surface context", () => {

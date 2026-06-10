@@ -28,6 +28,44 @@
   flex-shrink: 0;
 }
 
+.app-sidebar-renderer__service-actions {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.app-sidebar-renderer__service-actions--nav {
+  margin-top: 20px;
+  padding: 0 0 12px;
+}
+
+.app-sidebar-renderer__service-action {
+  border: none;
+  background: transparent;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+  cursor: pointer;
+  text-align: center;
+  width: 100%;
+  line-height: 1.3;
+  transition: color 140ms ease, opacity 140ms ease;
+}
+
+.app-sidebar-renderer__service-action:hover {
+  color: #64748b;
+  text-decoration: underline;
+  opacity: 0.95;
+}
+
+.app-sidebar-renderer__service-action:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.35);
+  outline-offset: 2px;
+}
+
 .app-sidebar-renderer__footer-row {
   display: flex;
   align-items: flex-start;

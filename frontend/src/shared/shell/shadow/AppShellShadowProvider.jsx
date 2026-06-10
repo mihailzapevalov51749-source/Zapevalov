@@ -2,7 +2,7 @@ import { createContext, useMemo } from "react";
 
 import { buildHeaderContract, buildSidebarContract } from "../provider/appShellContracts";
 import { createInitialAppShellState } from "../provider/appShellReducer";
-import { readShellSidebarCollapsed } from "../useShellSidebarState";
+import { readShellSidebarCollapsedForCurrentUrl } from "../useShellSidebarState";
 
 /** @type {import("react").Context<any>} */
 export const AppShellShadowContext = createContext(null);
@@ -73,7 +73,7 @@ function buildRuntimeParityChecks({
       0
     ) ?? 0;
   const geometry = state.geometry ?? {};
-  const legacyCollapsed = readShellSidebarCollapsed();
+  const legacyCollapsed = readShellSidebarCollapsedForCurrentUrl();
   const snapshotSearchEnabled = runtimeSnapshot?.search?.enabled;
   const snapshotNotificationsEnabled = runtimeSnapshot?.notifications?.enabled;
 

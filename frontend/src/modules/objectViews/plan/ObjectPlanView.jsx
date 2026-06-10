@@ -36,7 +36,10 @@ import { ensurePlanTreeRootOrder } from "./planTreeRootOrderApi.js";
 import { duplicatePlanTreeNode } from "./duplicatePlanTreeNode.js";
 import { executePlanTreeContextMenuAction } from "./executePlanTreeContextMenuAction.js";
 import { resolveFirstVisiblePlanTabKey } from "./planLayoutSettings.js";
-import { PLAN_TREE_EMPTY_FALLBACK_MESSAGE } from "./planEmptyStateMessages.js";
+import {
+  PLAN_TREE_CYCLE_FALLBACK_MESSAGE,
+  PLAN_TREE_EMPTY_FALLBACK_MESSAGE,
+} from "./planEmptyStateMessages.js";
 import { logPlanDebug } from "./planViewDebug.js";
 import { applyPlanEntityPatches } from "./applyPlanEntityPatches.js";
 import { resolvePlanInfoDisplayFields } from "./resolvePlanInfoDisplayFields.js";
@@ -295,7 +298,10 @@ function ObjectPlanViewConfigured({
 
   const resizeScopeKey = `${objectTypeKey || "plan"}:${resolvedContract?.key || "view"}`;
 
-  const { treePanelWidth, handleResizeStart } = usePlanTreePanelResize(resizeScopeKey);
+  const { treePanelWidth, handleResizeStart } = usePlanTreePanelResize(
+    resizeScopeKey,
+    tenantId,
+  );
 
 
 
@@ -972,7 +978,9 @@ function ObjectPlanViewConfigured({
 
   const treeEmptyMessage = previewMode
     ? "Демо-данные появятся после настройки полей"
-    : PLAN_TREE_EMPTY_FALLBACK_MESSAGE;
+    : tree.hasCycle
+      ? PLAN_TREE_CYCLE_FALLBACK_MESSAGE
+      : PLAN_TREE_EMPTY_FALLBACK_MESSAGE;
 
 
 
@@ -997,6 +1005,14 @@ function ObjectPlanViewConfigured({
       {moveError ? (
 
         <p className="object-plan-view__status object-plan-view__status--error">{moveError}</p>
+
+      ) : null}
+
+      {!previewMode && tree.hasCycle ? (
+
+        <p className="object-plan-view__status object-plan-view__status--error">
+          {PLAN_TREE_CYCLE_FALLBACK_MESSAGE}
+        </p>
 
       ) : null}
 

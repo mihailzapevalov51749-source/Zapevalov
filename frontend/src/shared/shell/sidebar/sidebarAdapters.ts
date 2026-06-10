@@ -82,8 +82,6 @@ const DESIGNER_BRAND_DEFAULTS: SidebarBrandContract = {
 
 const DESIGNER_FALLBACK_MENU = [
   { id: "objects", label: "Объекты", iconType: "objects" },
-  { id: "relations", label: "Связи", iconType: "relations" },
-  { id: "views", label: "Вкладки", iconType: "views" },
   { id: "users", label: "Пользователи", iconType: "users" },
   { id: "settings", label: "Системные настройки", iconType: "settings" },
 ];
@@ -175,8 +173,6 @@ function buildDesignerFallbackNavigationItems(
   const normalizedTenantId = String(tenantId ?? "1");
   const routeById: Record<string, string> = {
     objects: `/designer/tenant/${normalizedTenantId}/object-types`,
-    relations: `/designer/tenant/${normalizedTenantId}/relations`,
-    views: `/designer/tenant/${normalizedTenantId}/views`,
     users: `/designer/tenant/${normalizedTenantId}/users`,
     settings: `/designer/tenant/${normalizedTenantId}/settings`,
   };

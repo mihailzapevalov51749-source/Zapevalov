@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-import {
-  buildAdministrationPath,
-  resolveStudioTenantIdFromPath,
-} from "../config/adminPaths";
+import { buildControlPlaneClientsPath } from "../../controlPlane/config/controlPlanePaths";
+import ClientsSectionNav from "../clients/ClientsSectionNav";
 import AdminTenantDeleteModal from "./AdminTenantDeleteModal";
 import { adminTenantsStyles as styles } from "./adminTenantsStyles";
 import { deletePortal, getPortal } from "./portalsApi";
@@ -16,10 +15,7 @@ function formatDate(value) {
 }
 
 export default function AdminTenantDetailPage({ portalId }) {
-  const studioTenantId = useMemo(
-    () => resolveStudioTenantIdFromPath(window.location.pathname),
-    [],
-  );
+  const navigate = useNavigate();
   const [portal, setPortal] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -38,8 +34,8 @@ export default function AdminTenantDetailPage({ portalId }) {
       const detail =
         requestError?.response?.data?.detail ||
         requestError?.message ||
-        "Не удалось загрузить карточку тенанта";
-      setError(typeof detail === "string" ? detail : "Не удалось загрузить карточку тенанта");
+        "Не удалось загрузить карточку компании";
+      setError(typeof detail === "string" ? detail : "Не удалось загрузить карточку компании");
       setPortal(null);
     } finally {
       setIsLoading(false);
@@ -49,11 +45,6 @@ export default function AdminTenantDetailPage({ portalId }) {
   useEffect(() => {
     loadPortal();
   }, [loadPortal]);
-
-  const navigateTo = (path) => {
-    window.history.pushState({}, "", path);
-    window.dispatchEvent(new PopStateEvent("popstate"));
-  };
 
   const openTenantRuntime = () => {
     window.open(`/portal/${portalId}/page/1`, "_blank", "noopener,noreferrer");
@@ -80,13 +71,13 @@ export default function AdminTenantDetailPage({ portalId }) {
       setIsDeleting(true);
       setDeleteError("");
       await deletePortal(portalId);
-      navigateTo(buildAdministrationPath(studioTenantId, "tenants"));
+      navigate(buildControlPlaneClientsPath("companies"));
     } catch (requestError) {
       const detail =
         requestError?.response?.data?.detail ||
         requestError?.message ||
-        "Не удалось удалить tenant";
-      setDeleteError(typeof detail === "string" ? detail : "Не удалось удалить tenant");
+        "Не удалось удалить компанию";
+      setDeleteError(typeof detail === "string" ? detail : "Не удалось удалить компанию");
     } finally {
       setIsDeleting(false);
     }
@@ -96,28 +87,28 @@ export default function AdminTenantDetailPage({ portalId }) {
     <div style={styles.page}>
       <div style={styles.header}>
         <div>
-          <div style={styles.kicker}>Управление платформой</div>
-          <h1 style={styles.title}>Карточка tenant</h1>
+          <div style={styles.kicker}>Control Plane</div>
+          <h1 style={styles.title}>Карточка компании</h1>
           <p style={styles.subtitle}>Только чтение. Редактирование не реализовано.</p>
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <button
             type="button"
             style={styles.secondaryButton}
-            onClick={() =>
-              navigateTo(buildAdministrationPath(studioTenantId, "tenants"))
-            }
+            onClick={() => navigate(buildControlPlaneClientsPath("companies"))}
           >
             К списку
           </button>
           <button type="button" style={styles.primaryButton} onClick={openTenantRuntime}>
-            Открыть tenant
+            Открыть Office
           </button>
           <button type="button" style={styles.dangerButton} onClick={openDeleteModal}>
-            Удалить tenant
+            Удалить компанию
           </button>
         </div>
       </div>
+
+      <ClientsSectionNav />
 
       <section style={styles.card}>
         {isLoading ? <div style={{ color: "#64748b" }}>Загрузка...</div> : null}

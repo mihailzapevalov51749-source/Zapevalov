@@ -1,0 +1,40 @@
+.tenant-environment-top-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  z-index: 10050;
+  background: var(--tenant-environment-color, transparent);
+  pointer-events: none;
+}
+
+.tenant-environment-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: 13px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--tenant-environment-color) 60%, #ffffff);
+  background: color-mix(in srgb, var(--tenant-environment-color) 10%, #ffffff);
+  color: var(--tenant-environment-color);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tenant-environment-badge--collapsed {
+  height: 12px;
+  padding: 2px 5px;
+  font-size: 8px;
+  letter-spacing: 0.01em;
+}
+
+.tenant-environment-badge--dev {
+  border-color: color-mix(in srgb, var(--tenant-environment-color) 72%, #ffffff);
+}

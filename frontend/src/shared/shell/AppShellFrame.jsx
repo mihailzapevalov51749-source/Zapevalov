@@ -17,12 +17,20 @@ export default function AppShellFrame({
   onHeaderAction,
   onSidebarItemAction,
   onSidebarAction,
+  sidebarCollapsed: sidebarCollapsedOverride,
+  onToggleSidebarCollapsed: onToggleSidebarCollapsedOverride,
   sidebarTransition = "all 0.2s ease",
   workspaceTransition = "all 0.2s ease",
   platformZone = undefined,
   ...rootProps
 }) {
-  const { sidebarCollapsed, toggleSidebarCollapsed } = useShellSidebarState();
+  const tenantSidebarState = useShellSidebarState();
+  const sidebarCollapsed =
+    typeof sidebarCollapsedOverride === "boolean"
+      ? sidebarCollapsedOverride
+      : tenantSidebarState.sidebarCollapsed;
+  const toggleSidebarCollapsed =
+    onToggleSidebarCollapsedOverride ?? tenantSidebarState.toggleSidebarCollapsed;
   const sidebarWidth = resolveAppSidebarWidth(sidebarCollapsed);
   const workspaceLeftOffset = resolveAppSidebarWidth(sidebarCollapsed);
 

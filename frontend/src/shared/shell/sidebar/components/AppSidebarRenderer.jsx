@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import defaultBrandLogo from "../../../../assets/icons/logo.png";
 import chevronLeftIcon from "../../../../assets/icons/Chevronleft.png";
@@ -9,11 +10,25 @@ import useMenuDragAndDrop from "../../../../modules/navigation/hooks/useMenuDrag
 import { getNavigationDeleteBlockReason } from "../../../../modules/navigation/utils/navigationDeletePolicy";
 import { LAYOUT_TOKENS } from "../../../layout/layoutTokens";
 import { TRANSITION_TOKENS } from "../../../layout/transitionTokens";
+import { filterRemovedOfficeMenuItems } from "../../../navigation/removedSystemMenuItems";
+import {
+  applySystemMenuSettingsToTree,
+  isSystemMenuItem,
+} from "../../../navigation/applySystemMenuSettingsToTree.js";
 import SidebarTodayActiveTime from "./SidebarTodayActiveTime";
+import TenantEnvironmentBadge from "../../../tenantEnvironment/TenantEnvironmentBadge";
+import { useTenantEnvironment } from "../../../tenantEnvironment/useTenantEnvironment";
+import { resolveTenantIdFromPathname } from "../../../tenantContext/tenantContextResolver.js";
+import { isControlPlanePath } from "../../../../modules/controlPlane/config/controlPlanePaths.js";
+import {
+  readControlPlaneSystemMenuSettings,
+  writeControlPlaneSystemMenuSettings,
+} from "../../../uiStorage/controlPlaneUiStorage.js";
+import {
+  readSystemMenuSettings,
+  writeSystemMenuSettings,
+} from "../../../uiStorage/systemMenuSettingsStorage.js";
 import "./appSidebarRenderer.css";
-
-const SYSTEM_MENU_SETTINGS_KEY = "systemMenuSettings";
-const PROTECTED_MENU_TITLES = ["главная страница", "мои задачи"];
 
 export default function AppSidebarRenderer({
   contract,
@@ -58,7 +73,15 @@ function ShellSidebarView({
     onChangeMenuScale,
   } = contract;
 
+  const location = useLocation();
+  const isControlPlane = isControlPlanePath(location.pathname);
+  const tenantId = isControlPlane
+    ? null
+    : resolveTenantIdFromPathname(location.pathname) ?? 1;
   const navigationItems = contract.navigationItems ?? [];
+  const serviceNavigationActions = Array.isArray(contract.serviceNavigationActions)
+    ? contract.serviceNavigationActions
+    : [];
   const routeOwner = contract.routeOwner ?? null;
   const hasDesignerScope = hasMenuScope(navigationItems, "designer");
   const reloadNavigation =
@@ -71,9 +94,26 @@ function ShellSidebarView({
       (hasDesignerScope || hasPersistableNavigationItems(navigationItems))
   );
 
-  const [systemMenuSettings, setSystemMenuSettings] = useState(() =>
-    getSystemMenuSettings()
-  );
+  const [systemMenuSettings, setSystemMenuSettings] = useState(() => {
+    if (isControlPlane) {
+      return readControlPlaneSystemMenuSettings();
+    }
+    return tenantId ? readSystemMenuSettings(tenantId) : {};
+  });
+
+  useEffect(() => {
+    if (isControlPlane) {
+      setSystemMenuSettings(readControlPlaneSystemMenuSettings());
+      return;
+    }
+
+    if (!tenantId) {
+      setSystemMenuSettings({});
+      return;
+    }
+
+    setSystemMenuSettings(readSystemMenuSettings(tenantId));
+  }, [isControlPlane, tenantId]);
 
   const dragAndDrop = useMenuDragAndDrop({
     items: navigationItems,
@@ -91,15 +131,12 @@ function ShellSidebarView({
       return dragAndDrop.tree;
     }
 
-    const treeWithProtectedSettings = applyProtectedMenuSettings(
+    const treeWithProtectedSettings = applySystemMenuSettingsToTree(
       dragAndDrop.tree,
-      systemMenuSettings
+      systemMenuSettings,
     );
 
-    return insertMyTasksAfterMainPage(
-      treeWithProtectedSettings,
-      getMyTasksItem(systemMenuSettings)
-    );
+    return filterRemovedOfficeMenuItems(treeWithProtectedSettings);
   }, [dragAndDrop.tree, hasDesignerScope, systemMenuSettings]);
 
   const logoSrc = brand.logoSrc || defaultBrandLogo;
@@ -116,8 +153,23 @@ function ShellSidebarView({
     .join(" ");
 
   const handleEditButtonClick = () => {
+    const capabilities = contract?.capabilities ?? {};
+    const openSettingsActionKey =
+      contract?.actions?.find((action) => action.id === "open-settings")?.actionKey
+      ?? "open-menu-settings";
+
     if (editMode) {
       onAction?.("toggle-edit-mode");
+      return;
+    }
+
+    if (capabilities.canEditMenu) {
+      onAction?.("toggle-edit-mode");
+      return;
+    }
+
+    if (capabilities.canOpenSettings !== false) {
+      onAction?.(openSettingsActionKey);
       return;
     }
 
@@ -137,10 +189,8 @@ function ShellSidebarView({
       return;
     }
 
-    const isSystemItem =
-      String(itemId).startsWith("system-") ||
-      data?.isSystem ||
-      isProtectedMenuItem(data);
+    const item = findItemById(navigationItems, itemId);
+    const isSystemItem = isSystemMenuItem(itemId, data, item);
 
     if (isSystemItem && !hasDesignerScope) {
       const safeData = {
@@ -160,7 +210,11 @@ function ShellSidebarView({
       };
 
       setSystemMenuSettings(nextSettings);
-      saveSystemMenuSettings(nextSettings);
+      if (isControlPlane) {
+        writeControlPlaneSystemMenuSettings(nextSettings);
+      } else {
+        writeSystemMenuSettings(tenantId, nextSettings);
+      }
       return;
     }
 
@@ -216,6 +270,7 @@ function ShellSidebarView({
           collapsed={collapsed}
           logoSrc={logoSrc}
           brand={brand}
+          hideEnvironmentBadge={isControlPlane}
         />
       </div>
 
@@ -224,7 +279,7 @@ function ShellSidebarView({
           flex: 1,
           minHeight: 0,
           overflowY: "auto",
-          overflowX: "hidden",
+          overflowX: editMode ? "visible" : "hidden",
           scrollbarWidth: "none",
           msOverflowStyle: "none",
           paddingLeft: collapsed ? 6 : 14,
@@ -283,7 +338,23 @@ function ShellSidebarView({
           sidebarCollapsed={collapsed}
           sidebarMode={hasDesignerScope ? "designer" : "runtime"}
           routeOwner={routeOwner}
+          tenantId={tenantId}
         />
+
+        {!collapsed && !editMode && serviceNavigationActions.length > 0 ? (
+          <div className="app-sidebar-renderer__service-actions app-sidebar-renderer__service-actions--nav">
+            {serviceNavigationActions.map((action) => (
+              <button
+                key={action.id}
+                type="button"
+                className="app-sidebar-renderer__service-action"
+                onClick={() => onAction?.(action.actionKey || action.id)}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         {!collapsed && editMode ? (
           <div
@@ -373,7 +444,8 @@ function ShellSidebarView({
   );
 }
 
-function SidebarBrand({ menuScale, collapsed, logoSrc, brand }) {
+function SidebarBrand({ menuScale, collapsed, logoSrc, brand, hideEnvironmentBadge = false }) {
+  const { environment } = useTenantEnvironment();
   const sidebarVisual = LAYOUT_TOKENS.sidebar;
   const logoSize = collapsed
     ? sidebarVisual.brandLogoCollapsedSize
@@ -383,9 +455,10 @@ function SidebarBrand({ menuScale, collapsed, logoSrc, brand }) {
     <div
       style={{
         display: "flex",
+        flexDirection: collapsed ? "column" : "row",
         alignItems: "center",
         justifyContent: collapsed ? "center" : "flex-start",
-        gap: 10,
+        gap: collapsed ? 6 : 10,
         minHeight: 42,
         padding: 0,
         boxSizing: "border-box",
@@ -401,6 +474,9 @@ function SidebarBrand({ menuScale, collapsed, logoSrc, brand }) {
           flexShrink: 0,
         }}
       />
+      {collapsed && !hideEnvironmentBadge ? (
+        <TenantEnvironmentBadge environment={environment} collapsed />
+      ) : null}
       {!collapsed ? (
         <div
           style={{
@@ -408,20 +484,33 @@ function SidebarBrand({ menuScale, collapsed, logoSrc, brand }) {
             display: "flex",
             flexDirection: "column",
             lineHeight: 1.15,
+            flex: 1,
           }}
         >
           <div
             style={{
-              color: "#0F172A",
-              fontSize: sidebarVisual.brandTitleFontSize * menuScale,
-              fontWeight: 800,
-              letterSpacing: 0.2,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              minWidth: 0,
+              flexWrap: "wrap",
             }}
           >
-            {brand.title}
+            <div
+              style={{
+                color: "#0F172A",
+                fontSize: sidebarVisual.brandTitleFontSize * menuScale,
+                fontWeight: 800,
+                letterSpacing: 0.2,
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+            >
+              {brand.title}
+            </div>
+            {!hideEnvironmentBadge ? (
+              <TenantEnvironmentBadge environment={environment} />
+            ) : null}
           </div>
           {brand.subtitle ? (
             <div
@@ -441,109 +530,6 @@ function SidebarBrand({ menuScale, collapsed, logoSrc, brand }) {
       ) : null}
     </div>
   );
-}
-
-function getSystemMenuSettings() {
-  try {
-    return JSON.parse(localStorage.getItem(SYSTEM_MENU_SETTINGS_KEY) || "{}");
-  } catch {
-    return {};
-  }
-}
-
-function saveSystemMenuSettings(settings) {
-  localStorage.setItem(SYSTEM_MENU_SETTINGS_KEY, JSON.stringify(settings));
-}
-
-function isProtectedMenuItem(item) {
-  const title = String(item?.title || "").trim().toLowerCase();
-
-  return (
-    PROTECTED_MENU_TITLES.includes(title) ||
-    item?.is_home === true ||
-    item?.isHome === true ||
-    item?.type === "home"
-  );
-}
-
-function applySystemSettings(item, settings) {
-  const itemSettings = settings[item.id] || {};
-
-  const nextItem = {
-    ...item,
-    ...itemSettings,
-    isSystem: true,
-    is_visible:
-      itemSettings.is_visible === undefined
-        ? item.is_visible
-        : itemSettings.is_visible,
-  };
-
-  if (Array.isArray(item.children)) {
-    nextItem.children = item.children.map((child) =>
-      applySystemSettings(child, settings)
-    );
-  }
-
-  return nextItem;
-}
-
-function applyProtectedMenuSettings(tree = [], systemSettings = {}) {
-  return tree.map((item) => {
-    const children = Array.isArray(item.children)
-      ? applyProtectedMenuSettings(item.children, systemSettings)
-      : item.children;
-
-    const nextItem = { ...item, children };
-
-    if (!isProtectedMenuItem(nextItem)) return nextItem;
-
-    return applySystemSettings({ ...nextItem, isSystem: true }, systemSettings);
-  });
-}
-
-function getMyTasksItem(systemSettings = {}) {
-  const item = {
-    id: "system-my-tasks",
-    title: "Мои задачи",
-    type: "system_page",
-    route: "/my-tasks",
-    isSystem: true,
-    is_visible: true,
-    is_hidden: false,
-    position: 2,
-  };
-
-  return applySystemSettings(item, systemSettings);
-}
-
-function insertMyTasksAfterMainPage(tree = [], myTasksItem) {
-  const hasMyTasksAlready = tree.some(
-    (item) =>
-      item?.id === "system-my-tasks" ||
-      String(item?.title || "").trim().toLowerCase() === "мои задачи"
-  );
-
-  if (hasMyTasksAlready) return tree;
-
-  const mainPageIndex = tree.findIndex((item) => {
-    const title = String(item?.title || "").trim().toLowerCase();
-
-    return (
-      title === "главная страница" ||
-      item?.is_home === true ||
-      item?.isHome === true ||
-      item?.type === "home"
-    );
-  });
-
-  if (mainPageIndex === -1) return [myTasksItem, ...tree];
-
-  return [
-    ...tree.slice(0, mainPageIndex + 1),
-    myTasksItem,
-    ...tree.slice(mainPageIndex + 1),
-  ];
 }
 
 const sidebarFooterStyle = {

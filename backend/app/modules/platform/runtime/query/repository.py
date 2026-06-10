@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Session, aliased, joinedload
 
 from app.modules.platform.runtime.entities.models import RuntimeEntity, RuntimeEntityValue
+from app.modules.platform.runtime.system_records import apply_user_visible_entity_filter
 from app.modules.platform.runtime.relation_instances.models import RuntimeRelationInstance
 from app.modules.platform.runtime.entities.system_fields import (
     SYSTEM_FIELD_KEYS,
@@ -36,6 +37,7 @@ from app.modules.platform.shared.enums import FieldType
 
 SYSTEM_FIELD_FILTER_COLUMNS = {
     SYSTEM_FIELD_KEYS["id"]: RuntimeEntity.id,
+    SYSTEM_FIELD_KEYS["is_system"]: RuntimeEntity.is_system,
     SYSTEM_FIELD_KEYS["created_by"]: RuntimeEntity.created_by,
     SYSTEM_FIELD_KEYS["created_at"]: RuntimeEntity.created_at,
     SYSTEM_FIELD_KEYS["updated_by"]: RuntimeEntity.updated_by,
@@ -50,11 +52,12 @@ def _base_query(
     tenant_id: int,
     object_type_key: str,
 ):
-    return db.query(RuntimeEntity).filter(
+    query = db.query(RuntimeEntity).filter(
         RuntimeEntity.tenant_id == tenant_id,
         RuntimeEntity.object_type_key == object_type_key,
         RuntimeEntity.deleted_at.is_(None),
     )
+    return apply_user_visible_entity_filter(query)
 
 
 def _jsonb_text(column):

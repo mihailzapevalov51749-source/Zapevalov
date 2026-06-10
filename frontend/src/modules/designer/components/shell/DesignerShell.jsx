@@ -24,6 +24,10 @@ import {
 import { defaultCapabilitiesForMode } from "../../../../shared/shell/provider/appShellTypes";
 import { emitDesignerShadowSnapshot } from "../../../../shared/shell/shadow/designer";
 import { resolveStudioToOfficePath } from "../../../../shared/appMode/appModeNavigation";
+import {
+  readLeftMenuScale,
+  writeLeftMenuScale,
+} from "../../../../shared/uiStorage/leftMenuScaleStorage.js";
 import useNavigationTree from "../../../../modules/navigation/hooks/useNavigationTree";
 import * as designerApi from "../../api/designerApi";
 import { mergeDesignerSidebarNavigation } from "../../utils/mergeDesignerSidebarNavigation";
@@ -44,6 +48,16 @@ import SearchResultsOverlay from "../../../../shared/search/SearchResultsOverlay
 import { useHeaderSearchContext } from "../../../../shared/search/useHeaderSearchContext";
 import { useHeaderSearchController } from "../../../../shared/search/useHeaderSearchController";
 import { canUseHeaderSearch } from "../../../../shared/search/searchRoleUtils";
+import {
+  canAccessControlPlane,
+  canAccessTenantAdministration,
+  canShowControlPlaneStudioMenuEntry,
+  canShowPlatformEventJournalInStudio,
+  filterControlPlaneStudioMenuItems,
+  filterPlatformStudioMenuItems,
+} from "../../../admin/access/adminAccess";
+import { buildTenantAdminPath } from "../../../admin/config/tenantAdminPaths";
+import { useTenantEnvironment } from "../../../../shared/tenantEnvironment/useTenantEnvironment";
 import { SEARCH_MODES } from "../../../../shared/search/searchScopes";
 import { YasiiSurfaceContextProvider } from "../../../../yasii/context/YasiiSurfaceContext.jsx";
 import { buildDesignerYasiiSurfaceValue } from "../../../../yasii/designer/buildDesignerContextData.js";
@@ -100,38 +114,66 @@ function isSuperadminUser(user) {
   return Number.isFinite(roleId) && roleId === 4;
 }
 
-function appendDesignerAdministrationItem(items, tenantId, isSuperadmin) {
-  if (!isSuperadmin) return Array.isArray(items) ? items : [];
-  const normalizedTenantId = Number(tenantId) || 1;
-  const adminPath = `/designer/tenant/${normalizedTenantId}/administration`;
-  const hasAdmin = Array.isArray(items)
+function hasNavigationRoute(items, route) {
+  const normalizedRoute = String(route || "").trim();
+  return Array.isArray(items)
     ? items.some((item) => {
-        const route = String(item?.route || item?.path || item?.url || "").trim();
-        return route === adminPath;
+        const itemRoute = String(item?.route || item?.path || item?.url || "").trim();
+        return itemRoute === normalizedRoute;
       })
     : false;
-  if (hasAdmin) {
-    return items;
-  }
-  return [
-    ...(Array.isArray(items) ? items : []),
-    {
-      id: "system-designer-administration",
+}
+
+function appendDesignerAdministrationItems(items, user, tenantId, tenantType) {
+  const result = [...(Array.isArray(items) ? items : [])];
+  const normalizedTenantId = Number(tenantId) > 0 ? Number(tenantId) : 1;
+  const tenantAdminPath = buildTenantAdminPath(normalizedTenantId);
+  const controlPlanePath = "/control-plane";
+  const showControlPlaneEntry = canShowControlPlaneStudioMenuEntry({
+    tenantId: normalizedTenantId,
+    tenantType,
+  });
+
+  if (canAccessTenantAdministration(user) && !hasNavigationRoute(result, tenantAdminPath)) {
+    result.push({
+      id: "system-designer-tenant-administration",
       title: "Администрирование",
       type: "system_page",
-      route: adminPath,
-      path: adminPath,
+      route: tenantAdminPath,
+      path: tenantAdminPath,
+      menu_scope: "designer",
+      scope: "designer",
+      mode: "designer",
+      is_system: true,
+      is_protected: true,
+      sort_order: 9980,
+    });
+  }
+
+  if (
+    showControlPlaneEntry
+    && canAccessControlPlane(user)
+    && !hasNavigationRoute(result, controlPlanePath)
+  ) {
+    result.push({
+      id: "system-designer-control-plane",
+      title: "Управление платформой",
+      type: "system_page",
+      route: controlPlanePath,
+      path: controlPlanePath,
       menu_scope: "designer",
       scope: "designer",
       mode: "designer",
       is_system: true,
       is_protected: true,
       sort_order: 9999,
-    },
-  ];
+    });
+  }
+
+  return result;
 }
 
-function buildDesignerMetaNavigation(tenantId, isSuperadmin) {
+function buildDesignerMetaNavigation(tenantId, user, tenantType) {
   const normalizedTenantId = Number(tenantId) || 1;
   const base = `/designer/tenant/${normalizedTenantId}`;
   const items = [
@@ -149,32 +191,6 @@ function buildDesignerMetaNavigation(tenantId, isSuperadmin) {
       sort_order: 10,
     },
     {
-      id: "system-designer-relations",
-      title: "Связи",
-      type: "system_page",
-      route: `${base}/relations`,
-      path: `${base}/relations`,
-      menu_scope: "designer",
-      scope: "designer",
-      mode: "designer",
-      is_system: true,
-      is_protected: true,
-      sort_order: 20,
-    },
-    {
-      id: "system-designer-views",
-      title: "Вкладки",
-      type: "system_page",
-      route: `${base}/views`,
-      path: `${base}/views`,
-      menu_scope: "designer",
-      scope: "designer",
-      mode: "designer",
-      is_system: true,
-      is_protected: true,
-      sort_order: 30,
-    },
-    {
       id: "system-designer-pages",
       title: "Страницы",
       type: "system_page",
@@ -185,20 +201,7 @@ function buildDesignerMetaNavigation(tenantId, isSuperadmin) {
       mode: "designer",
       is_system: true,
       is_protected: true,
-      sort_order: 40,
-    },
-    {
-      id: "system-designer-navigation",
-      title: "Навигация",
-      type: "system_page",
-      route: `${base}/navigation`,
-      path: `${base}/navigation`,
-      menu_scope: "designer",
-      scope: "designer",
-      mode: "designer",
-      is_system: true,
-      is_protected: true,
-      sort_order: 50,
+      sort_order: 20,
     },
     {
       id: "system-designer-trash",
@@ -242,26 +245,13 @@ function buildDesignerMetaNavigation(tenantId, isSuperadmin) {
       sort_order: 70,
     },
     {
-      id: "system-designer-publishing",
-      title: "Публикация",
+      id: "system-designer-event-journal",
+      title: "Журнал событий",
       type: "system_page",
-      route: `${base}/publishing`,
-      path: `${base}/publishing`,
-      menu_scope: "designer",
-      scope: "designer",
-      mode: "designer",
-      is_system: true,
-      is_protected: true,
-      sort_order: 80,
-    },
-    {
-      id: "system-designer-platform",
-      title: "Платформа",
-      type: "system_page",
-      route: `${base}/platform/platform`,
-      path: `${base}/platform/platform`,
-      system_key: "platform",
-      section: "platform",
+      route: `${base}/event-journal`,
+      path: `${base}/event-journal`,
+      system_key: "event-journal",
+      section: "event-journal",
       menu_scope: "designer",
       scope: "designer",
       mode: "designer",
@@ -271,7 +261,7 @@ function buildDesignerMetaNavigation(tenantId, isSuperadmin) {
     },
   ];
 
-  return appendDesignerAdministrationItem(items, tenantId, isSuperadmin);
+  return appendDesignerAdministrationItems(items, user, tenantId, tenantType);
 }
 
 export default function DesignerShell() {
@@ -280,11 +270,15 @@ export default function DesignerShell() {
   const resolvedPortalId = Number(tenantId) || 1;
   const navigate = useNavigate();
   const location = useLocation();
-  const [menuScale, setMenuScale] = useState(() => {
-    const saved = localStorage.getItem("leftMenuScale");
-    const parsed = Number(saved);
-    return Number.isFinite(parsed) && parsed >= 0.8 && parsed <= 1.4 ? parsed : 1;
-  });
+  const { tenantEnvironment } = useTenantEnvironment();
+  const studioTenantType = tenantEnvironment?.tenant_type ?? null;
+  const [menuScale, setMenuScale] = useState(() =>
+    readLeftMenuScale(resolvedPortalId),
+  );
+
+  useEffect(() => {
+    setMenuScale(readLeftMenuScale(resolvedPortalId));
+  }, [resolvedPortalId]);
   const [headerUser, setHeaderUser] = useState(() => getCachedHeaderUser());
   const [isPageEditMode, setIsPageEditMode] = useState(false);
   const [activeObjectTypeName, setActiveObjectTypeName] = useState("");
@@ -330,8 +324,8 @@ export default function DesignerShell() {
   const handleMenuScaleChange = useCallback((value) => {
     const rounded = Math.max(0.8, Math.min(1.4, Number(value ?? 1)));
     setMenuScale(rounded);
-    localStorage.setItem("leftMenuScale", String(rounded));
-  }, []);
+    writeLeftMenuScale(resolvedPortalId, rounded);
+  }, [resolvedPortalId]);
 
   const hasPersistedDesignerNavigation = sourceMode === "persisted-designer";
 
@@ -377,7 +371,11 @@ export default function DesignerShell() {
   });
 
   const designerSidebarNavigation = useMemo(() => {
-    const baseItems = buildDesignerMetaNavigation(resolvedPortalId, isSuperadmin);
+    const baseItems = buildDesignerMetaNavigation(
+      resolvedPortalId,
+      headerUser ?? user,
+      studioTenantType,
+    );
     const withSettings = applyDesignerSystemMenuSettings(
       baseItems,
       resolvedPortalId,
@@ -386,13 +384,34 @@ export default function DesignerShell() {
         showHiddenInEditMode: sidebarControls.isEditMode,
       },
     );
-    return mergeDesignerSidebarNavigation(withSettings, navigation);
+    const merged = mergeDesignerSidebarNavigation(withSettings, navigation);
+    let filtered = merged;
+    if (
+      !canShowControlPlaneStudioMenuEntry({
+        tenantId: resolvedPortalId,
+        tenantType: studioTenantType,
+      })
+    ) {
+      filtered = filterControlPlaneStudioMenuItems(filtered);
+    }
+    if (
+      !canShowPlatformEventJournalInStudio({
+        tenantId: resolvedPortalId,
+        tenantType: studioTenantType,
+      })
+    ) {
+      filtered = filterPlatformStudioMenuItems(filtered);
+    }
+    return filtered;
   }, [
     resolvedPortalId,
+    studioTenantType,
     isSuperadmin,
     sidebarControls.isEditMode,
     systemSettingsVersion,
     navigation,
+    headerUser,
+    user,
   ]);
 
   useEffect(() => {
@@ -762,8 +781,8 @@ export default function DesignerShell() {
             if (breadcrumbId === "designer-objects") {
               publishObjectsSectionRouteOwner(resolvedPortalId);
             }
-            if (breadcrumbId === "designer-platform") {
-              publishRootSectionRouteOwner("platform", resolvedPortalId);
+            if (breadcrumbId === "designer-event-journal") {
+              publishRootSectionRouteOwner("event-journal", resolvedPortalId);
             }
             navigate(payload.path);
           }
@@ -875,17 +894,17 @@ export default function DesignerShell() {
       event.preventDefault();
       const normalizedTarget = String(targetPath).trim().replace(/\/+$/, "");
       const objectsSectionPath = `/designer/tenant/${resolvedPortalId}/object-types`;
-      const platformSectionPath = `/designer/tenant/${resolvedPortalId}/platform`;
+      const eventJournalSectionPath = `/designer/tenant/${resolvedPortalId}/event-journal`;
       if (
         normalizedTarget === objectsSectionPath ||
         String(item?.id || "") === "system-designer-objects"
       ) {
         publishObjectsSectionRouteOwner(resolvedPortalId);
       } else if (
-        normalizedTarget === platformSectionPath ||
-        String(item?.id || "") === "system-designer-platform"
+        normalizedTarget === eventJournalSectionPath ||
+        String(item?.id || "") === "system-designer-event-journal"
       ) {
-        publishRootSectionRouteOwner("platform", resolvedPortalId);
+        publishRootSectionRouteOwner("event-journal", resolvedPortalId);
       }
       navigate(targetPath);
       return;
@@ -911,8 +930,7 @@ export default function DesignerShell() {
       collapsed: false,
       navigation: [
         { id: "designer-objects", label: "Объекты" },
-        { id: "designer-relations", label: "Связи" },
-        { id: "designer-views", label: "Вкладки" },
+        { id: "designer-pages", label: "Страницы" },
         { id: "designer-users", label: "Пользователи" },
         { id: "designer-settings", label: "Системные настройки" },
       ],

@@ -50,6 +50,9 @@ from app.modules.platform_dashboard.models import (  # noqa: F401
     PlatformImplementationStage,
     PlatformTask,
 )
+from app.modules.platform_event_journal.models import (  # noqa: F401
+    PlatformEventJournalEntry,
+)
 
 # IMPORT CHATS MODELS
 from app.modules.chats import models as chats_models  # noqa: F401

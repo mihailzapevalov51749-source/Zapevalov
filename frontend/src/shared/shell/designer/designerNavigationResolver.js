@@ -67,7 +67,7 @@ export function resolveDesignerTenantBase(tenantId) {
 
 export function isDesignerPlatformRoute(pathname) {
   const normalized = normalizePath(pathname);
-  return /\/designer\/tenant\/\d+\/platform(?:\/|$)/.test(normalized);
+  return /\/designer\/tenant\/\d+\/(?:event-journal|platform)(?:\/|$)/.test(normalized);
 }
 
 export function getDesignerSectionDefinitions(tenantId) {
@@ -124,10 +124,10 @@ export function getDesignerSectionDefinitions(tenantId) {
       match: (pathname) => /\/publishing(?:\/|$)/.test(pathname),
     },
     {
-      key: "platform",
-      label: "Платформа",
-      path: `${base}/platform`,
-      match: (pathname) => /\/platform(?:\/|$)/.test(pathname),
+      key: "event-journal",
+      label: "Журнал событий",
+      path: `${base}/event-journal`,
+      match: (pathname) => /\/event-journal(?:\/|$)/.test(pathname),
     },
     {
       key: "relations",
@@ -323,7 +323,7 @@ function resolveOwnedRootSectionMenuItemActive({
     return false;
   }
 
-  if (ownedSectionKey === "platform") {
+  if (ownedSectionKey === "event-journal") {
     return isDesignerPlatformRoute(normalizedActivePath);
   }
 
@@ -398,7 +398,7 @@ function scoreDesignerSidebarItemActive({
         ownedSection,
       })
     ) {
-      if (ownedSectionKey === "platform") {
+      if (ownedSectionKey === "event-journal") {
         return 50000;
       }
 
@@ -436,7 +436,7 @@ function scoreDesignerSidebarItemActive({
         normalizedItemPath,
         resolvedTenantId,
       );
-      if (itemSection?.key === "platform") {
+      if (itemSection?.key === "event-journal") {
         return 50000;
       }
       return -1;
@@ -977,37 +977,14 @@ function buildPagesBreadcrumbs(pathname, base, context = {}) {
   ]);
 }
 
-const PLATFORM_TAB_LABELS = {
-  architecture: "Архитектура",
-  implementation: "Реализация",
-  quality: "Качество",
-  history: "История",
-};
-
-function resolvePlatformTabLabel(pathname) {
-  const tabMatch = normalizePath(pathname).match(/\/platform\/([^/?]+)/);
-  const tabKey = tabMatch?.[1];
-  return PLATFORM_TAB_LABELS[tabKey] || null;
-}
-
-function buildPlatformBreadcrumbs(pathname, base) {
-  const tabLabel = resolvePlatformTabLabel(pathname);
-  const chain = [
+function buildEventJournalBreadcrumbs(pathname, base) {
+  return markLastActive([
     {
-      id: "designer-platform",
-      label: "Платформа",
-      path: `${base}/platform/platform`,
+      id: "designer-event-journal",
+      label: "Журнал событий",
+      path: `${base}/event-journal`,
     },
-  ];
-
-  if (tabLabel) {
-    chain.push({
-      id: "designer-platform-tab",
-      label: tabLabel,
-    });
-  }
-
-  return markLastActive(chain);
+  ]);
 }
 
 function buildAdministrationBreadcrumbs(pathname, base) {
@@ -1139,8 +1116,8 @@ export function buildDesignerBreadcrumbs(pathname, context = {}) {
     return buildObjectTypeBreadcrumbs(pathname, base, context);
   }
 
-  if (section.key === "platform") {
-    return buildPlatformBreadcrumbs(pathname, base);
+  if (section.key === "event-journal") {
+    return buildEventJournalBreadcrumbs(pathname, base);
   }
 
   const activeItem = resolveDesignerBreadcrumbActiveItem(pathname, context, tenantId);

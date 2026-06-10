@@ -3,6 +3,7 @@ import {
   getHierarchyParentChildEntityIds,
   resolveHierarchyRelationEntitySides,
 } from "../table/services/resolveHierarchyRelationEntitySides.js";
+import { isRuntimeSystemEntity } from "../../../shared/runtime/runtimeSystemRecords.js";
 import { computePlanNodeReadiness } from "./planProgressUtils.js";
 import {
   resolvePlanStatusCategory,
@@ -19,6 +20,7 @@ import {
   isPlanTreeRootAnchorTitle,
   resolvePlanTreeRootIds,
 } from "./planTreeRootAnchor.js";
+import { sanitizePlanHierarchyInstances } from "./sanitizePlanHierarchyInstances.js";
 
 function findCatalogRelation(catalog, relationKey) {
   const relations = Array.isArray(catalog?.relations) ? catalog.relations : [];
@@ -45,6 +47,33 @@ function indexEntities(items) {
   }
 
   return byId;
+}
+
+function filterUserVisiblePlanItems(items) {
+  return (Array.isArray(items) ? items : []).filter((item) => !isRuntimeSystemEntity(item));
+}
+
+function shouldSkipPlanTreeNode(entity, entityId, rootAnchorId, resolveNodeTitle) {
+  const normalizedId = String(entityId ?? "").trim();
+  const normalizedAnchorId = String(rootAnchorId ?? "").trim();
+
+  if (!normalizedId) {
+    return true;
+  }
+
+  if (normalizedAnchorId && normalizedId === normalizedAnchorId) {
+    return true;
+  }
+
+  if (entity && isRuntimeSystemEntity(entity)) {
+    return true;
+  }
+
+  if (isPlanTreeRootAnchorTitle(resolveNodeTitle(entity))) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -98,18 +127,26 @@ export function buildPlanTree({
       roots: [],
       nodesById: new Map(),
       hasHierarchy: false,
+      hasCycle: false,
       instanceByChildId: new Map(),
     };
   }
 
   const relationDefinition = findCatalogRelation(catalog, relationKey);
-  const entitiesById = indexEntities(items);
+  const userItems = filterUserVisiblePlanItems(items);
+  const entitiesById = indexEntities(userItems);
+  const sanitizedInstances = sanitizePlanHierarchyInstances(hierarchyInstances, {
+    relationDefinition,
+    entitiesById,
+    rootAnchorId,
+    titleFieldKey,
+  });
   const { parentByChild, childrenByParent } = buildHierarchyEdgeMaps(
-    hierarchyInstances,
+    sanitizedInstances,
     relationDefinition,
   );
   const instanceByChildId = buildInstanceByChildId(
-    hierarchyInstances,
+    sanitizedInstances,
     relationDefinition,
   );
 
@@ -120,6 +157,7 @@ export function buildPlanTree({
 
   /** @type {Map<string, object>} */
   const nodesById = new Map();
+  let hasCycle = false;
 
   function resolveNodeTitle(entity) {
     return resolveEntityDisplayTitle({
@@ -138,22 +176,66 @@ export function buildPlanTree({
     return null;
   }
 
-  function buildNode(entityId, depth = 0) {
+  function buildNode(entityId, depth = 0, activeStack = new Set()) {
     const normalizedId = String(entityId).trim();
-    if (!normalizedId || nodesById.has(normalizedId)) {
-      return nodesById.get(normalizedId) || null;
+    if (!normalizedId) {
+      return null;
+    }
+
+    if (activeStack.has(normalizedId)) {
+      hasCycle = true;
+
+      if (import.meta.env?.DEV) {
+        console.warn("[PlanTree] Cycle detected at node", normalizedId);
+      }
+
+      if (nodesById.has(normalizedId)) {
+        return nodesById.get(normalizedId);
+      }
+
+      const cycleNode = {
+        id: normalizedId,
+        depth,
+        title: "Циклическая связь",
+        statusLabel: "—",
+        ownStatusLabel: "—",
+        statusCategory: null,
+        statusColor: null,
+        rollupStatusCategory: null,
+        readiness: 0,
+        issuesCount: 0,
+        entity: entitiesById.get(normalizedId) || { id: normalizedId },
+        children: [],
+        parentId: parentByChild.get(normalizedId) || null,
+        parentTitle: null,
+        hierarchyInstanceId: null,
+        cycleDetected: true,
+      };
+
+      nodesById.set(normalizedId, cycleNode);
+      return cycleNode;
+    }
+
+    if (nodesById.has(normalizedId)) {
+      return nodesById.get(normalizedId);
     }
 
     const entity = entitiesById.get(normalizedId) || { id: normalizedId };
 
-    if (isPlanTreeRootAnchorTitle(resolveNodeTitle(entity))) {
+    if (shouldSkipPlanTreeNode(entity, normalizedId, rootAnchorId, () => resolveNodeTitle(entity))) {
       return null;
     }
 
-    const childIds = childrenByParent.get(normalizedId) || [];
+    activeStack.add(normalizedId);
+
+    const childIds = (childrenByParent.get(normalizedId) || []).filter(
+      (childId) => String(childId).trim() !== normalizedId,
+    );
     const children = childIds
-      .map((childId) => buildNode(childId, depth + 1))
+      .map((childId) => buildNode(childId, depth + 1, activeStack))
       .filter(Boolean);
+
+    activeStack.delete(normalizedId);
 
     const ownStatusValue = resolveOwnStatusValue(entity);
     const ownStatusDisplay = resolvePlanFieldDisplayValue(ownStatusValue, statusField);
@@ -175,6 +257,12 @@ export function buildPlanTree({
       children,
       statusMapping,
     });
+
+    const existingCycleNode = nodesById.get(normalizedId);
+    if (existingCycleNode?.cycleDetected) {
+      activeStack.delete(normalizedId);
+      return existingCycleNode;
+    }
 
     const parentId = parentByChild.get(normalizedId) || null;
     const parentEntity = parentId ? entitiesById.get(parentId) : null;
@@ -200,6 +288,7 @@ export function buildPlanTree({
       hierarchyInstanceId: hierarchyInstance?.id
         ? String(hierarchyInstance.id)
         : null,
+      cycleDetected: false,
     };
 
     nodesById.set(normalizedId, node);
@@ -216,7 +305,10 @@ export function buildPlanTree({
   if (!rootIds.length && entitiesById.size) {
     for (const id of entitiesById.keys()) {
       const entity = entitiesById.get(id);
-      if (entity && !isPlanTreeRootAnchorTitle(resolveNodeTitle(entity))) {
+      if (
+        entity &&
+        !shouldSkipPlanTreeNode(entity, id, rootAnchorId, () => resolveNodeTitle(entity))
+      ) {
         rootIds.push(id);
       }
     }
@@ -229,6 +321,7 @@ export function buildPlanTree({
     roots,
     nodesById,
     hasHierarchy: true,
+    hasCycle,
     relationKey,
     instanceByChildId,
   };

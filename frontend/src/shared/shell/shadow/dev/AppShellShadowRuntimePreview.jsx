@@ -47,13 +47,6 @@ const RUNTIME_NAVIGATION = [
     type: "document_library",
     path: "/runtime/documents",
   },
-  {
-    id: "runtime-tasks",
-    title: "Мои задачи",
-    type: "system_page",
-    route: "/runtime/tasks",
-    path: "/runtime/tasks",
-  },
 ];
 
 const RUNTIME_USER = {

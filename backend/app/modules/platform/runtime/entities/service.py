@@ -7,6 +7,7 @@ from app.modules.platform.runtime.catalog import service as catalog_service
 from app.modules.platform.runtime.entities import repository, serializer, validators
 from app.modules.platform.runtime.entities.models import RuntimeEntity, RuntimeEntityValue
 from app.modules.platform.runtime.entities import hierarchy_delete
+from app.modules.platform.runtime.system_records import assert_user_facing_entity
 from app.modules.platform.runtime.entities.schemas import (
     EntityCreate,
     EntityDeletePreview,
@@ -111,6 +112,7 @@ def create_entity(
         created_by=user_id,
         updated_by=user_id,
         record_version=1,
+        is_system=False,
         record_number=repository.get_next_record_number(
             db,
             tenant_id,
@@ -175,11 +177,7 @@ def get_entity(
         entity_id,
         object_type_key=object_type_key,
     )
-    if not entity:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Entity не найдена",
-        )
+    assert_user_facing_entity(entity)
 
     value_rows = repository.get_entity_values(db, tenant_id, entity_id)
     return serializer.serialize_entity(entity, value_rows)
@@ -208,11 +206,7 @@ def update_entity(
         entity_id,
         object_type_key=object_type_key,
     )
-    if not entity:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Entity не найдена",
-        )
+    assert_user_facing_entity(entity)
 
     field_map = {field["key"]: field for field in metadata.fields if field.get("key")}
     user_values = _scalar_user_values(
@@ -292,12 +286,7 @@ def _get_entity_or_404(
         entity_id,
         object_type_key=object_type_key,
     )
-    if not entity:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Entity не найдена",
-        )
-    return entity
+    return assert_user_facing_entity(entity)
 
 
 def preview_entity_delete(

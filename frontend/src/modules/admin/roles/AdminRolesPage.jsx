@@ -1,17 +1,24 @@
-export default function AdminRolesPage() {
+export default function AdminRolesPage({ variant = "tenant" }) {
+  const isPlatform = variant === "platform";
+
   return (
     <AdminPageShell
-      title="Роли и доступы"
-      description="Управление ролями, правами доступа и полномочиями пользователей."
+      kicker={isPlatform ? "Управление платформой" : "Администрирование компании"}
+      title={isPlatform ? "Роли платформы" : "Роли и доступы"}
+      description={
+        isPlatform
+          ? "Глобальные роли, права доступа и политики безопасности платформы."
+          : "Управление ролями, правами доступа и полномочиями пользователей."
+      }
     />
   );
 }
 
-function AdminPageShell({ title, description }) {
+function AdminPageShell({ kicker, title, description }) {
   return (
     <main style={styles.page}>
       <section style={styles.card}>
-        <div style={styles.kicker}>Администрирование</div>
+        <div style={styles.kicker}>{kicker}</div>
         <h1 style={styles.title}>{title}</h1>
         <p style={styles.description}>{description}</p>
       </section>

@@ -19,6 +19,10 @@ import {
   resolvePortalNavigationClickTarget,
 } from "./utils/portalObjectRoutes";
 import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../shared/navigation/navigationReload";
+import {
+  readLeftMenuScale,
+  writeLeftMenuScale,
+} from "../shared/uiStorage/leftMenuScaleStorage.js";
 import { PORTAL_OBJECT_VIEW_HEADER_EVENT } from "./utils/portalObjectViewHeaderBridge";
 import {
   buildBreadcrumbsFromNavigationChain,
@@ -93,10 +97,11 @@ export default function PortalObjectRuntimePage() {
     };
   }, [reloadNavigation]);
 
-  const [menuScale, setMenuScale] = useState(() => {
-    const saved = localStorage.getItem("leftMenuScale");
-    return saved ? Number(saved) : 1;
-  });
+  const [menuScale, setMenuScale] = useState(() => readLeftMenuScale(portalId));
+
+  useEffect(() => {
+    setMenuScale(readLeftMenuScale(portalId));
+  }, [portalId]);
   const [runtimeHeaderModel, setRuntimeHeaderModel] = useState(null);
   const [activeObjectAdapterLabel, setActiveObjectAdapterLabel] = useState("");
   const {
@@ -109,8 +114,8 @@ export default function PortalObjectRuntimePage() {
     const normalized = Math.min(1.4, Math.max(0.8, nextScale));
     const rounded = Number(normalized.toFixed(1));
     setMenuScale(rounded);
-    localStorage.setItem("leftMenuScale", String(rounded));
-  }, []);
+    writeLeftMenuScale(portalId, rounded);
+  }, [portalId]);
 
   const handleSelectPage = useCallback(
     (nextPageId) => {
