@@ -96,6 +96,15 @@ PLATFORM_LAYER_ENGINES: tuple[PlatformEngineDefinition, ...] = (
         in_dashboard=False,
     ),
     PlatformEngineDefinition(
+        slug="control-plane",
+        title="Control Plane / Управление платформой",
+        description=(
+            "Коммерческий слой SaaS: клиентские компании, ответственные, лимиты, "
+            "связь с основным порталом; подготовка к provisioning и биллингу."
+        ),
+        dashboard_component_slugs=("control-plane",),
+    ),
+    PlatformEngineDefinition(
         slug="office",
         title="Office",
         description="Офисный контур (документы, совместная работа).",

@@ -12,6 +12,193 @@ const DESIGNER_OBJECT_DATA_RE =
 const PORTAL_OBJECT_RE =
   /^\/portal\/(\d+)\/object-types\/([^/?#]+)(?:\/([^/?#]+))?\/?$/i;
 
+const PORTAL_SCOPED_PATH_RE = /^\/portal\/(\d+)(\/.*)?$/i;
+
+const DESIGNER_TENANT_PATH_RE = /^\/designer\/tenant\/(\d+)(\/.*)?$/i;
+
+const DESIGNER_WORKSPACE_PATH_RE =
+  /^\/designer\/tenant\/\d+\/workspaces\/([^/?#]+)(?:\/([^/?#]+))?\/?$/i;
+
+const NAVIGATION_PATH_FIELDS = ["targetPath", "url", "path", "route"];
+
+function splitPathWithSuffix(rawPath) {
+  const raw = String(rawPath || "").trim();
+  if (!raw) {
+    return { pathname: "", suffix: "" };
+  }
+
+  const hashIndex = raw.indexOf("#");
+  const queryIndex = raw.indexOf("?");
+  const cutIndex =
+    hashIndex === -1
+      ? queryIndex
+      : queryIndex === -1
+        ? hashIndex
+        : Math.min(hashIndex, queryIndex);
+
+  if (cutIndex === -1) {
+    return { pathname: raw, suffix: "" };
+  }
+
+  return {
+    pathname: raw.slice(0, cutIndex),
+    suffix: raw.slice(cutIndex),
+  };
+}
+
+/**
+ * Active portal id from runtime URL (/portal/:portalId).
+ */
+export function resolvePortalIdFromPath(pathname, fallback = 1) {
+  const match = String(pathname || "").match(/^\/portal\/(\d+)/);
+  if (!match) {
+    const parsedFallback = Number(fallback);
+    return Number.isFinite(parsedFallback) && parsedFallback > 0
+      ? parsedFallback
+      : 1;
+  }
+
+  const parsed = Number(match[1]);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
+/**
+ * Rewrites /portal/{oldId}/… and runtime-relevant /designer/tenant/{oldId}/… paths
+ * to the active portal id. Query string and hash are preserved.
+ */
+export function rewritePortalScopedPath(path, portalId) {
+  const raw = String(path || "").trim();
+  if (!raw) {
+    return raw;
+  }
+
+  const pid = Number(portalId);
+  if (!Number.isFinite(pid) || pid <= 0) {
+    return raw;
+  }
+
+  const { pathname, suffix } = splitPathWithSuffix(raw);
+  if (!pathname) {
+    return raw;
+  }
+
+  const portalMatch = pathname.match(PORTAL_SCOPED_PATH_RE);
+  if (portalMatch) {
+    const tail = portalMatch[2] || "";
+    return `/portal/${pid}${tail}${suffix}`;
+  }
+
+  const designerMatch = pathname.match(DESIGNER_TENANT_PATH_RE);
+  if (!designerMatch) {
+    return raw;
+  }
+
+  const workspaceMatch = pathname.match(DESIGNER_WORKSPACE_PATH_RE);
+  if (workspaceMatch) {
+    const slug = decodeURIComponent(workspaceMatch[1]);
+    const tabSlug = workspaceMatch[2]
+      ? decodeURIComponent(workspaceMatch[2])
+      : null;
+
+    if (tabSlug) {
+      return `/portal/${pid}/workspaces/${encodeURIComponent(slug)}/${encodeURIComponent(tabSlug)}${suffix}`;
+    }
+
+    return `/portal/${pid}/workspaces/${encodeURIComponent(slug)}${suffix}`;
+  }
+
+  const pageMatch = pathname.match(/\/page\/(\d+)/);
+  if (pageMatch) {
+    return `/portal/${pid}/page/${pageMatch[1]}${suffix}`;
+  }
+
+  const libraryMatch = pathname.match(/\/library\/(\d+)/);
+  if (libraryMatch) {
+    return `/portal/${pid}/library/${libraryMatch[1]}${suffix}`;
+  }
+
+  const objectTypeMatch = pathname.match(
+    /\/object-types\/([^/]+)(?:\/([^/]+))?\/?$/,
+  );
+  if (objectTypeMatch) {
+    const objectTypeRef = objectTypeMatch[1];
+    const viewKey = objectTypeMatch[2];
+    const base = `/portal/${pid}/object-types/${objectTypeRef}`;
+
+    if (viewKey) {
+      return `${base}/${viewKey}${suffix}`;
+    }
+
+    return `${base}${suffix}`;
+  }
+
+  return raw;
+}
+
+function rewriteNavigationPathFields(item, portalId) {
+  if (!item || typeof item !== "object") {
+    return item;
+  }
+
+  const nextItem = { ...item };
+
+  NAVIGATION_PATH_FIELDS.forEach((field) => {
+    if (typeof nextItem[field] === "string" && nextItem[field].trim()) {
+      nextItem[field] = rewritePortalScopedPath(nextItem[field], portalId);
+    }
+  });
+
+  if (nextItem.meta && typeof nextItem.meta === "object") {
+    const nextMeta = { ...nextItem.meta };
+    ["targetPath", "url", "route", "path"].forEach((field) => {
+      if (typeof nextMeta[field] === "string" && nextMeta[field].trim()) {
+        nextMeta[field] = rewritePortalScopedPath(nextMeta[field], portalId);
+      }
+    });
+    nextItem.meta = nextMeta;
+  }
+
+  return nextItem;
+}
+
+/**
+ * Resolves sidebar click target for portal runtime navigation.
+ * @returns {{ path: string } | { pageId: number | string } | null}
+ */
+export function resolvePortalNavigationClickTarget(item, portalId) {
+  if (!item || typeof item !== "object") {
+    return null;
+  }
+
+  const objectTypePath = resolvePortalObjectNavigationPath(item, portalId);
+  if (objectTypePath) {
+    return { path: objectTypePath };
+  }
+
+  const rawPath = String(
+    item.targetPath ||
+      item.path ||
+      item.route ||
+      item.url ||
+      item.meta?.targetPath ||
+      item.meta?.path ||
+      item.meta?.route ||
+      item.meta?.url ||
+      "",
+  ).trim();
+
+  if (rawPath) {
+    return { path: rewritePortalScopedPath(rawPath, portalId) };
+  }
+
+  const pageId = item.pageId ?? item.page_id ?? item.meta?.page_id;
+  if (pageId != null) {
+    return { pageId };
+  }
+
+  return null;
+}
+
 export function isObjectTypeUuid(value) {
   return UUID_RE.test(String(value ?? "").trim());
 }
@@ -115,21 +302,23 @@ export function transformRuntimeNavigationForPortal(items, portalId) {
       ? transformRuntimeNavigationForPortal(item.children, portalId)
       : item.children;
 
-    if (!isObjectTypeNavigationItem(item)) {
-      return { ...item, children };
-    }
+    let nextItem = rewriteNavigationPathFields(item, portalId);
 
-    const portalPath = resolvePortalObjectNavigationPath(item, portalId);
+    if (isObjectTypeNavigationItem(nextItem)) {
+      const portalPath = resolvePortalObjectNavigationPath(nextItem, portalId);
 
-    if (!portalPath) {
-      return { ...item, children };
+      if (portalPath) {
+        nextItem = {
+          ...nextItem,
+          url: portalPath,
+          route: portalPath,
+          path: portalPath,
+        };
+      }
     }
 
     return {
-      ...item,
-      url: portalPath,
-      route: portalPath,
-      path: portalPath,
+      ...nextItem,
       children,
     };
   });

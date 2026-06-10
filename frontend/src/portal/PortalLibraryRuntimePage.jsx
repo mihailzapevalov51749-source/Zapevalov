@@ -28,6 +28,10 @@ import { useHeaderSearchController } from "../shared/search/useHeaderSearchContr
 
 import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../shared/navigation/navigationReload";
 import {
+  resolvePortalIdFromPath,
+  resolvePortalNavigationClickTarget,
+} from "./utils/portalObjectRoutes";
+import {
   PAGE_LAYOUT_PAGE_TYPE,
   PAGE_LAYOUT_TOOLBAR_ZONE,
   useResolvedPageLayoutContract,
@@ -88,7 +92,10 @@ export default function PortalLibraryRuntimePage() {
 
 
 
-  const portalId = Number(portalIdParam || 1);
+  const portalId = resolvePortalIdFromPath(
+    location.pathname,
+    portalIdParam || 1,
+  );
 
   const libraryId = Number(libraryIdParam);
 
@@ -385,39 +392,32 @@ export default function PortalLibraryRuntimePage() {
 
 
   const handleSidebarItemAction = useCallback(
-
     (item, event) => {
-
-      const pageId = item?.pageId ?? item?.page_id ?? item?.meta?.page_id;
-
       const itemLibraryId = item?.library_id;
 
-
-
       if (itemLibraryId != null) {
-
         event?.preventDefault?.();
-
         navigate(`/portal/${portalId}/library/${itemLibraryId}`);
-
         return;
-
       }
 
-
-
-      if (pageId != null) {
-
-        event?.preventDefault?.();
-
-        handleSelectPage(pageId);
-
+      const target = resolvePortalNavigationClickTarget(item, portalId);
+      if (!target) {
+        return;
       }
 
+      event?.preventDefault?.();
+
+      if ("path" in target && target.path) {
+        navigate(target.path);
+        return;
+      }
+
+      if ("pageId" in target && target.pageId != null) {
+        handleSelectPage(target.pageId);
+      }
     },
-
     [navigate, portalId, handleSelectPage],
-
   );
 
 

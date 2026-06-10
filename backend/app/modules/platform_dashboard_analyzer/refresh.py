@@ -2584,6 +2584,135 @@ def _ensure_studio_object_type_actions_menu_dashboard_notes(
     return added, journal_lines
 
 
+OBJECT_TYPE_OFFICE_NAV_CLEANUP_CHANGELOG_SLUG = "object-type-office-nav-cleanup-20260610"
+
+_OBJECT_TYPE_OFFICE_NAV_CLEANUP_CHANGELOG_DESCRIPTION = (
+    "Object Type Delete: Office Navigation Cleanup — при удалении object type "
+    "удаляются все navigation_items (Studio и Office, menu_scope designer/runtime) "
+    "по object_type_id и URL; API навигации скрывает пункты удалённых объектов; "
+    "Studio после удаления перезагружает Office sidebar."
+)
+
+
+def _ensure_object_type_office_nav_cleanup_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "object-type")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TYPE_OFFICE_NAV_CLEANUP_CHANGELOG_SLUG,
+        title="Object Type Delete: Office Navigation Cleanup",
+        description=_OBJECT_TYPE_OFFICE_NAV_CLEANUP_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TYPE_OFFICE_NAV_CLEANUP_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={"ui_location": "Студия → Объекты; Office → левое меню"},
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TYPE_OFFICE_NAV_CLEANUP_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TYPE_CASCADE_DELETE_CHANGELOG_SLUG = "object-type-cascade-delete-20260609"
+
+_OBJECT_TYPE_CASCADE_DELETE_CHANGELOG_DESCRIPTION = (
+    "Object Type Cascade Delete: удаление объекта каскадно убирает поля, представления, "
+    "действия, навигацию, runtime-записи и связи; внешние зависимости (пространства, "
+    "действия других объектов) только предупреждают; корзина удаляет окончательно без "
+    "блокировки внутренними сущностями."
+)
+
+
+def _ensure_object_type_cascade_delete_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "object-type")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TYPE_CASCADE_DELETE_CHANGELOG_SLUG,
+        title="Object Type Cascade Delete",
+        description=_OBJECT_TYPE_CASCADE_DELETE_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TYPE_CASCADE_DELETE_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={"ui_location": "Студия → Объекты; Студия → Корзина"},
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TYPE_CASCADE_DELETE_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+OBJECT_TYPE_DELETE_FIX_CHANGELOG_SLUG = "object-type-delete-fix-20260609"
+
+_OBJECT_TYPE_DELETE_FIX_CHANGELOG_DESCRIPTION = (
+    "Object Type Delete Fix: delete-preview больше не падает с 500 из-за varchar/uuid "
+    "в designer_workspace_tabs.object_type_id; проверка зависимостей (связи, представления, "
+    "действия, вкладки, навигация, runtime data) возвращает 409 Conflict с группами; "
+    "Studio UI показывает «Нельзя удалить объект» и список использований."
+)
+
+
+def _ensure_object_type_delete_fix_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "object-type")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=OBJECT_TYPE_DELETE_FIX_CHANGELOG_SLUG,
+        title="Object Type Delete Fix",
+        description=_OBJECT_TYPE_DELETE_FIX_CHANGELOG_DESCRIPTION,
+        result=_OBJECT_TYPE_DELETE_FIX_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={"ui_location": "Студия → Объекты"},
+    ):
+        added += 1
+        journal_lines.append(_OBJECT_TYPE_DELETE_FIX_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
 STUDIO_OBJECT_TYPE_HEADER_ICON_CHANGELOG_SLUG = (
     "studio-object-type-header-icon-20260606"
 )
@@ -4116,6 +4245,222 @@ _FIELD_PLACEHOLDER_SUPPORT_CHANGELOG_DESCRIPTION = (
     "Field placeholder support added: field hints can now be configured in Studio "
     "and displayed in create/edit forms and runtime inputs."
 )
+
+
+CUSTOMER_COMPANIES_MVP_CHANGELOG_SLUG = "control-plane-customer-companies-mvp-20260609"
+
+_CUSTOMER_COMPANIES_MVP_CHANGELOG_DESCRIPTION = (
+    "Добавлена MVP-модель клиентских компаний customer_companies: таблица, CRUD API "
+    "/control-plane/customer-companies, связь CustomerCompany → Portal; "
+    "UI/архитектура: Управление платформой → Клиенты."
+)
+
+
+TENANT_MANAGEMENT_UI_CHANGELOG_SLUG = "control-plane-tenant-management-ui-20260609"
+
+_TENANT_MANAGEMENT_UI_CHANGELOG_DESCRIPTION = (
+    "Tenant Management UI: раздел Управление платформой → Тенанты — список portals, "
+    "создание tenant через POST /portals/, карточка tenant и действие «Открыть tenant» "
+    "(/portal/{id}). Временный инструмент платформенной администрации."
+)
+
+
+TENANT_CONTEXT_NAVIGATION_CHANGELOG_SLUG = (
+    "control-plane-tenant-context-navigation-20260609"
+)
+
+_TENANT_CONTEXT_NAVIGATION_CHANGELOG_DESCRIPTION = (
+    "Tenant Context Fix: левое меню Office runtime сохраняет текущий portalId из URL "
+    "(/portal/:portalId) — переписывание устаревших /portal/1 путей в navigation tree "
+    "и в обработчиках sidebar (PortalLayout, PortalPageView, workspace/object/library runtime)."
+)
+
+
+def _ensure_tenant_context_navigation_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "control-plane")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=TENANT_CONTEXT_NAVIGATION_CHANGELOG_SLUG,
+        title="Tenant Context Fix",
+        description=_TENANT_CONTEXT_NAVIGATION_CHANGELOG_DESCRIPTION,
+        result=_TENANT_CONTEXT_NAVIGATION_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={"ui_location": "Office runtime → левое меню"},
+    ):
+        added += 1
+        journal_lines.append(_TENANT_CONTEXT_NAVIGATION_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+TENANT_STRUCTURE_CLONE_MVP_CHANGELOG_SLUG = (
+    "control-plane-tenant-structure-clone-mvp-20260609"
+)
+
+_TENANT_STRUCTURE_CLONE_MVP_CHANGELOG_DESCRIPTION = (
+    "Tenant Structure Clone MVP: сервис clone_tenant_structure копирует структуру эталонного "
+    "tenant (portal 1) в новый portal — pages, navigation, designer object catalog, workspaces, "
+    "actions; без runtime data; publish_tenant_catalog после clone. UI: Студия → "
+    "Администрирование → Тенанты — автоклонирование при создании."
+)
+
+
+def _ensure_tenant_structure_clone_mvp_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "control-plane")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=TENANT_STRUCTURE_CLONE_MVP_CHANGELOG_SLUG,
+        title="Tenant Structure Clone MVP",
+        description=_TENANT_STRUCTURE_CLONE_MVP_CHANGELOG_DESCRIPTION,
+        result=_TENANT_STRUCTURE_CLONE_MVP_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={"ui_location": "Студия → Администрирование → Тенанты"},
+    ):
+        added += 1
+        journal_lines.append(_TENANT_STRUCTURE_CLONE_MVP_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+TENANT_DELETE_MVP_CHANGELOG_SLUG = "control-plane-tenant-delete-mvp-20260609"
+
+_TENANT_DELETE_MVP_CHANGELOG_DESCRIPTION = (
+    "Tenant Delete MVP: сервис delete_tenant полностью удаляет portal и связанную структуру "
+    "(pages, navigation, designer catalog, workspaces, runtime data) в одной транзакции; "
+    "DELETE /portals/{id}; UI: Студия → Администрирование → Тенанты — действие «Удалить» "
+    "в списке и карточке с подтверждением по названию; portal 1 защищён."
+)
+
+
+def _ensure_tenant_delete_mvp_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "control-plane")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=TENANT_DELETE_MVP_CHANGELOG_SLUG,
+        title="Tenant Delete MVP",
+        description=_TENANT_DELETE_MVP_CHANGELOG_DESCRIPTION,
+        result=_TENANT_DELETE_MVP_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={"ui_location": "Студия → Администрирование → Тенанты"},
+    ):
+        added += 1
+        journal_lines.append(_TENANT_DELETE_MVP_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+def _ensure_tenant_management_ui_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "control-plane")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=TENANT_MANAGEMENT_UI_CHANGELOG_SLUG,
+        title="Control Plane: Tenant Management UI",
+        description=_TENANT_MANAGEMENT_UI_CHANGELOG_DESCRIPTION,
+        result=_TENANT_MANAGEMENT_UI_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={"ui_location": "Управление платформой → Тенанты"},
+    ):
+        added += 1
+        journal_lines.append(_TENANT_MANAGEMENT_UI_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
+
+
+def _ensure_customer_companies_mvp_dashboard_notes(
+    db: Session,
+    *,
+    initiated_by_user_id: int | None,
+    initiated_by_name: str | None,
+) -> tuple[int, list[str]]:
+    component = (
+        db.query(PlatformComponent)
+        .filter(PlatformComponent.slug == "control-plane")
+        .one_or_none()
+    )
+    related_component_id = component.id if component is not None else None
+    added = 0
+    journal_lines: list[str] = []
+
+    if _add_activity(
+        db,
+        slug=CUSTOMER_COMPANIES_MVP_CHANGELOG_SLUG,
+        title="Control Plane: MVP customer_companies",
+        description=_CUSTOMER_COMPANIES_MVP_CHANGELOG_DESCRIPTION,
+        result=_CUSTOMER_COMPANIES_MVP_CHANGELOG_DESCRIPTION,
+        activity_type=PlatformActivityType.MILESTONE.value,
+        related_component_id=related_component_id,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+        meta={"ui_location": "Управление платформой → Клиенты"},
+    ):
+        added += 1
+        journal_lines.append(_CUSTOMER_COMPANIES_MVP_CHANGELOG_DESCRIPTION)
+
+    return added, journal_lines
 
 
 def _ensure_field_placeholder_support_dashboard_notes(
@@ -6454,6 +6799,81 @@ def refresh_platform_dashboard(db: Session, repo_root=None, initiated_by=None) -
         ]
 
     (
+        customer_companies_mvp_added,
+        customer_companies_mvp_journal_lines,
+    ) = _ensure_customer_companies_mvp_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += customer_companies_mvp_added
+    if customer_companies_mvp_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *customer_companies_mvp_journal_lines,
+        ]
+
+    (
+        tenant_management_ui_added,
+        tenant_management_ui_journal_lines,
+    ) = _ensure_tenant_management_ui_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += tenant_management_ui_added
+    if tenant_management_ui_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *tenant_management_ui_journal_lines,
+        ]
+
+    (
+        tenant_context_navigation_added,
+        tenant_context_navigation_journal_lines,
+    ) = _ensure_tenant_context_navigation_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += tenant_context_navigation_added
+    if tenant_context_navigation_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *tenant_context_navigation_journal_lines,
+        ]
+
+    (
+        tenant_structure_clone_mvp_added,
+        tenant_structure_clone_mvp_journal_lines,
+    ) = _ensure_tenant_structure_clone_mvp_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += tenant_structure_clone_mvp_added
+    if tenant_structure_clone_mvp_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *tenant_structure_clone_mvp_journal_lines,
+        ]
+
+    (
+        tenant_delete_mvp_added,
+        tenant_delete_mvp_journal_lines,
+    ) = _ensure_tenant_delete_mvp_dashboard_notes(
+        db,
+        initiated_by_user_id=initiated_by_user_id,
+        initiated_by_name=initiated_by_name,
+    )
+    activities_added += tenant_delete_mvp_added
+    if tenant_delete_mvp_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *tenant_delete_mvp_journal_lines,
+        ]
+
+    (
         plan_view_publish_runtime_added,
         plan_view_publish_runtime_journal_lines,
     ) = _ensure_plan_view_publish_runtime_dashboard_notes(
@@ -6887,6 +7307,48 @@ def refresh_platform_dashboard(db: Session, repo_root=None, initiated_by=None) -
         changed_work_items = [
             *changed_work_items,
             *studio_object_type_actions_menu_journal_lines,
+        ]
+
+    object_type_office_nav_cleanup_added, object_type_office_nav_cleanup_journal_lines = (
+        _ensure_object_type_office_nav_cleanup_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += object_type_office_nav_cleanup_added
+    if object_type_office_nav_cleanup_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *object_type_office_nav_cleanup_journal_lines,
+        ]
+
+    object_type_cascade_delete_added, object_type_cascade_delete_journal_lines = (
+        _ensure_object_type_cascade_delete_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += object_type_cascade_delete_added
+    if object_type_cascade_delete_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *object_type_cascade_delete_journal_lines,
+        ]
+
+    object_type_delete_fix_added, object_type_delete_fix_journal_lines = (
+        _ensure_object_type_delete_fix_dashboard_notes(
+            db,
+            initiated_by_user_id=initiated_by_user_id,
+            initiated_by_name=initiated_by_name,
+        )
+    )
+    activities_added += object_type_delete_fix_added
+    if object_type_delete_fix_journal_lines:
+        changed_work_items = [
+            *changed_work_items,
+            *object_type_delete_fix_journal_lines,
         ]
 
     studio_preview_demo_badge_added, studio_preview_demo_badge_journal_lines = (

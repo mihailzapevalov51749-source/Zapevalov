@@ -11,4 +11,8 @@ def create_portal(db: Session, name: str, description: str | None):
 
 
 def get_portals(db: Session):
-    return db.query(Portal).all()
+    return db.query(Portal).order_by(Portal.id.asc()).all()
+
+
+def get_portal(db: Session, portal_id: int) -> Portal | None:
+    return db.query(Portal).filter(Portal.id == portal_id).one_or_none()

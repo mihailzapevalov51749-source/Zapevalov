@@ -2,7 +2,7 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, ProgrammingError
 from sqlalchemy.orm import Session
 
 from app.modules.platform.designer.object_types import repository
@@ -15,17 +15,23 @@ from app.modules.platform.designer.object_types.navigation_visibility import (
 )
 from app.modules.platform.shared.object_type_settings import default_object_type_settings
 from app.modules.platform.designer.view_definitions import service as view_service
+from app.modules.platform.designer.object_types.cascade_delete import (
+    count_internal_entities,
+    find_external_dependencies,
+    hard_delete_object_type_internals,
+    soft_delete_object_type_internals,
+)
 from app.modules.platform.designer.object_types.schemas import (
     DependencyCounts,
     ObjectTypeCreate,
+    ObjectTypeDeleteCountItem,
+    ObjectTypeDeleteExternalWarning,
     ObjectTypeDeletePreviewRead,
-    ObjectTypeDeleteUsageGroup,
     ObjectTypeListItem,
     ObjectTypeRead,
     ObjectTypeUpdate,
 )
 from app.modules.users.models import User
-
 
 def _dependency_counts_for_entity(
     db: Session | None,
@@ -315,17 +321,6 @@ def get_object_type_delete_preview(
     tenant_id: int,
     object_type_id: UUID,
 ) -> ObjectTypeDeletePreviewRead:
-    from sqlalchemy import or_
-
-    from app.modules.platform.designer.relation_definitions.models import (
-        DesignerRelationDefinition,
-    )
-    from app.modules.platform.designer.view_definitions.models import DesignerViewDefinition
-    from app.modules.platform.designer.workspaces.models import (
-        DesignerWorkspace,
-        DesignerWorkspaceTab,
-    )
-
     entity = repository.get_object_type(db, tenant_id, object_type_id)
     if not entity:
         raise HTTPException(
@@ -333,126 +328,45 @@ def get_object_type_delete_preview(
             detail="ObjectType не найден",
         )
 
-    groups: list[ObjectTypeDeleteUsageGroup] = []
-
-    view_rows = (
-        db.query(DesignerViewDefinition)
-        .filter(
-            DesignerViewDefinition.tenant_id == tenant_id,
-            DesignerViewDefinition.object_type_id == object_type_id,
-            DesignerViewDefinition.deleted_at.is_(None),
+    try:
+        internal_counts = count_internal_entities(
+            db,
+            tenant_id,
+            object_type_id,
+            object_type_key=entity.key,
         )
-        .order_by(DesignerViewDefinition.name.asc())
-        .all()
-    )
-    if view_rows:
-        groups.append(
-            ObjectTypeDeleteUsageGroup(
-                category="views",
-                label="В представлениях",
-                items=[view.name for view in view_rows],
-            ),
+        external_warnings = find_external_dependencies(
+            db,
+            tenant_id,
+            object_type_id,
+            object_type_name=entity.name,
         )
-
-    relation_rows = (
-        db.query(DesignerRelationDefinition)
-        .filter(
-            DesignerRelationDefinition.tenant_id == tenant_id,
-            DesignerRelationDefinition.deleted_at.is_(None),
-            or_(
-                DesignerRelationDefinition.source_object_type_id == object_type_id,
-                DesignerRelationDefinition.target_object_type_id == object_type_id,
-            ),
-        )
-        .order_by(DesignerRelationDefinition.name.asc())
-        .all()
-    )
-    if relation_rows:
-        groups.append(
-            ObjectTypeDeleteUsageGroup(
-                category="relations",
-                label="В связях",
-                items=[f'Связь «{relation.name}»' for relation in relation_rows],
-            ),
-        )
-
-    tab_rows = (
-        db.query(DesignerWorkspaceTab, DesignerWorkspace)
-        .join(
-            DesignerWorkspace,
-            DesignerWorkspace.id == DesignerWorkspaceTab.workspace_id,
-        )
-        .filter(
-            DesignerWorkspaceTab.tenant_id == tenant_id,
-            DesignerWorkspaceTab.deleted_at.is_(None),
-            DesignerWorkspace.deleted_at.is_(None),
-            DesignerWorkspaceTab.object_type_id == object_type_id,
-        )
-        .order_by(DesignerWorkspace.title.asc(), DesignerWorkspaceTab.title.asc())
-        .all()
-    )
-    if tab_rows:
-        groups.append(
-            ObjectTypeDeleteUsageGroup(
-                category="workspace_tabs",
-                label="Во вкладках",
-                items=[
-                    f'Пространство «{workspace.title}» → вкладка «{tab.title}»'
-                    for tab, workspace in tab_rows
-                ],
-            ),
-        )
-
-    workspace_titles = sorted(
-        {
-            workspace.title
-            for _, workspace in tab_rows
-            if workspace.title
-        },
-    )
-    if workspace_titles:
-        groups.append(
-            ObjectTypeDeleteUsageGroup(
-                category="spaces",
-                label="В пространствах",
-                items=[f'Пространство «{title}»' for title in workspace_titles],
-            ),
-        )
-
-    nav_rows = (
-        db.query(NavigationItem)
-        .filter(
-            NavigationItem.portal_id == tenant_id,
-            NavigationItem.object_type_id == object_type_id,
-            NavigationItem.deleted_at.is_(None),
-        )
-        .order_by(NavigationItem.title.asc())
-        .all()
-    )
-    if nav_rows:
-        groups.append(
-            ObjectTypeDeleteUsageGroup(
-                category="navigation",
-                label="В навигации",
-                items=[nav.title for nav in nav_rows],
-            ),
-        )
-
-    governance = entity.governance_json if isinstance(entity.governance_json, dict) else {}
-    access_rules = governance.get("access_rules") or governance.get("permissions") or []
-    if isinstance(access_rules, list) and access_rules:
-        groups.append(
-            ObjectTypeDeleteUsageGroup(
-                category="rights",
-                label="В правах",
-                items=[str(rule.get("label") or rule.get("name") or rule) for rule in access_rules],
-            ),
-        )
+    except ProgrammingError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Не удалось проверить использование объекта",
+        ) from exc
 
     return ObjectTypeDeletePreviewRead(
         name=entity.name,
-        groups=groups,
-        has_usage=bool(groups),
+        internal_counts=[
+            ObjectTypeDeleteCountItem(
+                category=item.category,
+                label=item.label,
+                count=item.count,
+            )
+            for item in internal_counts
+        ],
+        external_warnings=[
+            ObjectTypeDeleteExternalWarning(
+                category=item.category,
+                label=item.label,
+                items=item.items,
+            )
+            for item in external_warnings
+        ],
+        has_external_warnings=bool(external_warnings),
     )
 
 
@@ -479,18 +393,58 @@ def delete_object_type(
     from app.modules.platform.designer.shared.soft_delete import apply_soft_delete
 
     actor_id = _actor_user_id(current_user)
-    for nav_item in (
-        db.query(NavigationItem)
-        .filter(
-            NavigationItem.object_type_id == object_type_id,
-            NavigationItem.deleted_at.is_(None),
+    try:
+        soft_delete_object_type_internals(
+            db,
+            tenant_id,
+            object_type_id,
+            entity,
+            actor_id=actor_id,
         )
-        .all()
-    ):
-        apply_soft_delete(nav_item, deleted_by=actor_id)
+        entity.updated_by = actor_id
+        entity.deleted_by = actor_id
+        entity = repository.soft_delete_object_type(db, entity)
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "error": "object_type_delete_conflict",
+                "message": "Не удалось удалить объект из-за внешних зависимостей.",
+            },
+        ) from exc
+    except Exception:
+        db.rollback()
+        raise
 
-    entity.updated_by = actor_id
-    entity.deleted_by = actor_id
-    entity = repository.soft_delete_object_type(db, entity)
-    db.commit()
     return _to_read(entity, db)
+
+
+def purge_object_type_from_trash(
+    db: Session,
+    tenant_id: int,
+    object_type_id: UUID,
+) -> None:
+    entity = (
+        db.query(DesignerObjectType)
+        .filter(
+            DesignerObjectType.tenant_id == tenant_id,
+            DesignerObjectType.id == object_type_id,
+        )
+        .one_or_none()
+    )
+    if entity is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="ObjectType не найден",
+        )
+
+    hard_delete_object_type_internals(
+        db,
+        tenant_id,
+        object_type_id,
+        object_type_key=entity.key,
+        include_soft_deleted=True,
+    )
+    db.delete(entity)

@@ -23,6 +23,28 @@ function isTechnicalRoute(fullPath) {
   );
 }
 
+function writeStoredPath(storageKey, normalized) {
+  try {
+    sessionStorage.setItem(storageKey, normalized);
+  } catch {
+    // ignore
+  }
+
+  try {
+    localStorage.setItem(storageKey, normalized);
+  } catch {
+    // ignore
+  }
+}
+
+function readStoredPath(storageKey) {
+  try {
+    return sessionStorage.getItem(storageKey) || localStorage.getItem(storageKey);
+  } catch {
+    return null;
+  }
+}
+
 export function saveLastRuntimePath(fullPath) {
   const normalized = normalizeFullPath(fullPath);
   const pathname = resolvePathname(normalized);
@@ -36,11 +58,7 @@ export function saveLastRuntimePath(fullPath) {
     return;
   }
 
-  try {
-    localStorage.setItem(LAST_RUNTIME_PATH_KEY, normalized);
-  } catch {
-    // ignore
-  }
+  writeStoredPath(LAST_RUNTIME_PATH_KEY, normalized);
 }
 
 export function saveLastDesignerPath(fullPath) {
@@ -50,30 +68,30 @@ export function saveLastDesignerPath(fullPath) {
     return;
   }
 
-  try {
-    localStorage.setItem(LAST_DESIGNER_PATH_KEY, normalized);
-  } catch {
-    // ignore
-  }
+  writeStoredPath(LAST_DESIGNER_PATH_KEY, normalized);
 }
 
-export function getLastRuntimePath() {
-  try {
-    return localStorage.getItem(LAST_RUNTIME_PATH_KEY) || DEFAULT_RUNTIME_PATH;
-  } catch {
-    return DEFAULT_RUNTIME_PATH;
-  }
+/** Raw stored runtime path for current tab (sessionStorage) with localStorage fallback. */
+export function getStoredRuntimePath() {
+  return readStoredPath(LAST_RUNTIME_PATH_KEY);
+}
+
+/** Raw stored designer path for current tab (sessionStorage) with localStorage fallback. */
+export function getStoredDesignerPath() {
+  return readStoredPath(LAST_DESIGNER_PATH_KEY);
 }
 
 export function getDesignerPath(tenantId = 1) {
   return `/designer/tenant/${tenantId}/object-types`;
 }
 
+/** @deprecated Prefer resolveStudioToOfficePath / resolveRuntimeFallbackPath. */
+export function getLastRuntimePath() {
+  return getStoredRuntimePath() || DEFAULT_RUNTIME_PATH;
+}
+
+/** @deprecated Prefer resolveOfficeToStudioPath / buildDefaultDesignerPath. */
 export function getLastDesignerPath(tenantId = 1) {
   const fallback = getDesignerPath(tenantId);
-  try {
-    return localStorage.getItem(LAST_DESIGNER_PATH_KEY) || fallback;
-  } catch {
-    return fallback;
-  }
+  return getStoredDesignerPath() || fallback;
 }

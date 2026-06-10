@@ -1,6 +1,12 @@
 import { cloneElement, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 
+import {
+  resolvePortalIdFromPath,
+  resolvePortalNavigationClickTarget,
+  rewritePortalScopedPath,
+} from "../portal/utils/portalObjectRoutes";
+
 import NotificationOverlayHost from "../modules/notifications/components/NotificationOverlayHost";
 import FileViewerOverlayHost from "../shared/files/components/FileViewerOverlayHost";
 import CreateMenuItemModal from "../modules/navigation/components/CreateMenuItemModal";
@@ -24,7 +30,7 @@ import {
 
 export default function PortalLayout({
   layoutMode,
-  portalId = 1,
+  portalId: portalIdProp = 1,
   navigation,
   activePageId,
   activeSidebarItemId = null,
@@ -42,6 +48,7 @@ export default function PortalLayout({
   children,
 }) {
   const location = useLocation();
+  const portalId = resolvePortalIdFromPath(location.pathname, portalIdProp);
   const inheritedLayoutMode = useShellLayoutMode();
   const resolvedLayoutMode = resolvePortalLayoutMode(
     location.pathname,
@@ -122,7 +129,7 @@ export default function PortalLayout({
     }
 
     if (raw.startsWith("/portal/")) {
-      return raw;
+      return rewritePortalScopedPath(raw, portalId);
     }
 
     const designerMatch = raw.match(/\/designer\/tenant\/\d+\/workspaces\/([^/?#]+)/i);
@@ -139,37 +146,29 @@ export default function PortalLayout({
       return;
     }
 
-    if (typeof onNavigateToPath === "function") {
-      const itemType = String(item?.type || "").trim();
-      const path =
-        itemType === "workspace"
-          ? resolveRuntimeWorkspacePath(item)
-          : item?.targetPath ||
-            item?.path ||
-            item?.url ||
-            item?.route ||
-            item?.meta?.targetPath ||
-            item?.meta?.url ||
-            item?.meta?.route;
-
-      if (path && String(path).startsWith("/portal/")) {
-        event?.preventDefault?.();
-        onNavigateToPath(path);
-        return;
-      }
-    }
-
-    if (typeof onSelectPage !== "function") {
-      return;
-    }
-
-    const pageId = item?.pageId ?? item?.page_id ?? item?.meta?.page_id;
-    if (pageId == null) {
+    const target = resolvePortalNavigationClickTarget(item, portalId);
+    if (!target) {
       return;
     }
 
     event?.preventDefault?.();
-    onSelectPage(pageId);
+
+    if ("path" in target && target.path) {
+      if (typeof onNavigateToPath === "function") {
+        onNavigateToPath(target.path);
+        return;
+      }
+
+      if (String(target.path).startsWith("/portal/")) {
+        window.history.pushState({}, "", target.path);
+        window.dispatchEvent(new PopStateEvent("popstate"));
+      }
+      return;
+    }
+
+    if ("pageId" in target && target.pageId != null && typeof onSelectPage === "function") {
+      onSelectPage(target.pageId);
+    }
   };
 
   const workspace =

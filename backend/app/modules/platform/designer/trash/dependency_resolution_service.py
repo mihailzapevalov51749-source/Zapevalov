@@ -208,80 +208,73 @@ class DependencyResolutionService:
         return dependencies
 
     def _resolve_object_type_dependencies(self, db: Session, tenant_id: int, entity_id: str) -> list[ResolvedDependency]:
+        from app.modules.platform.designer.object_types.cascade_delete import find_external_dependencies
+        from app.modules.platform.designer.object_types.models import DesignerObjectType
+        from app.modules.platform.designer.shared.object_type_id_sql import match_uuid_column
+        from app.modules.platform.designer.workspaces.models import DesignerWorkspace
+
         object_type_id = UUID(entity_id)
+        entity = (
+            db.query(DesignerObjectType)
+            .filter(
+                DesignerObjectType.tenant_id == tenant_id,
+                DesignerObjectType.id == object_type_id,
+            )
+            .one_or_none()
+        )
+        if entity is None:
+            return []
+
         dependencies: list[ResolvedDependency] = []
-
-        view_rows = (
-            db.query(DesignerViewDefinition)
-            .filter(
-                DesignerViewDefinition.object_type_id == object_type_id,
-                DesignerViewDefinition.deleted_at.is_(None),
-            )
-            .all()
-        )
-        for view in view_rows:
-            dependencies.append(
-                ResolvedDependency(
-                    node=DependencyTreeNodeRead(
-                        node_key=f"object_view:{view.id}",
-                        kind="object_view",
-                        title=f'Представление "{view.name}"',
-                        entity_kind="object_view",
-                        entity_id=str(view.id),
-                        path=["Студия", "Объекты", view.name],
-                    ),
-                    cascade=lambda session, row=view: self._soft_delete_object_view(session, row),
-                ),
-            )
-
-        field_rows = (
-            db.query(DesignerFieldDefinition)
-            .filter(
-                DesignerFieldDefinition.object_type_id == object_type_id,
-                DesignerFieldDefinition.deleted_at.is_(None),
-            )
-            .all()
-        )
-        if field_rows:
-            dependencies.append(
-                ResolvedDependency(
-                    node=DependencyTreeNodeRead(
-                        node_key=f"object_fields:{entity_id}",
-                        kind="object_field",
-                        title=f"Поля ({len(field_rows)})",
-                        entity_kind=None,
-                        entity_id=None,
-                        path=["Студия", "Объекты", "Поля"],
-                    ),
-                    clear=lambda session, oid=object_type_id: self._clear_object_fields(session, oid),
-                    cascade=lambda session, oid=object_type_id: self._cascade_delete_object_fields(session, oid),
-                ),
-            )
-
-        nav_rows = (
-            db.query(NavigationItem)
-            .filter(
-                NavigationItem.portal_id == tenant_id,
-                NavigationItem.object_type_id == object_type_id,
-                NavigationItem.deleted_at.is_(None),
-            )
-            .all()
-        )
-        for nav in nav_rows:
-            dependencies.append(
-                ResolvedDependency(
-                    node=DependencyTreeNodeRead(
-                        node_key=f"navigation:{nav.id}",
-                        kind="navigation",
-                        title=f'Навигация "{nav.title}"',
-                        entity_kind="navigation",
-                        entity_id=str(nav.id),
-                        path=["Студия", "Навигация", nav.title],
-                    ),
-                    clear=lambda session, row=nav: self._detach_navigation_object_type(session, row),
-                    cascade=lambda session, row=nav: self._soft_delete_navigation(session, row),
-                ),
-            )
+        for warning in find_external_dependencies(
+            db,
+            tenant_id,
+            object_type_id,
+            object_type_name=entity.name,
+        ):
+            if warning.category == "workspaces":
+                tab_rows = (
+                    db.query(DesignerWorkspaceTab, DesignerWorkspace)
+                    .join(
+                        DesignerWorkspace,
+                        DesignerWorkspace.id == DesignerWorkspaceTab.workspace_id,
+                    )
+                    .filter(
+                        DesignerWorkspaceTab.tenant_id == tenant_id,
+                        DesignerWorkspaceTab.deleted_at.is_(None),
+                        DesignerWorkspace.deleted_at.is_(None),
+                        match_uuid_column(DesignerWorkspaceTab.object_type_id, object_type_id),
+                    )
+                    .all()
+                )
+                for tab, workspace in tab_rows:
+                    dependencies.append(
+                        ResolvedDependency(
+                            node=DependencyTreeNodeRead(
+                                node_key=f"workspace_tab:{tab.id}",
+                                kind="workspace_tab",
+                                title=f'Пространство "{workspace.title}" → вкладка "{tab.title}"',
+                                entity_kind="workspace_tab",
+                                entity_id=str(tab.id),
+                                path=["Студия", "Рабочие пространства", workspace.title, tab.title],
+                            ),
+                            clear=lambda session, row=tab: self._detach_workspace_tab_object_type(session, row),
+                        ),
+                    )
+            else:
+                for item in warning.items:
+                    dependencies.append(
+                        ResolvedDependency(
+                            node=DependencyTreeNodeRead(
+                                node_key=f"external:{warning.category}:{item}",
+                                kind=warning.category,
+                                title=item,
+                                entity_kind=None,
+                                entity_id=None,
+                                path=["Студия", warning.label],
+                            ),
+                        ),
+                    )
 
         return dependencies
 
@@ -382,6 +375,16 @@ class DependencyResolutionService:
     @staticmethod
     def _detach_workspace_tab_page(db: Session, tab: DesignerWorkspaceTab) -> bool:
         changed = tab.tab_type == "page" or tab.target_id is not None
+        tab.tab_type = "external_url"
+        tab.target_type = None
+        tab.target_id = None
+        tab.url = None
+        return changed
+
+    @staticmethod
+    def _detach_workspace_tab_object_type(db: Session, tab: DesignerWorkspaceTab) -> bool:
+        changed = tab.object_type_id is not None
+        tab.object_type_id = None
         tab.tab_type = "external_url"
         tab.target_type = None
         tab.target_id = None

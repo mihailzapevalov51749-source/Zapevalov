@@ -1,0 +1,60 @@
+{
+  "phase": "apply_phase2",
+  "started_at": "2026-06-10T10:04:01.122678",
+  "dry_check": {
+    "relation": {
+      "source_exists": true,
+      "target_active_exists": false,
+      "target_deleted_count": 0,
+      "source": {
+        "id": "3bfee2ee-44c5-4e92-a0eb-f59ff4c9ae98",
+        "key": "podmihail",
+        "name": "Подмихаил",
+        "source_object_type_key": "michael",
+        "target_object_type_key": "michael",
+        "relation_type": "one_to_many"
+      },
+      "michael_tenant_13": "e0d6accf-e145-4406-aab9-c53c3b98c0bc",
+      "michael_tenant_1": "e6aa667a-ab6e-47db-8586-793952a6a5c3"
+    },
+    "view": {
+      "source_exists": true,
+      "target_active_exists": false,
+      "source": {
+        "id": "39de9042-e54a-4a02-a32c-83a26902c22b",
+        "key": "probnaya",
+        "name": "Пробная",
+        "view_type": "plan",
+        "object_type_key": "michael"
+      },
+      "michael_tenant_1": "e6aa667a-ab6e-47db-8586-793952a6a5c3"
+    }
+  },
+  "dry_run_before": {},
+  "status": "success",
+  "runtime_before": {
+    "runtime_entities": 2,
+    "runtime_entity_values": 352,
+    "runtime_relation_instances": 165
+  },
+  "runtime_after": {
+    "runtime_entities": 2,
+    "runtime_entity_values": 352,
+    "runtime_relation_instances": 165
+  },
+  "created": {
+    "relation": {
+      "id": "9aa13071-ffc3-48fe-bb83-9f1c62a55695",
+      "key": "podmihail",
+      "tenant_id": 1
+    },
+    "view": {
+      "id": "682ccc6f-ec5d-4dad-ab7c-50ffb1da3bf3",
+      "key": "probnaya",
+      "object_type_key": "michael",
+      "view_type": "plan",
+      "tenant_id": 1
+    }
+  },
+  "dry_run_after": {}
+}

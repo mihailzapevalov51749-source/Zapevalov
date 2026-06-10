@@ -67,8 +67,31 @@ export function formatRestoreConflictMessage(detail) {
   return `Невозможно восстановить запись.\n\n${suffix}`;
 }
 
+function formatObjectTypeDeleteConflictMessage(detail) {
+  const groups = Array.isArray(detail?.groups) ? detail.groups : [];
+  const lines = [detail?.message || "Нельзя удалить объект.", "", "Объект используется в:"];
+
+  groups.forEach((group) => {
+    const items = Array.isArray(group?.items) ? group.items.filter(Boolean) : [];
+    if (!items.length) {
+      return;
+    }
+    const label = String(group?.label || "").trim();
+    if (label) {
+      lines.push(`- ${label}`);
+    }
+    items.forEach((item) => lines.push(`  • ${item}`));
+  });
+
+  return lines.join("\n");
+}
+
 export function getApiErrorMessage(error, fallback = "Ошибка запроса") {
   const detail = error.response?.data?.detail;
+
+  if (detail && typeof detail === "object" && detail.error === "object_type_delete_conflict") {
+    return formatObjectTypeDeleteConflictMessage(detail);
+  }
 
   if (detail && typeof detail === "object" && detail.error === "restore_conflict") {
     return formatRestoreConflictMessage(detail);

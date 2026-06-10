@@ -61,6 +61,7 @@ export default function DesignerTrashPage() {
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [purgeModalOpen, setPurgeModalOpen] = useState(false);
   const [purgeBlocked, setPurgeBlocked] = useState(null);
+  const [purgePreview, setPurgePreview] = useState(null);
   const [cascadePreview, setCascadePreview] = useState(null);
   const [purgeTargetItem, setPurgeTargetItem] = useState(null);
   const [selectedDeleteMode, setSelectedDeleteMode] = useState(null);
@@ -154,6 +155,7 @@ export default function DesignerTrashPage() {
   const closePurgeModal = useCallback(() => {
     setPurgeModalOpen(false);
     setPurgeBlocked(null);
+    setPurgePreview(null);
     setCascadePreview(null);
     setPurgeTargetItem(null);
     setSelectedDeleteMode(null);
@@ -403,6 +405,7 @@ export default function DesignerTrashPage() {
     const trashItem = resolveTrashItemFromRefs(refs);
     setActionError("");
     setPurgeBlocked(null);
+    setPurgePreview(null);
     setCascadePreview(null);
     setSelectedDeleteMode(null);
     setPurgeTargetItem(trashItem);
@@ -416,6 +419,9 @@ export default function DesignerTrashPage() {
         if (blocked?.blocked) {
           openBlockedPurgeModal(trashItem, blocked, null);
           return;
+        }
+        if (refs[0].kind === "object_type" && blocked) {
+          setPurgePreview(blocked);
         }
       } catch {
         // proceed to confirmation if check endpoint unavailable
@@ -670,6 +676,7 @@ export default function DesignerTrashPage() {
         open={purgeModalOpen}
         targetItem={purgeTargetItem}
         blocked={purgeBlocked}
+        purgePreview={purgePreview}
         cascadePreview={cascadePreview}
         isSubmitting={isSubmitting}
         selectedDeleteMode={selectedDeleteMode}

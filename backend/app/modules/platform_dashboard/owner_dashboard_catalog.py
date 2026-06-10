@@ -36,6 +36,7 @@ PRIMARY_COMPONENT_OWNER: Final[dict[str, str]] = {
     "search": "search-engine",
     "permissions": "permission-engine",
     "ai-context": "ai-engine",
+    "control-plane": "control-plane",
 }
 
 PLATFORM_ENGINE_KEYS: Final[tuple[str, ...]] = (
@@ -50,6 +51,7 @@ PLATFORM_ENGINE_KEYS: Final[tuple[str, ...]] = (
     "integrations",
     "process-engine",
     "ai-engine",
+    "control-plane",
 )
 
 DEVELOPMENT_STAGE_KEYS: Final[tuple[str, ...]] = (
@@ -570,6 +572,42 @@ def _platform_stages() -> tuple[OwnerStageDefinition, ...]:
                     source_key="object-type",
                 ),
                 _step(
+                    "oe-object-type-office-nav-cleanup",
+                    "Object Type Delete: Office Navigation Cleanup",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="object-type",
+                    description=(
+                        "Каскадное удаление Object Type удаляет все navigation_items "
+                        "(menu_scope designer и runtime) по object_type_id и URL; "
+                        "Office sidebar обновляется после удаления."
+                    ),
+                ),
+                _step(
+                    "oe-object-type-cascade-delete",
+                    "Object Type Cascade Delete",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="object-type",
+                    description=(
+                        "Каскадное удаление Object Type: внутренние сущности (поля, представления, "
+                        "действия, навигация, runtime, связи) удаляются автоматически; "
+                        "внешние зависимости только предупреждают; корзина без блокировки внутренностями."
+                    ),
+                ),
+                _step(
+                    "oe-object-type-delete-fix",
+                    "Object Type Delete Fix",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="object-type",
+                    description=(
+                        "Исправление 500 при delete-preview типа объекта: сравнение object_type_id "
+                        "во вкладках workspace через cast(String); блокировка удаления возвращает "
+                        "409 Conflict с группами зависимостей; UI показывает понятное сообщение."
+                    ),
+                ),
+                _step(
                     "oe-publish",
                     "Публикация",
                     data_kind=StepDataKind.REAL_DATA,
@@ -827,6 +865,101 @@ def _platform_stages() -> tuple[OwnerStageDefinition, ...]:
                 ),
             ),
             meta={"primary_components": ("ai-context",), "scope": "platform_ai"},
+        ),
+        OwnerStageDefinition(
+            key="control-plane",
+            section_key="platform",
+            title="Control Plane / Управление платформой",
+            description=(
+                "SaaS-слой управления клиентами, продажами, поддержкой и лицензиями платформы."
+            ),
+            order_index=12,
+            readiness_rule=ReadinessRule.MIN_PRIMARY_COMPONENT,
+            mvp=True,
+            steps=(
+                _step(
+                    "cp-customer-companies-mvp",
+                    "MVP-модель клиентских компаний customer_companies",
+                    data_kind=StepDataKind.REAL_DATA,
+                    kind=OwnerSourceKind.PLATFORM_COMPONENT,
+                    source_key="control-plane",
+                    description=(
+                        "Таблица customer_companies, API /control-plane/customer-companies; "
+                        "CustomerCompany → Portal; UI: Управление платформой → Клиенты."
+                    ),
+                ),
+                _step(
+                    "cp-tenant-management-ui",
+                    "Tenant Management UI",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="control-plane",
+                    description=(
+                        "UI Управление платформой → Тенанты: список portals, создание tenant, "
+                        "карточка и открытие /portal/{id}; Source of Truth POST /portals/."
+                    ),
+                ),
+                _step(
+                    "cp-tenant-context-navigation",
+                    "Tenant Context Fix",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="control-plane",
+                    description=(
+                        "Левое меню Office runtime сохраняет portalId из URL: переписывание "
+                        "/portal/{id} в навигации и обработчиках sidebar; без fallback на portal 1."
+                    ),
+                ),
+                _step(
+                    "cp-multi-tab-tenant-context-isolation",
+                    "Multi-tab Tenant Context Isolation Fix",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="control-plane",
+                    description=(
+                        "Изоляция tenant context между вкладками: URL — source of truth; "
+                        "sessionStorage для last path внутри вкладки; AppModeSwitch Studio↔Office "
+                        "берёт tenant из текущего URL, localStorage не подменяет tenant при "
+                        "переключении режима."
+                    ),
+                ),
+                _step(
+                    "cp-tenant-structure-clone-mvp",
+                    "Tenant Structure Clone MVP",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="control-plane",
+                    description=(
+                        "clone_tenant_structure(source, target): копия структуры эталонного portal "
+                        "(pages, navigation, designer catalog, workspaces) без runtime data; "
+                        "автозапуск при создании tenant в Студия → Администрирование → Тенанты."
+                    ),
+                ),
+                _step(
+                    "cp-tenant-delete-mvp",
+                    "Tenant Delete MVP",
+                    data_kind=StepDataKind.DOC_DATA,
+                    kind=OwnerSourceKind.DOC_MILESTONE,
+                    source_key="control-plane",
+                    description=(
+                        "delete_tenant(db, tenant_id): полное удаление portal и всей структуры "
+                        "(pages, navigation, designer catalog, workspaces, runtime data); "
+                        "DELETE /portals/{id}; UI в списке и карточке tenant с подтверждением по имени; "
+                        "portal 1 защищён."
+                    ),
+                ),
+                _step(
+                    "cp-provisioning-service",
+                    "Provisioning Service (компания → portal → superadmin → invite)",
+                    data_kind=StepDataKind.PLACEHOLDER,
+                    kind=OwnerSourceKind.STATIC,
+                    source_key="cp-provisioning",
+                ),
+            ),
+            meta={
+                "primary_components": ("control-plane",),
+                "ui_location": "Управление платформой → Клиенты; Управление платформой → Тенанты",
+            },
         ),
     )
 
@@ -1302,6 +1435,7 @@ def validate_owner_catalog() -> list[str]:
         "search",
         "permissions",
         "ai-context",
+        "control-plane",
     }
     if set(PRIMARY_COMPONENT_OWNER.keys()) != expected_components:
         errors.append(f"PRIMARY_COMPONENT_OWNER keys mismatch: {set(PRIMARY_COMPONENT_OWNER)}")

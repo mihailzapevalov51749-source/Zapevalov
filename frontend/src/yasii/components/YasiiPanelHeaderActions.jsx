@@ -6,7 +6,7 @@ import pinIcon from "../../assets/icons/Pin.png";
 import expandIcon from "../../assets/noteicons/expand.png";
 import collapseIcon from "../../assets/noteicons/collapse.png";
 import { usePageLayoutContract } from "../../shared/appShell/pageLayoutContract/PageLayoutContractContext.jsx";
-import { getLastRuntimePath } from "../../shared/appMode/appModeStorage.js";
+import { resolveYasiiReturnPath } from "../../shared/appMode/appModeNavigation.js";
 import { useGlobalWorkspaceTabs } from "../../shared/workspaceTabs/GlobalWorkspaceTabsProvider";
 import { useYasiiAssistantSession } from "../context/YasiiAssistantContext.jsx";
 import {
@@ -43,7 +43,7 @@ export default function YasiiPanelHeaderActions({
 
   const handleExpandOrCollapse = () => {
     if (isWorkspace) {
-      const returnPath = readYasiiPreWorkspacePath() || getLastRuntimePath();
+      const returnPath = resolveYasiiReturnPath(readYasiiPreWorkspacePath());
       session?.leaveYasiiPageToPanel?.();
       navigate(returnPath);
       return;

@@ -1,0 +1,508 @@
+{
+  "phase": "apply_phase5",
+  "started_at": "2026-06-10T10:36:11.718288",
+  "dry_check": {
+    "plan": [
+      {
+        "object_type_key": "istoriya",
+        "action_key": "sozdat_zapis",
+        "composite_key": "istoriya:sozdat_zapis",
+        "source": {
+          "id": "db2049ed-45e7-40b3-a5e5-e096fc26286b",
+          "key": "sozdat_zapis",
+          "title": "Создать запись",
+          "object_type": "istoriya",
+          "tenant": 13,
+          "action_type_key": "create_record",
+          "is_active": true,
+          "target_object_type": "istoriya",
+          "auto_link_relation_id": null
+        },
+        "target_status": {
+          "exists": false,
+          "active": null,
+          "has_form": false,
+          "placement_count": 0
+        },
+        "dependencies": {
+          "object_type_mapped": true,
+          "target_object_type_mapped": true,
+          "auto_link_relation_mapped": true,
+          "form_fields": [],
+          "placements": [
+            "row_menu",
+            "top_panel"
+          ]
+        },
+        "dependencies_ok": true,
+        "action": "CREATE"
+      },
+      {
+        "object_type_key": "zadachnik",
+        "action_key": "sozdat_cheta",
+        "composite_key": "zadachnik:sozdat_cheta",
+        "source": {
+          "id": "45552086-36b4-4bac-9f5d-5663b1b7959f",
+          "key": "sozdat_cheta",
+          "title": "Создать круть",
+          "object_type": "zadachnik",
+          "tenant": 13,
+          "action_type_key": "create_record",
+          "is_active": true,
+          "target_object_type": "zadachnik",
+          "auto_link_relation_id": null
+        },
+        "target_status": {
+          "exists": false,
+          "active": null,
+          "has_form": false,
+          "placement_count": 0
+        },
+        "dependencies": {
+          "object_type_mapped": true,
+          "target_object_type_mapped": true,
+          "auto_link_relation_mapped": true,
+          "form_fields": [
+            {
+              "field_key": "nazvanie",
+              "object_type": "zadachnik",
+              "mapped_in_t1": true
+            },
+            {
+              "field_key": "roditelskaya_svyaz",
+              "object_type": "zadachnik",
+              "mapped_in_t1": true
+            },
+            {
+              "field_key": "otvetstvennyy",
+              "object_type": "zadachnik",
+              "mapped_in_t1": true
+            }
+          ],
+          "placements": [
+            "row_menu"
+          ]
+        },
+        "dependencies_ok": true,
+        "action": "CREATE"
+      },
+      {
+        "object_type_key": "napravleniya",
+        "action_key": "sozdat_zadachu",
+        "composite_key": "napravleniya:sozdat_zadachu",
+        "source": {
+          "id": "6efe6d2d-cfd6-40cc-99d0-20cec33bb5a7",
+          "key": "sozdat_zadachu",
+          "title": "Создать задачку",
+          "object_type": "napravleniya",
+          "tenant": 13,
+          "action_type_key": "create_record",
+          "is_active": true,
+          "target_object_type": "zadachnik",
+          "auto_link_relation_id": null
+        },
+        "target_status": {
+          "exists": false,
+          "active": null,
+          "has_form": false,
+          "placement_count": 0
+        },
+        "dependencies": {
+          "object_type_mapped": true,
+          "target_object_type_mapped": true,
+          "auto_link_relation_mapped": true,
+          "form_fields": [
+            {
+              "field_key": "nazvanie",
+              "object_type": "zadachnik",
+              "mapped_in_t1": true
+            },
+            {
+              "field_key": "otvetstvennyy",
+              "object_type": "zadachnik",
+              "mapped_in_t1": true
+            },
+            {
+              "field_key": "start_zadachi",
+              "object_type": "zadachnik",
+              "mapped_in_t1": true
+            }
+          ],
+          "placements": [
+            "row_menu"
+          ]
+        },
+        "dependencies_ok": true,
+        "action": "CREATE"
+      }
+    ],
+    "to_create": [
+      {
+        "object_type_key": "istoriya",
+        "action_key": "sozdat_zapis",
+        "composite_key": "istoriya:sozdat_zapis",
+        "source": {
+          "id": "db2049ed-45e7-40b3-a5e5-e096fc26286b",
+          "key": "sozdat_zapis",
+          "title": "Создать запись",
+          "object_type": "istoriya",
+          "tenant": 13,
+          "action_type_key": "create_record",
+          "is_active": true,
+          "target_object_type": "istoriya",
+          "auto_link_relation_id": null
+        },
+        "target_status": {
+          "exists": false,
+          "active": null,
+          "has_form": false,
+          "placement_count": 0
+        },
+        "dependencies": {
+          "object_type_mapped": true,
+          "target_object_type_mapped": true,
+          "auto_link_relation_mapped": true,
+          "form_fields": [],
+          "placements": [
+            "row_menu",
+            "top_panel"
+          ]
+        },
+        "dependencies_ok": true,
+        "action": "CREATE"
+      },
+      {
+        "object_type_key": "zadachnik",
+        "action_key": "sozdat_cheta",
+        "composite_key": "zadachnik:sozdat_cheta",
+        "source": {
+          "id": "45552086-36b4-4bac-9f5d-5663b1b7959f",
+          "key": "sozdat_cheta",
+          "title": "Создать круть",
+          "object_type": "zadachnik",
+          "tenant": 13,
+          "action_type_key": "create_record",
+          "is_active": true,
+          "target_object_type": "zadachnik",
+          "auto_link_relation_id": null
+        },
+        "target_status": {
+          "exists": false,
+          "active": null,
+          "has_form": false,
+          "placement_count": 0
+        },
+        "dependencies": {
+          "object_type_mapped": true,
+          "target_object_type_mapped": true,
+          "auto_link_relation_mapped": true,
+          "form_fields": [
+            {
+              "field_key": "nazvanie",
+              "object_type": "zadachnik",
+              "mapped_in_t1": true
+            },
+            {
+              "field_key": "roditelskaya_svyaz",
+              "object_type": "zadachnik",
+              "mapped_in_t1": true
+            },
+            {
+              "field_key": "otvetstvennyy",
+              "object_type": "zadachnik",
+              "mapped_in_t1": true
+            }
+          ],
+          "placements": [
+            "row_menu"
+          ]
+        },
+        "dependencies_ok": true,
+        "action": "CREATE"
+      },
+      {
+        "object_type_key": "napravleniya",
+        "action_key": "sozdat_zadachu",
+        "composite_key": "napravleniya:sozdat_zadachu",
+        "source": {
+          "id": "6efe6d2d-cfd6-40cc-99d0-20cec33bb5a7",
+          "key": "sozdat_zadachu",
+          "title": "Создать задачку",
+          "object_type": "napravleniya",
+          "tenant": 13,
+          "action_type_key": "create_record",
+          "is_active": true,
+          "target_object_type": "zadachnik",
+          "auto_link_relation_id": null
+        },
+        "target_status": {
+          "exists": false,
+          "active": null,
+          "has_form": false,
+          "placement_count": 0
+        },
+        "dependencies": {
+          "object_type_mapped": true,
+          "target_object_type_mapped": true,
+          "auto_link_relation_mapped": true,
+          "form_fields": [
+            {
+              "field_key": "nazvanie",
+              "object_type": "zadachnik",
+              "mapped_in_t1": true
+            },
+            {
+              "field_key": "otvetstvennyy",
+              "object_type": "zadachnik",
+              "mapped_in_t1": true
+            },
+            {
+              "field_key": "start_zadachi",
+              "object_type": "zadachnik",
+              "mapped_in_t1": true
+            }
+          ],
+          "placements": [
+            "row_menu"
+          ]
+        },
+        "dependencies_ok": true,
+        "action": "CREATE"
+      }
+    ],
+    "to_update": [],
+    "to_skip": [],
+    "blocked": []
+  },
+  "dry_run_before": {
+    "object_types": {
+      "create": 0,
+      "restore": 0,
+      "update": 0,
+      "skip": 17,
+      "delete": 0
+    },
+    "fields": {
+      "create": 0,
+      "restore": 0,
+      "update": 0,
+      "skip": 60
+    },
+    "relations": {
+      "create": 0,
+      "restore": 0,
+      "update": 0,
+      "skip": 10
+    },
+    "views": {
+      "create": 0,
+      "restore": 0,
+      "update": 0,
+      "skip": 25
+    },
+    "workspaces": {
+      "create": 0,
+      "restore": 0,
+      "update": 0,
+      "skip": 4
+    },
+    "workspace_tabs": {
+      "create": 0,
+      "restore": 0,
+      "update": 0,
+      "skip": 12
+    },
+    "pages": {
+      "create": 0,
+      "restore": 0,
+      "update": 0,
+      "skip": 50
+    },
+    "navigation": {
+      "create": 0,
+      "restore": 0,
+      "update": 0,
+      "skip": 24
+    },
+    "actions": {
+      "create": 3,
+      "restore": 0,
+      "update": 0,
+      "skip": 0
+    }
+  },
+  "apply_result": {
+    "before": {
+      "action_definitions": 0,
+      "action_forms": 0,
+      "action_placements": 0,
+      "runtime_entities": 2,
+      "runtime_entity_values": 352,
+      "runtime_relation_instances": 165,
+      "document_libraries": 10,
+      "library_documents": 18,
+      "chats": 11,
+      "chat_messages": 37,
+      "chat_participants": 24,
+      "notifications": 100,
+      "comments": 214,
+      "notes": 13
+    },
+    "after": {
+      "action_definitions": 3,
+      "action_forms": 2,
+      "action_placements": 4,
+      "runtime_entities": 2,
+      "runtime_entity_values": 352,
+      "runtime_relation_instances": 165,
+      "document_libraries": 10,
+      "library_documents": 18,
+      "chats": 11,
+      "chat_messages": 37,
+      "chat_participants": 24,
+      "notifications": 100,
+      "comments": 214,
+      "notes": 13
+    },
+    "created_actions": [
+      {
+        "id": "9d97b009-eed4-4027-be25-154eb2f8c8d5",
+        "composite_key": "istoriya:sozdat_zapis",
+        "key": "sozdat_zapis",
+        "title": "Создать запись",
+        "object_type_key": "istoriya",
+        "target_object_type_id": "1f6f4a1f-0b20-4d39-838c-610b0c6745f8"
+      },
+      {
+        "id": "a8265167-f3e0-4972-a40f-ad55ef0db483",
+        "composite_key": "zadachnik:sozdat_cheta",
+        "key": "sozdat_cheta",
+        "title": "Создать круть",
+        "object_type_key": "zadachnik",
+        "target_object_type_id": "5621a2f9-c745-4dfd-9271-ee99082f243e"
+      },
+      {
+        "id": "91e6e5e3-8ab6-4627-b115-9c388a05880a",
+        "composite_key": "napravleniya:sozdat_zadachu",
+        "key": "sozdat_zadachu",
+        "title": "Создать задачку",
+        "object_type_key": "napravleniya",
+        "target_object_type_id": "5621a2f9-c745-4dfd-9271-ee99082f243e"
+      }
+    ],
+    "created_forms": [
+      {
+        "id": "e98fab8d-8e8b-4782-a0be-59015cfa6f58",
+        "action_definition_id": "a8265167-f3e0-4972-a40f-ad55ef0db483",
+        "title": "Создать чета",
+        "field_count": 3
+      },
+      {
+        "id": "f1a2d1b2-5107-4636-a1d7-9a3d60b08cd2",
+        "action_definition_id": "91e6e5e3-8ab6-4627-b115-9c388a05880a",
+        "title": "Создать задачу",
+        "field_count": 3
+      }
+    ],
+    "created_placements": [
+      {
+        "id": "286d364d-8bdf-49e5-90cf-139f861064e8",
+        "action_definition_id": "9d97b009-eed4-4027-be25-154eb2f8c8d5",
+        "placement_key": "row_menu"
+      },
+      {
+        "id": "105c947f-7f39-40e4-bc2f-a63410343cf1",
+        "action_definition_id": "9d97b009-eed4-4027-be25-154eb2f8c8d5",
+        "placement_key": "top_panel"
+      },
+      {
+        "id": "67800fce-6b5f-4ad9-948a-bf9883bb98ae",
+        "action_definition_id": "a8265167-f3e0-4972-a40f-ad55ef0db483",
+        "placement_key": "row_menu"
+      },
+      {
+        "id": "7851296d-1cb2-4538-9bb8-dbf685ffd6cd",
+        "action_definition_id": "91e6e5e3-8ab6-4627-b115-9c388a05880a",
+        "placement_key": "row_menu"
+      }
+    ],
+    "updated": [],
+    "skipped": []
+  },
+  "status": "success",
+  "dry_run_after": {
+    "object_types": {
+      "create": 0,
+      "restore": 0,
+      "update": 0,
+      "skip": 17,
+      "delete": 0
+    },
+    "fields": {
+      "create": 0,
+      "restore": 0,
+      "update": 0,
+      "skip": 60
+    },
+    "relations": {
+      "create": 0,
+      "restore": 0,
+      "update": 0,
+      "skip": 10
+    },
+    "views": {
+      "create": 0,
+      "restore": 0,
+      "update": 0,
+      "skip": 25
+    },
+    "workspaces": {
+      "create": 0,
+      "restore": 0,
+      "update": 0,
+      "skip": 4
+    },
+    "workspace_tabs": {
+      "create": 0,
+      "restore": 0,
+      "update": 0,
+      "skip": 12
+    },
+    "pages": {
+      "create": 0,
+      "restore": 0,
+      "update": 0,
+      "skip": 50
+    },
+    "navigation": {
+      "create": 0,
+      "restore": 0,
+      "update": 0,
+      "skip": 24
+    },
+    "actions": {
+      "create": 0,
+      "restore": 0,
+      "update": 0,
+      "skip": 3
+    }
+  },
+  "publish_readiness": {
+    "ready": true,
+    "broken_navigation": [],
+    "broken_actions": [],
+    "broken_form_fields": [],
+    "broken_workspace_references": [],
+    "tenant_13_url_references": [],
+    "recovery_remainder": {
+      "fields": 0,
+      "relations": 0,
+      "views": 0,
+      "workspaces": 0,
+      "workspace_tabs": 0,
+      "navigation": 0,
+      "actions": 0
+    },
+    "recovery_complete": true
+  }
+}

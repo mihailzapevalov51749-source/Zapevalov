@@ -1,0 +1,2649 @@
+{
+  "audited_at": "2026-06-10T09:10:06.291932",
+  "tenants": {
+    "damaged": 1,
+    "source": 13
+  },
+  "summary": {
+    "object_types": {
+      "t1_total": 20,
+      "t13_total": 14,
+      "only_t1_keys": [
+        "cascade_delete_9_0_3",
+        "delete_mvp_9_0_3",
+        "nav_cleanup_9_0_3"
+      ],
+      "only_t13_keys": [],
+      "shared_keys": [
+        "contractor",
+        "idei",
+        "istoriya",
+        "klienty",
+        "litsenzii",
+        "michael",
+        "napravleniya",
+        "new_object",
+        "problemy",
+        "prodazhi",
+        "project_test",
+        "task",
+        "test",
+        "zadachnik"
+      ]
+    },
+    "relations": {
+      "only_t1": [],
+      "only_t13": [
+        "has_contractors",
+        "podmihail"
+      ],
+      "shared": [
+        "idei",
+        "ierarhiya_idey",
+        "istoriya",
+        "klient",
+        "podproblemy",
+        "podpunkt",
+        "problemy",
+        "task_subtask"
+      ]
+    },
+    "workspaces": {
+      "only_t1_slugs": [],
+      "only_t13_slugs": [
+        "otdel-kadrov-2",
+        "teh-podderzhka",
+        "upravlenie-platformoy"
+      ],
+      "shared_slugs": [
+        "razrabotka"
+      ]
+    },
+    "pages": {
+      "only_t1_signatures": [
+        "Разработкаа|0|False"
+      ],
+      "only_t13_signatures": [],
+      "shared_signatures": [
+        "Администрирование|0|False",
+        "Адресная книга|0|False",
+        "Архитектура приложения|0|False",
+        "Библи|0|False",
+        "Вот эта таблица|0|False",
+        "Вторая|0|False",
+        "Главная|0|True",
+        "Задачник|0|False",
+        "Запевалов|0|False",
+        "Запросто|0|False",
+        "Календарь|0|False",
+        "Карта платформы ЯсноПро|10|False",
+        "Карта платформы|15|False",
+        "Контакты|0|False",
+        "Контрагенты|0|False",
+        "Настройка системы|0|False",
+        "Оргструктура компании|0|False",
+        "Отдел кадров|0|False",
+        "Отчеты|0|False",
+        "Проверка 21|0|False",
+        "Проверка|0|False",
+        "Продажи|0|False",
+        "Проекты 2|0|False",
+        "Проекты 3|0|False",
+        "Проекты|0|False",
+        "Разработка продукта|0|False",
+        "Разработка|0|False",
+        "Согласования|0|False",
+        "Стильная таблица|0|False",
+        "Страница|0|False",
+        "Таблица 2|0|False",
+        "Таблица 3|0|False",
+        "Табличная|0|False",
+        "Тестируемая таблица|0|False",
+        "Тестовая|0|False",
+        "Тех. поддержка|0|False",
+        "Уведомления|0|False",
+        "Универ|0|False",
+        "Универсальная таблица|0|False",
+        "Управление платформой|0|False",
+        "Чат|0|False",
+        "Это название в меню|0|False",
+        "ваи|0|False",
+        "впрь|0|False",
+        "дада|0|False",
+        "кенкегку|0|False",
+        "первая|0|False",
+        "пробник|0|False",
+        "таббб|0|False"
+      ]
+    },
+    "navigation_active": {
+      "only_t1": [
+        "designer|None|Объекты|system_page|/designer/tenant/1/object-types",
+        "designer|None|Пользователи|system_page|/designer/tenant/1/users",
+        "designer|None|Представления|system_page|/designer/tenant/1/views",
+        "designer|None|Разработка продукта|workspace|/designer/tenant/1/workspaces/razrabotka-produkta",
+        "designer|None|Связи|system_page|/designer/tenant/1/relations",
+        "designer|None|Системные настройки|system_page|/designer/tenant/1/settings",
+        "runtime|41|Разработка|workspace|/portal/1/workspaces/razrabotka",
+        "runtime|83|История|object_type|/portal/1/object-types/istoriya",
+        "runtime|83|Направления|object_type|/portal/1/object-types/napravleniya",
+        "runtime|None|Задачник|object_type|/portal/1/object-types/zadachnik"
+      ],
+      "only_t13": [
+        "designer|None|Объекты|system_page|/designer/tenant/13/object-types",
+        "designer|None|Пользователи|system_page|/designer/tenant/13/users",
+        "designer|None|Представления|system_page|/designer/tenant/13/views",
+        "designer|None|Проект тест|object_type|/designer/tenant/13/object-types/1ae434fa-7720-4edf-bfb0-2de045351a61/data",
+        "designer|None|Разработка продукта|workspace|/designer/tenant/13/workspaces/razrabotka-produkta",
+        "designer|None|Связи|system_page|/designer/tenant/13/relations",
+        "designer|None|Системные настройки|system_page|/designer/tenant/13/settings",
+        "runtime|192|Отдел кадров|workspace|/portal/13/workspaces/otdel-kadrov-2",
+        "runtime|192|Разработка|workspace|/portal/13/workspaces/razrabotka",
+        "runtime|192|Тех. поддержка|workspace|/portal/13/workspaces/teh-podderzhka",
+        "runtime|192|Управление платформой|workspace|/portal/13/workspaces/upravlenie-platformoy",
+        "runtime|193|История|object_type|/portal/13/object-types/istoriya",
+        "runtime|193|Направления|object_type|/portal/13/object-types/napravleniya",
+        "runtime|None|Задачник|object_type|/portal/13/object-types/zadachnik",
+        "runtime|None|Михаил|object_type|/portal/13/object-types/michael",
+        "runtime|None|Подрядчик|object_type|/portal/13/object-types/contractor"
+      ],
+      "shared": [
+        "runtime|None|Администрирование|page|",
+        "runtime|None|Главная|page|",
+        "runtime|None|Документы|document_library|",
+        "runtime|None|Мои задачи|universal_table|",
+        "runtime|None|Настройка системы|page|",
+        "runtime|None|Рабочие пространства|workspace|",
+        "runtime|None|Уведомления|page|",
+        "runtime|None|Чат|page|"
+      ]
+    }
+  },
+  "object_types": {
+    "tenant_1": {
+      "cascade_delete_9_0_3": [
+        {
+          "id": "b4a6dcca-7f8c-47d4-ac52-8d413950d12d",
+          "key": "cascade_delete_9_0_3",
+          "name": "Delete test cascade_delete_9_0_3",
+          "status": "active",
+          "deleted_at": "2026-06-10T05:11:56.063484+00:00",
+          "created_at": "2026-06-10T05:11:55.965058+00:00",
+          "updated_at": "2026-06-10T05:11:56.001935+00:00"
+        },
+        {
+          "id": "4203d357-252a-4a26-ba17-2cdca423f12a",
+          "key": "cascade_delete_9_0_3",
+          "name": "Delete test cascade_delete_9_0_3",
+          "status": "active",
+          "deleted_at": "2026-06-10T05:19:07.494659+00:00",
+          "created_at": "2026-06-10T05:19:07.433686+00:00",
+          "updated_at": "2026-06-10T05:19:07.452779+00:00"
+        }
+      ],
+      "contractor": [
+        {
+          "id": "4f775b49-f110-4e07-b2f1-ba6db48e67ce",
+          "key": "contractor",
+          "name": "Подрядчик",
+          "status": "active",
+          "deleted_at": "2026-06-10T05:14:02.505001+00:00",
+          "created_at": "2026-05-26T11:25:27.099545+00:00",
+          "updated_at": "2026-06-10T05:14:02.454484+00:00"
+        }
+      ],
+      "delete_mvp_9_0_3": [
+        {
+          "id": "ab8d9b7f-e520-463f-869a-aa7ac887de3f",
+          "key": "delete_mvp_9_0_3",
+          "name": "Delete test delete_mvp_9_0_3",
+          "status": "active",
+          "deleted_at": "2026-06-10T04:53:44.314510+00:00",
+          "created_at": "2026-06-10T04:53:44.231228+00:00",
+          "updated_at": "2026-06-10T04:53:44.267105+00:00"
+        },
+        {
+          "id": "67f9da90-f404-4c13-a2a3-d3c209d3d16c",
+          "key": "delete_mvp_9_0_3",
+          "name": "Delete test delete_mvp_9_0_3",
+          "status": "active",
+          "deleted_at": "2026-06-10T04:52:50.851919+00:00",
+          "created_at": "2026-06-10T04:52:50.777717+00:00",
+          "updated_at": "2026-06-10T04:52:50.810793+00:00"
+        }
+      ],
+      "idei": [
+        {
+          "id": "102df9e6-ef07-4a6a-8d48-82d19429afc3",
+          "key": "idei",
+          "name": "Идеи",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-09T06:37:47.941663+00:00",
+          "updated_at": "2026-06-10T05:44:47.126538+00:00"
+        }
+      ],
+      "istoriya": [
+        {
+          "id": "1f6f4a1f-0b20-4d39-838c-610b0c6745f8",
+          "key": "istoriya",
+          "name": "История",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-08T07:56:22.740308+00:00",
+          "updated_at": "2026-06-10T05:44:47.126538+00:00"
+        }
+      ],
+      "klienty": [
+        {
+          "id": "c7b5f570-039f-4a14-8f69-21b8b3ac84cf",
+          "key": "klienty",
+          "name": "Клиенты",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-09T15:28:35.622762+00:00",
+          "updated_at": "2026-06-10T05:44:47.126538+00:00"
+        }
+      ],
+      "litsenzii": [
+        {
+          "id": "2908a7d7-83d4-4ecf-9714-eeebdaad27e5",
+          "key": "litsenzii",
+          "name": "Лицензии",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-09T15:29:30.584580+00:00",
+          "updated_at": "2026-06-10T05:44:47.126538+00:00"
+        }
+      ],
+      "michael": [
+        {
+          "id": "e6aa667a-ab6e-47db-8586-793952a6a5c3",
+          "key": "michael",
+          "name": "Михаил",
+          "status": "active",
+          "deleted_at": "2026-06-10T05:21:01.756838+00:00",
+          "created_at": "2026-05-28T18:02:10.584225+00:00",
+          "updated_at": "2026-06-10T05:21:01.727463+00:00"
+        }
+      ],
+      "napravleniya": [
+        {
+          "id": "03584bf5-0f8a-44a3-b894-173a57558ad4",
+          "key": "napravleniya",
+          "name": "Направления",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-06T21:10:58.507588+00:00",
+          "updated_at": "2026-06-10T05:44:47.126538+00:00"
+        }
+      ],
+      "nav_cleanup_9_0_3": [
+        {
+          "id": "03d7577d-02e5-4a6e-b63b-5266ed07040f",
+          "key": "nav_cleanup_9_0_3",
+          "name": "Nav cleanup nav_cleanup_9_0_3",
+          "status": "active",
+          "deleted_at": "2026-06-10T05:19:07.364913+00:00",
+          "created_at": "2026-06-10T05:19:07.267484+00:00",
+          "updated_at": "2026-06-10T05:19:07.336025+00:00"
+        }
+      ],
+      "new_object": [
+        {
+          "id": "52a76d38-7b59-4eb5-97d9-fd0f644986e4",
+          "key": "new_object",
+          "name": "Новый объект",
+          "status": "active",
+          "deleted_at": "2026-06-10T04:50:30.784936+00:00",
+          "created_at": "2026-06-02T10:37:44.059232+00:00",
+          "updated_at": "2026-06-10T04:50:30.767025+00:00"
+        },
+        {
+          "id": "40c50329-82b1-4c32-ab70-370940f029ba",
+          "key": "new_object",
+          "name": "Новый объекты",
+          "status": "active",
+          "deleted_at": "2026-05-28T16:51:43.766428+00:00",
+          "created_at": "2026-05-28T16:48:17.891518+00:00",
+          "updated_at": "2026-05-28T16:51:43.748938+00:00"
+        }
+      ],
+      "problemy": [
+        {
+          "id": "c3ac083a-b821-4482-9446-f3b570eda721",
+          "key": "problemy",
+          "name": "Проблемы",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-06T21:45:08.896196+00:00",
+          "updated_at": "2026-06-10T05:44:47.126538+00:00"
+        }
+      ],
+      "prodazhi": [
+        {
+          "id": "09f799e6-9029-43f8-8b3d-bedcd656d5c2",
+          "key": "prodazhi",
+          "name": "Продажи",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-09T15:28:48.533648+00:00",
+          "updated_at": "2026-06-10T05:44:47.126538+00:00"
+        }
+      ],
+      "project_test": [
+        {
+          "id": "1ae434fa-7720-4edf-bfb0-2de045351a61",
+          "key": "project_test",
+          "name": "Проект тест",
+          "status": "active",
+          "deleted_at": "2026-06-10T05:13:47.494729+00:00",
+          "created_at": "2026-05-26T11:24:52.796976+00:00",
+          "updated_at": "2026-06-10T05:13:47.456795+00:00"
+        }
+      ],
+      "task": [
+        {
+          "id": "5e070085-a9f9-4f43-8b22-e09cdee8929d",
+          "key": "task",
+          "name": "Задача",
+          "status": "active",
+          "deleted_at": "2026-06-10T05:13:13.071277+00:00",
+          "created_at": "2026-05-26T11:09:17.738546+00:00",
+          "updated_at": "2026-06-10T05:13:13.001363+00:00"
+        }
+      ],
+      "test": [
+        {
+          "id": "652fd593-566c-4445-8c70-32cb763a377c",
+          "key": "test",
+          "name": "Тестовый объект",
+          "status": "active",
+          "deleted_at": "2026-06-10T05:20:46.409475+00:00",
+          "created_at": "2026-05-28T14:11:42.984110+00:00",
+          "updated_at": "2026-06-10T05:20:46.360380+00:00"
+        }
+      ],
+      "zadachnik": [
+        {
+          "id": "5621a2f9-c745-4dfd-9271-ee99082f243e",
+          "key": "zadachnik",
+          "name": "Задачник",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-03T03:48:04.487420+00:00",
+          "updated_at": "2026-06-10T05:44:47.126538+00:00"
+        }
+      ]
+    },
+    "tenant_13": {
+      "contractor": [
+        {
+          "id": "301434c0-3e3b-4dae-8ef8-2d45ac009283",
+          "key": "contractor",
+          "name": "Подрядчик",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-10T04:28:35.070990+00:00",
+          "updated_at": "2026-06-10T04:28:36.070784+00:00"
+        }
+      ],
+      "idei": [
+        {
+          "id": "c634315b-6cc8-47c4-af90-1c4fbb1de58b",
+          "key": "idei",
+          "name": "Идеи",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-10T04:28:35.070990+00:00",
+          "updated_at": "2026-06-10T04:28:36.070784+00:00"
+        }
+      ],
+      "istoriya": [
+        {
+          "id": "7a72a85b-2b97-465a-b481-74378163a431",
+          "key": "istoriya",
+          "name": "История",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-10T04:28:35.070990+00:00",
+          "updated_at": "2026-06-10T04:28:36.070784+00:00"
+        }
+      ],
+      "klienty": [
+        {
+          "id": "1c7c8b74-21cd-41fd-8d5a-36849af2cc45",
+          "key": "klienty",
+          "name": "Клиенты",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-10T04:28:35.070990+00:00",
+          "updated_at": "2026-06-10T04:28:36.070784+00:00"
+        }
+      ],
+      "litsenzii": [
+        {
+          "id": "d9e4752d-6260-4061-beab-1d3429e99ea7",
+          "key": "litsenzii",
+          "name": "Лицензии",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-10T04:28:35.070990+00:00",
+          "updated_at": "2026-06-10T04:28:36.070784+00:00"
+        }
+      ],
+      "michael": [
+        {
+          "id": "e0d6accf-e145-4406-aab9-c53c3b98c0bc",
+          "key": "michael",
+          "name": "Михаил",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-10T04:28:35.070990+00:00",
+          "updated_at": "2026-06-10T04:28:36.070784+00:00"
+        }
+      ],
+      "napravleniya": [
+        {
+          "id": "50562add-4163-4f25-8a7e-63d54c473da8",
+          "key": "napravleniya",
+          "name": "Направления",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-10T04:28:35.070990+00:00",
+          "updated_at": "2026-06-10T04:28:36.070784+00:00"
+        }
+      ],
+      "new_object": [
+        {
+          "id": "e74b5114-e899-463a-9cc0-3173d7927f05",
+          "key": "new_object",
+          "name": "Новый объект",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-10T04:28:35.070990+00:00",
+          "updated_at": "2026-06-10T04:28:36.070784+00:00"
+        }
+      ],
+      "problemy": [
+        {
+          "id": "297529b0-8a00-4d39-b15c-e1847fd1ccbd",
+          "key": "problemy",
+          "name": "Проблемы",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-10T04:28:35.070990+00:00",
+          "updated_at": "2026-06-10T04:28:36.070784+00:00"
+        }
+      ],
+      "prodazhi": [
+        {
+          "id": "e84be9ff-1534-4158-8b21-653dfc2a5831",
+          "key": "prodazhi",
+          "name": "Продажи",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-10T04:28:35.070990+00:00",
+          "updated_at": "2026-06-10T04:28:36.070784+00:00"
+        }
+      ],
+      "project_test": [
+        {
+          "id": "001688ca-d489-4121-8876-2cfcc235b930",
+          "key": "project_test",
+          "name": "Проект тест",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-10T04:28:35.070990+00:00",
+          "updated_at": "2026-06-10T04:28:36.070784+00:00"
+        }
+      ],
+      "task": [
+        {
+          "id": "78f06da4-3462-4b80-9af0-de5a0fa714ba",
+          "key": "task",
+          "name": "Задача",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-10T04:28:35.070990+00:00",
+          "updated_at": "2026-06-10T04:28:36.070784+00:00"
+        }
+      ],
+      "test": [
+        {
+          "id": "bcabef0d-b51c-46ca-8e43-1966e2877bfd",
+          "key": "test",
+          "name": "Тестовый объект",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-10T04:28:35.070990+00:00",
+          "updated_at": "2026-06-10T04:28:36.070784+00:00"
+        }
+      ],
+      "zadachnik": [
+        {
+          "id": "c531cb83-4ee4-44c5-8e7a-f250e42e3bff",
+          "key": "zadachnik",
+          "name": "Задачник",
+          "status": "active",
+          "deleted_at": null,
+          "created_at": "2026-06-10T04:28:35.070990+00:00",
+          "updated_at": "2026-06-10T04:28:36.070784+00:00"
+        }
+      ]
+    }
+  },
+  "field_diffs_shared_object_types": [
+    {
+      "object_type_key": "idei",
+      "fields_count_t1": 0,
+      "fields_count_t13": 3,
+      "missing_in_t1": [
+        "napravlenie",
+        "nazvanie_idei",
+        "opisanie"
+      ],
+      "only_in_t1": [],
+      "type_mismatch": []
+    },
+    {
+      "object_type_key": "istoriya",
+      "fields_count_t1": 0,
+      "fields_count_t13": 8,
+      "missing_in_t1": [
+        "izmenennye_fayly",
+        "napravlenie",
+        "nazvanie_sobytiya",
+        "opisanie_izmeneniy",
+        "rezultat",
+        "sleduyuschiy_shag",
+        "status",
+        "tip_sobytiya"
+      ],
+      "only_in_t1": [],
+      "type_mismatch": []
+    },
+    {
+      "object_type_key": "klienty",
+      "fields_count_t1": 0,
+      "fields_count_t13": 5,
+      "missing_in_t1": [
+        "limit_polzovateley",
+        "nazvanie_kompanii",
+        "otvetstvennyy_podderzhka",
+        "otvetstvennyy_prodazh",
+        "status"
+      ],
+      "only_in_t1": [],
+      "type_mismatch": []
+    },
+    {
+      "object_type_key": "michael",
+      "fields_count_t1": 0,
+      "fields_count_t13": 6,
+      "missing_in_t1": [
+        "city",
+        "data",
+        "familia",
+        "name",
+        "room",
+        "type"
+      ],
+      "only_in_t1": [],
+      "type_mismatch": []
+    },
+    {
+      "object_type_key": "napravleniya",
+      "fields_count_t1": 0,
+      "fields_count_t13": 7,
+      "missing_in_t1": [
+        "nazvanie",
+        "opisanie",
+        "otvetstvennyy",
+        "prioritet",
+        "problemy",
+        "status",
+        "tselevoy_srok"
+      ],
+      "only_in_t1": [],
+      "type_mismatch": []
+    },
+    {
+      "object_type_key": "problemy",
+      "fields_count_t1": 0,
+      "fields_count_t13": 9,
+      "missing_in_t1": [
+        "avtor",
+        "chto_proishodit_seychas",
+        "data_sozdaniya",
+        "ispolnitel",
+        "kak_dolzhno_byt",
+        "kritichnost",
+        "napravlenie",
+        "nazvanie",
+        "status"
+      ],
+      "only_in_t1": [],
+      "type_mismatch": []
+    },
+    {
+      "object_type_key": "prodazhi",
+      "fields_count_t1": 0,
+      "fields_count_t13": 6,
+      "missing_in_t1": [
+        "klient",
+        "kommentariy",
+        "nazvanie",
+        "otvetstvennyy",
+        "planiruemye_litsenzii",
+        "status"
+      ],
+      "only_in_t1": [],
+      "type_mismatch": []
+    },
+    {
+      "object_type_key": "project_test",
+      "fields_count_t1": 0,
+      "fields_count_t13": 3,
+      "missing_in_t1": [
+        "name",
+        "new_field",
+        "status"
+      ],
+      "only_in_t1": [],
+      "type_mismatch": []
+    },
+    {
+      "object_type_key": "test",
+      "fields_count_t1": 0,
+      "fields_count_t13": 2,
+      "missing_in_t1": [
+        "name",
+        "status"
+      ],
+      "only_in_t1": [],
+      "type_mismatch": []
+    },
+    {
+      "object_type_key": "zadachnik",
+      "fields_count_t1": 0,
+      "fields_count_t13": 11,
+      "missing_in_t1": [
+        "finish_zadachi",
+        "nazvanie",
+        "opisanie",
+        "otvetstvennyy",
+        "podzadachi",
+        "postanovschik",
+        "prioritet",
+        "roditelskaya_svyaz",
+        "start_zadachi",
+        "status",
+        "vlozheniya"
+      ],
+      "only_in_t1": [],
+      "type_mismatch": []
+    }
+  ],
+  "view_diffs_shared_object_types": [
+    {
+      "object_type_key": "contractor",
+      "views_missing_in_t1": [
+        "contractors_table"
+      ]
+    },
+    {
+      "object_type_key": "michael",
+      "views_missing_in_t1": [
+        "default_quick_form",
+        "default_table",
+        "probnaya"
+      ]
+    },
+    {
+      "object_type_key": "project_test",
+      "views_missing_in_t1": [
+        "default_quick_form",
+        "projects_board"
+      ]
+    },
+    {
+      "object_type_key": "task",
+      "views_missing_in_t1": [
+        "tasks_table"
+      ]
+    },
+    {
+      "object_type_key": "test",
+      "views_missing_in_t1": [
+        "default_quick_form",
+        "default_table"
+      ]
+    }
+  ],
+  "relations": {
+    "tenant_1": [
+      {
+        "key": "has_contractors",
+        "name": "Имеет подрядчиков",
+        "source_object_type_key": "project_test",
+        "target_object_type_key": "contractor",
+        "relation_type": "many_to_many",
+        "deleted_at": "2026-06-10T05:13:47.484743+00:00"
+      },
+      {
+        "key": "idei",
+        "name": "Идеи",
+        "source_object_type_key": "napravleniya",
+        "target_object_type_key": "idei",
+        "relation_type": "one_to_many",
+        "deleted_at": null
+      },
+      {
+        "key": "ierarhiya_idey",
+        "name": "Иерархия идей",
+        "source_object_type_key": "idei",
+        "target_object_type_key": "idei",
+        "relation_type": "one_to_many",
+        "deleted_at": null
+      },
+      {
+        "key": "istoriya",
+        "name": "История",
+        "source_object_type_key": "istoriya",
+        "target_object_type_key": "napravleniya",
+        "relation_type": "many_to_many",
+        "deleted_at": null
+      },
+      {
+        "key": "klient",
+        "name": "Клиент",
+        "source_object_type_key": "prodazhi",
+        "target_object_type_key": "klienty",
+        "relation_type": "one_to_one",
+        "deleted_at": null
+      },
+      {
+        "key": "podproblemy",
+        "name": "Подпункт",
+        "source_object_type_key": "problemy",
+        "target_object_type_key": "problemy",
+        "relation_type": "one_to_many",
+        "deleted_at": null
+      },
+      {
+        "key": "podpunkt",
+        "name": "Подпункт",
+        "source_object_type_key": "napravleniya",
+        "target_object_type_key": "napravleniya",
+        "relation_type": "one_to_many",
+        "deleted_at": null
+      },
+      {
+        "key": "problemy",
+        "name": "Проблемы",
+        "source_object_type_key": "napravleniya",
+        "target_object_type_key": "problemy",
+        "relation_type": "one_to_many",
+        "deleted_at": null
+      },
+      {
+        "key": "task_subtask",
+        "name": "Подзадача",
+        "source_object_type_key": "zadachnik",
+        "target_object_type_key": "zadachnik",
+        "relation_type": "one_to_many",
+        "deleted_at": null
+      }
+    ],
+    "tenant_13": [
+      {
+        "key": "has_contractors",
+        "name": "Имеет подрядчиков",
+        "source_object_type_key": "project_test",
+        "target_object_type_key": "contractor",
+        "relation_type": "many_to_many",
+        "deleted_at": null
+      },
+      {
+        "key": "idei",
+        "name": "Идеи",
+        "source_object_type_key": "napravleniya",
+        "target_object_type_key": "idei",
+        "relation_type": "one_to_many",
+        "deleted_at": null
+      },
+      {
+        "key": "ierarhiya_idey",
+        "name": "Иерархия идей",
+        "source_object_type_key": "idei",
+        "target_object_type_key": "idei",
+        "relation_type": "one_to_many",
+        "deleted_at": null
+      },
+      {
+        "key": "istoriya",
+        "name": "История",
+        "source_object_type_key": "istoriya",
+        "target_object_type_key": "napravleniya",
+        "relation_type": "many_to_many",
+        "deleted_at": null
+      },
+      {
+        "key": "klient",
+        "name": "Клиент",
+        "source_object_type_key": "prodazhi",
+        "target_object_type_key": "klienty",
+        "relation_type": "one_to_one",
+        "deleted_at": null
+      },
+      {
+        "key": "podmihail",
+        "name": "Подмихаил",
+        "source_object_type_key": "michael",
+        "target_object_type_key": "michael",
+        "relation_type": "one_to_many",
+        "deleted_at": null
+      },
+      {
+        "key": "podproblemy",
+        "name": "Подпункт",
+        "source_object_type_key": "problemy",
+        "target_object_type_key": "problemy",
+        "relation_type": "one_to_many",
+        "deleted_at": null
+      },
+      {
+        "key": "podpunkt",
+        "name": "Подпункт",
+        "source_object_type_key": "napravleniya",
+        "target_object_type_key": "napravleniya",
+        "relation_type": "one_to_many",
+        "deleted_at": null
+      },
+      {
+        "key": "problemy",
+        "name": "Проблемы",
+        "source_object_type_key": "napravleniya",
+        "target_object_type_key": "problemy",
+        "relation_type": "one_to_many",
+        "deleted_at": null
+      },
+      {
+        "key": "task_subtask",
+        "name": "Подзадача",
+        "source_object_type_key": "zadachnik",
+        "target_object_type_key": "zadachnik",
+        "relation_type": "one_to_many",
+        "deleted_at": null
+      }
+    ]
+  },
+  "workspaces": {
+    "tenant_1": {
+      "razrabotka": {
+        "id": 33,
+        "title": "Разработкаа",
+        "slug": "razrabotka",
+        "deleted_at": "2026-06-10T05:47:47.032757+00:00",
+        "tabs": [
+          {
+            "slug": "home",
+            "title": "Главная",
+            "tab_type": "page",
+            "deleted_at": "2026-06-10T05:47:47.032757+00:00"
+          }
+        ]
+      }
+    },
+    "tenant_13": {
+      "razrabotka": {
+        "id": 29,
+        "title": "Разработка",
+        "slug": "razrabotka",
+        "deleted_at": null,
+        "tabs": [
+          {
+            "slug": "istoriya",
+            "title": "История",
+            "tab_type": "object",
+            "deleted_at": null
+          },
+          {
+            "slug": "idei",
+            "title": "Идеи",
+            "tab_type": "object",
+            "deleted_at": null
+          },
+          {
+            "slug": "problemy-tablitsa",
+            "title": "Проблемы таблица",
+            "tab_type": "object",
+            "deleted_at": null
+          },
+          {
+            "slug": "problemy",
+            "title": "Проблемы",
+            "tab_type": "object",
+            "deleted_at": null
+          },
+          {
+            "slug": "home",
+            "title": "Главная",
+            "tab_type": "page",
+            "deleted_at": null
+          },
+          {
+            "slug": "karta-platformy-yasnopro",
+            "title": "Карта платформы ЯсноПро",
+            "tab_type": "page",
+            "deleted_at": null
+          },
+          {
+            "slug": "arhitektura",
+            "title": "Архитектура",
+            "tab_type": "object",
+            "deleted_at": null
+          }
+        ]
+      },
+      "teh-podderzhka": {
+        "id": 30,
+        "title": "Тех. поддержка",
+        "slug": "teh-podderzhka",
+        "deleted_at": null,
+        "tabs": [
+          {
+            "slug": "home",
+            "title": "Главная",
+            "tab_type": "page",
+            "deleted_at": null
+          }
+        ]
+      },
+      "upravlenie-platformoy": {
+        "id": 31,
+        "title": "Управление платформой",
+        "slug": "upravlenie-platformoy",
+        "deleted_at": null,
+        "tabs": [
+          {
+            "slug": "home",
+            "title": "Главная",
+            "tab_type": "page",
+            "deleted_at": null
+          },
+          {
+            "slug": "prodazhi",
+            "title": "Продажи",
+            "tab_type": "object",
+            "deleted_at": null
+          },
+          {
+            "slug": "klienty",
+            "title": "Клиенты",
+            "tab_type": "object",
+            "deleted_at": null
+          }
+        ]
+      },
+      "otdel-kadrov-2": {
+        "id": 32,
+        "title": "Отдел кадров",
+        "slug": "otdel-kadrov-2",
+        "deleted_at": null,
+        "tabs": [
+          {
+            "slug": "home",
+            "title": "Главная",
+            "tab_type": "page",
+            "deleted_at": null
+          }
+        ]
+      }
+    }
+  },
+  "pages": {
+    "tenant_1": {
+      "Главная|0|True": {
+        "id": 1,
+        "title": "Главная",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": true,
+        "deleted_at": null,
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Библи|0|False": {
+        "id": 7,
+        "title": "Библи",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:55:16.374957+00:00",
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "ваи|0|False": {
+        "id": 8,
+        "title": "ваи",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:50:00.362778+00:00",
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Контрагенты|0|False": {
+        "id": 28,
+        "title": "Контрагенты",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:54:58.437037+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Адресная книга|0|False": {
+        "id": 10,
+        "title": "Адресная книга",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:50:06.025500+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Универсальная таблица|0|False": {
+        "id": 11,
+        "title": "Универсальная таблица",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:50:08.772848+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Проекты|0|False": {
+        "id": 24,
+        "title": "Проекты",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:55:01.736915+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Проекты 2|0|False": {
+        "id": 15,
+        "title": "Проекты 2",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:50:18.371429+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Проекты 3|0|False": {
+        "id": 16,
+        "title": "Проекты 3",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:50:20.599969+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "таббб|0|False": {
+        "id": 17,
+        "title": "таббб",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:50:23.978610+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "кенкегку|0|False": {
+        "id": 18,
+        "title": "кенкегку",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:50:26.481022+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Универ|0|False": {
+        "id": 20,
+        "title": "Универ",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:50:31.228846+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Проверка|0|False": {
+        "id": 26,
+        "title": "Проверка",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:50:40.555338+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Проверка 21|0|False": {
+        "id": 22,
+        "title": "Проверка 21",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:50:35.827803+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Задачник|0|False": {
+        "id": 23,
+        "title": "Задачник",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Это название в меню|0|False": {
+        "id": 25,
+        "title": "Это название в меню",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:50:38.389072+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Запросто|0|False": {
+        "id": 27,
+        "title": "Запросто",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:50:43.212463+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Контакты|0|False": {
+        "id": 29,
+        "title": "Контакты",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:54:53.868607+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Архитектура приложения|0|False": {
+        "id": 30,
+        "title": "Архитектура приложения",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:50:46.031953+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "впрь|0|False": {
+        "id": 31,
+        "title": "впрь",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:50:48.757034+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "пробник|0|False": {
+        "id": 32,
+        "title": "пробник",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:50:51.861357+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "дада|0|False": {
+        "id": 33,
+        "title": "дада",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:50:57.314368+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Оргструктура компании|0|False": {
+        "id": 34,
+        "title": "Оргструктура компании",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:51:00.196530+00:00",
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Чат|0|False": {
+        "id": 35,
+        "title": "Чат",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Уведомления|0|False": {
+        "id": 36,
+        "title": "Уведомления",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 0
+      },
+      "Согласования|0|False": {
+        "id": 37,
+        "title": "Согласования",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:51:03.771795+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Отчеты|0|False": {
+        "id": 38,
+        "title": "Отчеты",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:51:06.611339+00:00",
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Календарь|0|False": {
+        "id": 39,
+        "title": "Календарь",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:51:08.952137+00:00",
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Администрирование|0|False": {
+        "id": 40,
+        "title": "Администрирование",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Настройка системы|0|False": {
+        "id": 41,
+        "title": "Настройка системы",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Вот эта таблица|0|False": {
+        "id": 42,
+        "title": "Вот эта таблица",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:51:11.179351+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Тестируемая таблица|0|False": {
+        "id": 43,
+        "title": "Тестируемая таблица",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:51:13.583892+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Табличная|0|False": {
+        "id": 44,
+        "title": "Табличная",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:51:16.106629+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Запевалов|0|False": {
+        "id": 45,
+        "title": "Запевалов",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:51:18.538829+00:00",
+        "sections_count": 2,
+        "blocks_count": 0
+      },
+      "Таблица 2|0|False": {
+        "id": 46,
+        "title": "Таблица 2",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:51:20.527849+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Таблица 3|0|False": {
+        "id": 47,
+        "title": "Таблица 3",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:51:22.845114+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Стильная таблица|0|False": {
+        "id": 48,
+        "title": "Стильная таблица",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:51:25.299143+00:00",
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Тестовая|0|False": {
+        "id": 49,
+        "title": "Тестовая",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:51:27.638245+00:00",
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "первая|0|False": {
+        "id": 50,
+        "title": "первая",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:51:30.551259+00:00",
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Страница|0|False": {
+        "id": 51,
+        "title": "Страница",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:53:52.496820+00:00",
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Вторая|0|False": {
+        "id": 52,
+        "title": "Вторая",
+        "status": "hidden",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T04:52:12.569595+00:00",
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Разработка продукта|0|False": {
+        "id": 54,
+        "title": "Разработка продукта",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Разработка|0|False": {
+        "id": 55,
+        "title": "Разработка",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Тех. поддержка|0|False": {
+        "id": 58,
+        "title": "Тех. поддержка",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Продажи|0|False": {
+        "id": 59,
+        "title": "Продажи",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 0
+      },
+      "Отдел кадров|0|False": {
+        "id": 62,
+        "title": "Отдел кадров",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 0
+      },
+      "Управление платформой|0|False": {
+        "id": 61,
+        "title": "Управление платформой",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 0
+      },
+      "Разработкаа|0|False": {
+        "id": 346,
+        "title": "Разработкаа",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": "2026-06-10T05:48:59.319898+00:00",
+        "sections_count": 1,
+        "blocks_count": 0
+      },
+      "Карта платформы ЯсноПро|10|False": {
+        "id": 57,
+        "title": "Карта платформы ЯсноПро",
+        "status": "published",
+        "sort_order": 10,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Карта платформы|15|False": {
+        "id": 56,
+        "title": "Карта платформы",
+        "status": "draft",
+        "sort_order": 15,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 0,
+        "blocks_count": 0
+      }
+    },
+    "tenant_13": {
+      "Главная|0|True": {
+        "id": 290,
+        "title": "Главная",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": true,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Библи|0|False": {
+        "id": 291,
+        "title": "Библи",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "ваи|0|False": {
+        "id": 292,
+        "title": "ваи",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Контрагенты|0|False": {
+        "id": 312,
+        "title": "Контрагенты",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Адресная книга|0|False": {
+        "id": 294,
+        "title": "Адресная книга",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Универсальная таблица|0|False": {
+        "id": 295,
+        "title": "Универсальная таблица",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Проекты|0|False": {
+        "id": 308,
+        "title": "Проекты",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Проекты 2|0|False": {
+        "id": 299,
+        "title": "Проекты 2",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Проекты 3|0|False": {
+        "id": 300,
+        "title": "Проекты 3",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "таббб|0|False": {
+        "id": 301,
+        "title": "таббб",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "кенкегку|0|False": {
+        "id": 302,
+        "title": "кенкегку",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Универ|0|False": {
+        "id": 304,
+        "title": "Универ",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Проверка|0|False": {
+        "id": 310,
+        "title": "Проверка",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Проверка 21|0|False": {
+        "id": 306,
+        "title": "Проверка 21",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Задачник|0|False": {
+        "id": 307,
+        "title": "Задачник",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Это название в меню|0|False": {
+        "id": 309,
+        "title": "Это название в меню",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Запросто|0|False": {
+        "id": 311,
+        "title": "Запросто",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Контакты|0|False": {
+        "id": 313,
+        "title": "Контакты",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Архитектура приложения|0|False": {
+        "id": 314,
+        "title": "Архитектура приложения",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "впрь|0|False": {
+        "id": 315,
+        "title": "впрь",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "пробник|0|False": {
+        "id": 316,
+        "title": "пробник",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "дада|0|False": {
+        "id": 317,
+        "title": "дада",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Оргструктура компании|0|False": {
+        "id": 318,
+        "title": "Оргструктура компании",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Чат|0|False": {
+        "id": 319,
+        "title": "Чат",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Уведомления|0|False": {
+        "id": 320,
+        "title": "Уведомления",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 0
+      },
+      "Согласования|0|False": {
+        "id": 321,
+        "title": "Согласования",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Отчеты|0|False": {
+        "id": 322,
+        "title": "Отчеты",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Календарь|0|False": {
+        "id": 323,
+        "title": "Календарь",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Администрирование|0|False": {
+        "id": 324,
+        "title": "Администрирование",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Настройка системы|0|False": {
+        "id": 325,
+        "title": "Настройка системы",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Вот эта таблица|0|False": {
+        "id": 326,
+        "title": "Вот эта таблица",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Тестируемая таблица|0|False": {
+        "id": 327,
+        "title": "Тестируемая таблица",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Табличная|0|False": {
+        "id": 328,
+        "title": "Табличная",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Запевалов|0|False": {
+        "id": 329,
+        "title": "Запевалов",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 2,
+        "blocks_count": 0
+      },
+      "Таблица 2|0|False": {
+        "id": 330,
+        "title": "Таблица 2",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Таблица 3|0|False": {
+        "id": 331,
+        "title": "Таблица 3",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Стильная таблица|0|False": {
+        "id": 332,
+        "title": "Стильная таблица",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Тестовая|0|False": {
+        "id": 333,
+        "title": "Тестовая",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "первая|0|False": {
+        "id": 334,
+        "title": "первая",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Страница|0|False": {
+        "id": 335,
+        "title": "Страница",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Вторая|0|False": {
+        "id": 336,
+        "title": "Вторая",
+        "status": "hidden",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Разработка продукта|0|False": {
+        "id": 337,
+        "title": "Разработка продукта",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 0,
+        "blocks_count": 0
+      },
+      "Разработка|0|False": {
+        "id": 338,
+        "title": "Разработка",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Тех. поддержка|0|False": {
+        "id": 339,
+        "title": "Тех. поддержка",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Продажи|0|False": {
+        "id": 340,
+        "title": "Продажи",
+        "status": "draft",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 0
+      },
+      "Отдел кадров|0|False": {
+        "id": 343,
+        "title": "Отдел кадров",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 0
+      },
+      "Управление платформой|0|False": {
+        "id": 342,
+        "title": "Управление платформой",
+        "status": "published",
+        "sort_order": 0,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 0
+      },
+      "Карта платформы ЯсноПро|10|False": {
+        "id": 344,
+        "title": "Карта платформы ЯсноПро",
+        "status": "published",
+        "sort_order": 10,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 1,
+        "blocks_count": 1
+      },
+      "Карта платформы|15|False": {
+        "id": 345,
+        "title": "Карта платформы",
+        "status": "draft",
+        "sort_order": 15,
+        "is_home": false,
+        "deleted_at": null,
+        "sections_count": 0,
+        "blocks_count": 0
+      }
+    }
+  },
+  "navigation_issues": {
+    "tenant_1": [
+      {
+        "signature": "runtime|None|Nav cleanup nav_cleanup_9_0_3|object_type|/portal/1/object-types/nav_cleanup_9_0_3",
+        "id": 213,
+        "title": "Nav cleanup nav_cleanup_9_0_3",
+        "type": "object_type",
+        "menu_scope": "runtime",
+        "url": "/portal/1/object-types/nav_cleanup_9_0_3",
+        "page_id": null,
+        "object_type_id": "03d7577d-02e5-4a6e-b63b-5266ed07040f",
+        "parent_id": null,
+        "deleted_at": "2026-06-10T05:19:07.362914+00:00",
+        "issues": [
+          "broken_object_type_ref"
+        ]
+      },
+      {
+        "signature": "designer|None|Nav cleanup nav_cleanup_9_0_3|object_type|/designer/tenant/1/object-types/03d7577d-02e5-4a6e-b63b-5266ed07040f/data",
+        "id": 214,
+        "title": "Nav cleanup nav_cleanup_9_0_3",
+        "type": "object_type",
+        "menu_scope": "designer",
+        "url": "/designer/tenant/1/object-types/03d7577d-02e5-4a6e-b63b-5266ed07040f/data",
+        "page_id": null,
+        "object_type_id": "03d7577d-02e5-4a6e-b63b-5266ed07040f",
+        "parent_id": null,
+        "deleted_at": "2026-06-10T05:19:07.362914+00:00",
+        "issues": [
+          "broken_object_type_ref"
+        ]
+      },
+      {
+        "signature": "runtime|41|Разработкаа|workspace|/portal/1/workspaces/razrabotka",
+        "id": 215,
+        "title": "Разработкаа",
+        "type": "workspace",
+        "menu_scope": "runtime",
+        "url": "/portal/1/workspaces/razrabotka",
+        "page_id": null,
+        "object_type_id": null,
+        "parent_id": 41,
+        "deleted_at": "2026-06-10T05:47:47.029760+00:00",
+        "issues": []
+      },
+      {
+        "signature": "runtime|None|Документы|document_library|",
+        "id": 12,
+        "title": "Документы",
+        "type": "document_library",
+        "menu_scope": "runtime",
+        "url": null,
+        "page_id": 7,
+        "object_type_id": null,
+        "parent_id": null,
+        "deleted_at": null,
+        "issues": [
+          "broken_page_ref"
+        ]
+      },
+      {
+        "signature": "runtime|None|Михаил|object_type|/portal/1/object-types/michael",
+        "id": 75,
+        "title": "Михаил",
+        "type": "object_type",
+        "menu_scope": "runtime",
+        "url": "/portal/1/object-types/michael",
+        "page_id": null,
+        "object_type_id": "e6aa667a-ab6e-47db-8586-793952a6a5c3",
+        "parent_id": null,
+        "deleted_at": "2026-06-10T05:21:01.755841+00:00",
+        "issues": [
+          "broken_object_type_ref"
+        ]
+      },
+      {
+        "signature": "runtime|None|Подрядчик|object_type|/portal/1/object-types/contractor",
+        "id": 74,
+        "title": "Подрядчик",
+        "type": "object_type",
+        "menu_scope": "runtime",
+        "url": "/portal/1/object-types/contractor",
+        "page_id": null,
+        "object_type_id": "4f775b49-f110-4e07-b2f1-ba6db48e67ce",
+        "parent_id": null,
+        "deleted_at": "2026-06-10T05:14:02.498539+00:00",
+        "issues": [
+          "broken_object_type_ref"
+        ]
+      },
+      {
+        "signature": "designer|None|Проект тест|object_type|/designer/tenant/1/object-types/1ae434fa-7720-4edf-bfb0-2de045351a61/data",
+        "id": 71,
+        "title": "Проект тест",
+        "type": "object_type",
+        "menu_scope": "designer",
+        "url": "/designer/tenant/1/object-types/1ae434fa-7720-4edf-bfb0-2de045351a61/data",
+        "page_id": null,
+        "object_type_id": "1ae434fa-7720-4edf-bfb0-2de045351a61",
+        "parent_id": null,
+        "deleted_at": "2026-06-10T05:13:47.492715+00:00",
+        "issues": [
+          "broken_object_type_ref"
+        ]
+      }
+    ],
+    "tenant_13": []
+  },
+  "navigation_missing_in_t1": [
+    "designer|None|Объекты|system_page|/designer/tenant/13/object-types",
+    "designer|None|Пользователи|system_page|/designer/tenant/13/users",
+    "designer|None|Представления|system_page|/designer/tenant/13/views",
+    "designer|None|Проект тест|object_type|/designer/tenant/13/object-types/1ae434fa-7720-4edf-bfb0-2de045351a61/data",
+    "designer|None|Разработка продукта|workspace|/designer/tenant/13/workspaces/razrabotka-produkta",
+    "designer|None|Связи|system_page|/designer/tenant/13/relations",
+    "designer|None|Системные настройки|system_page|/designer/tenant/13/settings",
+    "runtime|192|Отдел кадров|workspace|/portal/13/workspaces/otdel-kadrov-2",
+    "runtime|192|Разработка|workspace|/portal/13/workspaces/razrabotka",
+    "runtime|192|Тех. поддержка|workspace|/portal/13/workspaces/teh-podderzhka",
+    "runtime|192|Управление платформой|workspace|/portal/13/workspaces/upravlenie-platformoy",
+    "runtime|193|История|object_type|/portal/13/object-types/istoriya",
+    "runtime|193|Направления|object_type|/portal/13/object-types/napravleniya",
+    "runtime|None|Задачник|object_type|/portal/13/object-types/zadachnik",
+    "runtime|None|Михаил|object_type|/portal/13/object-types/michael",
+    "runtime|None|Подрядчик|object_type|/portal/13/object-types/contractor"
+  ],
+  "publish": {
+    "tenant_1": {
+      "snapshot_count": 141,
+      "publish_record_count": 156,
+      "latest_catalog_version": 141,
+      "latest_snapshot_at": "2026-06-10T05:44:47.158872+00:00",
+      "object_types_in_latest_snapshot": 8,
+      "latest_publish_status": "success",
+      "latest_publish_at": "2026-06-10T05:44:47.158872+00:00",
+      "has_working_catalog": true
+    },
+    "tenant_13": {
+      "snapshot_count": 1,
+      "publish_record_count": 1,
+      "latest_catalog_version": 1,
+      "latest_snapshot_at": "2026-06-10T04:28:36.120339+00:00",
+      "object_types_in_latest_snapshot": 14,
+      "latest_publish_status": "success",
+      "latest_publish_at": "2026-06-10T04:28:36.120339+00:00",
+      "has_working_catalog": true
+    }
+  },
+  "runtime": {
+    "tenant_1": {
+      "entities_active": 2,
+      "entity_values": 352,
+      "relation_instances": 164,
+      "entities_by_object_type_key": [
+        {
+          "object_type_key": "zadachnik",
+          "count": 2
+        }
+      ]
+    },
+    "tenant_13": {
+      "entities_active": 4,
+      "entity_values": 5,
+      "relation_instances": 0,
+      "entities_by_object_type_key": [
+        {
+          "object_type_key": "idei",
+          "count": 1
+        },
+        {
+          "object_type_key": "michael",
+          "count": 1
+        },
+        {
+          "object_type_key": "napravleniya",
+          "count": 1
+        },
+        {
+          "object_type_key": "problemy",
+          "count": 1
+        }
+      ]
+    }
+  },
+  "trash": {
+    "tenant_1": {
+      "page": [
+        {
+          "id": "346",
+          "title": "Разработкаа",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T05:48:59.319898+00:00"
+        },
+        {
+          "id": "7",
+          "title": "Библи",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:55:16.374957+00:00"
+        },
+        {
+          "id": "24",
+          "title": "Проекты",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:55:01.736915+00:00"
+        },
+        {
+          "id": "28",
+          "title": "Контрагенты",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:54:58.437037+00:00"
+        },
+        {
+          "id": "29",
+          "title": "Контакты",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:54:53.868607+00:00"
+        },
+        {
+          "id": "51",
+          "title": "Страница",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:53:52.496820+00:00"
+        },
+        {
+          "id": "52",
+          "title": "Вторая",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:52:12.569595+00:00"
+        },
+        {
+          "id": "50",
+          "title": "первая",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:51:30.551259+00:00"
+        },
+        {
+          "id": "49",
+          "title": "Тестовая",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:51:27.638245+00:00"
+        },
+        {
+          "id": "48",
+          "title": "Стильная таблица",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:51:25.299143+00:00"
+        },
+        {
+          "id": "47",
+          "title": "Таблица 3",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:51:22.845114+00:00"
+        },
+        {
+          "id": "46",
+          "title": "Таблица 2",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:51:20.527849+00:00"
+        },
+        {
+          "id": "45",
+          "title": "Запевалов",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:51:18.538829+00:00"
+        },
+        {
+          "id": "44",
+          "title": "Табличная",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:51:16.106629+00:00"
+        },
+        {
+          "id": "43",
+          "title": "Тестируемая таблица",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:51:13.583892+00:00"
+        },
+        {
+          "id": "42",
+          "title": "Вот эта таблица",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:51:11.179351+00:00"
+        },
+        {
+          "id": "39",
+          "title": "Календарь",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:51:08.952137+00:00"
+        },
+        {
+          "id": "38",
+          "title": "Отчеты",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:51:06.611339+00:00"
+        },
+        {
+          "id": "37",
+          "title": "Согласования",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:51:03.771795+00:00"
+        },
+        {
+          "id": "34",
+          "title": "Оргструктура компании",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:51:00.196530+00:00"
+        },
+        {
+          "id": "33",
+          "title": "дада",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:57.314368+00:00"
+        },
+        {
+          "id": "32",
+          "title": "пробник",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:51.861357+00:00"
+        },
+        {
+          "id": "31",
+          "title": "впрь",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:48.757034+00:00"
+        },
+        {
+          "id": "30",
+          "title": "Архитектура приложения",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:46.031953+00:00"
+        },
+        {
+          "id": "27",
+          "title": "Запросто",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:43.212463+00:00"
+        },
+        {
+          "id": "26",
+          "title": "Проверка",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:40.555338+00:00"
+        },
+        {
+          "id": "25",
+          "title": "Это название в меню",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:38.389072+00:00"
+        },
+        {
+          "id": "22",
+          "title": "Проверка 21",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:35.827803+00:00"
+        },
+        {
+          "id": "21",
+          "title": "Проверка",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:33.500860+00:00"
+        },
+        {
+          "id": "20",
+          "title": "Универ",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:31.228846+00:00"
+        },
+        {
+          "id": "19",
+          "title": "Проекты",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:29.048826+00:00"
+        },
+        {
+          "id": "18",
+          "title": "кенкегку",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:26.481022+00:00"
+        },
+        {
+          "id": "17",
+          "title": "таббб",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:23.978610+00:00"
+        },
+        {
+          "id": "16",
+          "title": "Проекты 3",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:20.599969+00:00"
+        },
+        {
+          "id": "15",
+          "title": "Проекты 2",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:18.371429+00:00"
+        },
+        {
+          "id": "14",
+          "title": "Проекты",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:16.099968+00:00"
+        },
+        {
+          "id": "13",
+          "title": "Проекты",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:13.646739+00:00"
+        },
+        {
+          "id": "12",
+          "title": "Проекты",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:11.387313+00:00"
+        },
+        {
+          "id": "11",
+          "title": "Универсальная таблица",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:08.772848+00:00"
+        },
+        {
+          "id": "10",
+          "title": "Адресная книга",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:06.025500+00:00"
+        },
+        {
+          "id": "9",
+          "title": "Контрагенты",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:02.976687+00:00"
+        },
+        {
+          "id": "8",
+          "title": "ваи",
+          "placement_label": "Студия → Страницы",
+          "deleted_at": "2026-06-10T04:50:00.362778+00:00"
+        }
+      ],
+      "workspace": [
+        {
+          "id": "33",
+          "title": "Разработкаа",
+          "placement_label": "Студия",
+          "deleted_at": "2026-06-10T05:47:47.032757+00:00"
+        }
+      ],
+      "workspace_tab": [
+        {
+          "id": "85",
+          "title": "Главная",
+          "placement_label": "Workspace Разработкаа",
+          "deleted_at": "2026-06-10T05:47:47.032757+00:00"
+        }
+      ],
+      "navigation": [
+        {
+          "id": "215",
+          "title": "Разработкаа",
+          "placement_label": "Office → Навигация",
+          "deleted_at": "2026-06-10T05:47:47.029760+00:00"
+        },
+        {
+          "id": "75",
+          "title": "Михаил",
+          "placement_label": "Office → Навигация",
+          "deleted_at": "2026-06-10T05:21:01.755841+00:00"
+        },
+        {
+          "id": "213",
+          "title": "Nav cleanup nav_cleanup_9_0_3",
+          "placement_label": "Office → Навигация",
+          "deleted_at": "2026-06-10T05:19:07.362914+00:00"
+        },
+        {
+          "id": "214",
+          "title": "Nav cleanup nav_cleanup_9_0_3",
+          "placement_label": "Office → Навигация",
+          "deleted_at": "2026-06-10T05:19:07.362914+00:00"
+        },
+        {
+          "id": "74",
+          "title": "Подрядчик",
+          "placement_label": "Office → Навигация",
+          "deleted_at": "2026-06-10T05:14:02.498539+00:00"
+        },
+        {
+          "id": "71",
+          "title": "Проект тест",
+          "placement_label": "Office → Навигация",
+          "deleted_at": "2026-06-10T05:13:47.492715+00:00"
+        }
+      ],
+      "object_type": [
+        {
+          "id": "e6aa667a-ab6e-47db-8586-793952a6a5c3",
+          "title": "Михаил",
+          "placement_label": "Студия → Объекты",
+          "deleted_at": "2026-06-10T05:21:01.756838+00:00"
+        },
+        {
+          "id": "652fd593-566c-4445-8c70-32cb763a377c",
+          "title": "Тестовый объект",
+          "placement_label": "Студия → Объекты",
+          "deleted_at": "2026-06-10T05:20:46.409475+00:00"
+        },
+        {
+          "id": "4203d357-252a-4a26-ba17-2cdca423f12a",
+          "title": "Delete test cascade_delete_9_0_3",
+          "placement_label": "Студия → Объекты",
+          "deleted_at": "2026-06-10T05:19:07.494659+00:00"
+        },
+        {
+          "id": "03d7577d-02e5-4a6e-b63b-5266ed07040f",
+          "title": "Nav cleanup nav_cleanup_9_0_3",
+          "placement_label": "Студия → Объекты",
+          "deleted_at": "2026-06-10T05:19:07.364913+00:00"
+        },
+        {
+          "id": "4f775b49-f110-4e07-b2f1-ba6db48e67ce",
+          "title": "Подрядчик",
+          "placement_label": "Студия → Объекты",
+          "deleted_at": "2026-06-10T05:14:02.505001+00:00"
+        },
+        {
+          "id": "1ae434fa-7720-4edf-bfb0-2de045351a61",
+          "title": "Проект тест",
+          "placement_label": "Студия → Объекты",
+          "deleted_at": "2026-06-10T05:13:47.494729+00:00"
+        },
+        {
+          "id": "5e070085-a9f9-4f43-8b22-e09cdee8929d",
+          "title": "Задача",
+          "placement_label": "Студия → Объекты",
+          "deleted_at": "2026-06-10T05:13:13.071277+00:00"
+        },
+        {
+          "id": "b4a6dcca-7f8c-47d4-ac52-8d413950d12d",
+          "title": "Delete test cascade_delete_9_0_3",
+          "placement_label": "Студия → Объекты",
+          "deleted_at": "2026-06-10T05:11:56.063484+00:00"
+        },
+        {
+          "id": "ab8d9b7f-e520-463f-869a-aa7ac887de3f",
+          "title": "Delete test delete_mvp_9_0_3",
+          "placement_label": "Студия → Объекты",
+          "deleted_at": "2026-06-10T04:53:44.314510+00:00"
+        },
+        {
+          "id": "67f9da90-f404-4c13-a2a3-d3c209d3d16c",
+          "title": "Delete test delete_mvp_9_0_3",
+          "placement_label": "Студия → Объекты",
+          "deleted_at": "2026-06-10T04:52:50.851919+00:00"
+        },
+        {
+          "id": "52a76d38-7b59-4eb5-97d9-fd0f644986e4",
+          "title": "Новый объект",
+          "placement_label": "Студия → Объекты",
+          "deleted_at": "2026-06-10T04:50:30.784936+00:00"
+        },
+        {
+          "id": "40c50329-82b1-4c32-ab70-370940f029ba",
+          "title": "Новый объекты",
+          "placement_label": "Студия → Объекты",
+          "deleted_at": "2026-05-28T16:51:43.766428+00:00"
+        }
+      ],
+      "object_view": [
+        {
+          "id": "c842a06c-808e-4e10-8e54-d7c6cbf7623b",
+          "title": "Супер",
+          "placement_label": "Объект Михаил",
+          "deleted_at": "2026-06-10T05:21:01.750844+00:00"
+        },
+        {
+          "id": "e1b026c3-a76d-426b-8b95-6345b6474de0",
+          "title": "Быстрая форма",
+          "placement_label": "Объект Михаил",
+          "deleted_at": "2026-06-10T05:21:01.750844+00:00"
+        },
+        {
+          "id": "22105789-9892-4a6d-b5a6-cd31d85de694",
+          "title": "Таблица",
+          "placement_label": "Объект Тестовый объект",
+          "deleted_at": "2026-06-10T05:20:46.394350+00:00"
+        },
+        {
+          "id": "4d6313c3-2452-4a5a-b6ea-040ffc630fd9",
+          "title": "Быстрая форма",
+          "placement_label": "Объект Тестовый объект",
+          "deleted_at": "2026-06-10T05:20:46.394350+00:00"
+        },
+        {
+          "id": "52702870-46c9-4165-9d74-1468442b222c",
+          "title": "Таблица",
+          "placement_label": "Объект Delete test cascade_delete_9_0_3",
+          "deleted_at": "2026-06-10T05:19:07.488971+00:00"
+        },
+        {
+          "id": "43ac1468-c19b-43b6-b2cb-50a7f463cca0",
+          "title": "Таблица",
+          "placement_label": "Объект Nav cleanup nav_cleanup_9_0_3",
+          "deleted_at": "2026-06-10T05:19:07.356960+00:00"
+        },
+        {
+          "id": "1c896501-016b-491a-b84c-d25c548c39a4",
+          "title": "Еще какой",
+          "placement_label": "Объект Подрядчик",
+          "deleted_at": "2026-06-10T05:14:02.491178+00:00"
+        },
+        {
+          "id": "bc947b93-10c3-4d5e-9921-a8a823671852",
+          "title": "Все проекты",
+          "placement_label": "Объект Проект тест",
+          "deleted_at": "2026-06-10T05:13:47.487265+00:00"
+        },
+        {
+          "id": "52aaebbe-8332-433d-9553-efb4db52a8ae",
+          "title": "Быстрая форма",
+          "placement_label": "Объект Проект тест",
+          "deleted_at": "2026-06-10T05:13:47.487265+00:00"
+        },
+        {
+          "id": "3c0fa6fd-1b25-42d0-b437-bc4d3b6a2109",
+          "title": "Таблица задач",
+          "placement_label": "Объект Задача",
+          "deleted_at": "2026-06-10T05:13:13.041353+00:00"
+        },
+        {
+          "id": "3262e12f-028a-4a07-8d00-9eebdce549c8",
+          "title": "Таблица",
+          "placement_label": "Объект Delete test cascade_delete_9_0_3",
+          "deleted_at": "2026-06-10T05:11:56.055487+00:00"
+        }
+      ],
+      "object_relation": [
+        {
+          "id": "6d709c0e-6f02-41b0-ac11-9d12d523ccc0",
+          "title": "Имеет подрядчиков",
+          "placement_label": "Проект тест → Подрядчик",
+          "deleted_at": "2026-06-10T05:13:47.484743+00:00"
+        }
+      ]
+    },
+    "tenant_13": {}
+  }
+}

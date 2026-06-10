@@ -23,7 +23,7 @@ import {
 } from "../../../../shared/shell/sidebar/designerSystemMenuSettings";
 import { defaultCapabilitiesForMode } from "../../../../shared/shell/provider/appShellTypes";
 import { emitDesignerShadowSnapshot } from "../../../../shared/shell/shadow/designer";
-import { getLastRuntimePath } from "../../../../shared/appMode/appModeStorage";
+import { resolveStudioToOfficePath } from "../../../../shared/appMode/appModeNavigation";
 import useNavigationTree from "../../../../modules/navigation/hooks/useNavigationTree";
 import * as designerApi from "../../api/designerApi";
 import { mergeDesignerSidebarNavigation } from "../../utils/mergeDesignerSidebarNavigation";
@@ -733,7 +733,7 @@ export default function DesignerShell() {
     (actionKey, payload) => {
       switch (actionKey) {
         case "app-mode-switch":
-          navigate(getLastRuntimePath());
+          navigate(resolveStudioToOfficePath(location.pathname));
           return;
         case "search-change":
         case "search":

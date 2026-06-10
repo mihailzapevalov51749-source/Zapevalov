@@ -62,6 +62,7 @@ from app.modules.platform.runtime.router import router as platform_runtime_route
 from app.modules.platform.workspace_tabs.router import workspace_tabs_router
 from app.modules.ai_context.router import router as ai_context_router
 from app.modules.yasii.router import router as yasii_router
+from app.modules.control_plane.router import router as control_plane_router
 
 # Регистрация ORM в metadata (legacy + platform). Platform DDL — только через Alembic.
 from app.modules.universal_views import models as universal_views_models  # noqa: F401
@@ -159,6 +160,9 @@ app.include_router(yasii_router)
 
 # AI Context Engine / ACE (skeleton — P1-W02)
 app.include_router(ai_context_router)
+
+# Control Plane — platform management (customer companies, provisioning)
+app.include_router(control_plane_router)
 
 
 @app.get("/")

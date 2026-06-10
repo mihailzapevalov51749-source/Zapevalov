@@ -38,7 +38,10 @@ import LibraryPageView from "../modules/documentLibraries/components/LibraryPage
 import LegacyStorageSystemRouteView from "../shared/legacy/components/LegacyStorageSystemRouteView";
 
 import PortalLayout from "../layouts/PortalLayout";
-import { resolvePortalObjectNavigationPath } from "./utils/portalObjectRoutes";
+import {
+  resolvePortalIdFromPath,
+  resolvePortalNavigationClickTarget,
+} from "./utils/portalObjectRoutes";
 import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../shared/navigation/navigationReload";
 
 import WorkspaceTopBar from "./components/WorkspaceTopBar";
@@ -60,6 +63,8 @@ import {
 } from "./utils/pageCanvasContextMenuUtils";
 
 import AdminUsersPage from "../modules/admin/users/AdminUsersPage";
+import AdminTenantsPage from "../modules/admin/tenants/AdminTenantsPage";
+import AdminTenantDetailPage from "../modules/admin/tenants/AdminTenantDetailPage";
 import AdminOrgStructurePage from "../modules/admin/orgStructure/AdminOrgStructurePage";
 import AdminRolesPage from "../modules/admin/roles/AdminRolesPage";
 import AdminDepartmentsPage from "../modules/admin/departments/AdminDepartmentsPage";
@@ -233,6 +238,11 @@ function getAdminPageByPath(pathname) {
     : normalizedPath;
 
   if (adminPath === "/admin") return <AdminDashboardPage />;
+  const tenantsDetailMatch = adminPath.match(/^\/admin\/tenants\/(\d+)$/);
+  if (tenantsDetailMatch) {
+    return <AdminTenantDetailPage portalId={Number(tenantsDetailMatch[1])} />;
+  }
+  if (adminPath === "/admin/tenants") return <AdminTenantsPage />;
   if (adminPath === "/admin/users") return <AdminUsersPage />;
   if (adminPath === "/admin/org-structure") return <AdminOrgStructurePage />;
   if (adminPath === "/admin/roles") return <AdminRolesPage />;
@@ -282,6 +292,13 @@ function getSystemPageMeta({
     return {
       title: "Администрирование",
       subtitle: "Управление платформой и настройками системы",
+    };
+  }
+
+  if (adminPath === "/admin/tenants" || adminPath.match(/^\/admin\/tenants\/\d+$/)) {
+    return {
+      title: "Тенанты",
+      subtitle: "Управление платформой → технические порталы (portals)",
     };
   }
 
@@ -409,7 +426,10 @@ export default function PortalPageView() {
   const location = useLocation();
   const { portalId: portalIdParam, pageId: pageIdParam } = useParams();
 
-  const portalId = Number(portalIdParam || 1);
+  const portalId = resolvePortalIdFromPath(
+    location.pathname,
+    portalIdParam || 1,
+  );
   const pageId = pageIdParam ? Number(pageIdParam) : null;
 
   const isUniversalTablePage = location.pathname === "/universal-table";
@@ -1018,26 +1038,20 @@ export default function PortalPageView() {
 
   const handleSidebarItemAction = useCallback(
     (item, event) => {
-      const objectTypePath = resolvePortalObjectNavigationPath(item, portalId);
-      if (objectTypePath) {
-        event?.preventDefault?.();
-        navigate(objectTypePath);
+      const target = resolvePortalNavigationClickTarget(item, portalId);
+      if (!target) {
         return;
       }
 
-      const targetPath = String(
-        item?.path || item?.route || item?.url || item?.meta?.path || item?.meta?.route || item?.meta?.url || "",
-      ).trim();
-      if (targetPath) {
-        event?.preventDefault?.();
-        navigate(targetPath);
+      event?.preventDefault?.();
+
+      if ("path" in target && target.path) {
+        navigate(target.path);
         return;
       }
 
-      const nextPageId = item?.pageId ?? item?.page_id ?? item?.meta?.page_id;
-      if (nextPageId != null) {
-        event?.preventDefault?.();
-        handleSelectPage(nextPageId);
+      if ("pageId" in target && target.pageId != null) {
+        handleSelectPage(target.pageId);
       }
     },
     [navigate, portalId, handleSelectPage],

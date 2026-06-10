@@ -1,0 +1,544 @@
+{
+  "phase": "apply_phase1_restore_fields",
+  "started_at": "2026-06-10T09:55:02.796878",
+  "source_tenant": 13,
+  "target_tenant": 1,
+  "before": {
+    "active_fields_total": 0,
+    "active_fields_by_ot": {},
+    "deleted_fields_total": 68,
+    "runtime": {
+      "runtime_entities": 2,
+      "runtime_entity_values": 352,
+      "runtime_relation_instances": 164
+    }
+  },
+  "restore_plan": [
+    {
+      "id": "f8385071-b135-47dd-9058-945cc8029b1b",
+      "object_type_key": "klienty",
+      "field_key": "otvetstvennyy_prodazh",
+      "field_type": "user",
+      "source_field_type": "user"
+    },
+    {
+      "id": "1e5f72f7-1b91-42be-9363-6598e71e8d9b",
+      "object_type_key": "project_test",
+      "field_key": "status",
+      "field_type": "choice",
+      "source_field_type": "choice"
+    },
+    {
+      "id": "1ed68433-b7fa-4045-a0b5-3af9c33f2254",
+      "object_type_key": "project_test",
+      "field_key": "new_field",
+      "field_type": "text",
+      "source_field_type": "text"
+    },
+    {
+      "id": "2d29642b-6b98-4b0b-b940-922449b82f0b",
+      "object_type_key": "project_test",
+      "field_key": "name",
+      "field_type": "text",
+      "source_field_type": "text"
+    },
+    {
+      "id": "b88a664e-b30c-4f5a-bcf1-26eafc3f15e1",
+      "object_type_key": "test",
+      "field_key": "name",
+      "field_type": "text",
+      "source_field_type": "text"
+    },
+    {
+      "id": "bed2a7a4-b1e8-4af4-9e79-e0c12be2878c",
+      "object_type_key": "test",
+      "field_key": "status",
+      "field_type": "text",
+      "source_field_type": "text"
+    },
+    {
+      "id": "556c8450-8d99-4c8b-b649-ef5da813c3d1",
+      "object_type_key": "prodazhi",
+      "field_key": "nazvanie",
+      "field_type": "text",
+      "source_field_type": "text"
+    },
+    {
+      "id": "21d7e30b-a508-4e66-ad2c-38f4aa7e1132",
+      "object_type_key": "problemy",
+      "field_key": "nazvanie",
+      "field_type": "text",
+      "source_field_type": "text"
+    },
+    {
+      "id": "e0ff82f5-5a58-448b-9b85-2e6192e39f5b",
+      "object_type_key": "problemy",
+      "field_key": "kritichnost",
+      "field_type": "choice",
+      "source_field_type": "choice"
+    },
+    {
+      "id": "4711fca1-b665-466a-8334-1606a7dd5514",
+      "object_type_key": "napravleniya",
+      "field_key": "opisanie",
+      "field_type": "textarea",
+      "source_field_type": "textarea"
+    },
+    {
+      "id": "87f215f9-ad38-456a-8141-4e5335b608c9",
+      "object_type_key": "napravleniya",
+      "field_key": "prioritet",
+      "field_type": "choice",
+      "source_field_type": "choice"
+    },
+    {
+      "id": "8eda5556-2cb9-41b3-95e3-0ac3a101a4dc",
+      "object_type_key": "napravleniya",
+      "field_key": "otvetstvennyy",
+      "field_type": "user",
+      "source_field_type": "user"
+    },
+    {
+      "id": "945821e9-f31f-4bda-b3c1-36ea3e47f771",
+      "object_type_key": "michael",
+      "field_key": "data",
+      "field_type": "date",
+      "source_field_type": "date"
+    },
+    {
+      "id": "c089c5b1-8237-401e-9f74-139d85ba689b",
+      "object_type_key": "napravleniya",
+      "field_key": "nazvanie",
+      "field_type": "text",
+      "source_field_type": "text"
+    },
+    {
+      "id": "e70cdecd-7358-44b1-b317-6f4e5addc1f7",
+      "object_type_key": "napravleniya",
+      "field_key": "tselevoy_srok",
+      "field_type": "date",
+      "source_field_type": "date"
+    },
+    {
+      "id": "2fc0434d-a50b-4a9a-81c7-e2be8ef2c272",
+      "object_type_key": "michael",
+      "field_key": "city",
+      "field_type": "text",
+      "source_field_type": "text"
+    },
+    {
+      "id": "7cc89794-1ef8-479b-8575-da9cb80dd177",
+      "object_type_key": "michael",
+      "field_key": "room",
+      "field_type": "text",
+      "source_field_type": "text"
+    },
+    {
+      "id": "8b0b3ab2-d20a-4e11-8db2-3ee25d7f87ea",
+      "object_type_key": "michael",
+      "field_key": "name",
+      "field_type": "text",
+      "source_field_type": "text"
+    },
+    {
+      "id": "8c2f3f0f-f0d0-4b05-b23b-0ece58ed7afe",
+      "object_type_key": "michael",
+      "field_key": "familia",
+      "field_type": "text",
+      "source_field_type": "text"
+    },
+    {
+      "id": "9509ca74-04aa-472e-9fd7-7a77b03a6c09",
+      "object_type_key": "michael",
+      "field_key": "type",
+      "field_type": "text",
+      "source_field_type": "text"
+    },
+    {
+      "id": "9307a006-4025-42c7-a639-03c657e0d8d3",
+      "object_type_key": "napravleniya",
+      "field_key": "problemy",
+      "field_type": "relation",
+      "source_field_type": "relation"
+    },
+    {
+      "id": "b57324b9-24ae-4d57-a430-3a734b03843f",
+      "object_type_key": "klienty",
+      "field_key": "nazvanie_kompanii",
+      "field_type": "text",
+      "source_field_type": "text"
+    },
+    {
+      "id": "fa253be5-6c65-4928-8ad4-a60a4942f27a",
+      "object_type_key": "napravleniya",
+      "field_key": "status",
+      "field_type": "choice",
+      "source_field_type": "choice"
+    },
+    {
+      "id": "1b04e270-6adc-48f5-8ffd-590eb9eff8bc",
+      "object_type_key": "istoriya",
+      "field_key": "rezultat",
+      "field_type": "textarea",
+      "source_field_type": "textarea"
+    },
+    {
+      "id": "00e0c27a-e12a-4818-8c00-15327a6212bd",
+      "object_type_key": "problemy",
+      "field_key": "avtor",
+      "field_type": "user",
+      "source_field_type": "user"
+    },
+    {
+      "id": "247fa575-7008-4d0b-9cf8-84ca7db44e4b",
+      "object_type_key": "istoriya",
+      "field_key": "status",
+      "field_type": "choice",
+      "source_field_type": "choice"
+    },
+    {
+      "id": "0c8fa0ef-74b4-42be-af2c-9f09aac8d582",
+      "object_type_key": "problemy",
+      "field_key": "ispolnitel",
+      "field_type": "user",
+      "source_field_type": "user"
+    },
+    {
+      "id": "1832ee14-7026-455f-b4ae-c34260bb409d",
+      "object_type_key": "problemy",
+      "field_key": "chto_proishodit_seychas",
+      "field_type": "textarea",
+      "source_field_type": "textarea"
+    },
+    {
+      "id": "23775787-0592-48a9-9d6b-4318b632e653",
+      "object_type_key": "problemy",
+      "field_key": "status",
+      "field_type": "choice",
+      "source_field_type": "choice"
+    },
+    {
+      "id": "6f52f1d6-8f16-4478-bcb9-e773fdc82bb8",
+      "object_type_key": "problemy",
+      "field_key": "kak_dolzhno_byt",
+      "field_type": "textarea",
+      "source_field_type": "textarea"
+    },
+    {
+      "id": "75b8c11a-b5cb-4736-8166-3fda2b6a2738",
+      "object_type_key": "problemy",
+      "field_key": "napravlenie",
+      "field_type": "relation",
+      "source_field_type": "relation"
+    },
+    {
+      "id": "98b3b76e-ba0f-4448-bb50-6d61269111e7",
+      "object_type_key": "problemy",
+      "field_key": "data_sozdaniya",
+      "field_type": "date",
+      "source_field_type": "date"
+    },
+    {
+      "id": "276fff45-4a7a-409b-bad5-3e0c27a8691f",
+      "object_type_key": "zadachnik",
+      "field_key": "nazvanie",
+      "field_type": "text",
+      "source_field_type": "text"
+    },
+    {
+      "id": "202887d4-be3f-4470-9917-9c84bda5a63b",
+      "object_type_key": "prodazhi",
+      "field_key": "kommentariy",
+      "field_type": "textarea",
+      "source_field_type": "textarea"
+    },
+    {
+      "id": "33e65478-551b-40e1-85cb-19a03585dd01",
+      "object_type_key": "zadachnik",
+      "field_key": "roditelskaya_svyaz",
+      "field_type": "relation",
+      "source_field_type": "relation"
+    },
+    {
+      "id": "7b95e4da-f791-4b06-bbb9-b9608156425f",
+      "object_type_key": "zadachnik",
+      "field_key": "opisanie",
+      "field_type": "textarea",
+      "source_field_type": "textarea"
+    },
+    {
+      "id": "98b46f9d-e1f7-4e9d-a3b4-fa048138355b",
+      "object_type_key": "zadachnik",
+      "field_key": "otvetstvennyy",
+      "field_type": "user",
+      "source_field_type": "user"
+    },
+    {
+      "id": "9d46049e-ae38-41e5-8227-d52b766f97a8",
+      "object_type_key": "zadachnik",
+      "field_key": "vlozheniya",
+      "field_type": "file",
+      "source_field_type": "file"
+    },
+    {
+      "id": "a8b01c65-2f5b-49c8-954d-3d6aa07a7e19",
+      "object_type_key": "zadachnik",
+      "field_key": "finish_zadachi",
+      "field_type": "date",
+      "source_field_type": "date"
+    },
+    {
+      "id": "c12f19e0-623f-4724-814c-fe1f86be17db",
+      "object_type_key": "zadachnik",
+      "field_key": "podzadachi",
+      "field_type": "relation",
+      "source_field_type": "relation"
+    },
+    {
+      "id": "ceab671c-1065-402f-b8bb-7531e5d4234f",
+      "object_type_key": "zadachnik",
+      "field_key": "start_zadachi",
+      "field_type": "date",
+      "source_field_type": "date"
+    },
+    {
+      "id": "d73329fd-edd0-4ede-903a-fba76887829d",
+      "object_type_key": "zadachnik",
+      "field_key": "prioritet",
+      "field_type": "choice",
+      "source_field_type": "choice"
+    },
+    {
+      "id": "d9ef2d36-0491-4305-bc1c-4337c075e158",
+      "object_type_key": "zadachnik",
+      "field_key": "postanovschik",
+      "field_type": "user",
+      "source_field_type": "user"
+    },
+    {
+      "id": "e9054e0c-f39d-4e9c-9659-a52ea2f15ec6",
+      "object_type_key": "zadachnik",
+      "field_key": "status",
+      "field_type": "choice",
+      "source_field_type": "choice"
+    },
+    {
+      "id": "5d14272d-3d4a-4873-975c-3c430f7fcb47",
+      "object_type_key": "idei",
+      "field_key": "opisanie",
+      "field_type": "textarea",
+      "source_field_type": "textarea"
+    },
+    {
+      "id": "e52e3242-ec99-4b3c-8363-d1a7ab615340",
+      "object_type_key": "idei",
+      "field_key": "nazvanie_idei",
+      "field_type": "text",
+      "source_field_type": "text"
+    },
+    {
+      "id": "f7084629-a91e-4856-b6b6-6173348d4ba7",
+      "object_type_key": "idei",
+      "field_key": "napravlenie",
+      "field_type": "relation",
+      "source_field_type": "relation"
+    },
+    {
+      "id": "343e88c0-1083-49ce-9f46-c4c49cb47184",
+      "object_type_key": "istoriya",
+      "field_key": "sleduyuschiy_shag",
+      "field_type": "textarea",
+      "source_field_type": "textarea"
+    },
+    {
+      "id": "77008927-82e5-43e1-980c-20e74f7479bb",
+      "object_type_key": "istoriya",
+      "field_key": "opisanie_izmeneniy",
+      "field_type": "textarea",
+      "source_field_type": "textarea"
+    },
+    {
+      "id": "8422b746-6805-4ec6-ad41-2cd221255cce",
+      "object_type_key": "istoriya",
+      "field_key": "izmenennye_fayly",
+      "field_type": "textarea",
+      "source_field_type": "textarea"
+    },
+    {
+      "id": "8726da3f-6720-4759-b8d9-d31ad59ffab3",
+      "object_type_key": "istoriya",
+      "field_key": "nazvanie_sobytiya",
+      "field_type": "text",
+      "source_field_type": "text"
+    },
+    {
+      "id": "87e8041e-97a3-4a9f-bd83-d7d8d112b2f2",
+      "object_type_key": "istoriya",
+      "field_key": "tip_sobytiya",
+      "field_type": "choice",
+      "source_field_type": "choice"
+    },
+    {
+      "id": "9e53b335-23ba-4d4d-baa6-1130c079106f",
+      "object_type_key": "istoriya",
+      "field_key": "napravlenie",
+      "field_type": "relation",
+      "source_field_type": "relation"
+    },
+    {
+      "id": "1bcde5d7-fc30-4552-bf0b-ba1ea95a9e13",
+      "object_type_key": "klienty",
+      "field_key": "limit_polzovateley",
+      "field_type": "number",
+      "source_field_type": "number"
+    },
+    {
+      "id": "749cf276-9317-4706-a9a5-30879125f0bd",
+      "object_type_key": "klienty",
+      "field_key": "status",
+      "field_type": "choice",
+      "source_field_type": "choice"
+    },
+    {
+      "id": "d9d03064-c932-4eea-b045-0f95e113b3a4",
+      "object_type_key": "klienty",
+      "field_key": "otvetstvennyy_podderzhka",
+      "field_type": "text",
+      "source_field_type": "text"
+    },
+    {
+      "id": "2f275113-b344-4f3c-85c6-6595f0ed29a0",
+      "object_type_key": "prodazhi",
+      "field_key": "status",
+      "field_type": "choice",
+      "source_field_type": "choice"
+    },
+    {
+      "id": "4f6f4452-fac2-4472-93d5-c97a84e27049",
+      "object_type_key": "prodazhi",
+      "field_key": "planiruemye_litsenzii",
+      "field_type": "number",
+      "source_field_type": "number"
+    },
+    {
+      "id": "b7b2e671-22a7-40ca-97bf-f186dc582fe6",
+      "object_type_key": "prodazhi",
+      "field_key": "klient",
+      "field_type": "relation",
+      "source_field_type": "relation"
+    },
+    {
+      "id": "e1d9218d-fe62-4781-a4b2-cb8f3a21c641",
+      "object_type_key": "prodazhi",
+      "field_key": "otvetstvennyy",
+      "field_type": "user",
+      "source_field_type": "user"
+    }
+  ],
+  "restore_grouped": {
+    "klienty": [
+      "limit_polzovateley",
+      "nazvanie_kompanii",
+      "otvetstvennyy_podderzhka",
+      "otvetstvennyy_prodazh",
+      "status"
+    ],
+    "project_test": [
+      "name",
+      "new_field",
+      "status"
+    ],
+    "test": [
+      "name",
+      "status"
+    ],
+    "prodazhi": [
+      "klient",
+      "kommentariy",
+      "nazvanie",
+      "otvetstvennyy",
+      "planiruemye_litsenzii",
+      "status"
+    ],
+    "problemy": [
+      "avtor",
+      "chto_proishodit_seychas",
+      "data_sozdaniya",
+      "ispolnitel",
+      "kak_dolzhno_byt",
+      "kritichnost",
+      "napravlenie",
+      "nazvanie",
+      "status"
+    ],
+    "napravleniya": [
+      "nazvanie",
+      "opisanie",
+      "otvetstvennyy",
+      "prioritet",
+      "problemy",
+      "status",
+      "tselevoy_srok"
+    ],
+    "michael": [
+      "city",
+      "data",
+      "familia",
+      "name",
+      "room",
+      "type"
+    ],
+    "istoriya": [
+      "izmenennye_fayly",
+      "napravlenie",
+      "nazvanie_sobytiya",
+      "opisanie_izmeneniy",
+      "rezultat",
+      "sleduyuschiy_shag",
+      "status",
+      "tip_sobytiya"
+    ],
+    "zadachnik": [
+      "finish_zadachi",
+      "nazvanie",
+      "opisanie",
+      "otvetstvennyy",
+      "podzadachi",
+      "postanovschik",
+      "prioritet",
+      "roditelskaya_svyaz",
+      "start_zadachi",
+      "status",
+      "vlozheniya"
+    ],
+    "idei": [
+      "napravlenie",
+      "nazvanie_idei",
+      "opisanie"
+    ]
+  },
+  "updated_rows": 60,
+  "status": "success",
+  "after": {
+    "active_fields_total": 60,
+    "active_fields_by_ot": {
+      "klienty": 5,
+      "project_test": 3,
+      "test": 2,
+      "prodazhi": 6,
+      "problemy": 9,
+      "napravleniya": 7,
+      "istoriya": 8,
+      "zadachnik": 11,
+      "michael": 6,
+      "idei": 3
+    },
+    "deleted_fields_total": 8,
+    "runtime": {
+      "runtime_entities": 2,
+      "runtime_entity_values": 352,
+      "runtime_relation_instances": 164
+    },
+    "duplicate_active_keys": []
+  }
+}

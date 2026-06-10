@@ -360,6 +360,7 @@ export default function ObjectTypeWorkspacePage() {
     try {
       await designerApi.deleteObjectType(tenantId, objectTypeId);
       dispatchDesignerNavigationReload();
+      dispatchPortalNavigationReload();
       setDeleteModalOpen(false);
       setDeletePreview(null);
       navigate(`/designer/tenant/${tenantId}/object-types`);
@@ -559,7 +560,8 @@ export default function ObjectTypeWorkspacePage() {
       <ObjectTypeDeleteConfirmModal
         open={deleteModalOpen}
         objectName={deletePreview?.name || objectType?.name}
-        usageGroups={deletePreview?.groups || []}
+        internalCounts={deletePreview?.internal_counts || []}
+        externalWarnings={deletePreview?.external_warnings || []}
         loading={deletePreviewLoading}
         isSubmitting={deleting}
         onClose={handleCloseDeleteModal}

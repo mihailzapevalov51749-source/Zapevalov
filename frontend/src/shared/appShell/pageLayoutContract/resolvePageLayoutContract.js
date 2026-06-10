@@ -1,4 +1,4 @@
-import { getLastRuntimePath } from "../../appMode/appModeStorage.js";
+import { resolveRuntimeFallbackPath } from "../../appMode/appModeNavigation.js";
 
 import { isWorkspaceTabDescriptorSupported } from "../../workspaceTabs/isWorkspaceTabDescriptorSupported.js";
 
@@ -29,23 +29,8 @@ function buildRoute(location) {
 
 
 export function resolvePageLayoutFallbackRoute(tenantId) {
-
-  const lastRuntimePath = String(getLastRuntimePath() || "").trim();
-
-
-
-  if (lastRuntimePath && !lastRuntimePath.startsWith("/designer")) {
-
-    return lastRuntimePath;
-
-  }
-
-
-
   const normalizedTenantId = Number(tenantId) > 0 ? Number(tenantId) : 1;
-
-  return `/portal/${normalizedTenantId}/page/1`;
-
+  return resolveRuntimeFallbackPath(normalizedTenantId);
 }
 
 

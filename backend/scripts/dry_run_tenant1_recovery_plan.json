@@ -1,0 +1,1110 @@
+{
+  "mode": "DRY_RUN",
+  "generated_at": "2026-06-10T10:49:37.829838",
+  "source_tenant": 13,
+  "target_tenant": 1,
+  "summary": {
+    "totals": {
+      "create": 0,
+      "restore": 0,
+      "update": 0,
+      "skip": 205,
+      "delete": 0
+    },
+    "per_entity": {
+      "object_types": {
+        "create": 0,
+        "restore": 0,
+        "update": 0,
+        "skip": 17,
+        "delete": 0
+      },
+      "fields": {
+        "create": 0,
+        "restore": 0,
+        "update": 0,
+        "skip": 60
+      },
+      "relations": {
+        "create": 0,
+        "restore": 0,
+        "update": 0,
+        "skip": 10
+      },
+      "views": {
+        "create": 0,
+        "restore": 0,
+        "update": 0,
+        "skip": 25
+      },
+      "workspaces": {
+        "create": 0,
+        "restore": 0,
+        "update": 0,
+        "skip": 4
+      },
+      "workspace_tabs": {
+        "create": 0,
+        "restore": 0,
+        "update": 0,
+        "skip": 12
+      },
+      "pages": {
+        "create": 0,
+        "restore": 0,
+        "update": 0,
+        "skip": 50
+      },
+      "navigation": {
+        "create": 0,
+        "restore": 0,
+        "update": 0,
+        "skip": 24
+      },
+      "actions": {
+        "create": 0,
+        "restore": 0,
+        "update": 0,
+        "skip": 3
+      }
+    }
+  },
+  "plans": {
+    "object_types": {
+      "create": [],
+      "restore": [],
+      "update": [],
+      "skip": [
+        {
+          "key": "cascade_delete_9_0_3",
+          "reason": "test_artifact_preserve_or_ignore"
+        },
+        {
+          "key": "contractor",
+          "reason": "active_match"
+        },
+        {
+          "key": "delete_mvp_9_0_3",
+          "reason": "test_artifact_preserve_or_ignore"
+        },
+        {
+          "key": "idei",
+          "reason": "active_match"
+        },
+        {
+          "key": "istoriya",
+          "reason": "active_match"
+        },
+        {
+          "key": "klienty",
+          "reason": "active_match"
+        },
+        {
+          "key": "litsenzii",
+          "reason": "active_match"
+        },
+        {
+          "key": "michael",
+          "reason": "active_match"
+        },
+        {
+          "key": "napravleniya",
+          "reason": "active_match"
+        },
+        {
+          "key": "nav_cleanup_9_0_3",
+          "reason": "test_artifact_preserve_or_ignore"
+        },
+        {
+          "key": "new_object",
+          "reason": "active_match"
+        },
+        {
+          "key": "problemy",
+          "reason": "active_match"
+        },
+        {
+          "key": "prodazhi",
+          "reason": "active_match"
+        },
+        {
+          "key": "project_test",
+          "reason": "active_match"
+        },
+        {
+          "key": "task",
+          "reason": "active_match"
+        },
+        {
+          "key": "test",
+          "reason": "active_match"
+        },
+        {
+          "key": "zadachnik",
+          "reason": "active_match"
+        }
+      ],
+      "delete": []
+    },
+    "fields": {
+      "create": [],
+      "restore": [],
+      "update": [],
+      "skip": [
+        {
+          "object_type_key": "idei",
+          "field_key": "nazvanie_idei"
+        },
+        {
+          "object_type_key": "idei",
+          "field_key": "napravlenie"
+        },
+        {
+          "object_type_key": "idei",
+          "field_key": "opisanie"
+        },
+        {
+          "object_type_key": "istoriya",
+          "field_key": "tip_sobytiya"
+        },
+        {
+          "object_type_key": "istoriya",
+          "field_key": "nazvanie_sobytiya"
+        },
+        {
+          "object_type_key": "istoriya",
+          "field_key": "status"
+        },
+        {
+          "object_type_key": "istoriya",
+          "field_key": "napravlenie"
+        },
+        {
+          "object_type_key": "istoriya",
+          "field_key": "opisanie_izmeneniy"
+        },
+        {
+          "object_type_key": "istoriya",
+          "field_key": "rezultat"
+        },
+        {
+          "object_type_key": "istoriya",
+          "field_key": "izmenennye_fayly"
+        },
+        {
+          "object_type_key": "istoriya",
+          "field_key": "sleduyuschiy_shag"
+        },
+        {
+          "object_type_key": "klienty",
+          "field_key": "otvetstvennyy_prodazh"
+        },
+        {
+          "object_type_key": "klienty",
+          "field_key": "nazvanie_kompanii"
+        },
+        {
+          "object_type_key": "klienty",
+          "field_key": "status"
+        },
+        {
+          "object_type_key": "klienty",
+          "field_key": "limit_polzovateley"
+        },
+        {
+          "object_type_key": "klienty",
+          "field_key": "otvetstvennyy_podderzhka"
+        },
+        {
+          "object_type_key": "michael",
+          "field_key": "name"
+        },
+        {
+          "object_type_key": "michael",
+          "field_key": "type"
+        },
+        {
+          "object_type_key": "michael",
+          "field_key": "familia"
+        },
+        {
+          "object_type_key": "michael",
+          "field_key": "room"
+        },
+        {
+          "object_type_key": "michael",
+          "field_key": "data"
+        },
+        {
+          "object_type_key": "michael",
+          "field_key": "city"
+        },
+        {
+          "object_type_key": "napravleniya",
+          "field_key": "prioritet"
+        },
+        {
+          "object_type_key": "napravleniya",
+          "field_key": "tselevoy_srok"
+        },
+        {
+          "object_type_key": "napravleniya",
+          "field_key": "opisanie"
+        },
+        {
+          "object_type_key": "napravleniya",
+          "field_key": "otvetstvennyy"
+        },
+        {
+          "object_type_key": "napravleniya",
+          "field_key": "nazvanie"
+        },
+        {
+          "object_type_key": "napravleniya",
+          "field_key": "problemy"
+        },
+        {
+          "object_type_key": "napravleniya",
+          "field_key": "status"
+        },
+        {
+          "object_type_key": "problemy",
+          "field_key": "kritichnost"
+        },
+        {
+          "object_type_key": "problemy",
+          "field_key": "nazvanie"
+        },
+        {
+          "object_type_key": "problemy",
+          "field_key": "ispolnitel"
+        },
+        {
+          "object_type_key": "problemy",
+          "field_key": "data_sozdaniya"
+        },
+        {
+          "object_type_key": "problemy",
+          "field_key": "avtor"
+        },
+        {
+          "object_type_key": "problemy",
+          "field_key": "chto_proishodit_seychas"
+        },
+        {
+          "object_type_key": "problemy",
+          "field_key": "kak_dolzhno_byt"
+        },
+        {
+          "object_type_key": "problemy",
+          "field_key": "napravlenie"
+        },
+        {
+          "object_type_key": "problemy",
+          "field_key": "status"
+        },
+        {
+          "object_type_key": "prodazhi",
+          "field_key": "nazvanie"
+        },
+        {
+          "object_type_key": "prodazhi",
+          "field_key": "status"
+        },
+        {
+          "object_type_key": "prodazhi",
+          "field_key": "otvetstvennyy"
+        },
+        {
+          "object_type_key": "prodazhi",
+          "field_key": "planiruemye_litsenzii"
+        },
+        {
+          "object_type_key": "prodazhi",
+          "field_key": "kommentariy"
+        },
+        {
+          "object_type_key": "prodazhi",
+          "field_key": "klient"
+        },
+        {
+          "object_type_key": "project_test",
+          "field_key": "name"
+        },
+        {
+          "object_type_key": "project_test",
+          "field_key": "status"
+        },
+        {
+          "object_type_key": "project_test",
+          "field_key": "new_field"
+        },
+        {
+          "object_type_key": "test",
+          "field_key": "name"
+        },
+        {
+          "object_type_key": "test",
+          "field_key": "status"
+        },
+        {
+          "object_type_key": "zadachnik",
+          "field_key": "nazvanie"
+        },
+        {
+          "object_type_key": "zadachnik",
+          "field_key": "start_zadachi"
+        },
+        {
+          "object_type_key": "zadachnik",
+          "field_key": "opisanie"
+        },
+        {
+          "object_type_key": "zadachnik",
+          "field_key": "prioritet"
+        },
+        {
+          "object_type_key": "zadachnik",
+          "field_key": "roditelskaya_svyaz"
+        },
+        {
+          "object_type_key": "zadachnik",
+          "field_key": "vlozheniya"
+        },
+        {
+          "object_type_key": "zadachnik",
+          "field_key": "finish_zadachi"
+        },
+        {
+          "object_type_key": "zadachnik",
+          "field_key": "otvetstvennyy"
+        },
+        {
+          "object_type_key": "zadachnik",
+          "field_key": "podzadachi"
+        },
+        {
+          "object_type_key": "zadachnik",
+          "field_key": "postanovschik"
+        },
+        {
+          "object_type_key": "zadachnik",
+          "field_key": "status"
+        }
+      ]
+    },
+    "relations": {
+      "create": [],
+      "restore": [],
+      "update": [],
+      "skip": [
+        {
+          "key": "has_contractors"
+        },
+        {
+          "key": "podproblemy"
+        },
+        {
+          "key": "task_subtask"
+        },
+        {
+          "key": "problemy"
+        },
+        {
+          "key": "podpunkt"
+        },
+        {
+          "key": "podmihail"
+        },
+        {
+          "key": "istoriya"
+        },
+        {
+          "key": "idei"
+        },
+        {
+          "key": "ierarhiya_idey"
+        },
+        {
+          "key": "klient"
+        }
+      ]
+    },
+    "views": {
+      "create": [],
+      "restore": [],
+      "update": [],
+      "skip": [
+        {
+          "object_type_key": "contractor",
+          "view_key": "contractors_table"
+        },
+        {
+          "object_type_key": "idei",
+          "view_key": "default_table"
+        },
+        {
+          "object_type_key": "idei",
+          "view_key": "idei_razvitiya"
+        },
+        {
+          "object_type_key": "istoriya",
+          "view_key": "default_quick_form"
+        },
+        {
+          "object_type_key": "istoriya",
+          "view_key": "default_table"
+        },
+        {
+          "object_type_key": "klienty",
+          "view_key": "default_table"
+        },
+        {
+          "object_type_key": "litsenzii",
+          "view_key": "default_table"
+        },
+        {
+          "object_type_key": "michael",
+          "view_key": "default_table"
+        },
+        {
+          "object_type_key": "michael",
+          "view_key": "probnaya"
+        },
+        {
+          "object_type_key": "michael",
+          "view_key": "default_quick_form"
+        },
+        {
+          "object_type_key": "napravleniya",
+          "view_key": "arhitektura"
+        },
+        {
+          "object_type_key": "napravleniya",
+          "view_key": "default_table"
+        },
+        {
+          "object_type_key": "napravleniya",
+          "view_key": "default_quick_form"
+        },
+        {
+          "object_type_key": "new_object",
+          "view_key": "default_table"
+        },
+        {
+          "object_type_key": "problemy",
+          "view_key": "problemy"
+        },
+        {
+          "object_type_key": "problemy",
+          "view_key": "default_table"
+        },
+        {
+          "object_type_key": "problemy",
+          "view_key": "default_quick_form"
+        },
+        {
+          "object_type_key": "prodazhi",
+          "view_key": "default_table"
+        },
+        {
+          "object_type_key": "project_test",
+          "view_key": "projects_board"
+        },
+        {
+          "object_type_key": "project_test",
+          "view_key": "default_quick_form"
+        },
+        {
+          "object_type_key": "task",
+          "view_key": "tasks_table"
+        },
+        {
+          "object_type_key": "test",
+          "view_key": "default_table"
+        },
+        {
+          "object_type_key": "test",
+          "view_key": "default_quick_form"
+        },
+        {
+          "object_type_key": "zadachnik",
+          "view_key": "default_table"
+        },
+        {
+          "object_type_key": "zadachnik",
+          "view_key": "default_quick_form"
+        }
+      ]
+    },
+    "workspaces": {
+      "create": [],
+      "restore": [],
+      "update": [],
+      "skip": [
+        {
+          "slug": "otdel-kadrov-2",
+          "reason": "active_match"
+        },
+        {
+          "slug": "razrabotka",
+          "reason": "active_match"
+        },
+        {
+          "slug": "teh-podderzhka",
+          "reason": "active_match"
+        },
+        {
+          "slug": "upravlenie-platformoy",
+          "reason": "active_match"
+        }
+      ]
+    },
+    "workspace_tabs": {
+      "create": [],
+      "restore": [],
+      "update": [],
+      "skip": [
+        {
+          "workspace_slug": "razrabotka",
+          "tab_slug": "istoriya"
+        },
+        {
+          "workspace_slug": "razrabotka",
+          "tab_slug": "idei"
+        },
+        {
+          "workspace_slug": "razrabotka",
+          "tab_slug": "problemy-tablitsa"
+        },
+        {
+          "workspace_slug": "razrabotka",
+          "tab_slug": "problemy"
+        },
+        {
+          "workspace_slug": "razrabotka",
+          "tab_slug": "home"
+        },
+        {
+          "workspace_slug": "razrabotka",
+          "tab_slug": "karta-platformy-yasnopro"
+        },
+        {
+          "workspace_slug": "razrabotka",
+          "tab_slug": "arhitektura"
+        },
+        {
+          "workspace_slug": "teh-podderzhka",
+          "tab_slug": "home"
+        },
+        {
+          "workspace_slug": "upravlenie-platformoy",
+          "tab_slug": "home"
+        },
+        {
+          "workspace_slug": "upravlenie-platformoy",
+          "tab_slug": "prodazhi"
+        },
+        {
+          "workspace_slug": "upravlenie-platformoy",
+          "tab_slug": "klienty"
+        },
+        {
+          "workspace_slug": "otdel-kadrov-2",
+          "tab_slug": "home"
+        }
+      ]
+    },
+    "pages": {
+      "create": [],
+      "restore": [],
+      "update": [],
+      "skip": [
+        {
+          "signature": "Администрирование|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Адресная книга|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Архитектура приложения|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Библи|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Вот эта таблица|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Вторая|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Главная|0|True",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Задачник|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Запевалов|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Запросто|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Календарь|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Карта платформы ЯсноПро|10|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Карта платформы|15|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Контакты|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Контрагенты|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Настройка системы|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Оргструктура компании|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Отдел кадров|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Отчеты|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Проверка 21|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Проверка|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Продажи|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Проекты 2|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Проекты 3|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Проекты|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Разработка продукта|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Разработка|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Согласования|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Стильная таблица|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Страница|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Таблица 2|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Таблица 3|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Табличная|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Тестируемая таблица|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Тестовая|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Тех. поддержка|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Уведомления|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Универ|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Универсальная таблица|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Управление платформой|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Чат|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Это название в меню|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "ваи|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "впрь|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "дада|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "кенкегку|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "первая|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "пробник|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "таббб|0|False",
+          "reason": "active_match"
+        },
+        {
+          "signature": "Разработкаа|0|False",
+          "reason": "target_only_preserve"
+        }
+      ]
+    },
+    "navigation": {
+      "create": [],
+      "restore": [],
+      "update": [],
+      "skip": [
+        {
+          "signature": "runtime|None|Главная|page|",
+          "reason": "active_match"
+        },
+        {
+          "signature": "designer|None|Объекты|system_page|/designer/tenant/13/object-types",
+          "reason": "active_match"
+        },
+        {
+          "signature": "designer|None|Разработка продукта|workspace|/designer/tenant/13/workspaces/razrabotka-produkta",
+          "reason": "active_match"
+        },
+        {
+          "signature": "runtime|None|Рабочие пространства|workspace|",
+          "reason": "active_match"
+        },
+        {
+          "signature": "runtime|runtime|Рабочие пространства|workspace|Разработка|workspace|/portal/13/workspaces/razrabotka",
+          "reason": "active_match"
+        },
+        {
+          "signature": "designer|None|Связи|system_page|/designer/tenant/13/relations",
+          "reason": "active_match"
+        },
+        {
+          "signature": "runtime|runtime|Рабочие пространства|workspace|Тех. поддержка|workspace|/portal/13/workspaces/teh-podderzhka",
+          "reason": "active_match"
+        },
+        {
+          "signature": "runtime|None|Задачник|object_type|/portal/13/object-types/zadachnik",
+          "reason": "active_match"
+        },
+        {
+          "signature": "runtime|None|Мои задачи|universal_table|",
+          "reason": "active_match"
+        },
+        {
+          "signature": "designer|None|Представления|system_page|/designer/tenant/13/views",
+          "reason": "active_match"
+        },
+        {
+          "signature": "runtime|runtime|Рабочие пространства|workspace|Управление платформой|workspace|/portal/13/workspaces/upravlenie-platformoy",
+          "reason": "active_match"
+        },
+        {
+          "signature": "runtime|None|Чат|page|",
+          "reason": "active_match"
+        },
+        {
+          "signature": "designer|None|Пользователи|system_page|/designer/tenant/13/users",
+          "reason": "active_match"
+        },
+        {
+          "signature": "runtime|runtime|Рабочие пространства|workspace|Отдел кадров|workspace|/portal/13/workspaces/otdel-kadrov-2",
+          "reason": "active_match"
+        },
+        {
+          "signature": "runtime|None|Уведомления|page|",
+          "reason": "active_match"
+        },
+        {
+          "signature": "designer|None|Системные настройки|system_page|/designer/tenant/13/settings",
+          "reason": "active_match"
+        },
+        {
+          "signature": "runtime|None|Документы|document_library|",
+          "reason": "active_match"
+        },
+        {
+          "signature": "runtime|None|Михаил|object_type|/portal/13/object-types/michael",
+          "reason": "active_match"
+        },
+        {
+          "signature": "runtime|None|Подрядчик|object_type|/portal/13/object-types/contractor",
+          "reason": "active_match"
+        },
+        {
+          "signature": "designer|None|Проект тест|object_type|/designer/tenant/13/object-types/1ae434fa-7720-4edf-bfb0-2de045351a61/data",
+          "reason": "active_match"
+        },
+        {
+          "signature": "runtime|None|Администрирование|page|",
+          "reason": "active_match"
+        },
+        {
+          "signature": "runtime|None|Настройка системы|page|",
+          "reason": "active_match"
+        },
+        {
+          "signature": "runtime|runtime|Разработка|workspace|Направления|object_type|/portal/13/object-types/napravleniya",
+          "reason": "active_match"
+        },
+        {
+          "signature": "runtime|runtime|Разработка|workspace|История|object_type|/portal/13/object-types/istoriya",
+          "reason": "active_match"
+        }
+      ]
+    },
+    "actions": {
+      "create": [],
+      "restore": [],
+      "update": [],
+      "skip": [
+        {
+          "object_type_key": "istoriya",
+          "action_key": "sozdat_zapis"
+        },
+        {
+          "object_type_key": "zadachnik",
+          "action_key": "sozdat_cheta"
+        },
+        {
+          "object_type_key": "napravleniya",
+          "action_key": "sozdat_zadachu"
+        }
+      ]
+    }
+  },
+  "runtime_audit": {
+    "entities_active": 6,
+    "entity_values": 356,
+    "relation_instances": 167,
+    "by_object_type_key": [
+      {
+        "key": "idei",
+        "count": 2
+      },
+      {
+        "key": "zadachnik",
+        "count": 2
+      },
+      {
+        "key": "napravleniya",
+        "count": 1
+      },
+      {
+        "key": "problemy",
+        "count": 1
+      }
+    ]
+  },
+  "documents_audit": {
+    "libraries_total_global": 10,
+    "documents_total_global": 18,
+    "libraries_linked_via_nav": 1,
+    "documents_in_linked_libraries": 16,
+    "navigation_items_with_library": [
+      {
+        "id": 12,
+        "title": "Документы",
+        "library_id": 8,
+        "page_id": 7
+      }
+    ]
+  },
+  "chats_audit": {
+    "chats_total": 11,
+    "chats_linked_to_tenant_workspaces": 0,
+    "messages_total": 37,
+    "participants_total": 24,
+    "chats_with_broken_workspace_ref": []
+  },
+  "conflicts": {
+    "object_types_duplicate_key_active": [],
+    "navigation_broken": [],
+    "workspace_tabs_broken": [],
+    "document_libraries_missing_for_nav": [],
+    "pages_duplicate_title_active": [
+      {
+        "title": "Проверка",
+        "count": 2
+      },
+      {
+        "title": "Отдел кадров",
+        "count": 2
+      },
+      {
+        "title": "Проекты",
+        "count": 5
+      },
+      {
+        "title": "Контрагенты",
+        "count": 2
+      }
+    ]
+  },
+  "url_references_in_target": [],
+  "recovery_steps": [
+    {
+      "step": 1,
+      "phase": "pre-check",
+      "action": "Verify backup exists",
+      "detail": "portal_constructor_v2_backup_before_tenant_recovery_*.dump"
+    },
+    {
+      "step": 2,
+      "phase": "object_types",
+      "action": "Restore soft-deleted OT from trash / undelete",
+      "count": 0
+    },
+    {
+      "step": 3,
+      "phase": "object_types",
+      "action": "Create missing OT copied from tenant 13 (new UUIDs)",
+      "count": 0
+    },
+    {
+      "step": 4,
+      "phase": "fields",
+      "action": "Restore 68 soft-deleted fields first; then create missing from T13",
+      "count": 0
+    },
+    {
+      "step": 5,
+      "phase": "relations",
+      "action": "Restore/create relations (remap object_type UUIDs)",
+      "count": 0
+    },
+    {
+      "step": 6,
+      "phase": "views",
+      "action": "Restore/create views",
+      "count": 0
+    },
+    {
+      "step": 7,
+      "phase": "workspaces",
+      "action": "Restore razrabotka; create 3 missing workspaces from T13",
+      "count": 0
+    },
+    {
+      "step": 8,
+      "phase": "workspace_tabs",
+      "action": "Restore/create tabs per workspace",
+      "count": 0
+    },
+    {
+      "step": 9,
+      "phase": "pages",
+      "action": "Restore pages from trash; create missing from T13 (preserve T1-only pages)",
+      "count": 0
+    },
+    {
+      "step": 10,
+      "phase": "navigation",
+      "action": "Restore/create nav; fix broken refs",
+      "count": 0,
+      "conflicts_to_fix": 0
+    },
+    {
+      "step": 11,
+      "phase": "actions",
+      "action": "Optional: sync action definitions from T13 after OT stable",
+      "count": 0,
+      "note": "deferred"
+    },
+    {
+      "step": 12,
+      "phase": "url_rewrite",
+      "action": "Rewrite /portal/13 and /designer/tenant/13 in copied JSON only",
+      "count": 0
+    },
+    {
+      "step": 13,
+      "phase": "publish",
+      "action": "Publish catalog for tenant 1 ONLY after separate approval",
+      "note": "NOT in initial apply"
+    },
+    {
+      "step": 14,
+      "phase": "verify",
+      "action": "Re-run dry run + smoke Office/Studio on /portal/1"
+    }
+  ],
+  "constraints": {
+    "no_apply": true,
+    "no_modify_source": true,
+    "preserve_runtime": true,
+    "preserve_documents_chats_notifications": true
+  }
+}

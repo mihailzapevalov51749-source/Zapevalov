@@ -15,7 +15,8 @@ import {
   buildPortalObjectTabHref,
   isObjectTypeUuid,
   parsePortalObjectRoute,
-  resolvePortalObjectNavigationPath,
+  resolvePortalIdFromPath,
+  resolvePortalNavigationClickTarget,
 } from "./utils/portalObjectRoutes";
 import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../shared/navigation/navigationReload";
 import { PORTAL_OBJECT_VIEW_HEADER_EVENT } from "./utils/portalObjectViewHeaderBridge";
@@ -29,7 +30,10 @@ export default function PortalObjectRuntimePage() {
   const location = useLocation();
   const { portalId: portalIdParam, objectTypeRef, viewKey: viewKeyParam } = useParams();
 
-  const portalId = Number(portalIdParam || 1);
+  const portalId = resolvePortalIdFromPath(
+    location.pathname,
+    portalIdParam || 1,
+  );
   const tenantId = portalId;
 
   const parsedObjectRoute = useMemo(
@@ -130,26 +134,20 @@ export default function PortalObjectRuntimePage() {
 
   const handleSidebarItemAction = useCallback(
     (item, event) => {
-      const objectTypePath = resolvePortalObjectNavigationPath(item, portalId);
-      if (objectTypePath) {
-        event?.preventDefault?.();
-        navigate(objectTypePath);
+      const target = resolvePortalNavigationClickTarget(item, portalId);
+      if (!target) {
         return;
       }
 
-      const targetPath = String(
-        item?.path || item?.route || item?.url || item?.meta?.path || item?.meta?.route || item?.meta?.url || "",
-      ).trim();
-      if (targetPath) {
-        event?.preventDefault?.();
-        navigate(targetPath);
+      event?.preventDefault?.();
+
+      if ("path" in target && target.path) {
+        navigate(target.path);
         return;
       }
 
-      const pageId = item?.pageId ?? item?.page_id ?? item?.meta?.page_id;
-      if (pageId != null) {
-        event?.preventDefault?.();
-        handleSelectPage(pageId);
+      if ("pageId" in target && target.pageId != null) {
+        handleSelectPage(target.pageId);
       }
     },
     [navigate, portalId, handleSelectPage],

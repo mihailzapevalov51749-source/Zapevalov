@@ -93,6 +93,14 @@ COMPONENT_DEFINITIONS = [
         "dependencies": ["Объектная платформа", "Связи объектов", "Поиск"],
         "debt_keywords": ["ai context", "ai-native"],
     },
+    {
+        "slug": "control-plane",
+        "title": "Control Plane / Управление платформой",
+        "description": "SaaS-слой клиентских компаний и управления платформой.",
+        "doc_keys": ["control plane", "customer company", "customer_companies"],
+        "dependencies": ["Платформенное ядро"],
+        "debt_keywords": ["provisioning", "customer company", "tenant management"],
+    },
 ]
 
 STAGE_DEFINITIONS = [
@@ -285,6 +293,43 @@ def _component_checks(ctx: ScanContext, slug: str) -> list[EvidenceItem]:
             ("ui_integration", "UI", 20, False),
             ("persistence", "Persistence", 15, False),
             ("tests", "Tests", 10, backend_has_tests(backend, "permission")),
+        ]
+    elif slug == "control-plane":
+        checks = [
+            (
+                "backend_model",
+                "Backend",
+                20,
+                backend_has_module(backend, "modules/control_plane/customer_companies"),
+            ),
+            (
+                "api_endpoint",
+                "API",
+                20,
+                backend_has_router_marker(backend, "control_plane_router")
+                or backend_has_router_marker(backend, "/control-plane/customer-companies"),
+            ),
+            (
+                "frontend_api",
+                "Frontend API",
+                15,
+                frontend_has_marker(frontend, "listPortals")
+                and frontend_has_marker(frontend, "createPortal"),
+            ),
+            (
+                "ui_integration",
+                "UI",
+                20,
+                frontend_has_marker(frontend, "AdminTenantsPage"),
+            ),
+            ("persistence", "Persistence", 15, backend_has_table(backend, "customer_companies")),
+            (
+                "tests",
+                "Tests",
+                10,
+                backend_has_tests(backend, "customer_companies")
+                or backend_has_tests(backend, "portals"),
+            ),
         ]
     else:  # ai-context
         checks = [

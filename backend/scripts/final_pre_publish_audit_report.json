@@ -1,0 +1,276 @@
+{
+  "tenant_id": 1,
+  "started_at": "2026-06-10T10:49:36.419376",
+  "safety_before": {
+    "runtime_entities": 6,
+    "runtime_entity_values": 356,
+    "runtime_relation_instances": 167,
+    "document_libraries": 10,
+    "library_documents": 18,
+    "chats": 11,
+    "chat_messages": 37,
+    "chat_participants": 24
+  },
+  "pre_publish_audit": {
+    "object_types": {
+      "total": 20,
+      "active": 17,
+      "deleted": 3,
+      "duplicate_active_keys": {},
+      "broken_references": []
+    },
+    "fields": {
+      "total_active": 60,
+      "per_object_type": {
+        "idei": 3,
+        "istoriya": 8,
+        "klienty": 5,
+        "michael": 6,
+        "napravleniya": 7,
+        "problemy": 9,
+        "prodazhi": 6,
+        "project_test": 3,
+        "test": 2,
+        "zadachnik": 11
+      },
+      "duplicate_field_keys": [],
+      "broken_object_type_id": []
+    },
+    "relations": {
+      "total": 10,
+      "broken": []
+    },
+    "views": {
+      "total": 31,
+      "broken": [
+        {
+          "key": "default_table",
+          "id": "e34203b6-3425-4b1f-a3ba-bc7a1606f4b9",
+          "issues": [
+            "orphan_view_on_deleted_object_type"
+          ]
+        },
+        {
+          "key": "default_table",
+          "id": "cf183c4e-9194-4410-8492-aeb52d2c3b77",
+          "issues": [
+            "orphan_view_on_deleted_object_type"
+          ]
+        },
+        {
+          "key": "default_table",
+          "id": "3262e12f-028a-4a07-8d00-9eebdce549c8",
+          "issues": [
+            "orphan_view_on_deleted_object_type"
+          ]
+        }
+      ]
+    },
+    "workspaces": {
+      "workspace_count": 4,
+      "tabs_count": 13,
+      "broken_workspaces": [],
+      "broken_tabs": [],
+      "office_workspaces": {
+        "razrabotka": true,
+        "teh-podderzhka": true,
+        "upravlenie-platformoy": true,
+        "otdel-kadrov-2": true
+      }
+    },
+    "navigation": {
+      "count": 26,
+      "broken": [],
+      "office_nav": {
+        "Главная": true,
+        "Разработка": true,
+        "Тех. поддержка": true,
+        "Управление платформой": true,
+        "Отдел кадров": true
+      },
+      "studio_nav_in_db": {
+        "Объекты": true,
+        "Связи": true,
+        "Представления": true,
+        "Пользователи": true,
+        "Системные настройки": true
+      }
+    },
+    "actions": {
+      "actions": 3,
+      "forms": 2,
+      "placements": 4,
+      "form_fields": 6,
+      "broken": []
+    },
+    "urls": {
+      "count": 0,
+      "findings": []
+    },
+    "runtime": {
+      "runtime_entities": 6,
+      "runtime_entity_values": 356,
+      "runtime_relation_instances": 167,
+      "document_libraries": 10,
+      "library_documents": 18,
+      "chats": 11,
+      "chat_messages": 37,
+      "chat_participants": 24
+    },
+    "documents": {
+      "document_libraries": 10,
+      "library_documents": 18
+    },
+    "chats": {
+      "chats": 11,
+      "chat_messages": 37,
+      "chat_participants": 24
+    },
+    "dry_run": {
+      "object_types": {
+        "create": 0,
+        "restore": 0,
+        "update": 0,
+        "skip": 17,
+        "delete": 0
+      },
+      "fields": {
+        "create": 0,
+        "restore": 0,
+        "update": 0,
+        "skip": 60
+      },
+      "relations": {
+        "create": 0,
+        "restore": 0,
+        "update": 0,
+        "skip": 10
+      },
+      "views": {
+        "create": 0,
+        "restore": 0,
+        "update": 0,
+        "skip": 25
+      },
+      "workspaces": {
+        "create": 0,
+        "restore": 0,
+        "update": 0,
+        "skip": 4
+      },
+      "workspace_tabs": {
+        "create": 0,
+        "restore": 0,
+        "update": 0,
+        "skip": 12
+      },
+      "pages": {
+        "create": 0,
+        "restore": 0,
+        "update": 0,
+        "skip": 50
+      },
+      "navigation": {
+        "create": 0,
+        "restore": 0,
+        "update": 0,
+        "skip": 24
+      },
+      "actions": {
+        "create": 0,
+        "restore": 0,
+        "update": 0,
+        "skip": 3
+      }
+    },
+    "publish_validation": {
+      "valid": true,
+      "errors": [],
+      "warnings": [],
+      "summary": {
+        "object_types": 17,
+        "fields": 60,
+        "relations": 10,
+        "views": 28,
+        "actions": 3,
+        "placements": 4
+      }
+    }
+  },
+  "publish_readiness": "READY",
+  "readiness_issues": [],
+  "publish_result": "SUCCESS",
+  "catalog": {
+    "catalog_version": 143,
+    "schema_version": 2,
+    "snapshot_id": "df6b6e26-7b01-4076-a219-5595056461e9",
+    "publish_record_id": "a586c993-baad-422e-87c1-5a9659104e4e",
+    "published_at": "2026-06-10T07:49:38.175297+00:00",
+    "payload_hash": "123d0bef77853951ee9cde2df118ef0fde75429df31330c9e02ead379104f98f",
+    "summary": {
+      "object_types": 17,
+      "fields": 60,
+      "relations": 10,
+      "views": 28,
+      "actions": 3,
+      "placements": 4
+    }
+  },
+  "safety_after": {
+    "runtime_entities": 6,
+    "runtime_entity_values": 356,
+    "runtime_relation_instances": 167,
+    "document_libraries": 10,
+    "library_documents": 18,
+    "chats": 11,
+    "chat_messages": 37,
+    "chat_participants": 24
+  },
+  "latest_publish": {
+    "catalog_version": 143,
+    "schema_version": 2,
+    "snapshot_id": "df6b6e26-7b01-4076-a219-5595056461e9",
+    "publish_record_id": "a586c993-baad-422e-87c1-5a9659104e4e",
+    "status": "success",
+    "published_at": "2026-06-10T07:49:38.175297+00:00"
+  },
+  "post_publish": {
+    "published_object_types_count": 17,
+    "published_object_type_keys_sample": [
+      "cascade_delete_9_0_3",
+      "contractor",
+      "delete_mvp_9_0_3",
+      "idei",
+      "istoriya",
+      "klienty",
+      "litsenzii",
+      "michael",
+      "napravleniya",
+      "nav_cleanup_9_0_3",
+      "new_object",
+      "problemy",
+      "prodazhi",
+      "project_test",
+      "task",
+      "test",
+      "zadachnik"
+    ],
+    "office_workspaces": {
+      "razrabotka": true,
+      "teh-podderzhka": true,
+      "upravlenie-platformoy": true,
+      "otdel-kadrov-2": true
+    },
+    "office_navigation": {
+      "Главная": true,
+      "Разработка": true,
+      "Тех. поддержка": true,
+      "Управление платформой": true,
+      "Отдел кадров": true
+    },
+    "runtime_unchanged": true,
+    "documents_unchanged": true,
+    "chats_unchanged": true
+  },
+  "status": "success"
+}

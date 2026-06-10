@@ -87,8 +87,23 @@ class TrashDependencyActionResponse(BaseModel):
     tree: DependencyTreeRead | None = None
 
 
+class TrashCascadeCountItem(BaseModel):
+    category: str
+    label: str
+    count: int
+
+
+class TrashExternalWarningGroup(BaseModel):
+    category: str
+    label: str
+    items: list[str] = Field(default_factory=list)
+
+
 class TrashPurgeBlockedResponse(BaseModel):
     blocked: bool = True
     message: str = "Зависимости обнаружены"
     dependencies: list[TrashDependencyRead] = Field(default_factory=list)
     tree: DependencyTreeRead | None = None
+    internal_counts: list[TrashCascadeCountItem] = Field(default_factory=list)
+    external_warnings: list[TrashExternalWarningGroup] = Field(default_factory=list)
+    has_external_warnings: bool = False

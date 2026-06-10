@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { getAdminUsers } from "../../../api/authApi";
 
 import { adminSections } from "../config/adminSections";
+import { resolveStudioTenantIdFromPath } from "../config/adminPaths";
 import AdminDashboardGrid from "../components/dashboard/AdminDashboardGrid";
 
 
@@ -93,11 +94,21 @@ export default function AdminDashboardPage() {
       meta: isActiveUser(user) ? "Активен" : "Неактивен",
     }));
 
+    const studioTenantId = resolveStudioTenantIdFromPath(window.location.pathname);
+
     return adminSections.map((section) => {
-      if (section.id !== "users") return section;
+      const sectionWithTenantRoute = {
+        ...section,
+        route: String(section.route || "").replace(
+          "/designer/tenant/1/",
+          `/designer/tenant/${studioTenantId}/`,
+        ),
+      };
+
+      if (section.id !== "users") return sectionWithTenantRoute;
 
       return {
-        ...section,
+        ...sectionWithTenantRoute,
         metrics: [
           {
             label: "Всего пользователей",

@@ -13,6 +13,7 @@ import AppShellShadowRuntimePreview from "./shared/shell/shadow/dev/AppShellShad
 import AppShellShadowDesignerPreview from "./shared/shell/shadow/dev/AppShellShadowDesignerPreview";
 
 import { getMe } from "./api/authApi";
+import RootEntryRedirect from "./shared/appMode/RootEntryRedirect";
 import {
   saveLastDesignerPath,
   saveLastRuntimePath,
@@ -139,7 +140,7 @@ export default function App() {
           <UserActivityBootstrap />
           <YasiiFloatingButton />
           <Routes>
-      <Route path="/" element={<Navigate to="/portal/1/page/1" replace />} />
+      <Route path="/" element={<RootEntryRedirect />} />
 
       <Route path="/yasii" element={<YasiiWorkspacePage />} />
 

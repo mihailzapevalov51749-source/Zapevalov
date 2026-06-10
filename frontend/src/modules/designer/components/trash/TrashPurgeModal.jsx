@@ -110,10 +110,58 @@ function CascadePreviewList({ tree }) {
   );
 }
 
+function ObjectTypePurgePreview({ preview }) {
+  const internalCounts = preview?.internal_counts || [];
+  const externalWarnings = preview?.external_warnings || [];
+
+  return (
+    <>
+      <section className="designer-trash-purge-modal__cascade-preview" aria-label="Будут удалены">
+        <h5 className="designer-trash-purge-modal__cascade-title">Будут удалены</h5>
+        {internalCounts.length ? (
+          <ul className="designer-trash-purge-modal__cascade-list">
+            {internalCounts.map((item) => (
+              <li key={item.category} className="designer-trash-purge-modal__cascade-item">
+                {item.label}: {item.count}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="designer-trash-purge-modal__lead">
+            Дополнительных внутренних сущностей не найдено.
+          </p>
+        )}
+      </section>
+
+      {externalWarnings.some((group) => group.items?.length) ? (
+        <section className="designer-trash-purge-modal__info-box" aria-label="Внешние зависимости">
+          <Info size={16} aria-hidden="true" />
+          <div>
+            <p>
+              <strong>Внимание.</strong> Другие сущности используют этот объект. Удаление приведёт к
+              разрыву ссылок.
+            </p>
+            <ul className="designer-trash-purge-modal__cascade-list">
+              {externalWarnings.flatMap((group) =>
+                (group.items || []).map((item) => (
+                  <li key={`${group.category}-${item}`} className="designer-trash-purge-modal__cascade-item">
+                    {item}
+                  </li>
+                )),
+              )}
+            </ul>
+          </div>
+        </section>
+      ) : null}
+    </>
+  );
+}
+
 export default function TrashPurgeModal({
   open = false,
   targetItem = null,
   blocked = null,
+  purgePreview = null,
   cascadePreview = null,
   isSubmitting = false,
   selectedDeleteMode = null,
@@ -126,6 +174,8 @@ export default function TrashPurgeModal({
   onConfirmCascadeDelete,
 }) {
   const isBlocked = Boolean(blocked?.blocked);
+  const isObjectTypeCascadePreview =
+    targetItem?.kind === "object_type" && Boolean(purgePreview);
   const groups = blocked?.presentation?.groups || [];
   const dependencyTree = blocked?.tree || cascadePreview?.tree || null;
 
@@ -212,7 +262,7 @@ export default function TrashPurgeModal({
           onClick={onConfirmPurge}
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Выполняется…" : "Удалить"}
+          {isSubmitting ? "Выполняется…" : isObjectTypeCascadePreview ? "Удалить окончательно" : "Удалить"}
         </button>
       </div>
     </div>
@@ -223,11 +273,13 @@ export default function TrashPurgeModal({
       open={open}
       modalKey={MODAL_KEY}
       onClose={onClose}
-      title="Удаление объекта"
+      title={isObjectTypeCascadePreview ? "Удалить окончательно?" : "Удаление объекта"}
       subtitle={
         isBlocked
           ? "Обнаружены зависимости. Выберите сценарий удаления."
-          : "Подтвердите окончательное удаление объекта из корзины."
+          : isObjectTypeCascadePreview
+            ? "Объект и его внутреннее содержимое будут удалены из базы данных без возможности восстановления."
+            : "Подтвердите окончательное удаление объекта из корзины."
       }
       ariaLabel="Окно удаления объекта из корзины"
       footer={footer}
@@ -293,6 +345,8 @@ export default function TrashPurgeModal({
               ) : null}
             </div>
           </div>
+        ) : isObjectTypeCascadePreview ? (
+          <ObjectTypePurgePreview preview={purgePreview} />
         ) : (
           <p className="designer-trash-purge-modal__lead">
             Запись будет удалена из базы данных без возможности восстановления.

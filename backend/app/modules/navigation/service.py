@@ -19,6 +19,35 @@ from .models import NavigationItem
 from .permissions import assert_can_delete_navigation_item
 
 
+def _filter_navigation_for_deleted_object_types(
+    db: Session,
+    items: list[NavigationItem],
+) -> list[NavigationItem]:
+    from app.modules.platform.designer.object_types.models import DesignerObjectType
+
+    object_type_ids = {item.object_type_id for item in items if item.object_type_id}
+    if not object_type_ids:
+        return items
+
+    deleted_ids = {
+        row[0]
+        for row in db.query(DesignerObjectType.id)
+        .filter(
+            DesignerObjectType.id.in_(object_type_ids),
+            DesignerObjectType.deleted_at.isnot(None),
+        )
+        .all()
+    }
+    if not deleted_ids:
+        return items
+
+    return [
+        item
+        for item in items
+        if not item.object_type_id or item.object_type_id not in deleted_ids
+    ]
+
+
 DESIGNER_SYSTEM_ITEMS = [
     {
         "system_key": "designer.objects",
@@ -178,6 +207,7 @@ def get_navigation_tree(
     if menu_scope == "designer":
         ensure_designer_system_items(db, portal_id)
     items = repository.get_items_by_portal(db, portal_id, menu_scope)
+    items = _filter_navigation_for_deleted_object_types(db, items)
     if menu_scope in {"runtime", "designer"}:
         items = filter_navigation_for_user_menu(db, items, for_edit_mode=for_edit_mode)
     tree = build_tree(items)
@@ -188,6 +218,7 @@ def get_navigation_list(db: Session, portal_id: int, menu_scope: Optional[str] =
     if menu_scope == "designer":
         ensure_designer_system_items(db, portal_id)
     items = repository.get_items_by_portal(db, portal_id, menu_scope)
+    items = _filter_navigation_for_deleted_object_types(db, items)
     if menu_scope == "runtime":
         items = filter_navigation_for_office_menu(db, items)
     return enrich_navigation_list(db, items)

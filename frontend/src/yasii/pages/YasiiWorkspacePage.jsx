@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import PortalLayout from "../../layouts/PortalLayout";
 import useNavigationTree from "../../modules/navigation/hooks/useNavigationTree";
 import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../../shared/navigation/navigationReload";
-import { getLastRuntimePath } from "../../shared/appMode/appModeStorage";
+import { resolveYasiiReturnPath } from "../../shared/appMode/appModeNavigation";
 import { readYasiiPreWorkspacePath } from "../workspace/yasiiWorkspaceModeStorage.js";
 import { YasiiSurfaceContextProvider } from "../context/YasiiSurfaceContext.jsx";
 import { useYasiiAssistantSession } from "../context/YasiiAssistantContext.jsx";
@@ -128,7 +128,7 @@ export default function YasiiWorkspacePage() {
   );
 
   const handleCloseWorkspace = useCallback(() => {
-    const returnPath = readYasiiPreWorkspacePath() || getLastRuntimePath();
+    const returnPath = resolveYasiiReturnPath(readYasiiPreWorkspacePath());
     session?.leaveYasiiPageMinimized?.();
     navigate(returnPath);
   }, [navigate, session]);

@@ -80,6 +80,7 @@ def test_primary_component_owner_matrix():
         "search": "search-engine",
         "permissions": "permission-engine",
         "ai-context": "ai-engine",
+        "control-plane": "control-plane",
     }
     assert PRIMARY_COMPONENT_OWNER == expected
 

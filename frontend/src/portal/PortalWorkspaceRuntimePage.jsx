@@ -17,7 +17,10 @@ import { useHeaderSearchController } from "../shared/search/useHeaderSearchContr
 import PortalObjectDataPage from "./pages/PortalObjectDataPage";
 import SystemMessage from "../system/SystemMessage";
 import PortalPageRuntimeContent from "./components/PortalPageRuntimeContent";
-import { resolvePortalObjectNavigationPath } from "./utils/portalObjectRoutes";
+import {
+  resolvePortalIdFromPath,
+  resolvePortalNavigationClickTarget,
+} from "./utils/portalObjectRoutes";
 import {
   PORTAL_OBJECT_VIEW_HEADER_EVENT,
 } from "./utils/portalObjectViewHeaderBridge";
@@ -44,7 +47,10 @@ export default function PortalWorkspaceRuntimePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { portalId: portalIdParam, workspaceSlug, tabSlug } = useParams();
-  const portalId = Number(portalIdParam || 1);
+  const portalId = resolvePortalIdFromPath(
+    location.pathname,
+    portalIdParam || 1,
+  );
   const [workspace, setWorkspace] = useState(null);
   const [tabs, setTabs] = useState([]);
   const [error, setError] = useState("");
@@ -83,26 +89,20 @@ export default function PortalWorkspaceRuntimePage() {
 
   const handleSidebarItemAction = useCallback(
     (item, event) => {
-      const objectTypePath = resolvePortalObjectNavigationPath(item, portalId);
-      if (objectTypePath) {
-        event?.preventDefault?.();
-        navigate(objectTypePath);
+      const target = resolvePortalNavigationClickTarget(item, portalId);
+      if (!target) {
         return;
       }
 
-      const targetPath = String(
-        item?.path || item?.route || item?.url || item?.meta?.path || item?.meta?.route || item?.meta?.url || "",
-      ).trim();
-      if (targetPath) {
-        event?.preventDefault?.();
-        navigate(targetPath);
+      event?.preventDefault?.();
+
+      if ("path" in target && target.path) {
+        navigate(target.path);
         return;
       }
 
-      const pageId = item?.pageId ?? item?.page_id ?? item?.meta?.page_id;
-      if (pageId != null) {
-        event?.preventDefault?.();
-        handleSelectPage(pageId);
+      if ("pageId" in target && target.pageId != null) {
+        handleSelectPage(target.pageId);
       }
     },
     [navigate, portalId, handleSelectPage],

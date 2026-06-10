@@ -1,10 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
 
 import {
-  getDesignerPath,
-  getLastDesignerPath,
-  getLastRuntimePath,
-} from "./appModeStorage";
+  resolveOfficeToStudioPath,
+  resolveStudioToOfficePath,
+} from "./appModeNavigation";
 import ModeSwitcherText from "./ModeSwitcherText";
 
 import "./appModeSwitch.css";
@@ -27,11 +26,11 @@ export default function AppModeSwitch({
 
   const handleToggleMode = () => {
     if (activeMode === "designer") {
-      navigate(getLastRuntimePath());
+      navigate(resolveStudioToOfficePath(location.pathname));
       return;
     }
 
-    navigate(getLastDesignerPath(tenantId) || getDesignerPath(tenantId));
+    navigate(resolveOfficeToStudioPath(location.pathname, tenantId));
   };
 
   return (

@@ -1,8 +1,24 @@
 import usersIcon from "../../../assets/icons/users.png";
 
-const ADMIN_BASE = "/designer/tenant/1/administration";
+import { buildAdministrationPath } from "./adminPaths";
+
+const ADMIN_BASE = buildAdministrationPath(1);
 
 export const adminSections = [
+  {
+    id: "tenants",
+    title: "Тенанты",
+    subtitle: "Управление платформой",
+    description:
+      "Просмотр и ручное создание технических порталов (portals) для тестирования мультиарендности.",
+    route: `${ADMIN_BASE}/tenants`,
+    actionLabel: "Открыть тенанты",
+    metrics: [
+      { label: "Источник данных", value: "portals", tone: "primary" },
+      { label: "Режим", value: "MVP", tone: "muted" },
+      { label: "Bootstrap", value: "Нет", tone: "warning" },
+    ],
+  },
   {
     id: "users",
     title: "Пользователи системы",

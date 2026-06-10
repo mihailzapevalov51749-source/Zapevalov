@@ -11,10 +11,9 @@ import {
   createRuntimeHeaderContract,
 } from "../../shared/shell/header";
 import {
-  getDesignerPath,
-  getLastDesignerPath,
-  getLastRuntimePath,
-} from "../../shared/appMode/appModeStorage";
+  resolveOfficeToStudioPath,
+  resolveStudioToOfficePath,
+} from "../../shared/appMode/appModeNavigation";
 import { emitRuntimeShadowSnapshot } from "../../shared/shell/shadow/runtime";
 
 const DEFAULT_AVATAR_SETTINGS = {
@@ -235,9 +234,9 @@ const effectiveShowBackButton = true;
           return;
         case "app-mode-switch":
           if (pathname.startsWith("/designer")) {
-            navigate(getLastRuntimePath());
+            navigate(resolveStudioToOfficePath(pathname));
           } else {
-            navigate(getLastDesignerPath(tenantId) || getDesignerPath(tenantId));
+            navigate(resolveOfficeToStudioPath(pathname, tenantId));
           }
           return;
         case "search-change":

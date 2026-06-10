@@ -17,13 +17,20 @@ from app.modules.platform.designer.trash.restore_conflict import ensure_restore_
 from app.modules.platform.designer.trash.dependency_resolution_service import (
     dependency_resolution_service,
 )
+from app.modules.platform.designer.object_types.cascade_delete import (
+    count_internal_entities,
+    find_external_dependencies,
+)
+from app.modules.platform.designer.object_types import service as object_type_service
 from app.modules.platform.designer.trash.schemas import (
+    TrashCascadeCountItem,
     TrashDependencyActionResponse,
     TrashBulkResponse,
     TrashBulkResultItem,
     TrashDependencyRead,
     TrashDetailRead,
     TrashEntityKind,
+    TrashExternalWarningGroup,
     TrashItemRef,
     TrashListItemRead,
     TrashListResponse,
@@ -391,6 +398,15 @@ def purge_trash_item(db: Session, *, tenant_id: int, kind: TrashEntityKind, enti
     if entity is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Элемент корзины не найден")
 
+    if kind == "object_type":
+        object_type_service.purge_object_type_from_trash(
+            db,
+            tenant_id,
+            UUID(entity_id),
+        )
+        db.commit()
+        return
+
     dependencies = collect_purge_dependencies(db, tenant_id=tenant_id, kind=kind, entity_id=entity_id)
     if dependencies:
         raise HTTPException(
@@ -448,6 +464,51 @@ def check_purge_allowed(
     kind: TrashEntityKind,
     entity_id: str,
 ) -> TrashPurgeBlockedResponse | None:
+    if kind == "object_type":
+        entity = _load_entity(
+            db,
+            tenant_id=tenant_id,
+            kind=kind,
+            entity_id=entity_id,
+            require_deleted=True,
+        )
+        if entity is None:
+            return None
+
+        internal_counts = count_internal_entities(
+            db,
+            tenant_id,
+            entity.id,
+            object_type_key=entity.key,
+        )
+        external_warnings = find_external_dependencies(
+            db,
+            tenant_id,
+            entity.id,
+            object_type_name=entity.name,
+        )
+        return TrashPurgeBlockedResponse(
+            blocked=False,
+            message="",
+            internal_counts=[
+                TrashCascadeCountItem(
+                    category=item.category,
+                    label=item.label,
+                    count=item.count,
+                )
+                for item in internal_counts
+            ],
+            external_warnings=[
+                TrashExternalWarningGroup(
+                    category=item.category,
+                    label=item.label,
+                    items=item.items,
+                )
+                for item in external_warnings
+            ],
+            has_external_warnings=bool(external_warnings),
+        )
+
     dependencies = collect_purge_dependencies(db, tenant_id=tenant_id, kind=kind, entity_id=entity_id)
     if not dependencies:
         return None

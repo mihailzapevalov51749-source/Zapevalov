@@ -258,6 +258,8 @@ STATUS §14: запрет massive refactor **до завершения Stabiliza
 | **YASNOPRO Event Bus Model.md** | UI vs Domain; automation only on Domain Events |
 | **YASNOPRO Portal Composition Model.md** | Portal/Page/Section/Block; Block ≠ Entity; Layout ≠ business |
 | **YASNOPRO_SCOPE_TENANT_MODEL.md** | Tenant + scope; AI/event/relation isolation |
+| **YASNOPRO_PLATFORM_SEED_v1.md** | Platform Seed v1.0 — минимальный состав новой компании; platform vs template vs user |
+| **adr/ADR-006-platform-seed-v1.md** | ADR: принятие Platform Seed; portal 1 не эталон bootstrap |
 | **YASNOPRO_RUNTIME_DESIGNER_MODEL.md** (актуальные §) | ViewTemplate vs RuntimeRepresentation; Runtime user actions |
 | **YASNOPRO_STATE_MODEL.md** (§16–20) | ViewSession vs RuntimeRepresentation; filter ownership example |
 | **YASNOPRO_TARGET_ARCHITECTURE.md** (§14–16) | Representation Engine vs Layout Engine vs Session Engine |

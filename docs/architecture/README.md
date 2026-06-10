@@ -128,6 +128,7 @@ AI-ориентированная объектно-центричная бизн
 - **YASII_IMPLEMENTATION_ROADMAP** — план реализации ЯСИИ (фазы, work items, readiness)
 - **YASII_DASHBOARD_WORK_ITEMS** — work items для Platform Dashboard (74 items, analyzer)
 - **ADR-001** — Universal Table Retirement (accepted)
+- **ADR-006** — Platform Seed v1.0 (accepted)
 - **ARCHITECTURE_DIRECTION** — стратегический arbiter
 - **PLATFORM_CORE** — фундамент платформы
 - ENTITY_MODEL — объектная модель
@@ -150,6 +151,8 @@ AI-ориентированная объектно-центричная бизн
 - **TABLE_VIEW_RUNTIME_ENTITY_VERIFICATION** — Layer 3 audit (Table View → Runtime Entity)
 - **COMMUNICATION_IDENTITY_MIGRATION_PLAN** — comments / notes / attachments identity (Layer 4)
 - **PLATFORM_BASELINE_v1** — нормативный снимок платформы после Layers 1–6 (PR #7)
+- **PLATFORM_SEED_v1** — минимальный состав новой компании (Platform Seed v1.0); slug: `platform-seed-v1`
+- **ADR-006** — Platform Seed v1.0 (accepted); slug: `adr-006-platform-seed-v1`
 - **NOTIFICATION_ROUTING_HARDENING** — Phase 9.5 notification routing (PR #8)
 - **OBJECT_ENTITY_CARD_UX_BASELINE** — визуальный UX runtime Object Entity Card (PR-A / PR-A2 / PR-B)
 - **LEGACY_BLOCK_TYPES_ISOLATION** — table/universal_table block types из новых сценариев (COMPLETED, 2026-05-30)
@@ -225,6 +228,24 @@ Runtime Entity is the business source of truth.
 - **Legacy Removal Program** — **ACTIVE** (вместо ETL)
 
 > Superseded: «Future ETL universal_table_rows → runtime_entities»
+
+---
+
+## Tenant, Provisioning и Platform Seed
+
+Нормативный стек для создания новых компаний (tenant):
+
+| Документ | Slug | Статус |
+|----------|------|--------|
+| [YASNOPRO_SCOPE_TENANT_MODEL.md](./YASNOPRO_SCOPE_TENANT_MODEL.md) | `yasnopro-scope-tenant-model` | active |
+| [YASNOPRO_PLATFORM_SEED_v1.md](./YASNOPRO_PLATFORM_SEED_v1.md) | `platform-seed-v1` | **accepted** |
+| [adr/ADR-006-platform-seed-v1.md](./adr/ADR-006-platform-seed-v1.md) | `adr-006-platform-seed-v1` | accepted |
+| Template System | `template-system` | planned |
+| Template Tenant | `template-tenant` | planned |
+| Company Provisioning | `company-provisioning` | planned |
+| Platform Bootstrap | `platform-bootstrap` | planned |
+
+**Точка входа:** [YASNOPRO_PLATFORM_SEED_v1.md](./YASNOPRO_PLATFORM_SEED_v1.md) — что получает каждая новая компания; portal 1 **не** является эталоном Seed.
 
 ---
 

@@ -1,4 +1,4 @@
-import { getLastRuntimePath } from "../appMode/appModeStorage.js";
+import { resolveRuntimeFallbackPath } from "../appMode/appModeNavigation.js";
 
 function normalizeText(value) {
   return String(value || "").trim();
@@ -9,14 +9,8 @@ function extractPathname(route) {
 }
 
 export function resolveFallbackRoute(tenantId) {
-  const lastRuntimePath = normalizeText(getLastRuntimePath());
-
-  if (lastRuntimePath && !lastRuntimePath.startsWith("/designer")) {
-    return lastRuntimePath;
-  }
-
   const normalizedTenantId = Number(tenantId) > 0 ? Number(tenantId) : 1;
-  return `/portal/${normalizedTenantId}/page/1`;
+  return resolveRuntimeFallbackPath(normalizedTenantId);
 }
 
 function routesDiffer(leftRoute, rightRoute) {

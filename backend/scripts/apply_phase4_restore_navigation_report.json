@@ -1,0 +1,109 @@
+{
+  "phase": "apply_phase4",
+  "status": "success",
+  "started_at": "2026-06-10T10:22:00",
+  "completed_at": "2026-06-10T10:24:00",
+  "dry_check": {
+    "semantic_create_count": 3,
+    "dry_run_create_before": 13,
+    "dry_run_create_after": 0,
+    "note": "Dry run counted 13 due to parent_id and tenant URL in signature; semantic matching identified 3 real missing workspace nav items."
+  },
+  "apply_result": {
+    "before": {
+      "navigation_active": 23,
+      "runtime_entities": 2,
+      "runtime_entity_values": 352,
+      "runtime_relation_instances": 165,
+      "document_libraries": 10,
+      "library_documents": 18,
+      "chats": 11,
+      "chat_messages": 37,
+      "chat_participants": 24,
+      "notifications": 100,
+      "comments": 214,
+      "notes": 13
+    },
+    "after": {
+      "navigation_active": 26,
+      "runtime_entities": 2,
+      "runtime_entity_values": 352,
+      "runtime_relation_instances": 165,
+      "document_libraries": 10,
+      "library_documents": 18,
+      "chats": 11,
+      "chat_messages": 37,
+      "chat_participants": 24,
+      "notifications": 100,
+      "comments": 214,
+      "notes": 13
+    },
+    "created": [
+      {
+        "id": 216,
+        "title": "Тех. поддержка",
+        "type": "workspace",
+        "menu_scope": "runtime",
+        "url": "/portal/1/workspaces/teh-podderzhka",
+        "parent_id": 41,
+        "system_key": "designer.workspace.8.runtime"
+      },
+      {
+        "id": 217,
+        "title": "Управление платформой",
+        "type": "workspace",
+        "menu_scope": "runtime",
+        "url": "/portal/1/workspaces/upravlenie-platformoy",
+        "parent_id": 41,
+        "system_key": "designer.workspace.11.runtime"
+      },
+      {
+        "id": 218,
+        "title": "Отдел кадров",
+        "type": "workspace",
+        "menu_scope": "runtime",
+        "url": "/portal/1/workspaces/otdel-kadrov-2",
+        "parent_id": 41,
+        "system_key": "designer.workspace.12.runtime"
+      }
+    ],
+    "restored": [],
+    "updated": [],
+    "skipped_count": 23
+  },
+  "workspace_nav_check": {
+    "razrabotka": { "workspace_id": 34, "nav_id": 83, "url": "/portal/1/workspaces/razrabotka" },
+    "teh-podderzhka": { "workspace_id": 35, "nav_id": 216, "url": "/portal/1/workspaces/teh-podderzhka" },
+    "upravlenie-platformoy": { "workspace_id": 36, "nav_id": 217, "url": "/portal/1/workspaces/upravlenie-platformoy" },
+    "otdel-kadrov-2": { "workspace_id": 37, "nav_id": 218, "url": "/portal/1/workspaces/otdel-kadrov-2" }
+  },
+  "structure_check": {
+    "studio_in_navigation_items": {
+      "Объекты": true,
+      "Связи": true,
+      "Представления": true,
+      "Пользователи": true,
+      "Системные настройки": true,
+      "Разработка продукта": true,
+      "Проект тест": true,
+      "Вкладки": false,
+      "Страницы": false,
+      "Навигация": false,
+      "Бизнес-процессы": false,
+      "Публикация": false,
+      "Корзина": false
+    },
+    "office_in_navigation_items": {
+      "Главная": true,
+      "Разработка": true,
+      "Тех. поддержка": true,
+      "Управление платформой": true,
+      "Отдел кадров": true
+    },
+    "note": "Studio items Вкладки/Страницы/Навигация/БП/Публикация/Корзина are hardcoded designer shell routes, not navigation_items rows."
+  },
+  "remaining": {
+    "actions_create": 3,
+    "publish": "deferred"
+  }
+}

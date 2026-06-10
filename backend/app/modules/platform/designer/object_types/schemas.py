@@ -197,7 +197,22 @@ class ObjectTypeDeleteUsageGroup(BaseModel):
     items: list[str] = Field(default_factory=list)
 
 
+class ObjectTypeDeleteCountItem(BaseModel):
+    category: str
+    label: str
+    count: int
+
+
+class ObjectTypeDeleteExternalWarning(BaseModel):
+    category: str
+    label: str
+    items: list[str] = Field(default_factory=list)
+
+
 class ObjectTypeDeletePreviewRead(BaseModel):
     name: str
+    internal_counts: list[ObjectTypeDeleteCountItem] = Field(default_factory=list)
+    external_warnings: list[ObjectTypeDeleteExternalWarning] = Field(default_factory=list)
+    has_external_warnings: bool = False
     groups: list[ObjectTypeDeleteUsageGroup] = Field(default_factory=list)
     has_usage: bool = False

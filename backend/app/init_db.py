@@ -37,6 +37,11 @@ from app.modules.quality_issues.models import (  # noqa: F401
     QualityIssueStatusHistory,
 )
 
+# IMPORT CONTROL PLANE MODELS
+from app.modules.control_plane.customer_companies.models import (  # noqa: F401
+    CustomerCompany,
+)
+
 # IMPORT PLATFORM DASHBOARD MODELS
 from app.modules.platform_dashboard.models import (  # noqa: F401
     PlatformActivity,
