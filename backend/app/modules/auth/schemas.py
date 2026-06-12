@@ -29,3 +29,7 @@ class UserUpdate(BaseModel):
 
     avatar_url: str | None = None
     avatar_settings: dict[str, Any] | None = None
+
+
+class TenantLoginBrandingRead(BaseModel):
+    display_name: str

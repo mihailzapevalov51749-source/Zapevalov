@@ -1,10 +1,20 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from .schemas import RegisterRequest, LoginRequest, AuthResponse, UserUpdate
-from .service import register_user, login_user
+from app.modules.control_plane.platform_profile.schemas import PlatformSetupStateRead
+from app.modules.users.bootstrap_owner_service import build_platform_setup_state
+from app.modules.users.models import User
 from .dependencies import get_current_user
+from .schemas import (
+    AuthResponse,
+    LoginRequest,
+    RegisterRequest,
+    TenantLoginBrandingRead,
+    UserUpdate,
+)
+from .service import login_user, register_user
+from .tenant_login_branding import resolve_tenant_login_display_name
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -20,34 +30,44 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
     }
 
 
-@router.post("/login", response_model=AuthResponse)
+@router.post("/login")
 def login(data: LoginRequest, db: Session = Depends(get_db)):
-    token = login_user(db, data.email, data.password)
+    result = login_user(db, data.email, data.password)
+    db.commit()
+    return result
 
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-    }
+
+@router.get("/tenant-login-branding", response_model=TenantLoginBrandingRead)
+def get_tenant_login_branding(
+    tenant_id: int = Query(..., alias="tenantId", gt=0),
+    db: Session = Depends(get_db),
+):
+    display_name = resolve_tenant_login_display_name(db, tenant_id)
+    if display_name is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Компания не найдена",
+        )
+
+    return TenantLoginBrandingRead(display_name=display_name)
+
+
+@router.get("/platform-setup-state", response_model=PlatformSetupStateRead)
+def get_platform_setup_state(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return build_platform_setup_state(db, current_user)
 
 
 @router.get("/me")
-def get_me(current_user=Depends(get_current_user)):
-    return {
-        "id": current_user.id,
-        "email": current_user.email,
-        "full_name": current_user.full_name,
-        "phone": current_user.phone,
-        "position": current_user.position,
-        "department": current_user.department,
-        "avatar_url": current_user.avatar_url,
-        "avatar_settings": current_user.avatar_settings,
-        "is_active": current_user.is_active,
-        "role_id": current_user.role_id,
-        "role": current_user.role.name if current_user.role else None,
-        "last_login_at": current_user.last_login_at,
-        "created_at": current_user.created_at,
-        "updated_at": current_user.updated_at,
-    }
+def get_me(
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    from app.modules.users.router import serialize_user
+
+    return serialize_user(current_user, db)
 
 
 @router.patch("/me")

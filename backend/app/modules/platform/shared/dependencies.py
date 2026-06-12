@@ -5,17 +5,15 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.modules.auth.dependencies import get_current_user
-from app.modules.platform.shared.constants import DESIGNER_ROLES
 from app.modules.portals.models import Portal
+from app.modules.tenant_roles.access import can_access_designer
 from app.modules.users.models import User
 
 
 def require_designer_user(
     current_user: User = Depends(get_current_user),
 ) -> User:
-    role_name = current_user.role.name if current_user.role else None
-
-    if role_name not in DESIGNER_ROLES:
+    if not can_access_designer(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Недостаточно прав для Designer API",

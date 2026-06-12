@@ -255,7 +255,8 @@ export default function MenuItem({
       (objectTypeItem && navigationPath) ||
       isSection);
 
-  const allowSystemDrag = sidebarMode === "designer" && isSystem;
+  const allowSystemDrag =
+    isSystem && (sidebarMode === "designer" || sidebarMode === "control-plane");
   const canDragItem = !isSystem || allowSystemDrag;
   const isDropTarget =
     canDragItem && dragAndDrop?.dropTarget?.targetId === item.id;
@@ -369,10 +370,12 @@ export default function MenuItem({
         }}
         onDragOver={(event) => {
           if (!canDragItem) return;
+          event.stopPropagation();
           dragAndDrop?.handleDragOver(event, item);
         }}
         onDrop={(event) => {
           if (!canDragItem) return;
+          event.stopPropagation();
           dragAndDrop?.handleDrop(event, item);
         }}
         onDragEnd={() => dragAndDrop?.resetDrag()}
@@ -565,7 +568,11 @@ export default function MenuItem({
               onUpdateItem={onUpdateItem}
               onDeleteItem={onDeleteItem}
               dragAndDrop={
-                child?.isSystem && sidebarMode !== "designer" ? null : dragAndDrop
+                child?.isSystem
+                && sidebarMode !== "designer"
+                && sidebarMode !== "control-plane"
+                  ? null
+                  : dragAndDrop
               }
               scale={scale}
               openedEditorItemId={openedEditorItemId}

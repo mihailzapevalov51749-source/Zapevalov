@@ -8,6 +8,7 @@ import * as designerApi from "../api/designerApi";
 import { resolvePageOpenHref } from "../utils/resolvePageOpenTarget";
 import { useDesignerShell } from "../context/DesignerShellContext";
 import CreatePageModal from "../components/pages/CreatePageModal";
+import BulkDeletePagesConfirmModal from "../components/pages/BulkDeletePagesConfirmModal";
 import DeletePageConfirmModal from "../components/pages/DeletePageConfirmModal";
 import PageDetailPanel from "../components/pages/PageDetailPanel";
 import PagesRegistryTable from "../components/pages/PagesRegistryTable";
@@ -17,6 +18,7 @@ import {
   PAGE_SORT_KEYS,
   PAGE_STATUS_FILTERS,
 } from "../utils/pagesRegistryUtils";
+import { buildBulkDeleteNotice, splitPagesForBulkDelete } from "../utils/pagesBulkDelete";
 import { dispatchPageStatusNavigationRefresh } from "../utils/navigationReload";
 import {
   PAGE_LAYOUT_PAGE_TYPE,
@@ -28,6 +30,14 @@ import "../styles/designerPagesRegistry.css";
 
 function resolveDeletePageErrorMessage(error) {
   const status = Number(error?.response?.status);
+  const detail = error?.response?.data?.detail;
+
+  if (status === 409 && detail?.reason === "protected_page") {
+    const title = detail.message || "Удаление запрещено";
+    const subtitle = detail.detail || "Системную страницу нельзя удалить.";
+    return `${title}. ${subtitle}`;
+  }
+
   if (status === 401 || status === 403 || status >= 500) {
     return "Не удалось удалить страницу. Причина: нет прав или сессия истекла.";
   }
@@ -59,7 +69,10 @@ export default function DesignerPagesPage() {
   const [listError, setListError] = useState("");
   const [detailError, setDetailError] = useState("");
   const [actionError, setActionError] = useState("");
+  const [actionNotice, setActionNotice] = useState("");
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
+  const [selectedPageIds, setSelectedPageIds] = useState(() => new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState(PAGE_STATUS_FILTERS.ALL);
@@ -71,6 +84,7 @@ export default function DesignerPagesPage() {
   const [isCreating, setIsCreating] = useState(false);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const loadRegistry = useCallback(async () => {
@@ -153,6 +167,54 @@ export default function DesignerPagesPage() {
       }),
     [items, searchText, statusFilter, sortKey, sortDirection],
   );
+
+  const selectedPages = useMemo(
+    () => items.filter((item) => selectedPageIds.has(String(item.id))),
+    [items, selectedPageIds],
+  );
+
+  const selectedCount = selectedPages.length;
+
+  useEffect(() => {
+    setSelectedPageIds(new Set());
+  }, [searchText, statusFilter]);
+
+  const togglePageSelection = useCallback((pageId) => {
+    const key = String(pageId);
+    setSelectedPageIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleAllVisibleSelection = useCallback(() => {
+    const visibleKeys = filteredItems.map((item) => String(item.id));
+    const allVisibleSelected =
+      visibleKeys.length > 0 && visibleKeys.every((key) => selectedPageIds.has(key));
+
+    setSelectedPageIds((previous) => {
+      const next = new Set(previous);
+      if (allVisibleSelected) {
+        for (const key of visibleKeys) {
+          next.delete(key);
+        }
+      } else {
+        for (const key of visibleKeys) {
+          next.add(key);
+        }
+      }
+      return next;
+    });
+  }, [filteredItems, selectedPageIds]);
+
+  const clearPageSelection = useCallback(() => {
+    setSelectedPageIds(new Set());
+  }, []);
 
   const filterCounts = useMemo(() => {
     const counts = {
@@ -288,6 +350,61 @@ export default function DesignerPagesPage() {
     }
   };
 
+  const bulkDeletePreview = useMemo(
+    () => splitPagesForBulkDelete(selectedPages),
+    [selectedPages],
+  );
+
+  const handleOpenBulkDeleteModal = () => {
+    if (!selectedCount) {
+      return;
+    }
+
+    const { deletablePages, protectedPages } = bulkDeletePreview;
+
+    if (!deletablePages.length) {
+      setActionNotice(buildBulkDeleteNotice({ deletedCount: 0, skipped: protectedPages }));
+      setActionError("");
+      clearPageSelection();
+      return;
+    }
+
+    setBulkDeleteModalOpen(true);
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    const { deletablePages, protectedPages } = bulkDeletePreview;
+
+    if (!deletablePages.length) {
+      setBulkDeleteModalOpen(false);
+      return;
+    }
+
+    setIsBulkDeleting(true);
+    setActionError("");
+    setActionNotice("");
+
+    try {
+      const response = await designerApi.bulkDeleteDesignerPages(
+        tenantId,
+        deletablePages.map((page) => page.id),
+      );
+      setBulkDeleteModalOpen(false);
+      setActionNotice(
+        response?.message || buildBulkDeleteNotice({
+          deletedCount: response?.deleted_count ?? deletablePages.length,
+          skipped: response?.skipped ?? protectedPages,
+        }),
+      );
+      clearPageSelection();
+      await refreshAfterMutation(selectedPageId);
+    } catch (error) {
+      setActionError(getApiErrorMessage(error, "Не удалось удалить выбранные страницы"));
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
   const handleConfirmDelete = async () => {
     if (!selectedPageId) {
       return;
@@ -367,6 +484,29 @@ export default function DesignerPagesPage() {
       </div>
 
       {listError ? <p className="designer-error">{listError}</p> : null}
+      {actionNotice ? <p className="designer-pages-registry__notice">{actionNotice}</p> : null}
+
+      {selectedCount > 0 ? (
+        <div className="designer-pages-registry__bulk" aria-label="Массовые действия">
+          <span className="designer-pages-registry__bulk-count">Выбрано: {selectedCount}</span>
+          <button
+            type="button"
+            className="designer-btn designer-btn--compact"
+            disabled={isBulkDeleting || isSubmittingAction || isDeleting}
+            onClick={clearPageSelection}
+          >
+            Снять выбор
+          </button>
+          <button
+            type="button"
+            className="designer-btn designer-btn--compact designer-btn--danger"
+            disabled={isBulkDeleting || isSubmittingAction || isDeleting}
+            onClick={handleOpenBulkDeleteModal}
+          >
+            {isBulkDeleting ? "Удаление…" : "Удалить выбранные"}
+          </button>
+        </div>
+      ) : null}
 
       <div className="designer-pages-registry__workspace">
         <aside className="designer-pages-registry__master" aria-label="Список страниц">
@@ -376,7 +516,10 @@ export default function DesignerPagesPage() {
             <PagesRegistryTable
               items={filteredItems}
               selectedPageId={selectedPageId}
+              selectedPageIds={selectedPageIds}
               onSelectPage={setSelectedPageId}
+              onTogglePageSelection={togglePageSelection}
+              onToggleAllVisibleSelection={toggleAllVisibleSelection}
               sortKey={sortKey}
               sortDirection={sortDirection}
               onToggleSort={handleToggleSort}
@@ -390,7 +533,7 @@ export default function DesignerPagesPage() {
             page={selectedDetail}
             loading={loadingDetail}
             actionError={actionError}
-            isSubmittingAction={isSubmittingAction || isDeleting}
+            isSubmittingAction={isSubmittingAction || isDeleting || isBulkDeleting}
             onOpen={handleOpenPage}
             onDuplicate={handleDuplicate}
             onPublish={() => handlePublishToggle("published")}
@@ -425,6 +568,19 @@ export default function DesignerPagesPage() {
           }
         }}
         onConfirm={handleConfirmDelete}
+      />
+
+      <BulkDeletePagesConfirmModal
+        open={bulkDeleteModalOpen}
+        deletableCount={bulkDeletePreview.deletablePages.length}
+        protectedCount={bulkDeletePreview.protectedPages.length}
+        isSubmitting={isBulkDeleting}
+        onCancel={() => {
+          if (!isBulkDeleting) {
+            setBulkDeleteModalOpen(false);
+          }
+        }}
+        onConfirm={handleConfirmBulkDelete}
       />
     </div>
   );

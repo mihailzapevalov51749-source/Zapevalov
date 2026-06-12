@@ -1,8 +1,9 @@
-import { formatJournalDate } from "./formatDateTime";
+import { formatJournalDate } from "./formatDateTime.js";
 import {
-  resolvePlatformEventStatusLabel,
-  resolvePlatformEventTypeLabel,
-} from "../constants/platformEventTypes";
+  resolveJournalEntryCategoryLabel,
+  resolveJournalEntryTypeLabel,
+} from "../constants/tenantEventTypes.js";
+import { resolvePlatformEventStatusLabel } from "../constants/platformEventTypes.js";
 
 export function mapJournalApiEntryToUi(entry) {
   if (!entry) {
@@ -10,16 +11,30 @@ export function mapJournalApiEntryToUi(entry) {
   }
 
   const createdAt = entry.occurred_at || entry.created_at;
+  const metadata = entry.metadata_json || entry.metadata || null;
 
   return {
     id: String(entry.id),
     dateLabel: formatJournalDate(createdAt),
     createdAt,
-    eventType: resolvePlatformEventTypeLabel(entry.event_type),
+    eventTypeKey: String(entry.event_type || "").trim(),
+    eventType: entry.event_type_label || resolveJournalEntryTypeLabel(entry),
+    eventCategoryKey: String(entry.event_category || "system").trim().toLowerCase(),
+    eventCategory: resolveJournalEntryCategoryLabel(entry),
+    scope: String(entry.scope || "platform").trim().toLowerCase(),
     title: String(entry.title || "").trim() || "Событие",
     description: String(entry.description || "").trim(),
-    statusLabel: resolvePlatformEventStatusLabel(entry.status),
+    statusLabel: entry.status_label || resolvePlatformEventStatusLabel(entry.status),
+    statusKey: String(entry.status || "").trim().toLowerCase(),
     author: String(entry.author || "").trim() || "—",
+    authorEmail: String(entry.actor_email || "").trim() || "—",
+    targetType: String(entry.target_type || "").trim() || "—",
+    targetId: entry.target_id != null ? String(entry.target_id) : "—",
+    targetName: String(entry.target_name || "").trim() || "—",
+    tenantId: entry.tenant_id != null ? String(entry.tenant_id) : "—",
+    companyId: entry.company_id != null ? String(entry.company_id) : "—",
+    metadata,
+    metadataText: metadata ? JSON.stringify(metadata, null, 2) : "—",
   };
 }
 

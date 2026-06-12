@@ -14,29 +14,23 @@ import CreateMenuItemModal from "./CreateMenuItemModal";
 import NavigationDeleteDialogs from "./NavigationDeleteDialogs";
 import { getNavigationDeleteBlockReason } from "../utils/navigationDeletePolicy";
 
-import { getPageFull } from "../../../api/pagesApi";
-import {
-  isLegacyStorageNavigationItem,
-  renameLegacyStorageForPage,
-  requestLegacyLeaveConfirmation,
-} from "../../../shared/legacy/adapters/legacyStorageAdapter";
 import { findNavigationItemById } from "../../../portal/utils/portalPageUtils";
 
+import useBlockedMenuDragAndDrop from "../hooks/useBlockedMenuDragAndDrop";
 import useMenuEditor from "../hooks/useMenuEditor";
-import useMenuDragAndDrop from "../hooks/useMenuDragAndDrop";
 import { filterRemovedOfficeMenuItems } from "../../../shared/navigation/removedSystemMenuItems";
 import {
   applySystemMenuSettingsToTree,
   isSystemMenuItem,
 } from "../../../shared/navigation/applySystemMenuSettingsToTree.js";
 import {
+  persistNavigationMenuBlockMove,
+  readNavigationMenuBlockSettings,
+} from "../../../shared/navigation/navigationMenuSettings.js";
+import {
   readSystemMenuSettings,
   writeSystemMenuSettings,
 } from "../../../shared/uiStorage/systemMenuSettingsStorage.js";
-
-async function canLeaveCurrentPage() {
-  return requestLegacyLeaveConfirmation();
-}
 
 export default function LeftSidebar({
   items = [],
@@ -56,6 +50,7 @@ export default function LeftSidebar({
   const [systemMenuSettings, setSystemMenuSettings] = useState(() =>
     readSystemMenuSettings(portalId)
   );
+  const [menuBlockSettingsVersion, setMenuBlockSettingsVersion] = useState(0);
 
   useEffect(() => {
     setSystemMenuSettings(readSystemMenuSettings(portalId));
@@ -65,12 +60,6 @@ export default function LeftSidebar({
     portalId,
     reload: reloadNavigation,
     navigationItems: items,
-  });
-
-  const dragAndDrop = useMenuDragAndDrop({
-    items,
-    isEnabled: editor.isEditMode,
-    reload: reloadNavigation,
   });
 
   useEffect(() => {
@@ -92,20 +81,46 @@ export default function LeftSidebar({
     };
   }, []);
 
-  const finalTree = useMemo(() => {
+  const rootItemsForBlocks = useMemo(() => {
     const treeWithProtectedSettings = applySystemMenuSettingsToTree(
-      dragAndDrop.tree,
+      items,
       systemMenuSettings,
     );
 
     return filterRemovedOfficeMenuItems(treeWithProtectedSettings);
-  }, [dragAndDrop.tree, systemMenuSettings]);
+  }, [items, systemMenuSettings]);
+
+  const menuBlockSettings = useMemo(
+    () =>
+      readNavigationMenuBlockSettings({
+        menuProfile: "platform",
+        tenantId: portalId,
+        rootItems: rootItemsForBlocks,
+      }),
+    [portalId, rootItemsForBlocks, systemMenuSettings, menuBlockSettingsVersion],
+  );
+
+  const blockedMenuDrag = useBlockedMenuDragAndDrop({
+    rootItems: rootItemsForBlocks,
+    settings: menuBlockSettings,
+    menuProfile: "platform",
+    isEnabled: editor.isEditMode,
+    onMove: async (itemsPayload) => {
+      const result = await persistNavigationMenuBlockMove({
+        menuProfile: "platform",
+        tenantId: portalId,
+        itemsPayload,
+        rootItems: rootItemsForBlocks,
+        reloadNavigation,
+      });
+
+      setMenuBlockSettingsVersion((previous) => previous + 1);
+      setSystemMenuSettings(result.settings);
+    },
+  });
 
   const handleSelectPage = async (item) => {
     if (!item) return;
-
-    const canLeave = await canLeaveCurrentPage();
-    if (!canLeave) return;
 
     if (item.type === "system_page" && item.route) {
       window.history.pushState({}, "", item.route);
@@ -149,36 +164,6 @@ export default function LeftSidebar({
     }
 
     try {
-      const navigationItem = findNavigationItemById(items, itemId);
-      const nextTitle = String(data?.title || "").trim();
-
-      if (
-        navigationItem &&
-        nextTitle &&
-        isLegacyStorageNavigationItem(navigationItem) &&
-        navigationItem.page_id
-      ) {
-        try {
-          const linkedPage = await getPageFull(navigationItem.page_id);
-          const renameResult = await renameLegacyStorageForPage({
-            pageData: linkedPage,
-            title: nextTitle,
-            dedicatedPageId: navigationItem.page_id,
-          });
-
-          if (renameResult?.title) {
-            await editor.updateItem(itemId, {
-              ...data,
-              title: renameResult.title,
-            });
-
-            return;
-          }
-        } catch (renameError) {
-          console.error("Failed to save universal table menu item:", renameError);
-        }
-      }
-
       await editor.updateItem(itemId, data);
     } catch (saveError) {
       console.error("Failed to save menu item:", saveError);
@@ -285,13 +270,14 @@ export default function LeftSidebar({
         )}
 
         <MenuTree
-          items={finalTree}
+          items={rootItemsForBlocks}
+          navigationBlocks={blockedMenuDrag.blocks}
+          blockedDragAndDrop={editor.isEditMode ? blockedMenuDrag : null}
           activePageId={activePageId}
           onSelectPage={handleSelectPage}
           isEditMode={editor.isEditMode}
           onUpdateItem={handleUpdateItem}
           onDeleteItem={handleDeleteItem}
-          dragAndDrop={dragAndDrop}
           scale={menuScale}
           sidebarCollapsed={collapsed}
           tenantId={portalId}

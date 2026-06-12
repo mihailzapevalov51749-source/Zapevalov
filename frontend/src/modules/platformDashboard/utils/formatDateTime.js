@@ -1,3 +1,8 @@
+import {
+  formatPlatformDate,
+  formatPlatformDateTime,
+} from "../../../shared/platformSettings/platformDateTimeFormat.js";
+
 export function parseApiDateTime(value) {
   if (!value) {
     return null;
@@ -25,11 +30,7 @@ export function formatJournalDate(value) {
     return "—";
   }
 
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-
-  return `${day}.${month}.${year}`;
+  return formatPlatformDate(date);
 }
 
 export function formatAbsoluteDateTime(value) {
@@ -38,13 +39,7 @@ export function formatAbsoluteDateTime(value) {
     return value || "—";
   }
 
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-
-  return `${day}.${month}.${year} ${hours}:${minutes}`;
+  return formatPlatformDateTime(date);
 }
 
 export function formatRelativeDateTime(value) {

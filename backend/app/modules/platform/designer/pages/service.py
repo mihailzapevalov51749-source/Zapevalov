@@ -13,18 +13,19 @@ from sqlalchemy.orm import Session
 from app.modules.blocks.models import Block
 from app.modules.navigation.models import NavigationItem
 from app.modules.pages.models import Page
+from app.modules.pages.protected_pages import is_protected_page
 from app.modules.pages.runtime_access import (
     PAGE_STATUS_PUBLISHED,
     normalize_page_status,
 )
-from app.modules.universal_tables.models import UniversalTable
-from app.modules.universal_views.models import UniversalView
 from app.modules.platform.designer.object_types.models import DesignerObjectType
 from app.modules.pages.schemas import PageCreate
 from app.modules.pages import service as pages_service
 from app.modules.sections.models import Section
 from app.modules.platform.designer.pages.schemas import (
     PageBlockSummaryRead,
+    PageBulkDeleteResponse,
+    PageBulkDeleteSkippedItem,
     PageDuplicateResponse,
     PageRegistryDetailRead,
     PageRegistryExtensionsRead,
@@ -166,49 +167,8 @@ def _resolve_block_presentation(
     base_label = _BLOCK_TYPE_LABELS.get(block_type, "Блок")
     display_title = base_label
 
-    table_id = _pick_int(
-        content_dict.get("table_id"),
-        content_dict.get("tableId"),
-        settings_dict.get("table_id"),
-        settings_dict.get("tableId"),
-    )
-    if table_id is not None:
-        table = db.query(UniversalTable).filter(UniversalTable.id == table_id).first()
-        if table is not None and table.title:
-            related_objects.append(str(table.title))
-            display_title = "Таблица объектов"
-            detail_lines.append(f"Объект: {table.title}")
-
-            view_id = _pick_int(
-                settings_dict.get("view_id"),
-                settings_dict.get("viewId"),
-                settings_dict.get("active_view_id"),
-                settings_dict.get("activeViewId"),
-                content_dict.get("view_id"),
-                content_dict.get("viewId"),
-            )
-            if view_id is not None:
-                view = db.query(UniversalView).filter(UniversalView.id == view_id).first()
-                if view is not None and view.name:
-                    detail_lines.append(f"Представление: {view.name}")
-            elif table_id is not None:
-                default_view = (
-                    db.query(UniversalView)
-                    .filter(
-                        UniversalView.table_id == table_id,
-                        UniversalView.is_default.is_(True),
-                    )
-                    .first()
-                )
-                if default_view is None:
-                    default_view = (
-                        db.query(UniversalView)
-                        .filter(UniversalView.table_id == table_id)
-                        .order_by(UniversalView.position.asc(), UniversalView.id.asc())
-                        .first()
-                    )
-                if default_view is not None and default_view.name:
-                    detail_lines.append(f"Представление: {default_view.name}")
+    if block_type in {"universal_table", "table", "tableBlock", "table_block"}:
+        display_title = "Таблица объектов (legacy)"
 
     object_type_key = _pick_str(
         settings_dict.get("object_type_key"),
@@ -532,6 +492,8 @@ def _workspace_titles_from_usages(usages: list[PageUsageRead]) -> list[str]:
 
 
 def _to_list_item(
+    db: Session,
+    tenant_id: int,
     page: Page,
     *,
     usages: list[PageUsageRead],
@@ -563,17 +525,24 @@ def _to_list_item(
         created_at=page.created_at,
         updated_at=page.updated_at,
         author=None,
+        is_protected=is_protected_page(db, tenant_id=tenant_id, page=page),
     )
 
 
 def list_page_registry(db: Session, tenant_id: int) -> PageRegistryListResponse:
-    pages = pages_service.get_pages_by_portal(db, tenant_id)
+    pages = pages_service.get_pages_by_portal(
+        db,
+        tenant_id,
+        request_portal_id=tenant_id,
+    )
     usages_map, _, home_page_ids = _collect_placement_maps(db, tenant_id)
     block_counts, _, block_types_map = _collect_block_stats(db, tenant_id)
     nav_urls_map = _navigation_urls_by_page(db, tenant_id)
 
     items = [
         _to_list_item(
+            db,
+            tenant_id,
             page,
             usages=usages_map.get(int(page.id), []),
             home_page_ids=home_page_ids,
@@ -604,6 +573,8 @@ def get_page_registry_detail(db: Session, tenant_id: int, page_id: int) -> PageR
     nav_urls_map = _navigation_urls_by_page(db, tenant_id)
 
     list_item = _to_list_item(
+        db,
+        tenant_id,
         page,
         usages=usages_map.get(int(page.id), []),
         home_page_ids=home_page_ids,
@@ -631,6 +602,94 @@ def get_page_registry_detail(db: Session, tenant_id: int, page_id: int) -> PageR
     )
 
 
+def _build_bulk_delete_message(
+    *,
+    deleted_count: int,
+    skipped: list[PageBulkDeleteSkippedItem],
+) -> str:
+    if deleted_count <= 0 and skipped:
+        return "Выбраны только системные страницы. Их нельзя удалить."
+    if deleted_count > 0 and skipped:
+        skipped_titles = ", ".join(item.title for item in skipped)
+        return (
+            f"Удалено: {deleted_count}. "
+            f"Пропущены системные страницы: {skipped_titles}."
+        )
+    if deleted_count > 0:
+        return f"Удалено: {deleted_count}."
+    return "Страницы для удаления не найдены."
+
+
+def bulk_delete_page_registry(
+    db: Session,
+    tenant_id: int,
+    page_ids: list[int],
+    *,
+    deleted_by: int | None = None,
+) -> PageBulkDeleteResponse:
+    unique_ids: list[int] = []
+    seen: set[int] = set()
+    for raw_id in page_ids:
+        page_id = int(raw_id)
+        if page_id in seen:
+            continue
+        seen.add(page_id)
+        unique_ids.append(page_id)
+
+    if not unique_ids:
+        return PageBulkDeleteResponse(
+            deleted_count=0,
+            deleted_ids=[],
+            skipped=[],
+            message="Страницы для удаления не найдены.",
+        )
+
+    pages = (
+        db.query(Page)
+        .filter(
+            Page.portal_id == tenant_id,
+            Page.id.in_(unique_ids),
+            Page.deleted_at.is_(None),
+        )
+        .all()
+    )
+    pages_by_id = {int(page.id): page for page in pages}
+
+    deleted_ids: list[int] = []
+    skipped: list[PageBulkDeleteSkippedItem] = []
+
+    for page_id in unique_ids:
+        page = pages_by_id.get(page_id)
+        if page is None:
+            continue
+
+        if is_protected_page(db, tenant_id=tenant_id, page=page):
+            skipped.append(
+                PageBulkDeleteSkippedItem(
+                    id=page_id,
+                    title=str(page.title or f"Страница #{page_id}"),
+                ),
+            )
+            continue
+
+        deleted = pages_service.delete_page(
+            db,
+            page_id,
+            portal_id=tenant_id,
+            deleted_by=deleted_by,
+        )
+        if deleted is not None:
+            deleted_ids.append(page_id)
+
+    message = _build_bulk_delete_message(deleted_count=len(deleted_ids), skipped=skipped)
+    return PageBulkDeleteResponse(
+        deleted_count=len(deleted_ids),
+        deleted_ids=deleted_ids,
+        skipped=skipped,
+        message=message,
+    )
+
+
 def delete_page_registry(
     db: Session,
     tenant_id: int,
@@ -650,7 +709,12 @@ def delete_page_registry(
     if page is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Страница не найдена")
 
-    deleted = pages_service.delete_page(db, page_id, deleted_by=deleted_by)
+    deleted = pages_service.delete_page(
+        db,
+        page_id,
+        portal_id=tenant_id,
+        deleted_by=deleted_by,
+    )
     if deleted is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Страница не найдена")
 
@@ -670,7 +734,7 @@ def duplicate_page_registry(
     if source is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Страница не найдена")
 
-    full = pages_service.get_page_full(db, page_id)
+    full = pages_service.get_page_full(db, page_id, portal_id=tenant_id)
     if full is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Страница не найдена")
 
@@ -686,6 +750,7 @@ def duplicate_page_registry(
             is_visible=source.is_visible,
             sort_order=source.sort_order,
         ),
+        portal_id=tenant_id,
     )
 
     for section_bundle in full["sections"]:

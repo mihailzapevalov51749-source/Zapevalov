@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { isLegacyTableBlockType } from "../registry/legacyTableBlockTypes";
 import ButtonBlockEditor from "../../blockTypes/button/ButtonBlockEditor";
 import DocumentsBlockEditor from "../../blockTypes/documents/DocumentsBlockEditor";
 import ImageBlockEditor from "../../blockTypes/image/ImageBlockEditor";
@@ -42,11 +43,11 @@ export default function BlockEditorModal({
     );
   }
 
-  if (block.type === "universal_table") {
+  if (isLegacyTableBlockType(block.type)) {
     return (
       <div style={{ color: "#94a3b8", fontSize: 13, lineHeight: 1.5 }}>
-        Настройки таблицы на canvas доступны в заголовке блока: иконка глаза и
-        удаление.
+        Legacy-блок таблицы больше не поддерживается. Удалите блок на canvas или
+        замените на Object Types и Object Views.
       </div>
     );
   }

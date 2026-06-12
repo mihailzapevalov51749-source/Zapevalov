@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.modules.blocks.models import Block
 from app.modules.document_libraries.models import DocumentLibrary
 from app.modules.navigation.models import NavigationItem
+from app.modules.navigation.runtime_protected_pages import backfill_runtime_protected_navigation
 from app.modules.pages.models import Page
 from app.modules.platform.action_engine.action_definitions.models import (
     DesignerActionDefinition,
@@ -22,6 +23,9 @@ from app.modules.platform.action_engine.action_placements.models import (
 )
 from app.modules.platform.designer.field_definitions.models import DesignerFieldDefinition
 from app.modules.platform.designer.object_types.models import DesignerObjectType
+from app.modules.platform.designer.system_menu_settings.service import (
+    clone_designer_system_menu_settings,
+)
 from app.modules.platform.designer.publish.service import publish_tenant_catalog
 from app.modules.platform.designer.relation_definitions.models import (
     DesignerRelationDefinition,
@@ -42,10 +46,6 @@ from app.modules.tenant_bootstrap.exceptions import (
 )
 from app.modules.tenant_bootstrap.json_remap import remap_json_field
 from app.modules.tenant_bootstrap.url_rewrite import rewrite_tenant_urls
-from app.modules.universal_tables.models import UniversalTable, UniversalTableColumn
-from app.modules.universal_views.models import UniversalView
-
-
 @dataclass(frozen=True)
 class CloneTenantStructureResult:
     source_tenant_id: int
@@ -54,6 +54,7 @@ class CloneTenantStructureResult:
     navigation_items_cloned: int
     object_types_cloned: int
     workspaces_cloned: int
+    designer_system_menu_settings_cloned: int
     catalog_version: int | None
 
 
@@ -510,85 +511,6 @@ def _clone_sections_and_blocks(db: Session, ctx: CloneContext) -> None:
         ctx.block_id_map[block.id] = clone.id
 
 
-def _clone_universal_tables(db: Session, ctx: CloneContext) -> None:
-    source_block_ids = list(ctx.block_id_map.keys())
-    if not source_block_ids:
-        return
-
-    tables = (
-        db.query(UniversalTable)
-        .filter(UniversalTable.block_id.in_(source_block_ids))
-        .order_by(UniversalTable.id.asc())
-        .all()
-    )
-    for table in tables:
-        block_id = ctx.block_id_map.get(table.block_id) if table.block_id else None
-        clone = UniversalTable(
-            block_id=block_id,
-            title=table.title,
-            settings=remap_json_field(table.settings, ctx),
-        )
-        db.add(clone)
-        db.flush()
-        ctx.universal_table_id_map[table.id] = clone.id
-
-        columns = (
-            db.query(UniversalTableColumn)
-            .filter(UniversalTableColumn.table_id == table.id)
-            .order_by(UniversalTableColumn.position.asc())
-            .all()
-        )
-        for column in columns:
-            db.add(
-                UniversalTableColumn(
-                    table_id=clone.id,
-                    title=column.title,
-                    type=column.type,
-                    system_key=column.system_key,
-                    required=column.required,
-                    width=column.width,
-                    position=column.position,
-                    options=copy.deepcopy(column.options or []),
-                    multiple=column.multiple,
-                    align=column.align,
-                    lookup=remap_json_field(column.lookup, ctx),
-                    is_system=column.is_system,
-                    is_readonly=column.is_readonly,
-                    lock_position=column.lock_position,
-                    lock_width=column.lock_width,
-                    lock_delete=column.lock_delete,
-                ),
-            )
-
-        views = (
-            db.query(UniversalView)
-            .filter(UniversalView.table_id == table.id)
-            .order_by(UniversalView.position.asc())
-            .all()
-        )
-        for view in views:
-            db.add(
-                UniversalView(
-                    table_id=clone.id,
-                    name=view.name,
-                    type=view.type,
-                    settings=remap_json_field(view.settings, ctx),
-                    layout=remap_json_field(view.layout, ctx),
-                    filters=remap_json_field(view.filters, ctx),
-                    sorting=remap_json_field(view.sorting, ctx),
-                    grouping=remap_json_field(view.grouping, ctx),
-                    visible_fields=remap_json_field(view.visible_fields, ctx),
-                    is_default=view.is_default,
-                    is_visible=view.is_visible,
-                    is_system=view.is_system,
-                    position=view.position,
-                    created_by_id=None,
-                    updated_by_id=None,
-                ),
-            )
-    db.flush()
-
-
 def _source_library_ids(db: Session, ctx: CloneContext) -> set[int]:
     rows = (
         db.query(NavigationItem.library_id)
@@ -795,6 +717,7 @@ def clone_tenant_structure(
     target_tenant_id: int,
     *,
     auto_publish: bool = True,
+    commit: bool = True,
 ) -> CloneTenantStructureResult:
     """
     Copy tenant structure from source portal to an existing target portal.
@@ -823,19 +746,27 @@ def clone_tenant_structure(
 
         pages_cloned = _clone_pages(db, ctx)
         _clone_sections_and_blocks(db, ctx)
-        _clone_universal_tables(db, ctx)
         _clone_document_libraries(db, ctx)
         navigation_items_cloned = _clone_navigation_items(db, ctx)
+        designer_system_menu_settings_cloned = clone_designer_system_menu_settings(
+            db,
+            source_tenant_id=ctx.source_tenant_id,
+            target_tenant_id=ctx.target_tenant_id,
+        )
+        backfill_runtime_protected_navigation(db, portal_id=ctx.target_tenant_id)
         workspaces_cloned = _clone_workspaces(db, ctx)
         _clone_workspace_tabs(db, ctx)
 
-        db.commit()
+        if commit:
+            db.commit()
+        else:
+            db.flush()
     except Exception:
         db.rollback()
         raise
 
     catalog_version: int | None = None
-    if auto_publish:
+    if auto_publish and commit:
         publish_result = publish_tenant_catalog(db, target_tenant_id, None)
         catalog_version = publish_result.catalog_version
 
@@ -846,5 +777,6 @@ def clone_tenant_structure(
         navigation_items_cloned=navigation_items_cloned,
         object_types_cloned=object_types_cloned,
         workspaces_cloned=workspaces_cloned,
+        designer_system_menu_settings_cloned=designer_system_menu_settings_cloned,
         catalog_version=catalog_version,
     )

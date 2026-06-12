@@ -16,6 +16,8 @@ import {
   ObjectSettingsSplitLayout,
   buildObjectSettingsLayoutStorageKey,
 } from "../../../../shared/objectSettings";
+import { usePlatformConfirm } from "../../../../shared/platformModal";
+import { notifyDesignerStudioApiError } from "../../utils/notifyDesignerStudioApiError";
 
 export default function ObjectActionsTab({
   tenantId,
@@ -23,6 +25,7 @@ export default function ObjectActionsTab({
   objectTypeKey = "",
   onSchemaChanged = null,
 }) {
+  const platformConfirm = usePlatformConfirm();
   const [actionDefinitions, setActionDefinitions] = useState([]);
   const [actionTypes, setActionTypes] = useState([]);
   const [placementCatalog, setPlacementCatalog] = useState([]);
@@ -157,9 +160,13 @@ export default function ObjectActionsTab({
       }
 
       const target = actionDefinitions.find((item) => item.id === actionDefinitionId);
-      const confirmed = window.confirm(
-        `Удалить действие «${target?.name || target?.key || ""}»?`,
-      );
+      const confirmed = await platformConfirm({
+        title: "Удалить действие?",
+        message: `Удалить действие «${target?.name || target?.key || ""}»?`,
+        confirmLabel: "Удалить",
+        cancelLabel: "Отмена",
+        variant: "danger",
+      });
 
       if (!confirmed) {
         return;
@@ -179,10 +186,10 @@ export default function ObjectActionsTab({
         );
         await onSchemaChanged?.();
       } catch (err) {
-        window.alert(getApiErrorMessage(err, "Не удалось удалить действие"));
+        notifyDesignerStudioApiError(err, "Не удалось удалить действие");
       }
     },
-    [actionDefinitions, objectTypeId, onSchemaChanged, tenantId],
+    [actionDefinitions, objectTypeId, onSchemaChanged, platformConfirm, tenantId],
   );
 
   const openCreateModal = useCallback(() => {

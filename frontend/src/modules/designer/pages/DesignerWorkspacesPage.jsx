@@ -18,6 +18,7 @@ import {
   PAGE_LAYOUT_TOOLBAR_ZONE,
   useResolvedPageLayoutContract,
 } from "../../../shared/appShell/pageLayoutContract";
+import { usePlatformConfirm } from "../../../shared/platformModal";
 import "../styles/designerWorkspacesPage.css";
 
 const fieldStyle = { display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 };
@@ -189,6 +190,7 @@ export default function DesignerWorkspacesPage() {
     canMinimize: true,
   });
 
+  const platformConfirm = usePlatformConfirm();
   const navigate = useNavigate();
   const { tenantId } = useDesignerShell();
   const resolvedTenantId = Number(tenantId) || 1;
@@ -395,7 +397,16 @@ export default function DesignerWorkspacesPage() {
                       }
                     }}
                     onDelete={async () => {
-                      if (!window.confirm(`Удалить пространство "${workspace.title}"?`)) return;
+                      const confirmed = await platformConfirm({
+                        title: "Удалить рабочее пространство?",
+                        message: `Удалить пространство "${workspace.title}"?`,
+                        confirmLabel: "Удалить",
+                        cancelLabel: "Отмена",
+                        variant: "danger",
+                      });
+
+                      if (!confirmed) return;
+
                       setError("");
                       setActionLoadingId(workspace.id);
                       try {

@@ -56,7 +56,7 @@ const RUNTIME_PREVIEW_NAVIGATION = [
   {
     id: "runtime-reports",
     title: "Отчеты",
-    type: "universal_table",
+    type: "object_type",
     path: "/runtime/reports",
   },
   {

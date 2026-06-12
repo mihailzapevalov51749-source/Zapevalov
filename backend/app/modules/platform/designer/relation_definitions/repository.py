@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import or_
@@ -7,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.modules.platform.designer.relation_definitions.models import (
     DesignerRelationDefinition,
 )
+from app.modules.platform.designer.shared.soft_delete import apply_soft_delete
 
 
 def list_relations(db: Session, tenant_id: int) -> list[DesignerRelationDefinition]:
@@ -105,8 +105,10 @@ def save_relation(
 def soft_delete_relation(
     db: Session,
     entity: DesignerRelationDefinition,
+    *,
+    deleted_by: int | None = None,
 ) -> DesignerRelationDefinition:
-    entity.deleted_at = datetime.now(timezone.utc)
+    apply_soft_delete(entity, deleted_by=deleted_by)
     db.commit()
     db.refresh(entity)
     return entity

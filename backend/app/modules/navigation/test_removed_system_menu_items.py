@@ -15,6 +15,26 @@ def test_is_removed_office_navigation_item_my_tasks() -> None:
     assert is_removed_office_navigation_item(item) is True
 
 
+def test_is_removed_office_navigation_item_object_type_my_tasks_not_removed() -> None:
+    item = _item(
+        title="Мои задачи",
+        type="object_type",
+        menu_scope="runtime",
+        url="/portal/1/object-types/zadachnik",
+    )
+    assert is_removed_office_navigation_item(item) is False
+
+
+def test_is_removed_office_navigation_item_object_type_zadachnik_not_removed() -> None:
+    item = _item(
+        title="Задачник",
+        type="object_type",
+        menu_scope="runtime",
+        url="/portal/1/object-types/zadachnik",
+    )
+    assert is_removed_office_navigation_item(item) is False
+
+
 def test_is_removed_designer_navigation_item_relations() -> None:
     item = _item(
         title="Связи",
@@ -31,6 +51,22 @@ def test_filter_removed_navigation_items_runtime() -> None:
     items = [
         _item(title="Договоры", type="page", menu_scope="runtime"),
         _item(title="Мои задачи", type="universal_table", menu_scope="runtime"),
+        _item(
+            title="Мои задачи",
+            type="object_type",
+            menu_scope="runtime",
+            url="/portal/1/object-types/zadachnik",
+        ),
+        _item(
+            title="Задачник",
+            type="object_type",
+            menu_scope="runtime",
+            url="/portal/1/object-types/zadachnik",
+        ),
     ]
     filtered = filter_removed_navigation_items(items, menu_scope="runtime")
-    assert [item.title for item in filtered] == ["Договоры"]
+    assert [item.title for item in filtered] == [
+        "Договоры",
+        "Мои задачи",
+        "Задачник",
+    ]

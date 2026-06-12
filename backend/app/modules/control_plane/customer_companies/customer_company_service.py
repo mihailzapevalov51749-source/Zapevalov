@@ -42,8 +42,7 @@ def provision_customer_company(
     *,
     plan: CustomerCompanyProvisioningPlan,
 ) -> CustomerCompany:
-    """Future provisioning entry point — portal + superadmin + membership + invite."""
+    """Delegated to portals provisioning endpoint (create_portal_with_first_admin)."""
     raise NotImplementedError(
-        "Provisioning Service is not implemented yet. "
-        "Use create_customer_company_record for MVP registry-only flow."
+        "Используйте POST /portals/create-with-first-admin для полного provisioning."
     )

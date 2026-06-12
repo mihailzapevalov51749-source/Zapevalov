@@ -1,0 +1,87 @@
+.platform-user-avatar {
+  border-radius: 50%;
+  overflow: hidden;
+  background: #e0f2fe;
+  color: #0369a1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+  border: 1px solid #cbd5e1;
+}
+
+.platform-avatar-editor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.platform-avatar-editor__circle--interactive {
+  cursor: pointer;
+}
+
+.platform-avatar-editor__viewport {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.platform-avatar-editor__viewport img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+  pointer-events: none;
+}
+
+.platform-avatar-editor__actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.platform-avatar-editor__icon-btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.platform-avatar-editor__icon-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.platform-avatar-editor__icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
+.platform-avatar-editor__icon--delete {
+  filter: invert(24%) sepia(96%) saturate(2834%) hue-rotate(344deg) brightness(91%)
+    contrast(92%);
+}
+
+.platform-avatar-editor__status {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.platform-avatar-editor__file-input {
+  display: none;
+}

@@ -17,14 +17,6 @@ from app.modules.document_libraries.router import (
     router as document_libraries_router,
 )
 
-from app.modules.universal_tables.router import (
-    router as universal_tables_router,
-)
-
-from app.modules.universal_views.router import (
-    router as universal_views_router,
-)
-
 from app.modules.auth.router import router as auth_router
 from app.modules.users.router import router as users_router
 
@@ -67,8 +59,7 @@ from app.modules.ai_context.router import router as ai_context_router
 from app.modules.yasii.router import router as yasii_router
 from app.modules.control_plane.router import router as control_plane_router
 
-# Регистрация ORM в metadata (legacy + platform). Platform DDL — только через Alembic.
-from app.modules.universal_views import models as universal_views_models  # noqa: F401
+# Регистрация ORM в metadata (platform). Platform DDL — только через Alembic.
 from app.modules.platform.designer.object_types.models import (  # noqa: F401
     DesignerObjectType,
 )
@@ -118,9 +109,6 @@ app.include_router(blocks_router)
 # FILES
 app.include_router(files_router)
 app.include_router(document_libraries_router)
-
-app.include_router(universal_tables_router)
-app.include_router(universal_views_router)
 
 # COMMENTS
 app.include_router(comments_router)

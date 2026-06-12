@@ -1,26 +1,26 @@
+import { isPlatformOwner } from "../../../shared/platformAccess/platformOwnerAccess.js";
 import { resolveTenantEnvironmentRoleCode } from "../../../shared/tenantEnvironment/tenantEnvironment.js";
+import {
+  canAccessTenantAdministration as canAccessTenantAdministrationByRole,
+  resolveTenantRoleName,
+} from "../../../shared/tenantRoles/tenantRoleModel.js";
 
 const PLATFORM_CONTROL_PLANE_ROLES = new Set(["superadmin", "admin"]);
 
-const TENANT_ADMINISTRATION_ROLES = new Set([
-  "superadmin",
-  "admin",
-  "tenant_admin",
-  "company_admin",
-]);
-
 export function resolveRoleName(user) {
-  return String(user?.role?.name || user?.role || user?.role_name || "")
-    .trim()
-    .toLowerCase();
+  return resolveTenantRoleName(user);
 }
 
 export function canAccessControlPlane(user) {
+  if (isPlatformOwner(user)) {
+    return true;
+  }
+
   return PLATFORM_CONTROL_PLANE_ROLES.has(resolveRoleName(user));
 }
 
 export function canAccessTenantAdministration(user) {
-  return TENANT_ADMINISTRATION_ROLES.has(resolveRoleName(user));
+  return canAccessTenantAdministrationByRole(user);
 }
 
 /**

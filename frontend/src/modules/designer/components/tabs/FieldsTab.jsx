@@ -39,6 +39,8 @@ import {
   formatRelationFieldApiError,
   resolveRelationFieldSettingsPayload,
 } from "../fields/relationFieldFormUtils";
+import { usePlatformConfirm } from "../../../../shared/platformModal";
+import { notifyDesignerStudioApiError } from "../../utils/notifyDesignerStudioApiError";
 
 export default function FieldsTab({
   tenantId,
@@ -46,6 +48,7 @@ export default function FieldsTab({
   objectType = null,
   onSchemaChanged,
 }) {
+  const platformConfirm = usePlatformConfirm();
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -336,7 +339,16 @@ export default function FieldsTab({
 
   const handleDelete = async () => {
     if (!selected) return;
-    if (!window.confirm(`Удалить поле "${selected.name}"?`)) return;
+
+    const confirmed = await platformConfirm({
+      title: "Удалить поле?",
+      message: `Удалить поле "${selected.name}"?`,
+      confirmLabel: "Удалить",
+      cancelLabel: "Отмена",
+      variant: "danger",
+    });
+
+    if (!confirmed) return;
 
     try {
       await designerApi.deleteField(tenantId, objectTypeId, selected.id);
@@ -345,7 +357,7 @@ export default function FieldsTab({
       await loadItems();
       await onSchemaChanged?.();
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Не удалось удалить поле"));
+      notifyDesignerStudioApiError(err, "Не удалось удалить поле");
     }
   };
 

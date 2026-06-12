@@ -53,6 +53,30 @@ class TrashBulkResponse(BaseModel):
     results: list[TrashBulkResultItem] = Field(default_factory=list)
 
 
+class TrashBulkPurgeItemSummary(BaseModel):
+    kind: TrashEntityKind
+    id: str
+    label: str
+
+
+class TrashBulkPurgeBlockedItem(BaseModel):
+    kind: TrashEntityKind
+    id: str
+    label: str
+    reason: str
+
+
+class TrashBulkPurgeResponse(BaseModel):
+    success: bool
+    message: str
+    deleted_count: int = 0
+    deleted: list[TrashBulkPurgeItemSummary] = Field(default_factory=list)
+    skipped_as_dependent: list[TrashBulkPurgeItemSummary] = Field(default_factory=list)
+    skipped_missing: list[TrashBulkPurgeItemSummary] = Field(default_factory=list)
+    failed: list[TrashBulkResultItem] = Field(default_factory=list)
+    blocked: list[TrashBulkPurgeBlockedItem] = Field(default_factory=list)
+
+
 class TrashDependencyRead(BaseModel):
     label: str
     kind: str | None = None
@@ -102,6 +126,7 @@ class TrashExternalWarningGroup(BaseModel):
 class TrashPurgeBlockedResponse(BaseModel):
     blocked: bool = True
     message: str = "Зависимости обнаружены"
+    protected: bool = False
     dependencies: list[TrashDependencyRead] = Field(default_factory=list)
     tree: DependencyTreeRead | None = None
     internal_counts: list[TrashCascadeCountItem] = Field(default_factory=list)

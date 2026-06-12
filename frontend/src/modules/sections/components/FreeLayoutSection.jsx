@@ -597,7 +597,6 @@ function getDefaultBlockSize(blockType) {
     link: { w: 10, h: 5 },
     button: { w: 8, h: 4 },
     cards: { w: 18, h: 12 },
-    universal_table: { w: 36, h: 18 },
     table: { w: 36, h: 18 },
   };
 

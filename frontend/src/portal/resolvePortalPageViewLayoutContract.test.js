@@ -2,12 +2,16 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it } from "node:test";
 
 import {
   PAGE_LAYOUT_PAGE_TYPE,
   PAGE_LAYOUT_TOOLBAR_ZONE,
 } from "../shared/appShell/pageLayoutContract/pageLayoutContractTypes.js";
+import {
+  clearPortalHomePageCache,
+  primePortalHomePageCache,
+} from "./utils/resolvePortalHomePage.js";
 
 import {
   isDesignerShellEmbeddedPortalRoute,
@@ -19,6 +23,11 @@ import {
 const portalDir = dirname(fileURLToPath(import.meta.url));
 
 describe("resolvePortalPageViewLayoutContractOverrides", () => {
+  beforeEach(() => {
+    clearPortalHomePageCache();
+    primePortalHomePageCache(1, 5);
+  });
+  afterEach(() => clearPortalHomePageCache());
   it("returns studio_admin contract for designer administration root", () => {
     const contract = resolvePortalPageViewLayoutContractOverrides(
       { pathname: "/designer/tenant/1/administration" },
@@ -87,7 +96,7 @@ describe("resolvePortalPageViewLayoutContractOverrides", () => {
     assert.equal(contract.context.pageTitle, "Мои задачи");
     assert.equal(contract.context.pageId, 12);
     assert.equal(contract.context.layoutPageType, PAGE_LAYOUT_PAGE_TYPE.OFFICE_PAGE);
-    assert.equal(contract.fallbackRoute, "/portal/1/page/1");
+    assert.equal(contract.fallbackRoute, "/portal/1/page/5");
     assert.equal(contract.canMinimize, true);
   });
 
@@ -120,9 +129,9 @@ describe("resolvePortalPageViewLayoutContractOverrides", () => {
     assert.equal(contract.title, "Пользователи системы");
   });
 
-  it("does not enable minimize for legacy universal-table route", () => {
+  it("does not enable minimize for unknown system route", () => {
     const contract = resolvePortalPageViewLayoutContractOverrides(
-      { pathname: "/universal-table" },
+      { pathname: "/legacy-removed-route" },
       null,
     );
 
@@ -169,10 +178,16 @@ describe("resolvePortalPageTitle", () => {
 });
 
 describe("resolvePortalPageViewFallbackRoute", () => {
+  beforeEach(() => {
+    clearPortalHomePageCache();
+    primePortalHomePageCache(1, 5);
+  });
+  afterEach(() => clearPortalHomePageCache());
+
   it("returns office home for portal CMS page", () => {
     assert.equal(
       resolvePortalPageViewFallbackRoute("/portal/1/page/23", { portalId: 1 }),
-      "/portal/1/page/1",
+      "/portal/1/page/5",
     );
   });
 

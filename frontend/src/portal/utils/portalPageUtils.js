@@ -109,7 +109,6 @@ function getDefaultBlockSize(blockType) {
     cards: { w: 18, h: 12 },
     steps: { w: 18, h: 12 },
     table: { w: 36, h: 18 },
-    universal_table: { w: 36, h: 18 },
   };
 
   return sizes[blockType] || { w: 12, h: 6 };

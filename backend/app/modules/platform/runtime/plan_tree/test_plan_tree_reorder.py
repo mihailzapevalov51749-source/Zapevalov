@@ -32,7 +32,7 @@ class _FakeSession:
   pass
 
 
-def test_reorder_hierarchy_siblings_assigns_newest_created_at_to_first_child(monkeypatch):
+def test_reorder_hierarchy_siblings_assigns_oldest_created_at_to_first_child(monkeypatch):
     parent_id = uuid4()
     child_a = uuid4()
     child_b = uuid4()
@@ -57,8 +57,8 @@ def test_reorder_hierarchy_siblings_assigns_newest_created_at_to_first_child(mon
     )
 
     assert updated == 2
-    assert instance_a.created_at > instance_b.created_at
+    assert instance_a.created_at < instance_b.created_at
 
     base = datetime.now(timezone.utc)
     assert instance_a.created_at >= base
-    assert instance_b.created_at <= instance_a.created_at - timedelta(seconds=1)
+    assert instance_b.created_at >= instance_a.created_at + timedelta(seconds=1)

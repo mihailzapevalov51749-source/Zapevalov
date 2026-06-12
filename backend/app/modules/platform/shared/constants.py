@@ -1,13 +1,9 @@
 """Shared constants for the platform layer."""
 
-DESIGNER_ROLES = frozenset(
-    {
-        "admin",
-        "superadmin",
-        "platform_designer",
-        "platform_architect",
-    }
-)
+from app.modules.tenant_roles.constants import PLATFORM_DESIGNER_ROLES, TENANT_DESIGNER_ROLES
+
+# Backward-compatible union used by legacy imports.
+DESIGNER_ROLES = PLATFORM_DESIGNER_ROLES | TENANT_DESIGNER_ROLES
 
 OBJECT_TYPE_KEY_MAX_LENGTH = 64
 OBJECT_TYPE_NAME_MAX_LENGTH = 255

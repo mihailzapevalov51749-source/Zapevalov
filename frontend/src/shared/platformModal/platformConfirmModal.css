@@ -1,0 +1,24 @@
+[data-platform-modal-key="platform_confirm_modal"][data-platform-modal-panel] {
+  min-width: 480px;
+  min-height: 260px;
+}
+
+.platform-confirm-modal__body {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.platform-confirm-modal__message {
+  margin: 0;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.platform-confirm-modal__description {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}

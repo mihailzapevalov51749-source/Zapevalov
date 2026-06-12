@@ -41,6 +41,9 @@ from app.modules.quality_issues.models import (  # noqa: F401
 from app.modules.control_plane.customer_companies.models import (  # noqa: F401
     CustomerCompany,
 )
+from app.modules.control_plane.platform_profile.models import (  # noqa: F401
+    PlatformSettings,
+)
 
 # IMPORT PLATFORM DASHBOARD MODELS
 from app.modules.platform_dashboard.models import (  # noqa: F401
@@ -79,6 +82,9 @@ from app.modules.platform.designer.workspaces.models import (  # noqa: F401
     DesignerWorkspace,
     DesignerWorkspaceTab,
 )
+from app.modules.platform.designer.system_menu_settings.models import (  # noqa: F401
+    DesignerSystemMenuSetting,
+)
 from app.modules.platform.runtime.entities.models import (  # noqa: F401
     RuntimeEntity,
     RuntimeEntityValue,
@@ -103,6 +109,7 @@ def init_db():
     ensure_quality_issue_ai_fix_columns()
     ensure_platform_dashboard_analysis_columns()
     ensure_platform_dashboard_initialized()
+    ensure_bootstrap_owner_initialized()
 
 
 def ensure_platform_dashboard_analysis_columns():
@@ -285,6 +292,17 @@ def ensure_navigation_show_icon_column():
         connection.execute(
             text("UPDATE navigation_items SET show_icon = TRUE WHERE show_icon IS NULL")
         )
+
+
+def ensure_bootstrap_owner_initialized():
+    from app.db.session import SessionLocal
+    from app.modules.users.bootstrap_owner_service import ensure_bootstrap_owner
+
+    db = SessionLocal()
+    try:
+        ensure_bootstrap_owner(db, commit=True)
+    finally:
+        db.close()
 
 
 def ensure_designer_workspace_home_page_column():

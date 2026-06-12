@@ -10,6 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.modules.pages.models import Page
+from app.modules.platform.designer.shared.soft_delete import apply_soft_delete
 from app.modules.sections.models import Section
 from app.modules.platform.designer.workspaces.models import DesignerWorkspace, DesignerWorkspaceTab
 from app.modules.platform.designer.workspaces.workspace_home.constants import (
@@ -137,7 +138,7 @@ def reconcile_duplicate_home_tabs(
                 duplicate.id,
                 canonical.id,
             )
-            duplicate.deleted_at = now
+            apply_soft_delete(duplicate, deleted_by=None)
             duplicate.updated_at = now
         db.flush()
         return canonical

@@ -1,4 +1,4 @@
-import { isLegacyStorageBlockType } from "../../shared/legacy";
+import { isLegacyTableBlockType } from "../../modules/blocks/registry/legacyTableBlockTypes";
 
 /** Все типы (включая legacy) — для справки и миграций. */
 export const PAGE_CANVAS_BLOCK_TYPES_ALL = [
@@ -14,7 +14,7 @@ export const PAGE_CANVAS_BLOCK_TYPES_ALL = [
 
 /** Типы блоков для контекстного меню canvas (без legacy storage). */
 export const PAGE_CANVAS_BLOCK_TYPES = PAGE_CANVAS_BLOCK_TYPES_ALL.filter(
-  (item) => !isLegacyStorageBlockType(item.type),
+  (item) => !isLegacyTableBlockType(item.type),
 );
 
 export function getCreatablePageCanvasBlockTypes() {

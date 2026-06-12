@@ -4,6 +4,7 @@ import {
   findCatalogObjectType,
   getObjectTypeFields,
 } from "../services/tableModelAdapter";
+import { notifyLastVisibleTableFieldGuard } from "../constants/objectTableFieldVisibilityGuard";
 import { canMoveTableColumn } from "../../services/tableColumnOrder";
 
 /**
@@ -59,7 +60,7 @@ export default function ObjectTableColumnVisibilityPanel({
     const result = sessionApi?.toggleFieldVisibility?.(fieldKey);
 
     if (result?.ok === false && result.reason === "last_visible_field") {
-      window.alert("Нельзя скрыть все поля. Должно остаться хотя бы одно видимое.");
+      notifyLastVisibleTableFieldGuard();
     }
   };
 

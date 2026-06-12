@@ -1,7 +1,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Path, status
+from fastapi import APIRouter, Depends, Path, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -25,10 +25,14 @@ workspace_tabs_router = APIRouter(
 
 @workspace_tabs_router.get("", response_model=list[WorkspaceTabRead])
 def list_workspace_tabs(
+    tenant_id: int | None = Query(
+        default=None,
+        description="Фильтр вкладок по tenant (portal id)",
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return service.list_workspace_tabs(db, current_user)
+    return service.list_workspace_tabs(db, current_user, tenant_id=tenant_id)
 
 
 @workspace_tabs_router.post(

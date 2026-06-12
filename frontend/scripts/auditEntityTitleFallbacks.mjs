@@ -64,7 +64,7 @@ const report = {
   patterns: results,
   remainingOutOfScope: [
     "shared/shell/header (portal navigation labels)",
-    "modules/universalTable (legacy table module)",
+    "Universal Table frontend (removed, PR-2B)",
     "modules/navigation (menu item titles)",
     "backend search API (server-side titles)",
   ],

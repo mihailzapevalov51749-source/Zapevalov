@@ -1,13 +1,28 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator, model_validator
 
 from app.modules.platform_dashboard.datetime_utils import serialize_utc_datetime
 from app.modules.platform_event_journal.constants import (
     PlatformEventJournalStatus,
     PlatformEventJournalType,
 )
+from app.modules.platform_event_journal.label_resolvers import (
+    resolve_event_category_label,
+    resolve_event_type_label,
+    resolve_status_label,
+)
+
+
+class EventJournalFilterOption(BaseModel):
+    value: str
+    label: str
+
+
+class EventJournalFilterOptionsResponse(BaseModel):
+    categories: list[EventJournalFilterOption]
+    event_types: list[EventJournalFilterOption]
 
 
 class PlatformEventJournalEntryRead(BaseModel):
@@ -18,12 +33,38 @@ class PlatformEventJournalEntryRead(BaseModel):
     title: str
     description: str | None = None
     event_type: str
+    scope: str = "platform"
+    journal_kind: str = "platform_audit"
+    event_category: str | None = None
     status: str
     author: str | None = None
     author_user_id: int | None = None
+    actor_email: str | None = None
+    target_type: str | None = None
+    target_id: str | None = None
+    target_name: str | None = None
+    tenant_id: int | None = None
+    company_id: int | None = None
+    metadata_json: dict[str, Any] | None = Field(default=None, validation_alias="metadata_json")
     source: str
     occurred_at: datetime
     created_at: datetime
+
+    event_category_label: str | None = None
+    event_type_label: str | None = None
+    status_label: str | None = None
+
+    @model_validator(mode="after")
+    def populate_labels(self) -> "PlatformEventJournalEntryRead":
+        category = self.event_category or "system"
+        self.event_category_label = resolve_event_category_label(category, scope=self.scope)
+        self.event_type_label = resolve_event_type_label(
+            self.event_type,
+            self.metadata_json,
+            scope=self.scope,
+        )
+        self.status_label = resolve_status_label(self.status)
+        return self
 
     @field_serializer("occurred_at", "created_at")
     def serialize_datetimes(self, value: datetime) -> str:

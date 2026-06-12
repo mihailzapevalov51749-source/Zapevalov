@@ -17,6 +17,7 @@ import {
   PAGE_LAYOUT_TOOLBAR_ZONE,
   useResolvedPageLayoutContract,
 } from "../../../shared/appShell/pageLayoutContract";
+import { usePlatformConfirm } from "../../../shared/platformModal";
 import "../styles/designerWorkspaceDetailPage.css";
 
 const TAB_TYPE_OPTIONS = [
@@ -54,6 +55,7 @@ export default function DesignerWorkspaceDetailPage() {
     canMinimize: true,
   });
 
+  const platformConfirm = usePlatformConfirm();
   const { tenantId } = useDesignerShell();
   const { workspaceSlug } = useParams();
   const resolvedTenantId = Number(tenantId) || 1;
@@ -375,7 +377,17 @@ export default function DesignerWorkspaceDetailPage() {
   const handleDeleteTab = useCallback(
     async (tab) => {
       if (!workspace?.id || tab.is_system) return;
-      if (!window.confirm(`Удалить вкладку "${tab.title}"?`)) return;
+
+      const confirmed = await platformConfirm({
+        title: "Удалить вкладку?",
+        message: `Удалить вкладку "${tab.title}"?`,
+        confirmLabel: "Удалить",
+        cancelLabel: "Отмена",
+        variant: "danger",
+      });
+
+      if (!confirmed) return;
+
       setError("");
       try {
         await deleteDesignerWorkspaceTab(resolvedTenantId, workspace.id, tab.id);
@@ -384,7 +396,7 @@ export default function DesignerWorkspaceDetailPage() {
         setError(deleteError?.message || "Не удалось удалить вкладку");
       }
     },
-    [loadWorkspaceData, resolvedTenantId, workspace?.id],
+    [loadWorkspaceData, platformConfirm, resolvedTenantId, workspace?.id],
   );
 
   if (isLoading) {

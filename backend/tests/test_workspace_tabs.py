@@ -174,8 +174,27 @@ def test_list_workspace_tabs_only_current_user() -> None:
     ) as list_mock:
         result = list_workspace_tabs(db, user)
 
-    list_mock.assert_called_once_with(db, 7)
+    list_mock.assert_called_once_with(db, 7, tenant_id=None)
     assert len(result) == 1
+
+
+def test_list_workspace_tabs_filters_by_tenant_id() -> None:
+    db = MagicMock()
+    user = _user(user_id=7)
+    tab = _tab_entity(user_id=7, tenant_id=21, route="/portal/21/page/12")
+
+    with patch(
+        "app.modules.platform.workspace_tabs.service._ensure_tenant_exists",
+        return_value=None,
+    ), patch(
+        "app.modules.platform.workspace_tabs.service.repository.list_tabs_for_user",
+        return_value=[tab],
+    ) as list_mock:
+        result = list_workspace_tabs(db, user, tenant_id=21)
+
+    list_mock.assert_called_once_with(db, 7, tenant_id=21)
+    assert len(result) == 1
+    assert result[0].tenant_id == 21
 
 
 def test_update_workspace_tab_requires_ownership() -> None:

@@ -160,6 +160,7 @@ function ObjectTypePurgePreview({ preview }) {
 export default function TrashPurgeModal({
   open = false,
   targetItem = null,
+  selectedCount = 1,
   blocked = null,
   purgePreview = null,
   cascadePreview = null,
@@ -174,8 +175,37 @@ export default function TrashPurgeModal({
   onConfirmCascadeDelete,
 }) {
   const isBlocked = Boolean(blocked?.blocked);
+  const isProtectedBlocked = Boolean(blocked?.protected);
+  const isBulkSelection = selectedCount > 1;
+  const isBulkBlocked = isBulkSelection && Boolean(blocked?.bulk);
+  const protectedMessage =
+    blocked?.dependencies?.[0]?.label ||
+    blocked?.message ||
+    "Системную страницу нельзя удалить окончательно";
   const isObjectTypeCascadePreview =
-    targetItem?.kind === "object_type" && Boolean(purgePreview);
+    !isBulkSelection && targetItem?.kind === "object_type" && Boolean(purgePreview);
+  const modalTitle = isProtectedBlocked
+    ? "Удаление запрещено"
+    : isBulkBlocked
+    ? "Удаление заблокировано"
+    : isObjectTypeCascadePreview
+      ? "Удалить окончательно?"
+      : isBulkSelection
+        ? "Удалить окончательно выбранные элементы?"
+        : targetItem?.title
+          ? `Удалить окончательно «${targetItem.title}»?`
+          : "Удаление объекта";
+  const modalSubtitle = isProtectedBlocked
+    ? protectedMessage
+    : isBulkBlocked
+    ? blocked?.message || "Невозможно удалить выбранные элементы: обнаружены зависимости."
+    : isBlocked
+      ? "Обнаружены зависимости. Выберите сценарий удаления."
+      : isObjectTypeCascadePreview
+      ? "Объект и его внутреннее содержимое будут удалены из базы данных без возможности восстановления."
+      : isBulkSelection
+        ? `Выбрано: ${selectedCount}`
+        : "Подтвердите окончательное удаление объекта из корзины.";
   const groups = blocked?.presentation?.groups || [];
   const dependencyTree = blocked?.tree || cascadePreview?.tree || null;
 
@@ -234,7 +264,23 @@ export default function TrashPurgeModal({
       ? "designer-btn designer-btn--danger-solid"
       : "designer-btn designer-btn--primary";
 
-  const footer = isBlocked ? (
+  const footer = isProtectedBlocked ? (
+    <div className="designer-trash-purge-modal__footer-bar designer-trash-purge-modal__footer-bar--compact">
+      <div className="designer-trash-purge-modal__footer-right">
+        <button type="button" className="designer-btn" onClick={onClose} disabled={isSubmitting}>
+          Закрыть
+        </button>
+      </div>
+    </div>
+  ) : isBulkBlocked ? (
+    <div className="designer-trash-purge-modal__footer-bar designer-trash-purge-modal__footer-bar--compact">
+      <div className="designer-trash-purge-modal__footer-right">
+        <button type="button" className="designer-btn" onClick={onClose} disabled={isSubmitting}>
+          Закрыть
+        </button>
+      </div>
+    </div>
+  ) : isBlocked ? (
     <div className="designer-trash-purge-modal__footer-bar designer-trash-purge-modal__footer-bar--compact">
       <div className="designer-trash-purge-modal__footer-right">
         <button type="button" className="designer-btn" onClick={onClose} disabled={isSubmitting}>
@@ -273,14 +319,8 @@ export default function TrashPurgeModal({
       open={open}
       modalKey={MODAL_KEY}
       onClose={onClose}
-      title={isObjectTypeCascadePreview ? "Удалить окончательно?" : "Удаление объекта"}
-      subtitle={
-        isBlocked
-          ? "Обнаружены зависимости. Выберите сценарий удаления."
-          : isObjectTypeCascadePreview
-            ? "Объект и его внутреннее содержимое будут удалены из базы данных без возможности восстановления."
-            : "Подтвердите окончательное удаление объекта из корзины."
-      }
+      title={modalTitle}
+      subtitle={modalSubtitle}
       ariaLabel="Окно удаления объекта из корзины"
       footer={footer}
       canCustomizeLayout
@@ -288,9 +328,37 @@ export default function TrashPurgeModal({
       contentStyle={{ padding: "16px 20px" }}
     >
       <div className="designer-trash-purge-modal__layout">
-        <TargetObjectCard item={targetItem} />
+        {isBulkSelection ? (
+          <p className="designer-trash-purge-modal__lead">
+            Выбранные записи будут удалены из базы данных без возможности восстановления.
+          </p>
+        ) : (
+          <TargetObjectCard item={targetItem} />
+        )}
 
-        {isBlocked ? (
+        {isProtectedBlocked ? (
+          <section className="designer-trash-purge-modal__info-box" aria-label="Запрет удаления">
+            <Info size={16} aria-hidden="true" />
+            <p>{protectedMessage}</p>
+          </section>
+        ) : isBulkBlocked ? (
+          <section className="designer-trash-purge-modal__cascade-preview" aria-label="Блокировки удаления">
+            <h5 className="designer-trash-purge-modal__cascade-title">Элементы с блокировками</h5>
+            <ul className="designer-trash-purge-modal__cascade-list">
+              {(blocked?.items || []).map((item) => (
+                <li
+                  key={`${item.kind || item.entity_kind}:${item.id ?? item.entity_id}`}
+                  className="designer-trash-purge-modal__cascade-item"
+                >
+                  {item.label || item.reason || `${item.kind || item.entity_kind} #${item.id ?? item.entity_id}`}
+                  {item.reason && item.label ? (
+                    <span className="designer-trash-purge-modal__item-meta"> — {item.reason}</span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : isBlocked && !isProtectedBlocked ? (
           <div className="designer-trash-purge-modal__columns">
             <div className="designer-trash-purge-modal__column designer-trash-purge-modal__column--deps">
               <TrashPurgeDependenciesPanel

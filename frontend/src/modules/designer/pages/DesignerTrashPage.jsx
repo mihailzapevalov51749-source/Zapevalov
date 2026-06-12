@@ -54,6 +54,9 @@ export default function DesignerTrashPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionError, setActionError] = useState("");
+  const [actionNotice, setActionNotice] = useState("");
+  const [purgeSelectionCount, setPurgeSelectionCount] = useState(0);
+  const [purgeBulkMode, setPurgeBulkMode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [typeFilter, setTypeFilter] = useState(TYPE_FILTER_ALL);
@@ -68,6 +71,7 @@ export default function DesignerTrashPage() {
   const [selectedDepsLoading, setSelectedDepsLoading] = useState(false);
   const [selectedDepsPresentation, setSelectedDepsPresentation] = useState(null);
   const restoreRequestKeyRef = useRef(null);
+  const selectAllCheckboxRef = useRef(null);
 
   const loadTrash = useCallback(async () => {
     setLoading(true);
@@ -159,6 +163,8 @@ export default function DesignerTrashPage() {
     setCascadePreview(null);
     setPurgeTargetItem(null);
     setSelectedDeleteMode(null);
+    setPurgeBulkMode(false);
+    setPurgeSelectionCount(0);
     restoreRequestKeyRef.current = null;
     clearPurgeModalUrl();
   }, [clearPurgeModalUrl]);
@@ -251,7 +257,7 @@ export default function DesignerTrashPage() {
   }, [selectedItem, tenantId, buildBlockedPresentation]);
 
   useEffect(() => {
-    if (loading) {
+    if (loading || purgeBulkMode || purgeSelectionCount > 1) {
       return undefined;
     }
 
@@ -330,17 +336,50 @@ export default function DesignerTrashPage() {
     tenantId,
     purgeModalOpen,
     purgeTargetItem,
+    purgeBulkMode,
+    purgeSelectionCount,
     selectedDeleteMode,
     openBlockedPurgeModal,
     closePurgeModal,
     clearPurgeModalUrl,
   ]);
 
+  const visibleItemKeys = useMemo(
+    () => filteredItems.map((item) => itemKey(item)),
+    [filteredItems],
+  );
+
+  const visibleSelectedCount = useMemo(() => {
+    let count = 0;
+    for (const key of visibleItemKeys) {
+      if (selectedIds.has(key)) {
+        count += 1;
+      }
+    }
+    return count;
+  }, [visibleItemKeys, selectedIds]);
+
+  const allVisibleSelected =
+    visibleItemKeys.length > 0 && visibleSelectedCount === visibleItemKeys.length;
+
+  const someVisibleSelected =
+    visibleSelectedCount > 0 && visibleSelectedCount < visibleItemKeys.length;
+
   const selectedRefs = useMemo(() => {
     return filteredItems
       .filter((item) => selectedIds.has(itemKey(item)))
       .map((item) => ({ kind: item.kind, id: item.id }));
   }, [filteredItems, selectedIds]);
+
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [searchText, typeFilter]);
+
+  useEffect(() => {
+    if (selectAllCheckboxRef.current) {
+      selectAllCheckboxRef.current.indeterminate = someVisibleSelected;
+    }
+  }, [someVisibleSelected, allVisibleSelected, visibleSelectedCount]);
 
   const resolveTrashItemFromRefs = useCallback(
     (refs) => {
@@ -369,6 +408,55 @@ export default function DesignerTrashPage() {
     });
   };
 
+  const removeSelectedKeys = useCallback((keys) => {
+    if (!keys.length) {
+      return;
+    }
+    const keysToRemove = new Set(keys);
+    setSelectedIds((previous) => {
+      const next = new Set(previous);
+      for (const key of keysToRemove) {
+        next.delete(key);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleAllVisibleSelection = () => {
+    if (allVisibleSelected) {
+      setSelectedIds((previous) => {
+        const next = new Set(previous);
+        for (const key of visibleItemKeys) {
+          next.delete(key);
+        }
+        return next;
+      });
+      return;
+    }
+
+    setSelectedIds((previous) => {
+      const next = new Set(previous);
+      for (const key of visibleItemKeys) {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
+  const formatBulkActionErrors = (results) =>
+    results
+      .filter((item) => !item.success)
+      .map((item) => item.error || "Операция не выполнена")
+      .filter(Boolean)
+      .join("\n");
+
+  const applyBulkActionSelectionCleanup = (results) => {
+    const succeededKeys = (results || [])
+      .filter((item) => item.success)
+      .map((item) => `${item.kind}:${item.id}`);
+    removeSelectedKeys(succeededKeys);
+  };
+
   const handleRestore = async (refs) => {
     if (!refs.length) {
       return;
@@ -377,14 +465,11 @@ export default function DesignerTrashPage() {
     setActionError("");
     try {
       const response = await designerApi.restoreDesignerTrashItems(tenantId, refs);
-      const failed = (response?.results || []).filter((item) => !item.success);
+      const results = response?.results || [];
+      const failed = results.filter((item) => !item.success);
       if (failed.length) {
-        setActionError(
-          failed
-            .map((item) => item.error || "Не удалось восстановить")
-            .filter(Boolean)
-            .join("\n"),
-        );
+        setActionError(formatBulkActionErrors(results));
+        applyBulkActionSelectionCleanup(results);
         await loadTrash();
         return;
       }
@@ -408,7 +493,17 @@ export default function DesignerTrashPage() {
     setPurgePreview(null);
     setCascadePreview(null);
     setSelectedDeleteMode(null);
+    const isBulk = refs.length > 1;
+    setPurgeBulkMode(isBulk);
     setPurgeTargetItem(trashItem);
+    setPurgeSelectionCount(refs.length);
+
+    if (isBulk) {
+      clearPurgeModalUrl();
+      setPurgeModalOpen(true);
+      return;
+    }
+
     if (refs.length === 1) {
       try {
         const blocked = await designerApi.checkDesignerTrashPurge(
@@ -442,15 +537,49 @@ export default function DesignerTrashPage() {
     }
     setIsSubmitting(true);
     setActionError("");
+    setActionNotice("");
     try {
-      await designerApi.purgeDesignerTrashItems(tenantId, refs);
+      const response = await designerApi.purgeDesignerTrashItems(tenantId, refs);
+      if (response?.success === false) {
+        if (Array.isArray(response.blocked) && response.blocked.length) {
+          setPurgeBlocked({
+            blocked: true,
+            bulk: purgeBulkMode,
+            message:
+              response.message ||
+              "Невозможно удалить выбранные элементы: обнаружены зависимости.",
+            items: response.blocked,
+            dependencies: response.blocked.map((item) => ({
+              label: item.reason || item.label,
+              entity_kind: item.kind,
+              entity_id: item.id,
+            })),
+          });
+          setActionError("");
+          return;
+        }
+        setActionError(response.message || "Не удалось удалить окончательно");
+        closePurgeModal();
+        return;
+      }
       closePurgeModal();
       setSelectedIds(new Set());
       setSelectedKey(null);
+      setActionNotice(response?.message || `Удалено ${response?.deleted_count || refs.length} элементов.`);
       await loadTrash();
     } catch (purgeError) {
       const detail = purgeError?.response?.data?.detail;
       if (detail?.dependencies) {
+        if (purgeBulkMode) {
+          setPurgeBlocked({
+            blocked: true,
+            bulk: true,
+            message: detail.message || "Невозможно удалить выбранные элементы: обнаружены зависимости.",
+            items: detail.dependencies,
+            dependencies: detail.dependencies,
+          });
+          return;
+        }
         const blockedPayload = {
           blocked: true,
           message: detail.message || "Зависимости обнаружены",
@@ -495,7 +624,7 @@ export default function DesignerTrashPage() {
   }, [purgeTargetItem, tenantId, closePurgeModal, loadTrash]);
 
   const handleRequestCascadePreview = useCallback(async () => {
-    if (!purgeTargetItem) {
+    if (!purgeTargetItem || purgeBulkMode) {
       return;
     }
     setIsSubmitting(true);
@@ -517,10 +646,10 @@ export default function DesignerTrashPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [purgeTargetItem, tenantId]);
+  }, [purgeTargetItem, purgeBulkMode, tenantId]);
 
   const handleConfirmCascadeDelete = useCallback(async () => {
-    if (!purgeTargetItem) {
+    if (!purgeTargetItem || purgeBulkMode) {
       return;
     }
     setIsSubmitting(true);
@@ -541,7 +670,7 @@ export default function DesignerTrashPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [purgeTargetItem, tenantId, closePurgeModal, loadTrash]);
+  }, [purgeTargetItem, purgeBulkMode, tenantId, closePurgeModal, loadTrash]);
 
   return (
     <div className="designer-trash">
@@ -576,13 +705,16 @@ export default function DesignerTrashPage() {
         </select>
         {selectedRefs.length ? (
           <div className="designer-trash__bulk">
+            <span className="designer-trash__selection-count">
+              Выбрано: {selectedRefs.length}
+            </span>
             <button
               type="button"
               className="designer-btn designer-btn--compact"
               disabled={isSubmitting}
               onClick={() => handleRestore(selectedRefs)}
             >
-              Восстановить выбранные ({selectedRefs.length})
+              Восстановить выбранные
             </button>
             <button
               type="button"
@@ -590,13 +722,14 @@ export default function DesignerTrashPage() {
               disabled={isSubmitting}
               onClick={() => openPurgeModal(selectedRefs)}
             >
-              Удалить выбранные окончательно
+              Удалить окончательно выбранные
             </button>
           </div>
         ) : null}
       </div>
 
       {error ? <p className="designer-error">{error}</p> : null}
+      {actionNotice ? <p className="designer-trash__notice">{actionNotice}</p> : null}
       {actionError ? <p className="designer-error">{actionError}</p> : null}
 
       <div className="designer-trash__workspace">
@@ -607,7 +740,16 @@ export default function DesignerTrashPage() {
             <table className="designer-trash__table">
               <thead>
                 <tr>
-                  <th />
+                  <th className="designer-trash__select-header">
+                    <input
+                      ref={selectAllCheckboxRef}
+                      type="checkbox"
+                      checked={allVisibleSelected}
+                      disabled={!filteredItems.length}
+                      onChange={toggleAllVisibleSelection}
+                      aria-label="Выбрать все видимые записи"
+                    />
+                  </th>
                   <th>№</th>
                   <th>Название</th>
                   <th>Тип</th>
@@ -675,6 +817,7 @@ export default function DesignerTrashPage() {
       <TrashPurgeModal
         open={purgeModalOpen}
         targetItem={purgeTargetItem}
+        selectedCount={purgeSelectionCount}
         blocked={purgeBlocked}
         purgePreview={purgePreview}
         cascadePreview={cascadePreview}

@@ -7,6 +7,7 @@ import { getTenantRegistryItem } from "../api/tenantRegistryApi";
 import ControlPlaneAccessGate from "../components/ControlPlaneAccessGate";
 import TenantRegistryStatusBadge from "../components/TenantRegistryStatusBadge";
 import TenantRegistryTypeBadge from "../components/TenantRegistryTypeBadge";
+import { openCompanyInOffice } from "../../../portal/utils/openCompanyInOffice";
 import { controlPlaneStyles as styles } from "../controlPlaneStyles";
 
 function formatSourceTenant(value) {
@@ -21,6 +22,7 @@ function ControlPlaneTenantDetailView({ tenantId }) {
   const [tenant, setTenant] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isOpeningOffice, setIsOpeningOffice] = useState(false);
 
   const loadTenant = useCallback(async () => {
     try {
@@ -44,8 +46,17 @@ function ControlPlaneTenantDetailView({ tenantId }) {
     loadTenant();
   }, [loadTenant]);
 
-  const openTenantRuntime = () => {
-    window.open(`/portal/${tenantId}/page/1`, "_blank", "noopener,noreferrer");
+  const openTenantRuntime = async () => {
+    if (isOpeningOffice) {
+      return;
+    }
+
+    setIsOpeningOffice(true);
+    try {
+      await openCompanyInOffice(tenantId);
+    } finally {
+      setIsOpeningOffice(false);
+    }
   };
 
   return (
@@ -64,8 +75,13 @@ function ControlPlaneTenantDetailView({ tenantId }) {
           >
             К реестру
           </button>
-          <button type="button" style={styles.secondaryButton} onClick={openTenantRuntime}>
-            Открыть Office
+          <button
+            type="button"
+            style={styles.secondaryButton}
+            onClick={openTenantRuntime}
+            disabled={isOpeningOffice}
+          >
+            {isOpeningOffice ? "Открытие..." : "Открыть Office"}
           </button>
         </div>
       </div>

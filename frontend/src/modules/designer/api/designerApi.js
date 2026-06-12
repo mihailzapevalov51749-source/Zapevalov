@@ -454,6 +454,14 @@ export async function deleteDesignerPage(tenantId, pageId) {
   return data;
 }
 
+export async function bulkDeleteDesignerPages(tenantId, pageIds) {
+  const { data } = await platformApiClient.post(
+    `${tenantBase(tenantId)}/pages/bulk-delete`,
+    { page_ids: pageIds },
+  );
+  return data;
+}
+
 export async function createDesignerWorkspace(tenantId, payload) {
   const { data } = await platformApiClient.post(
     `${tenantBase(tenantId)}/workspaces`,

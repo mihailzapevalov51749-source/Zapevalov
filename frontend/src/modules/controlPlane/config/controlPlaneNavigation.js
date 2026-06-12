@@ -1,4 +1,10 @@
-import { buildControlPlaneClientsPath, buildControlPlaneRoute } from "./controlPlanePaths.js";
+import {
+  buildControlPlaneCompaniesPath,
+  buildControlPlanePlatformProfilePath,
+  buildControlPlaneRoute,
+  buildControlPlaneUsersRolesPath,
+} from "./controlPlanePaths.js";
+import { resolvePlatformProfileWorkspaceTab } from "../platformProfile/platformProfileWorkspaceConfig.js";
 
 const CP = buildControlPlaneRoute();
 
@@ -41,38 +47,9 @@ export const CONTROL_PLANE_NAV_ITEMS = [
   cpNavItem({
     id: "cp-group-companies",
     title: "Компании",
+    route: buildControlPlaneCompaniesPath("clients"),
     iconType: "users",
     sortOrder: 20,
-    children: [
-      cpNavItem({
-        id: "cp-companies-list",
-        title: "Компании",
-        route: buildControlPlaneClientsPath("companies"),
-        iconType: "users",
-        sortOrder: 10,
-      }),
-      cpNavItem({
-        id: "cp-companies-registry",
-        title: "Tenant Registry",
-        route: buildControlPlaneClientsPath("registry"),
-        iconType: "settings",
-        sortOrder: 20,
-      }),
-      cpNavItem({
-        id: "cp-companies-create",
-        title: "Создание компании",
-        route: buildControlPlaneClientsPath("create"),
-        iconType: "settings",
-        sortOrder: 30,
-      }),
-      cpNavItem({
-        id: "cp-companies-clone",
-        title: "Клонирование",
-        route: buildControlPlaneClientsPath("clone"),
-        iconType: "settings",
-        sortOrder: 40,
-      }),
-    ],
   }),
   cpNavItem({
     id: "cp-group-templates",
@@ -99,6 +76,13 @@ export const CONTROL_PLANE_NAV_ITEMS = [
         sortOrder: 30,
       }),
     ],
+  }),
+  cpNavItem({
+    id: "cp-group-platform-profile",
+    title: "Профиль платформы",
+    route: buildControlPlanePlatformProfilePath("general"),
+    iconType: "settings",
+    sortOrder: 35,
   }),
   cpNavItem({
     id: "cp-group-platform",
@@ -133,31 +117,18 @@ export const CONTROL_PLANE_NAV_ITEMS = [
     ],
   }),
   cpNavItem({
-    id: "cp-group-system",
-    title: "Система",
-    iconType: "settings",
+    id: "cp-group-users-roles",
+    title: "Пользователи и роли",
+    route: buildControlPlaneUsersRolesPath("users"),
+    iconType: "users",
     sortOrder: 50,
-    children: [
-      cpNavItem({
-        id: "cp-platform-users",
-        title: "Пользователи платформы",
-        route: buildControlPlaneRoute("platform-users"),
-        iconType: "users",
-        sortOrder: 10,
-      }),
-      cpNavItem({
-        id: "cp-platform-roles",
-        title: "Роли платформы",
-        route: buildControlPlaneRoute("platform-roles"),
-        sortOrder: 20,
-      }),
-      cpNavItem({
-        id: "cp-audit-log",
-        title: "Журнал событий",
-        route: buildControlPlaneRoute("audit-log"),
-        sortOrder: 30,
-      }),
-    ],
+  }),
+  cpNavItem({
+    id: "cp-audit-log",
+    title: "Журнал событий",
+    route: buildControlPlaneRoute("audit-log"),
+    iconType: "settings",
+    sortOrder: 60,
   }),
 ];
 
@@ -168,29 +139,39 @@ const ROUTE_MATCHERS = [
     parentIds: [],
   },
   {
+    test: (path) => /^\/control-plane\/companies\/clients(?:\/|$)/.test(path),
+    itemId: "cp-group-companies",
+    parentIds: [],
+  },
+  {
+    test: (path) => /^\/control-plane\/companies(?:\/|$)/.test(path),
+    itemId: "cp-group-companies",
+    parentIds: [],
+  },
+  {
     test: (path) => /^\/control-plane\/clients\/companies(?:\/|$)/.test(path),
-    itemId: "cp-companies-list",
-    parentIds: ["cp-group-companies"],
+    itemId: "cp-group-companies",
+    parentIds: [],
   },
   {
     test: (path) => /^\/control-plane\/clients\/registry(?:\/|$)/.test(path),
-    itemId: "cp-companies-registry",
-    parentIds: ["cp-group-companies"],
+    itemId: "cp-group-companies",
+    parentIds: [],
   },
   {
     test: (path) => /^\/control-plane\/clients\/create(?:\/|$)/.test(path),
-    itemId: "cp-companies-create",
-    parentIds: ["cp-group-companies"],
+    itemId: "cp-group-companies",
+    parentIds: [],
   },
   {
     test: (path) => /^\/control-plane\/clients\/clone(?:\/|$)/.test(path),
-    itemId: "cp-companies-clone",
-    parentIds: ["cp-group-companies"],
+    itemId: "cp-group-companies",
+    parentIds: [],
   },
   {
     test: (path) => /^\/control-plane\/clients(?:\/|$)/.test(path),
-    itemId: "cp-companies-list",
-    parentIds: ["cp-group-companies"],
+    itemId: "cp-group-companies",
+    parentIds: [],
   },
   {
     test: (path) => /^\/control-plane\/templates\/versions(?:\/|$)/.test(path),
@@ -211,6 +192,11 @@ const ROUTE_MATCHERS = [
     test: (path) => /^\/control-plane\/templates(?:\/|$)/.test(path),
     itemId: "cp-templates-versions",
     parentIds: ["cp-group-templates"],
+  },
+  {
+    test: (path) => /^\/control-plane\/platform-profile(?:\/|$)/.test(path),
+    itemId: "cp-group-platform-profile",
+    parentIds: [],
   },
   {
     test: (path) => /^\/control-plane\/platform\/licenses(?:\/|$)/.test(path),
@@ -238,29 +224,34 @@ const ROUTE_MATCHERS = [
     parentIds: ["cp-group-platform"],
   },
   {
-    test: (path) => /^\/control-plane\/platform-users(?:\/|$)/.test(path),
-    itemId: "cp-platform-users",
-    parentIds: ["cp-group-system"],
+    test: (path) => /^\/control-plane\/users-roles(?:\/|$)/.test(path),
+    itemId: "cp-group-users-roles",
+    parentIds: [],
   },
   {
-    test: (path) => /^\/control-plane\/users(?:\/|$)/.test(path),
-    itemId: "cp-platform-users",
-    parentIds: ["cp-group-system"],
+    test: (path) => /^\/control-plane\/platform-users(?:\/|$)/.test(path),
+    itemId: "cp-group-users-roles",
+    parentIds: [],
   },
   {
     test: (path) => /^\/control-plane\/platform-roles(?:\/|$)/.test(path),
-    itemId: "cp-platform-roles",
-    parentIds: ["cp-group-system"],
+    itemId: "cp-group-users-roles",
+    parentIds: [],
+  },
+  {
+    test: (path) => /^\/control-plane\/users(?:\/|$)/.test(path),
+    itemId: "cp-group-users-roles",
+    parentIds: [],
   },
   {
     test: (path) => /^\/control-plane\/roles(?:\/|$)/.test(path),
-    itemId: "cp-platform-roles",
-    parentIds: ["cp-group-system"],
+    itemId: "cp-group-users-roles",
+    parentIds: [],
   },
   {
     test: (path) => /^\/control-plane\/audit-log(?:\/|$)/.test(path),
     itemId: "cp-audit-log",
-    parentIds: ["cp-group-system"],
+    parentIds: [],
   },
   {
     test: (path) => /^\/control-plane\/settings(?:\/|$)/.test(path),
@@ -311,26 +302,32 @@ export function resolveControlPlanePageMeta(pathname = "") {
   if (normalized === "/control-plane") {
     return { title: "Главная", subtitle: "Control Plane" };
   }
+  if (/\/companies\/clients\/\d+/.test(normalized)) {
+    return { title: "Компании", subtitle: "Клиенты" };
+  }
+  if (/\/companies\/clients/.test(normalized) || /\/companies/.test(normalized)) {
+    return { title: "Компании", subtitle: "Клиенты" };
+  }
   if (/\/clients\/registry\/\d+/.test(normalized)) {
-    return { title: "Tenant Registry", subtitle: "Компании" };
+    return { title: "Компании", subtitle: "Клиенты" };
   }
   if (/\/clients\/registry/.test(normalized)) {
-    return { title: "Tenant Registry", subtitle: "Компании" };
+    return { title: "Компании", subtitle: "Клиенты" };
   }
   if (/\/clients\/companies\/\d+/.test(normalized)) {
-    return { title: "Карточка компании", subtitle: "Компании" };
+    return { title: "Компании", subtitle: "Клиенты" };
   }
   if (/\/clients\/companies/.test(normalized)) {
-    return { title: "Компании", subtitle: "Компании" };
+    return { title: "Компании", subtitle: "Клиенты" };
   }
   if (/\/clients\/create/.test(normalized)) {
-    return { title: "Создание компании", subtitle: "Компании" };
+    return { title: "Компании", subtitle: "Клиенты" };
   }
   if (/\/clients\/clone/.test(normalized)) {
-    return { title: "Клонирование", subtitle: "Компании" };
+    return { title: "Компании", subtitle: "Клиенты" };
   }
   if (/\/clients/.test(normalized)) {
-    return { title: "Клиенты ЯсноПро", subtitle };
+    return { title: "Компании", subtitle: "Клиенты" };
   }
   if (/\/templates\/versions/.test(normalized)) {
     return { title: "Версии шаблонов", subtitle: "Шаблоны" };
@@ -340,6 +337,28 @@ export function resolveControlPlanePageMeta(pathname = "") {
   }
   if (/\/templates\/publish/.test(normalized)) {
     return { title: "Публикация", subtitle: "Шаблоны" };
+  }
+  if (/\/platform-profile/.test(normalized)) {
+    const slugMatch = normalized.match(/\/platform-profile\/([^/]+)/);
+    const slug = slugMatch?.[1] || "general";
+    const tab = resolvePlatformProfileWorkspaceTab(slug);
+    const profileRoot = buildControlPlanePlatformProfilePath("general");
+    const breadcrumbTrail = [
+      {
+        label: "Профиль платформы",
+        path: profileRoot,
+      },
+      {
+        label: tab.label,
+        path: buildControlPlanePlatformProfilePath(tab.slug),
+      },
+    ];
+
+    return {
+      title: tab.label,
+      subtitle: "Профиль платформы",
+      breadcrumbTrail,
+    };
   }
   if (/\/platform\/licenses/.test(normalized)) {
     return { title: "Лицензии", subtitle: "Платформа" };
@@ -353,11 +372,14 @@ export function resolveControlPlanePageMeta(pathname = "") {
   if (/\/platform\/backup/.test(normalized)) {
     return { title: "Резервное копирование", subtitle: "Платформа" };
   }
-  if (/\/platform-users/.test(normalized)) {
-    return { title: "Пользователи платформы", subtitle: "Система" };
+  if (/\/users-roles\/roles/.test(normalized) || /\/platform-roles/.test(normalized)) {
+    return { title: "Роли", subtitle: "Пользователи и роли" };
   }
-  if (/\/platform-roles/.test(normalized)) {
-    return { title: "Роли платформы", subtitle: "Система" };
+  if (/\/users-roles\/users/.test(normalized) || /\/platform-users/.test(normalized)) {
+    return { title: "Пользователи", subtitle: "Пользователи и роли" };
+  }
+  if (/\/users-roles/.test(normalized)) {
+    return { title: "Пользователи", subtitle: "Пользователи и роли" };
   }
   if (/\/modules/.test(normalized)) {
     return { title: "Модули платформы", subtitle: "Платформа" };
@@ -369,7 +391,7 @@ export function resolveControlPlanePageMeta(pathname = "") {
     return { title: "Интеграции платформы", subtitle: "Платформа" };
   }
   if (/\/audit-log/.test(normalized)) {
-    return { title: "Журнал событий", subtitle: "Система" };
+    return { title: "Журнал событий", subtitle: "Control Plane" };
   }
 
   return { title: "Управление платформой", subtitle };

@@ -55,7 +55,7 @@ def reorder_hierarchy_siblings(
     """
     First child id in ordered_child_ids is displayed first in the plan tree.
 
-    Uses created_at DESC ordering in list_by_relation_key — newest first.
+    Plan tree siblings are sorted by relation instance created_at ASC (oldest first).
     """
     parent_side, child_side = resolve_hierarchy_relation_entity_sides(relation_settings_json)
     base_time = datetime.now(timezone.utc)
@@ -77,8 +77,7 @@ def reorder_hierarchy_siblings(
                 f"Missing hierarchy edge parent={parent_entity_id} child={child_id}",
             )
 
-        rank = len(ordered_child_ids) - index
-        instance.created_at = base_time + timedelta(seconds=rank)
+        instance.created_at = base_time + timedelta(seconds=index)
         instance.updated_at = base_time
         updated += 1
 

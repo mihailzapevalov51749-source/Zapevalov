@@ -1,0 +1,20 @@
+{
+  "counts": {
+    "universal_tables": null,
+    "universal_table_rows": null,
+    "universal_table_columns": null,
+    "universal_views": null
+  },
+  "table_exists": {
+    "universal_tables": false,
+    "universal_table_rows": false,
+    "universal_table_columns": false,
+    "universal_views": false
+  },
+  "foreign_keys": [],
+  "indexes": [],
+  "views": [],
+  "materialized_views": [],
+  "triggers": [],
+  "routines": []
+}

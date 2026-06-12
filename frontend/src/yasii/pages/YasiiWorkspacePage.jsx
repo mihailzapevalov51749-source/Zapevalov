@@ -133,12 +133,16 @@ export default function YasiiWorkspacePage() {
   );
 
   const handleCloseWorkspace = useCallback(() => {
-    const returnPath = resolveYasiiReturnPath(
+    void resolveYasiiReturnPath(
       readYasiiPreWorkspacePath(portalId, location.pathname),
-    );
-    session?.leaveYasiiPageMinimized?.();
-    navigate(returnPath);
-  }, [navigate, session]);
+    ).then((returnPath) => {
+      if (!returnPath) {
+        return;
+      }
+      session?.leaveYasiiPageMinimized?.();
+      navigate(returnPath);
+    });
+  }, [location.pathname, navigate, portalId, session]);
 
   const changeMenuScale = useCallback((nextScale) => {
     const normalized = Math.min(1.4, Math.max(0.8, nextScale));

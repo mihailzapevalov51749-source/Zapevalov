@@ -46,6 +46,7 @@ def create_customer_company(
     db: Session,
     *,
     payload: CustomerCompanyCreate,
+    commit: bool = True,
 ) -> CustomerCompany:
     _validate_portal_id(db, payload.primary_portal_id)
     _validate_user_id(db, payload.sales_owner_id, field_name="sales_owner_id")
@@ -61,8 +62,11 @@ def create_customer_company(
     )
 
     db.add(company)
-    db.commit()
-    db.refresh(company)
+    if commit:
+        db.commit()
+        db.refresh(company)
+    else:
+        db.flush()
     return company
 
 

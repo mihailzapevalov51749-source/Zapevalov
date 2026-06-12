@@ -1,3 +1,4 @@
+import { patchNavigationMenuSettings } from "../navigation/navigationMenuBlocks.js";
 import {
   readTenantUiPrefJson,
   writeTenantUiPrefJson,
@@ -30,4 +31,11 @@ export function writeSystemMenuSettings(tenantId, settings) {
     UI_PREF_KEYS.SYSTEM_MENU_SETTINGS,
     settings && typeof settings === "object" ? settings : DEFAULT_SETTINGS,
   );
+}
+
+export function patchSystemMenuSettingsOrder(tenantId, items = []) {
+  const current = readSystemMenuSettings(tenantId);
+  const next = patchNavigationMenuSettings(current, items);
+  writeSystemMenuSettings(tenantId, next);
+  return next;
 }

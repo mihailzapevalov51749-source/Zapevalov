@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.modules.platform.designer.pages import service
 from app.modules.platform.designer.pages.schemas import (
+    PageBulkDeleteRequest,
+    PageBulkDeleteResponse,
     PageDuplicateResponse,
     PageRegistryDetailRead,
     PageRegistryListResponse,
@@ -37,6 +39,21 @@ def get_page_registry(tenant_id: int, page_id: int, db: Session = Depends(get_db
 @router.post("/{page_id}/duplicate", response_model=PageDuplicateResponse)
 def post_duplicate_page(tenant_id: int, page_id: int, db: Session = Depends(get_db)):
     return service.duplicate_page_registry(db, tenant_id, page_id)
+
+
+@router.post("/bulk-delete", response_model=PageBulkDeleteResponse)
+def post_bulk_delete_pages(
+    tenant_id: int,
+    payload: PageBulkDeleteRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_designer_user),
+):
+    return service.bulk_delete_page_registry(
+        db,
+        tenant_id,
+        payload.page_ids,
+        deleted_by=current_user.id,
+    )
 
 
 @router.delete("/{page_id}")

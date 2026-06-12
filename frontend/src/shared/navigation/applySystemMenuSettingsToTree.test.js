@@ -5,6 +5,7 @@ import {
   applySystemMenuSettingsToTree,
   isSystemMenuItem,
   shouldApplySystemMenuSettings,
+  sortNavigationTreeBySortOrder,
 } from "./applySystemMenuSettingsToTree.js";
 
 describe("applySystemMenuSettingsToTree", () => {
@@ -38,6 +39,33 @@ describe("applySystemMenuSettingsToTree", () => {
     assert.equal(
       isSystemMenuItem("cp-group-companies", { isSystem: false }, null),
       true,
+    );
+  });
+});
+
+describe("sortNavigationTreeBySortOrder", () => {
+  it("sorts root and nested items by sort_order", () => {
+    const sorted = sortNavigationTreeBySortOrder([
+      { id: "cp-b", title: "B", sort_order: 20 },
+      { id: "cp-a", title: "A", sort_order: 10 },
+      {
+        id: "cp-section",
+        title: "Section",
+        sort_order: 30,
+        children: [
+          { id: "cp-child-2", title: "Child 2", sort_order: 2 },
+          { id: "cp-child-1", title: "Child 1", sort_order: 1 },
+        ],
+      },
+    ]);
+
+    assert.deepEqual(
+      sorted.map((item) => item.id),
+      ["cp-a", "cp-b", "cp-section"],
+    );
+    assert.deepEqual(
+      sorted[2].children.map((item) => item.id),
+      ["cp-child-1", "cp-child-2"],
     );
   });
 });

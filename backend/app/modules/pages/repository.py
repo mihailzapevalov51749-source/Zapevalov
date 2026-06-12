@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.modules.platform.designer.shared.soft_delete import apply_soft_delete
 
 from .models import Page
+from .protected_pages import assert_page_deletion_allowed
 
 
 def create_page(db: Session, data):
@@ -56,6 +57,8 @@ def delete_page(db: Session, page_id: int, *, deleted_by: int | None = None):
 
     if not page or page.deleted_at is not None:
         return None
+
+    assert_page_deletion_allowed(db, tenant_id=int(page.portal_id), page=page, hard_delete=False)
 
     apply_soft_delete(page, deleted_by=deleted_by)
     db.commit()

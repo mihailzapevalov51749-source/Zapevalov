@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 import { getTableSortIcon } from "../../../../shared/viewEngine/TableSortToggleButton";
 import { formatPageDate, PAGE_SORT_KEYS } from "../../utils/pagesRegistryUtils";
 
@@ -24,17 +26,45 @@ function StatusBadge({ label, status }) {
 export default function PagesRegistryTable({
   items,
   selectedPageId,
+  selectedPageIds,
   onSelectPage,
+  onTogglePageSelection,
+  onToggleAllVisibleSelection,
   sortKey,
   sortDirection,
   onToggleSort,
   emptyMessage = "Страницы не найдены",
 }) {
+  const selectAllCheckboxRef = useRef(null);
+  const selectedSet = selectedPageIds instanceof Set ? selectedPageIds : new Set();
+
+  const visibleIds = items.map((item) => String(item.id));
+  const visibleSelectedCount = visibleIds.filter((id) => selectedSet.has(id)).length;
+  const allVisibleSelected = visibleIds.length > 0 && visibleSelectedCount === visibleIds.length;
+  const someVisibleSelected =
+    visibleSelectedCount > 0 && visibleSelectedCount < visibleIds.length;
+
+  useEffect(() => {
+    if (selectAllCheckboxRef.current) {
+      selectAllCheckboxRef.current.indeterminate = someVisibleSelected;
+    }
+  }, [someVisibleSelected, allVisibleSelected, visibleSelectedCount]);
+
   return (
     <div className="designer-table-wrap designer-pages-table-wrap">
       <table className="designer-table designer-pages-table">
         <thead>
           <tr>
+            <th className="designer-pages-table__select-header">
+              <input
+                ref={selectAllCheckboxRef}
+                type="checkbox"
+                checked={allVisibleSelected}
+                disabled={!items.length}
+                onChange={onToggleAllVisibleSelection}
+                aria-label="Выбрать все видимые страницы"
+              />
+            </th>
             <th className="designer-table-col-index">№</th>
             {COLUMNS.map((column) => (
               <th key={column.key} className={column.className}>
@@ -55,6 +85,7 @@ export default function PagesRegistryTable({
         <tbody>
           {items.map((item, index) => {
             const selected = String(selectedPageId) === String(item.id);
+            const checked = selectedSet.has(String(item.id));
 
             return (
               <tr
@@ -62,6 +93,17 @@ export default function PagesRegistryTable({
                 className={selected ? "is-selected" : ""}
                 onClick={() => onSelectPage(item.id)}
               >
+                <td
+                  className="designer-pages-table__select-cell"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => onTogglePageSelection(item.id)}
+                    aria-label={`Выбрать страницу ${item.title}`}
+                  />
+                </td>
                 <td className="designer-table-col-index">{index + 1}</td>
                 <td>
                   <div className="designer-pages-table__title">{item.title}</div>

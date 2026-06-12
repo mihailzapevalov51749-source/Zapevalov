@@ -428,8 +428,9 @@ def delete_relation(
         )
 
     object_type_map = _object_type_map_for_entities(db, tenant_id, [entity])
-    entity.updated_by = _actor_user_id(current_user)
-    entity = repository.soft_delete_relation(db, entity)
+    actor_id = _actor_user_id(current_user)
+    entity.updated_by = actor_id
+    entity = repository.soft_delete_relation(db, entity, deleted_by=actor_id)
 
     _touch_relation_object_types(
         db,

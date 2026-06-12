@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { getPageFull } from "../../api/pagesApi";
 import { resolveOfficePageLoadError } from "../utils/officePageAccess";
+import { resolvePortalHomePageId } from "../utils/resolvePortalHomePage";
 import ContentSection from "../../modules/sections/components/ContentSection";
 import SystemMessage from "../../system/SystemMessage";
 
@@ -14,6 +16,7 @@ export default function PortalPageRuntimeContent({
   workspaceTab,
   isEditMode = false,
 }) {
+  const navigate = useNavigate();
   const [pageData, setPageData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -22,6 +25,11 @@ export default function PortalPageRuntimeContent({
     const normalized = Number(pageId);
     return Number.isFinite(normalized) && normalized > 0 ? normalized : null;
   }, [pageId]);
+
+  const resolvedPortalId = useMemo(() => {
+    const normalized = Number(portalId);
+    return Number.isFinite(normalized) && normalized > 0 ? normalized : null;
+  }, [portalId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,13 +42,41 @@ export default function PortalPageRuntimeContent({
         return;
       }
 
+      setLoading(true);
+      setError("");
+      setPageData(null);
+
       try {
-        setLoading(true);
-        setError("");
-        const data = await getPageFull(resolvedPageId, { officeAccess: true });
-        if (!cancelled) {
-          setPageData(data);
+        const data = await getPageFull(resolvedPageId, {
+          officeAccess: true,
+          portalId: resolvedPortalId,
+        });
+        if (cancelled) {
+          return;
         }
+
+        const expectedPortalId = resolvedPortalId;
+        const pagePortalId = Number(data?.page?.portal_id);
+        if (
+          expectedPortalId != null &&
+          Number.isFinite(pagePortalId) &&
+          pagePortalId > 0 &&
+          pagePortalId !== expectedPortalId
+        ) {
+          setPageData(null);
+          const homePageId = await resolvePortalHomePageId(expectedPortalId);
+          if (cancelled) {
+            return;
+          }
+          if (homePageId !== resolvedPageId) {
+            navigate(`/portal/${expectedPortalId}/page/${homePageId}`, { replace: true });
+            return;
+          }
+          setError("Страница не принадлежит текущей компании");
+          return;
+        }
+
+        setPageData(data);
       } catch (loadError) {
         if (!cancelled) {
           setPageData(null);
@@ -57,7 +93,7 @@ export default function PortalPageRuntimeContent({
     return () => {
       cancelled = true;
     };
-  }, [resolvedPageId]);
+  }, [resolvedPageId, resolvedPortalId, navigate]);
 
   if (!resolvedPageId) {
     return <SystemMessage>Страница не указана</SystemMessage>;

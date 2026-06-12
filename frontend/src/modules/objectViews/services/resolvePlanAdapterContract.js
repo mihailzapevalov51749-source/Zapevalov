@@ -129,7 +129,7 @@ export function resolvePlanAdapterContract({
 
   return {
     contract,
-    viewType: String(contract?.viewType || "table").toLowerCase(),
+    viewType: "plan",
     recovered: false,
     blocked: true,
   };

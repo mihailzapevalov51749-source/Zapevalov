@@ -12,7 +12,7 @@ import viewDuplicateIcon from "../../../../assets/icons/view-duplicate.png";
 import deleteIcon from "../../../../assets/icons/delet.png";
 import saveIcon from "../../../../assets/icons/save.gif";
 
-import { PlatformModal } from "../../../../shared/platformModal";
+import { PlatformModal, usePlatformConfirm } from "../../../../shared/platformModal";
 import ObjectTableCreateViewDialog from "../components/ObjectTableCreateViewDialog";
 import ObjectTableViewSettingsColumnsDetails from "./ObjectTableViewSettingsColumnsDetails";
 import ObjectTableViewSettingsFieldsDetails from "./ObjectTableViewSettingsFieldsDetails";
@@ -92,6 +92,7 @@ export default function ObjectTableViewSettingsPanel({
   onEditSavedFilter,
   onDeleteSavedFilter,
 }) {
+  const platformConfirm = usePlatformConfirm();
   const renameInputRef = useRef(null);
   const [expandedKey, setExpandedKey] = useState(null);
   const [isSaveAsOpen, setIsSaveAsOpen] = useState(false);
@@ -221,10 +222,14 @@ export default function ObjectTableViewSettingsPanel({
     }
   };
 
-  const handleDelete = () => {
-    const confirmed = window.confirm(
-      `Удалить представление «${viewName}»?`,
-    );
+  const handleDelete = async () => {
+    const confirmed = await platformConfirm({
+      title: "Удалить представление?",
+      message: `Удалить представление «${viewName}»?`,
+      confirmLabel: "Удалить",
+      cancelLabel: "Отмена",
+      variant: "danger",
+    });
 
     if (confirmed) {
       onDelete?.();

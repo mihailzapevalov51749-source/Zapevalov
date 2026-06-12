@@ -12,8 +12,10 @@ import {
 } from "../../shared/shell/header";
 import {
   resolveOfficeToStudioPath,
-  resolveStudioToOfficePath,
+  resolveStudioToOfficePathAsync,
 } from "../../shared/appMode/appModeNavigation";
+import { showPlatformNotification } from "../../shared/platformNotification/PlatformNotification";
+import { TENANT_HOME_PAGE_NOT_FOUND_MESSAGE } from "../../shared/tenantContext/resolveTenantRuntimeEntryPath";
 import { emitRuntimeShadowSnapshot } from "../../shared/shell/shadow/runtime";
 
 const DEFAULT_AVATAR_SETTINGS = {
@@ -234,7 +236,16 @@ const effectiveShowBackButton = true;
           return;
         case "app-mode-switch":
           if (pathname.startsWith("/designer")) {
-            navigate(resolveStudioToOfficePath(pathname));
+            void resolveStudioToOfficePathAsync(pathname).then((path) => {
+              if (!path) {
+                showPlatformNotification({
+                  message: TENANT_HOME_PAGE_NOT_FOUND_MESSAGE,
+                  variant: "warning",
+                });
+                return;
+              }
+              navigate(path);
+            });
           } else {
             navigate(resolveOfficeToStudioPath(pathname, tenantId));
           }

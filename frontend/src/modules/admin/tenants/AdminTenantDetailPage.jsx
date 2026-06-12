@@ -5,6 +5,7 @@ import { buildControlPlaneClientsPath } from "../../controlPlane/config/controlP
 import ClientsSectionNav from "../clients/ClientsSectionNav";
 import AdminTenantDeleteModal from "./AdminTenantDeleteModal";
 import { adminTenantsStyles as styles } from "./adminTenantsStyles";
+import { openCompanyInOffice } from "../../../portal/utils/openCompanyInOffice";
 import { deletePortal, getPortal } from "./portalsApi";
 
 function formatDate(value) {
@@ -23,6 +24,7 @@ export default function AdminTenantDetailPage({ portalId }) {
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isOpeningOffice, setIsOpeningOffice] = useState(false);
 
   const loadPortal = useCallback(async () => {
     try {
@@ -46,8 +48,17 @@ export default function AdminTenantDetailPage({ portalId }) {
     loadPortal();
   }, [loadPortal]);
 
-  const openTenantRuntime = () => {
-    window.open(`/portal/${portalId}/page/1`, "_blank", "noopener,noreferrer");
+  const openTenantRuntime = async () => {
+    if (isOpeningOffice) {
+      return;
+    }
+
+    setIsOpeningOffice(true);
+    try {
+      await openCompanyInOffice(portalId);
+    } finally {
+      setIsOpeningOffice(false);
+    }
   };
 
   const openDeleteModal = () => {
@@ -99,8 +110,13 @@ export default function AdminTenantDetailPage({ portalId }) {
           >
             К списку
           </button>
-          <button type="button" style={styles.primaryButton} onClick={openTenantRuntime}>
-            Открыть Office
+          <button
+            type="button"
+            style={styles.primaryButton}
+            onClick={openTenantRuntime}
+            disabled={isOpeningOffice}
+          >
+            {isOpeningOffice ? "Открытие..." : "Открыть Office"}
           </button>
           <button type="button" style={styles.dangerButton} onClick={openDeleteModal}>
             Удалить компанию

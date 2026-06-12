@@ -1,4 +1,5 @@
 import { resolvePageLayoutFallbackRoute } from "../shared/appShell/pageLayoutContract/resolvePageLayoutContract.js";
+import { peekTenantRuntimeEntryPath } from "../shared/tenantContext/resolveTenantRuntimeEntryPath.js";
 import {
   PAGE_LAYOUT_PAGE_TYPE,
   PAGE_LAYOUT_TOOLBAR_ZONE,
@@ -104,7 +105,10 @@ export function resolvePortalPageViewFallbackRoute(pathname, options = {}) {
   }
 
   if (normalizedPath.match(/^\/portal\/\d+\/page\/\d+/)) {
-    return `/portal/${tenantId}/page/1`;
+    return (
+      peekTenantRuntimeEntryPath(tenantId) ||
+      resolvePageLayoutFallbackRoute(tenantId)
+    );
   }
 
   if (normalizedPath.match(/^\/designer\/tenant\/\d+\/administration\/?$/)) {
@@ -167,7 +171,6 @@ function buildCmsContractFields({
  */
 export function resolvePortalPageViewLayoutContractOverrides(location, pageId, options = {}) {
   const pathname = String(location?.pathname || "").trim();
-  const isUniversalTablePage = pathname === "/universal-table";
   const isAdminPage =
     pathname.startsWith("/admin") ||
     /^\/designer\/tenant\/\d+\/administration(\/|$)/.test(pathname);
@@ -175,7 +178,6 @@ export function resolvePortalPageViewLayoutContractOverrides(location, pageId, o
   const isDesignerCustomPageRoute = /^\/designer\/tenant\/\d+\/page\/\d+/.test(pathname);
   const isPortalCmsPage =
     /^\/portal\/\d+\/page\/\d+/.test(pathname) &&
-    !isUniversalTablePage &&
     !isAdminPage &&
     !isCorporateChatPage;
 

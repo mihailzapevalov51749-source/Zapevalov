@@ -59,6 +59,40 @@ export function findMissingPlanEntityIds(hierarchyEntityIds, indexedItems) {
 }
 
 /**
+ * Stable signature for a set of entity ids pending hydration.
+ *
+ * @param {Iterable<string>} entityIds
+ */
+export function buildPlanEntityHydrationKey(entityIds) {
+  return [...entityIds]
+    .map((id) => String(id || "").trim())
+    .filter(Boolean)
+    .sort()
+    .join("|");
+}
+
+/**
+ * Plan tree must not render hierarchy edges until missing entity payloads are loaded.
+ *
+ * @param {{
+ *   missingEntityIds?: string[],
+ *   lastHydratedKey?: string,
+ * }} params
+ */
+export function isPlanTreeEntityHydrationPending({
+  missingEntityIds = [],
+  lastHydratedKey = "",
+}) {
+  const missingKey = buildPlanEntityHydrationKey(missingEntityIds);
+
+  if (!missingKey) {
+    return false;
+  }
+
+  return lastHydratedKey !== missingKey;
+}
+
+/**
  * @param {Array<Record<string, unknown>>} baseItems
  * @param {Array<Record<string, unknown>>} supplementaryItems
  * @returns {Array<Record<string, unknown>>}

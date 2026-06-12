@@ -12,7 +12,6 @@ class CloneContext:
     page_id_map: dict[int, int] = field(default_factory=dict)
     section_id_map: dict[int, int] = field(default_factory=dict)
     block_id_map: dict[int, int] = field(default_factory=dict)
-    universal_table_id_map: dict[int, int] = field(default_factory=dict)
 
     object_type_id_map: dict[UUID, UUID] = field(default_factory=dict)
     field_id_map: dict[UUID, UUID] = field(default_factory=dict)
@@ -32,7 +31,6 @@ class CloneContext:
             "page_id": self.page_id_map,
             "section_id": self.section_id_map,
             "block_id": self.block_id_map,
-            "table_id": self.universal_table_id_map,
             "library_id": self.document_library_id_map,
             "navigation_item_id": self.navigation_item_id_map,
             "workspace_id": self.workspace_id_map,

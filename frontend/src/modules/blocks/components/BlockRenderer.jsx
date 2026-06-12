@@ -1,4 +1,4 @@
-import { isLegacyUniversalTableStorageBlockType } from "../../../shared/legacy";
+import { isLegacyTableBlockType } from "../registry/legacyTableBlockTypes";
 import {
   getBlockTypeTitle,
   getBlockViewComponent,
@@ -22,18 +22,14 @@ export default function BlockRenderer({
   isDropAfter,
   isDragTarget,
   isDragged,
-  tableRepresentationProps,
 }) {
   const BlockComponent = getBlockViewComponent(block?.type);
 
-  const isLegacyUtStorageBlock = isLegacyUniversalTableStorageBlockType(
-    block?.type
-  );
+  const isLegacyUtStorageBlock = isLegacyTableBlockType(block?.type);
   const isAdminSystemBlock = block?.type === "admin_system";
 
   const isTableBlock =
     isLegacyUtStorageBlock ||
-    ["table", "tables", "table_block", "tableBlock"].includes(block?.type) ||
     Array.isArray(block?.content?.columns) ||
     Array.isArray(block?.content?.rows);
 
@@ -83,7 +79,6 @@ export default function BlockRenderer({
           onEdit={onEdit}
           onDelete={onDelete}
           onBlockUpdated={onBlockUpdated}
-          tableRepresentationProps={tableRepresentationProps}
         />
       ) : (
         <DefaultBlock block={block} />

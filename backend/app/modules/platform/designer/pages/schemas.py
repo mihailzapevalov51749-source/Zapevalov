@@ -52,6 +52,7 @@ class PageRegistryListItemRead(BaseModel):
     created_at: datetime | None = None
     updated_at: datetime | None = None
     author: str | None = None
+    is_protected: bool = False
 
 
 class PageRegistryDetailRead(PageRegistryListItemRead):
@@ -70,3 +71,20 @@ class PageRegistryListResponse(BaseModel):
 class PageDuplicateResponse(BaseModel):
     source_page_id: int
     page: PageRegistryListItemRead
+
+
+class PageBulkDeleteRequest(BaseModel):
+    page_ids: list[int] = Field(default_factory=list, min_length=1)
+
+
+class PageBulkDeleteSkippedItem(BaseModel):
+    id: int
+    title: str
+    reason: str = "protected_page"
+
+
+class PageBulkDeleteResponse(BaseModel):
+    deleted_count: int = 0
+    deleted_ids: list[int] = Field(default_factory=list)
+    skipped: list[PageBulkDeleteSkippedItem] = Field(default_factory=list)
+    message: str = ""

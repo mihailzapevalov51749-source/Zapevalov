@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 
 import {
+  clearPortalHomePageCache,
+  primePortalHomePageCache,
+} from "../../portal/utils/resolvePortalHomePage.js";
+import {
   resolveOfficeToStudioPath,
   resolveRootEntryPath,
   resolveRuntimeFallbackPath,
@@ -46,25 +50,30 @@ function clearStorage() {
   ensureStorage();
   sessionStorage.clear();
   localStorage.clear();
+  clearPortalHomePageCache();
 }
 
 describe("resolveStudioToOfficePath", () => {
-  beforeEach(clearStorage);
+  beforeEach(() => {
+    clearStorage();
+    primePortalHomePageCache(1, 5);
+    primePortalHomePageCache(13, 77);
+  });
   afterEach(clearStorage);
 
   it("uses tenant from designer URL when localStorage has another tenant (test 1 & 5)", () => {
-    localStorage.setItem(runtimeKey(13), "/portal/13/page/1");
+    localStorage.setItem(runtimeKey(13), "/portal/13/page/99");
 
     const path = resolveStudioToOfficePath(
       "/designer/tenant/1/administration/tenants",
     );
 
-    assert.equal(path, "/portal/1/page/1");
+    assert.equal(path, "/portal/1/page/5");
   });
 
   it("uses stored runtime path when it belongs to URL tenant", () => {
     sessionStorage.setItem(runtimeKey(1), "/portal/1/page/5");
-    localStorage.setItem(runtimeKey(13), "/portal/13/page/1");
+    localStorage.setItem(runtimeKey(13), "/portal/13/page/99");
 
     const path = resolveStudioToOfficePath("/designer/tenant/1/object-types");
 
@@ -72,11 +81,11 @@ describe("resolveStudioToOfficePath", () => {
   });
 
   it("uses portal id from runtime URL (test 3)", () => {
-    localStorage.setItem(runtimeKey(1), "/portal/1/page/1");
+    localStorage.setItem(runtimeKey(1), "/portal/1/page/5");
 
-    const path = resolveStudioToOfficePath("/portal/13/page/1");
+    const path = resolveStudioToOfficePath("/portal/13/page/77");
 
-    assert.equal(path, "/portal/13/page/1");
+    assert.equal(path, "/portal/13/page/77");
   });
 });
 
@@ -87,7 +96,7 @@ describe("resolveOfficeToStudioPath", () => {
   it("uses portal id from runtime URL when localStorage has another tenant (test 2)", () => {
     localStorage.setItem(designerKey(13), "/designer/tenant/13/object-types");
 
-    const path = resolveOfficeToStudioPath("/portal/1/page/1", 13);
+    const path = resolveOfficeToStudioPath("/portal/1/page/5", 13);
 
     assert.equal(path, "/designer/tenant/1/object-types");
   });
@@ -96,35 +105,42 @@ describe("resolveOfficeToStudioPath", () => {
     sessionStorage.setItem(designerKey(13), "/designer/tenant/13/pages");
     localStorage.setItem(designerKey(1), "/designer/tenant/1/object-types");
 
-    const path = resolveOfficeToStudioPath("/portal/13/page/1", 1);
+    const path = resolveOfficeToStudioPath("/portal/13/page/77", 1);
 
     assert.equal(path, "/designer/tenant/13/pages");
   });
 });
 
 describe("resolveRootEntryPath", () => {
-  beforeEach(clearStorage);
+  beforeEach(() => {
+    clearStorage();
+    primePortalHomePageCache(1, 5);
+  });
   afterEach(clearStorage);
 
-  it("uses tenant 1 runtime path on root entry (test 4)", () => {
+  it("uses tenant 1 runtime path on root entry (test 4)", async () => {
     sessionStorage.setItem(runtimeKey(13), "/portal/13/page/2");
     sessionStorage.setItem(runtimeKey(1), "/portal/1/page/2");
 
-    assert.equal(resolveRootEntryPath(), "/portal/1/page/2");
+    assert.equal(await resolveRootEntryPath(), "/portal/1/page/2");
   });
 
-  it("falls back to portal 1 when nothing stored", () => {
-    assert.equal(resolveRootEntryPath(), "/portal/1/page/1");
+  it("falls back to resolved home page when nothing stored", async () => {
+    assert.equal(await resolveRootEntryPath(), "/portal/1/page/5");
   });
 });
 
 describe("resolveRuntimeFallbackPath", () => {
-  beforeEach(clearStorage);
+  beforeEach(() => {
+    clearStorage();
+    primePortalHomePageCache(1, 5);
+    primePortalHomePageCache(13, 99);
+  });
   afterEach(clearStorage);
 
   it("ignores stored path from another tenant", () => {
-    localStorage.setItem(runtimeKey(13), "/portal/13/page/1");
+    localStorage.setItem(runtimeKey(13), "/portal/13/page/99");
 
-    assert.equal(resolveRuntimeFallbackPath(1), "/portal/1/page/1");
+    assert.equal(resolveRuntimeFallbackPath(1), "/portal/1/page/5");
   });
 });

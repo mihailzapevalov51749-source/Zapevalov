@@ -352,17 +352,7 @@ export default function ProfileSidePanel({
   };
 
   const hasFormChanges = () => {
-    const fields = [
-      "full_name",
-      "phone",
-      "position",
-      "department",
-      "city",
-      "manager",
-      "mentor",
-      "avatar_url",
-      "avatar_settings",
-    ];
+    const fields = ["phone", "avatar_url", "avatar_settings"];
 
     return fields.some((field) => {
       if (field === "avatar_settings") {
@@ -392,13 +382,7 @@ export default function ProfileSidePanel({
       setError("");
 
       const updated = await updateMe({
-        full_name: form.full_name,
         phone: form.phone,
-        position: form.position,
-        department: form.department,
-        city: form.city,
-        manager: form.manager,
-        mentor: form.mentor,
         avatar_url: form.avatar_url,
         avatar_settings: normalizeAvatarSettings(form.avatar_settings),
       });
@@ -706,30 +690,13 @@ export default function ProfileSidePanel({
                 }}
               >
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  {isEdit ? (
-                    <InlineInput
-                      value={form.full_name}
-                      onChange={(v) => handleChange("full_name", v)}
-                      placeholder="ФИО"
-                      large
-                    />
-                  ) : (
-                    <h3 style={styles.employeeName}>
-                      {user.full_name || "Пользователь"}
-                    </h3>
-                  )}
+                  <h3 style={styles.employeeName}>
+                    {user.full_name || "Пользователь"}
+                  </h3>
 
-                  {isEdit ? (
-                    <InlineInput
-                      value={form.position}
-                      onChange={(v) => handleChange("position", v)}
-                      placeholder="Должность"
-                    />
-                  ) : (
-                    <div style={styles.employeeRole}>
-                      {user.position || "Должность не указана"}
-                    </div>
-                  )}
+                  <div style={styles.employeeRole}>
+                    {user.position || "Должность не указана"}
+                  </div>
                 </div>
 
                 <button
@@ -770,16 +737,12 @@ export default function ProfileSidePanel({
                   icon={cityIcon}
                   label="Город"
                   value={form.city || "Не указан"}
-                  editable={isEdit}
-                  onChange={(v) => handleChange("city", v)}
                 />
 
                 <InfoTile
                   icon={departmentIcon}
                   label="Подразделение"
                   value={form.department || "Не указано"}
-                  editable={isEdit}
-                  onChange={(v) => handleChange("department", v)}
                 />
 
                 <InfoTile icon={emailIcon} label="E-mail" value={form.email} />
@@ -788,8 +751,6 @@ export default function ProfileSidePanel({
                   icon={bossIcon}
                   label="Руководитель"
                   value={form.manager || "Не указан"}
-                  editable={isEdit}
-                  onChange={(v) => handleChange("manager", v)}
                 />
 
                 <InfoTile
@@ -804,8 +765,6 @@ export default function ProfileSidePanel({
                   icon={mentorIcon}
                   label="Наставник"
                   value={form.mentor || "Не указан"}
-                  editable={isEdit}
-                  onChange={(v) => handleChange("mentor", v)}
                 />
               </div>
               )}
@@ -832,22 +791,6 @@ export default function ProfileSidePanel({
         onSuccess={() => setPasswordChangeSuccess(true)}
       />
     </div>
-  );
-}
-
-function InlineInput({ value, onChange, placeholder, large }) {
-  return (
-    <input
-      value={value || ""}
-      placeholder={placeholder}
-      onChange={(event) => onChange?.(event.target.value)}
-      style={{
-        ...styles.inlineInput,
-        height: large ? 42 : 34,
-        fontSize: large ? 28 : 18,
-        fontWeight: large ? 900 : 700,
-      }}
-    />
   );
 }
 

@@ -1,9 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { navigationService } from "../services/navigationService";
 import {
   isObjectTypeNavigationItem,
   transformRuntimeNavigationForPortal,
 } from "../../../portal/utils/portalObjectRoutes";
+import {
+  beginNavigationReloadRequest,
+  isStaleNavigationReloadResponse,
+} from "../navigationReloadRace.js";
 
 function resolveItemScope(item) {
   const explicitScope =
@@ -73,18 +77,41 @@ export default function useNavigationTree(portalId, options = {}) {
   const [isLoadingNavigation, setIsLoadingNavigation] = useState(false);
   const [navigationError, setNavigationError] = useState("");
   const [sourceMode, setSourceMode] = useState("persisted-runtime");
+  const previousPortalIdRef = useRef(portalId);
+  const currentPortalIdRef = useRef(portalId);
+  const reloadRequestSeqRef = useRef(0);
+
+  useEffect(() => {
+    currentPortalIdRef.current = portalId;
+  }, [portalId]);
 
   const reloadNavigation = useCallback(async () => {
+    const { requestId } = beginNavigationReloadRequest(reloadRequestSeqRef);
+    const requestPortalId = portalId;
+
+    const isStaleResponse = () =>
+      isStaleNavigationReloadResponse({
+        requestId,
+        requestSeqRef: reloadRequestSeqRef,
+        requestPortalId,
+        currentPortalId: currentPortalIdRef.current,
+      });
+
     try {
       setIsLoadingNavigation(true);
       setNavigationError("");
 
-      const result = await navigationService.getTree(portalId, {
+      const result = await navigationService.getTree(requestPortalId, {
         scope,
         mode,
         context,
         forEditMode,
       });
+
+      if (isStaleResponse()) {
+        return;
+      }
+
       let scopedNavigation =
         scope === "designer" || scope === "runtime"
           ? filterNavigationByScope(result, scope)
@@ -95,7 +122,7 @@ export default function useNavigationTree(portalId, options = {}) {
       if (scope === "runtime") {
         scopedNavigation = transformRuntimeNavigationForPortal(
           scopedNavigation,
-          portalId,
+          requestPortalId,
         );
       }
 
@@ -110,6 +137,10 @@ export default function useNavigationTree(portalId, options = {}) {
         setSourceMode("persisted-runtime");
       }
     } catch (e) {
+      if (isStaleResponse()) {
+        return;
+      }
+
       console.error(e);
       setNavigationError("Ошибка загрузки меню");
       setNavigation([]);
@@ -117,13 +148,21 @@ export default function useNavigationTree(portalId, options = {}) {
         setSourceMode("fallback-designer");
       }
     } finally {
-      setIsLoadingNavigation(false);
+      if (!isStaleResponse()) {
+        setIsLoadingNavigation(false);
+      }
     }
   }, [portalId, scope, mode, context, forEditMode]);
 
   useEffect(() => {
+    if (previousPortalIdRef.current !== portalId) {
+      previousPortalIdRef.current = portalId;
+      setNavigation([]);
+      setNavigationError("");
+    }
+
     reloadNavigation();
-  }, [reloadNavigation]);
+  }, [portalId, reloadNavigation]);
 
   return {
     navigation,

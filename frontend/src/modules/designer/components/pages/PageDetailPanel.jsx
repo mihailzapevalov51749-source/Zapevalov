@@ -205,14 +205,16 @@ export default function PageDetailPanel({
             </button>
           </>
         ) : null}
-        <button
-          type="button"
-          className="designer-btn designer-btn--compact designer-btn--danger"
-          onClick={onDelete}
-          disabled={isSubmittingAction}
-        >
-          Удалить
-        </button>
+        {!page.is_protected ? (
+          <button
+            type="button"
+            className="designer-btn designer-btn--compact designer-btn--danger"
+            onClick={onDelete}
+            disabled={isSubmittingAction}
+          >
+            Удалить
+          </button>
+        ) : null}
       </section>
 
       {actionError ? <p className="designer-error designer-pages-detail__error">{actionError}</p> : null}

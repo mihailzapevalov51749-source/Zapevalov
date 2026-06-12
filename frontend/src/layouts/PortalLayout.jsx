@@ -1,4 +1,4 @@
-import { cloneElement, useMemo } from "react";
+import { cloneElement, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 
 import {
@@ -6,6 +6,7 @@ import {
   resolvePortalNavigationClickTarget,
   rewritePortalScopedPath,
 } from "../portal/utils/portalObjectRoutes";
+import { resolvePortalHomePagePath } from "../portal/utils/resolvePortalHomePage";
 
 import NotificationOverlayHost from "../modules/notifications/components/NotificationOverlayHost";
 import FileViewerOverlayHost from "../shared/files/components/FileViewerOverlayHost";
@@ -49,6 +50,11 @@ export default function PortalLayout({
 }) {
   const location = useLocation();
   const portalId = resolvePortalIdFromPath(location.pathname, portalIdProp);
+
+  useEffect(() => {
+    void resolvePortalHomePagePath(portalId, { strict: true });
+  }, [portalId]);
+
   const inheritedLayoutMode = useShellLayoutMode();
   const resolvedLayoutMode = resolvePortalLayoutMode(
     location.pathname,

@@ -20,6 +20,54 @@ export function buildControlPlaneClientsPath(segment = "") {
   );
 }
 
+export function buildControlPlaneCompaniesPath(segment = "") {
+  const normalizedSegment = String(segment || "").replace(/^\//, "");
+  return buildControlPlaneRoute(
+    normalizedSegment ? `companies/${normalizedSegment}` : "companies",
+  );
+}
+
+export function buildControlPlaneUsersRolesPath(segment = "") {
+  const normalizedSegment = String(segment || "").replace(/^\//, "");
+  return buildControlPlaneRoute(
+    normalizedSegment ? `users-roles/${normalizedSegment}` : "users-roles",
+  );
+}
+
+export function buildControlPlanePlatformProfilePath(segment = "") {
+  const normalizedSegment = String(segment || "").replace(/^\//, "");
+  return buildControlPlaneRoute(
+    normalizedSegment ? `platform-profile/${normalizedSegment}` : "platform-profile",
+  );
+}
+
+export function mapLegacyClientsPathToCompaniesWorkspace(pathname = "") {
+  const normalized = String(pathname || "").replace(/\/+$/, "");
+
+  const companiesDetailMatch = normalized.match(
+    /^\/control-plane\/clients\/companies\/(\d+)$/,
+  );
+  if (companiesDetailMatch) {
+    return buildControlPlaneCompaniesPath(`clients/${companiesDetailMatch[1]}`);
+  }
+
+  const registryDetailMatch = normalized.match(
+    /^\/control-plane\/clients\/registry\/(\d+)$/,
+  );
+  if (registryDetailMatch) {
+    return buildControlPlaneCompaniesPath(`clients/${registryDetailMatch[1]}`);
+  }
+
+  if (
+    /^\/control-plane\/clients(?:\/|$)/.test(normalized)
+    || /^\/control-plane\/clients\/(?:companies|registry|create|clone)(?:\/|$)/.test(normalized)
+  ) {
+    return buildControlPlaneCompaniesPath("clients");
+  }
+
+  return null;
+}
+
 export function isControlPlanePath(pathname = "") {
   const normalized = String(pathname || "").replace(/\/+$/, "");
   return (
@@ -83,43 +131,68 @@ function mapPlatformSuffixToControlPlane(suffix = "") {
   }
 
   if (path === "control-plane/tenants") {
-    return buildControlPlaneClientsPath("registry");
+    return buildControlPlaneCompaniesPath("clients");
   }
 
   const legacyRegistryDetail = path.match(/^control-plane\/tenants\/(\d+)$/);
   if (legacyRegistryDetail) {
-    return buildControlPlaneClientsPath(`registry/${legacyRegistryDetail[1]}`);
+    return buildControlPlaneCompaniesPath(`clients/${legacyRegistryDetail[1]}`);
   }
 
   if (path === "tenants") {
-    return buildControlPlaneClientsPath("companies");
+    return buildControlPlaneCompaniesPath("clients");
   }
 
   const legacyCompanyDetail = path.match(/^tenants\/(\d+)$/);
   if (legacyCompanyDetail) {
-    return buildControlPlaneClientsPath(`companies/${legacyCompanyDetail[1]}`);
+    return buildControlPlaneCompaniesPath(`clients/${legacyCompanyDetail[1]}`);
   }
 
   if (path === "users") {
-    return buildControlPlaneRoute("platform-users");
+    return buildControlPlaneUsersRolesPath("users");
   }
 
   if (path === "roles") {
-    return buildControlPlaneRoute("platform-roles");
+    return buildControlPlaneUsersRolesPath("roles");
+  }
+
+  if (path === "platform-users") {
+    return buildControlPlaneUsersRolesPath("users");
+  }
+
+  if (path === "platform-roles") {
+    return buildControlPlaneUsersRolesPath("roles");
   }
 
   if (path === "system-settings" || path === "system") {
     return buildControlPlaneRoute("settings");
   }
 
+  if (path === "clients") {
+    return buildControlPlaneCompaniesPath("clients");
+  }
+
+  const clientsCompanyDetail = path.match(/^clients\/companies\/(\d+)$/);
+  if (clientsCompanyDetail) {
+    return buildControlPlaneCompaniesPath(`clients/${clientsCompanyDetail[1]}`);
+  }
+
+  const clientsRegistryDetail = path.match(/^clients\/registry\/(\d+)$/);
+  if (clientsRegistryDetail) {
+    return buildControlPlaneCompaniesPath(`clients/${clientsRegistryDetail[1]}`);
+  }
+
   if (
-    path === "clients"
+    path === "clients/companies"
+    || path === "clients/registry"
+    || path === "clients/create"
+    || path === "clients/clone"
     || path.startsWith("clients/")
-    || path === "modules"
-    || path === "integrations"
-    || path === "audit-log"
-    || path === "audit"
   ) {
+    return buildControlPlaneCompaniesPath("clients");
+  }
+
+  if (path === "modules" || path === "integrations" || path === "audit-log" || path === "audit") {
     return buildControlPlaneRoute(path === "audit" ? "audit-log" : path);
   }
 
@@ -150,20 +223,26 @@ export function mapLegacyAdministrationPathToControlPlane(pathname = "") {
 export function resolveControlPlaneSectionKey(pathname = "") {
   const normalized = String(pathname || "").replace(/\/+$/, "");
 
+  if (/\/companies\/clients(?:\/|$)/.test(normalized)) {
+    return "companies-clients";
+  }
+  if (/\/companies(?:\/|$)/.test(normalized)) {
+    return "companies";
+  }
   if (/\/clients\/registry(?:\/|$)/.test(normalized)) {
-    return "clients-registry";
+    return "companies-clients";
   }
   if (/\/clients\/companies(?:\/|$)/.test(normalized)) {
-    return "clients-companies";
+    return "companies-clients";
   }
   if (/\/clients\/create(?:\/|$)/.test(normalized)) {
-    return "clients-create";
+    return "companies-clients";
   }
   if (/\/clients\/clone(?:\/|$)/.test(normalized)) {
-    return "clients-clone";
+    return "companies-clients";
   }
   if (/\/clients(?:\/|$)/.test(normalized)) {
-    return "clients";
+    return "companies-clients";
   }
   if (/\/templates\/versions(?:\/|$)/.test(normalized)) {
     return "templates-versions";
@@ -186,11 +265,53 @@ export function resolveControlPlaneSectionKey(pathname = "") {
   if (/\/platform\/backup(?:\/|$)/.test(normalized)) {
     return "platform-backup";
   }
+  if (/\/platform-profile\/general(?:\/|$)/.test(normalized)) {
+    return "platform-profile-general";
+  }
+  if (/\/platform-profile\/home(?:\/|$)/.test(normalized)) {
+    return "platform-profile-general";
+  }
+  if (/\/platform-profile\/branding(?:\/|$)/.test(normalized)) {
+    return "platform-profile-branding";
+  }
+  if (/\/platform-profile\/platform-owner(?:\/|$)/.test(normalized)) {
+    return "platform-profile-platform-owner";
+  }
+  if (/\/platform-profile\/localization(?:\/|$)/.test(normalized)) {
+    return "platform-profile-localization";
+  }
+  if (/\/platform-profile\/notifications(?:\/|$)/.test(normalized)) {
+    return "platform-profile-notifications";
+  }
+  if (/\/platform-profile\/limits(?:\/|$)/.test(normalized)) {
+    return "platform-profile-limits";
+  }
+  if (/\/platform-profile\/backup(?:\/|$)/.test(normalized)) {
+    return "platform-profile-backup";
+  }
+  if (/\/platform-profile\/security(?:\/|$)/.test(normalized)) {
+    return "platform-profile-security";
+  }
+  if (/\/platform-profile\/behavior(?:\/|$)/.test(normalized)) {
+    return "platform-profile-behavior";
+  }
+  if (/\/platform-profile(?:\/|$)/.test(normalized)) {
+    return "platform-profile-general";
+  }
+  if (/\/users-roles\/users(?:\/|$)/.test(normalized)) {
+    return "users-roles-users";
+  }
+  if (/\/users-roles\/roles(?:\/|$)/.test(normalized)) {
+    return "users-roles-roles";
+  }
+  if (/\/users-roles(?:\/|$)/.test(normalized)) {
+    return "users-roles-users";
+  }
   if (/\/platform-users(?:\/|$)/.test(normalized)) {
-    return "platform-users";
+    return "users-roles-users";
   }
   if (/\/platform-roles(?:\/|$)/.test(normalized)) {
-    return "platform-roles";
+    return "users-roles-roles";
   }
   if (/\/modules(?:\/|$)/.test(normalized)) {
     return "modules";

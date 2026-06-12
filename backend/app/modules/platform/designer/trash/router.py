@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.modules.platform.designer.trash import service
 from app.modules.platform.designer.trash.schemas import (
+    TrashBulkPurgeResponse,
     TrashBulkRequest,
     TrashBulkResponse,
     TrashBulkResultItem,
@@ -65,21 +66,13 @@ def restore_items(
     return service.restore_trash_bulk(db, tenant_id=tenant_id, items=payload.items)
 
 
-@router.post("/purge", response_model=TrashBulkResponse)
+@router.post("/purge", response_model=TrashBulkPurgeResponse)
 def purge_items(
     payload: TrashBulkRequest,
     tenant_id: int = Depends(require_tenant),
     db: Session = Depends(get_db),
     _user: User = Depends(require_designer_user),
-) -> TrashBulkResponse:
-    if len(payload.items) == 1:
-        item = payload.items[0]
-        service.purge_trash_item(db, tenant_id=tenant_id, kind=item.kind, entity_id=item.id)
-        return TrashBulkResponse(
-            results=[
-                TrashBulkResultItem(kind=item.kind, id=item.id, success=True),
-            ],
-        )
+) -> TrashBulkPurgeResponse:
     return service.purge_trash_bulk(db, tenant_id=tenant_id, items=payload.items)
 
 
@@ -89,9 +82,15 @@ def clear_dependencies_and_purge(
     entity_id: str,
     tenant_id: int = Depends(require_tenant),
     db: Session = Depends(get_db),
-    _user: User = Depends(require_designer_user),
+    current_user: User = Depends(require_designer_user),
 ) -> TrashDependencyActionResponse:
-    return service.clear_purge_dependencies(db, tenant_id=tenant_id, kind=kind, entity_id=entity_id)
+    return service.clear_purge_dependencies(
+        db,
+        tenant_id=tenant_id,
+        kind=kind,
+        entity_id=entity_id,
+        deleted_by=current_user.id,
+    )
 
 
 @router.post("/{kind}/{entity_id}/purge-cascade", response_model=TrashDependencyActionResponse)
@@ -101,7 +100,7 @@ def cascade_purge(
     confirm: bool = False,
     tenant_id: int = Depends(require_tenant),
     db: Session = Depends(get_db),
-    _user: User = Depends(require_designer_user),
+    current_user: User = Depends(require_designer_user),
 ) -> TrashDependencyActionResponse:
     return service.cascade_purge_with_dependencies(
         db,
@@ -109,4 +108,5 @@ def cascade_purge(
         kind=kind,
         entity_id=entity_id,
         confirm=confirm,
+        deleted_by=current_user.id,
     )

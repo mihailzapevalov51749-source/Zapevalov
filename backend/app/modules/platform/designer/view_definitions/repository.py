@@ -1,8 +1,8 @@
-from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.modules.platform.designer.shared.soft_delete import apply_soft_delete
 from app.modules.platform.designer.view_definitions.models import DesignerViewDefinition
 
 
@@ -183,8 +183,10 @@ def save_views(
 def soft_delete_view(
     db: Session,
     entity: DesignerViewDefinition,
+    *,
+    deleted_by: int | None = None,
 ) -> DesignerViewDefinition:
-    entity.deleted_at = datetime.now(timezone.utc)
+    apply_soft_delete(entity, deleted_by=deleted_by)
     db.commit()
     db.refresh(entity)
     return entity

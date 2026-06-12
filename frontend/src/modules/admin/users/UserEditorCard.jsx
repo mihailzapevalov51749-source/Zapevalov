@@ -1,4 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+
+import {
+  filterTenantSystemRoles,
+  isCompanyOwner,
+} from "../../../shared/tenantRoles/tenantRoleModel.js";
+import { sendTenantUserInvite } from "./tenantUsersApi";
 import { styles } from "./usersStyles";
 
 const API_BASE_URL = "http://127.0.0.1:8010";
@@ -297,6 +303,7 @@ function highlightMatch(text, query) {
 export default function UserEditorCard({
   user,
   roles = [],
+  tenantId = null,
   onChange,
   onSave,
   onDelete,
@@ -319,8 +326,13 @@ export default function UserEditorCard({
 
   const canDeleteUser = Boolean(user?.id && !user?.isNew && onDelete);
 
+  const selectableRoles = useMemo(
+    () => filterTenantSystemRoles(roles),
+    [roles],
+  );
+
   const roleDescription =
-    roles.find((role) => Number(role.id) === Number(user?.role_id))
+    selectableRoles.find((role) => Number(role.id) === Number(user?.role_id))
       ?.description || "Описание роли не указано.";
 
   const handleSendInvite = async () => {
@@ -330,7 +342,11 @@ export default function UserEditorCard({
       setInviteSending(true);
       setInviteError("");
 
-      await sendUserInvite(user.id);
+      if (tenantId) {
+        await sendTenantUserInvite(tenantId, user.id);
+      } else {
+        await sendUserInvite(user.id);
+      }
 
       setInviteSent(true);
     } catch (error) {
@@ -441,12 +457,15 @@ export default function UserEditorCard({
             }
             style={cardStyles.input}
           >
-            {roles.map((role) => (
+            {selectableRoles.map((role) => (
               <option key={role.id} value={role.id}>
                 {role.name}
               </option>
             ))}
           </select>
+          {isCompanyOwner(user) ? (
+            <span style={cardStyles.ownerBadge}>Владелец компании</span>
+          ) : null}
         </label>
 
         <label style={cardStyles.field}>
@@ -825,6 +844,21 @@ const cardStyles = {
     lineHeight: 1.1,
     fontWeight: 800,
     color: "#475569",
+  },
+
+  ownerBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    marginTop: 4,
+    height: 22,
+    borderRadius: 999,
+    background: "#ecfdf5",
+    color: "#047857",
+    fontSize: 11,
+    fontWeight: 700,
+    padding: "0 8px",
+    whiteSpace: "nowrap",
   },
 
   input: {

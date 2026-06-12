@@ -26,6 +26,7 @@ import {
 } from "./resolveMinimizeNavigateRoute.js";
 import { resolveWorkspaceTabDisplayTitle } from "./resolveWorkspaceTabDisplayTitle.js";
 import { resolvePortalPageViewLayoutContractOverrides } from "../../portal/resolvePortalPageViewLayoutContract.js";
+import { primePortalHomePageCache } from "../../portal/utils/resolvePortalHomePage.js";
 
 
 
@@ -473,7 +474,9 @@ describe("Global workspace tabs UI integration", () => {
     assert.match(providerSource, /resolveMinimizeNavigateRoute/);
     assert.match(providerSource, /if \(!saved\?\.route\)/);
     assert.match(providerSource, /if \(navigateRoute\)/);
-    assert.doesNotMatch(providerSource, /if \(!navigateRoute\)/);
+    assert.match(providerSource, /resolveRuntimeFallbackPathAsync/);
+
+    primePortalHomePageCache(1, 5);
 
     const navigateRoute = resolveMinimizeNavigateRoute({
       currentRoute: "/portal/1/page/12",
@@ -481,7 +484,7 @@ describe("Global workspace tabs UI integration", () => {
       tenantId: 1,
     });
 
-    assert.equal(navigateRoute, "/portal/1/page/1");
+    assert.equal(navigateRoute, "/portal/1/page/5");
   });
 
   it("does not require navigate route when minimized tab has open route", () => {
@@ -504,6 +507,19 @@ describe("Global workspace tabs UI integration", () => {
     assert.match(providerSource, /sortWorkspaceTabs/);
     assert.match(providerSource, /resolveNextWorkspaceTabSortOrder/);
     assert.doesNotMatch(providerSource, /last_opened_at/);
+  });
+
+  it("provider ignores stale workspace tab reload responses after tenant switch", () => {
+    const providerSource = readFileSync(
+      join(workspaceTabsDir, "GlobalWorkspaceTabsProvider.jsx"),
+      "utf8",
+    );
+
+    assert.match(providerSource, /currentTenantIdRef/);
+    assert.match(providerSource, /reloadRequestSeqRef/);
+    assert.match(providerSource, /beginWorkspaceTabsReloadRequest/);
+    assert.match(providerSource, /isStaleWorkspaceTabsReloadResponse/);
+    assert.match(providerSource, /if \(isStaleResponse\(\)\)/);
   });
 
   it("opens profile_panel tabs via profile panel handlers without navigate", () => {

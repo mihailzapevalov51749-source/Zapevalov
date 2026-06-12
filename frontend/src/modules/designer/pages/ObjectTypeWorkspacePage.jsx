@@ -35,6 +35,8 @@ import {
   PAGE_LAYOUT_TOOLBAR_ZONE,
   useResolvedPageLayoutContract,
 } from "../../../shared/appShell/pageLayoutContract";
+import { usePlatformConfirm } from "../../../shared/platformModal";
+import { showPlatformNotification } from "../../../shared/platformNotification/PlatformNotification";
 
 export default function ObjectTypeWorkspacePage() {
   useResolvedPageLayoutContract({
@@ -43,6 +45,7 @@ export default function ObjectTypeWorkspacePage() {
     canMinimize: true,
   });
 
+  const platformConfirm = usePlatformConfirm();
   const { tenantId } = useDesignerShell();
   const navigate = useNavigate();
   const { objectTypeId, tab } = useParams();
@@ -186,9 +189,14 @@ export default function ObjectTypeWorkspacePage() {
         !planViewsDirty &&
         !planViewsSaveRef.current
       ) {
-        window.alert(
-          "Есть несохранённые изменения вкладок. Сохраните их перед публикацией.",
-        );
+        await platformConfirm({
+          title: "Сначала сохраните вкладки",
+          message:
+            "Есть несохранённые изменения вкладок. Сохраните их перед публикацией.",
+          confirmLabel: "Понятно",
+          cancelLabel: "Закрыть",
+          variant: "warning",
+        });
         return;
       }
 
@@ -229,7 +237,10 @@ export default function ObjectTypeWorkspacePage() {
       }
       setStudioStatusMessage("");
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Не удалось обновить публикацию"));
+      showPlatformNotification({
+        message: getApiErrorMessage(err, "Не удалось обновить публикацию"),
+        variant: "warning",
+      });
     } finally {
       setPublishing(false);
     }
@@ -237,6 +248,7 @@ export default function ObjectTypeWorkspacePage() {
     isDraftDirty,
     isViewsDirty,
     planViewsDirty,
+    platformConfirm,
     tableViewsDirty,
     objectType,
     objectTypeId,
@@ -313,7 +325,10 @@ export default function ObjectTypeWorkspacePage() {
   }, [navigate, objectTypeId, tenantId]);
 
   const handleDuplicateObject = useCallback(() => {
-    window.alert("Дублирование объекта будет доступно в следующем релизе.");
+    showPlatformNotification({
+      message: "Дублирование объекта будет доступно в следующем релизе.",
+      variant: "info",
+    });
   }, []);
 
   const handleOpenDeleteModal = useCallback(async () => {
@@ -322,7 +337,13 @@ export default function ObjectTypeWorkspacePage() {
     }
 
     if (objectType.is_system) {
-      window.alert("Системный объект нельзя удалить");
+      await platformConfirm({
+        title: "Удаление недоступно",
+        message: "Системный объект нельзя удалить",
+        confirmLabel: "Понятно",
+        cancelLabel: "Закрыть",
+        variant: "warning",
+      });
       return;
     }
 
@@ -335,11 +356,14 @@ export default function ObjectTypeWorkspacePage() {
       setDeletePreview(preview);
     } catch (err) {
       setDeleteModalOpen(false);
-      window.alert(getApiErrorMessage(err, "Не удалось проверить использование объекта"));
+      showPlatformNotification({
+        message: getApiErrorMessage(err, "Не удалось проверить использование объекта"),
+        variant: "warning",
+      });
     } finally {
       setDeletePreviewLoading(false);
     }
-  }, [objectType, objectTypeId, tenantId]);
+  }, [objectType, objectTypeId, platformConfirm, tenantId]);
 
   const handleCloseDeleteModal = useCallback(() => {
     if (deleting) {
@@ -365,7 +389,10 @@ export default function ObjectTypeWorkspacePage() {
       setDeletePreview(null);
       navigate(`/designer/tenant/${tenantId}/object-types`);
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Не удалось удалить объект"));
+      showPlatformNotification({
+        message: getApiErrorMessage(err, "Не удалось удалить объект"),
+        variant: "warning",
+      });
     } finally {
       setDeleting(false);
     }
@@ -384,7 +411,10 @@ export default function ObjectTypeWorkspacePage() {
           await tableViewsSaveRef.current();
         }
       } catch (err) {
-        window.alert(getApiErrorMessage(err, "Не удалось сохранить"));
+        showPlatformNotification({
+          message: getApiErrorMessage(err, "Не удалось сохранить"),
+          variant: "warning",
+        });
       } finally {
         setSaving(false);
       }
@@ -398,7 +428,10 @@ export default function ObjectTypeWorkspacePage() {
         await generalSaveRef.current();
         setIsDraftDirty(false);
       } catch (err) {
-        window.alert(getApiErrorMessage(err, "Не удалось сохранить"));
+        showPlatformNotification({
+          message: getApiErrorMessage(err, "Не удалось сохранить"),
+          variant: "warning",
+        });
       } finally {
         setSaving(false);
       }
@@ -414,7 +447,10 @@ export default function ObjectTypeWorkspacePage() {
           "Изменения сохранены в Studio. Опубликуйте каталог, когда закончите настройку.",
         );
       } catch (err) {
-        window.alert(getApiErrorMessage(err, "Не удалось обновить состояние Studio"));
+        showPlatformNotification({
+          message: getApiErrorMessage(err, "Не удалось обновить состояние Studio"),
+          variant: "warning",
+        });
       } finally {
         setSaving(false);
       }

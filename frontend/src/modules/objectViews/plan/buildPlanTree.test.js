@@ -355,6 +355,40 @@ describe("buildPlanTree", () => {
 
     assert.equal(tree.roots[0]?.statusLabel, "option_1780780345");
   });
+
+  it("orders siblings by relation instance created_at ascending", () => {
+    const items = [
+      entity("parent", "Parent"),
+      entity("first", "First"),
+      entity("second", "Second"),
+    ];
+
+    const tree = buildPlanTree({
+      items,
+      hierarchyInstances: [
+        {
+          relation_key: "podpunkt",
+          source_entity_id: "parent",
+          target_entity_id: "second",
+          created_at: "2026-01-02T00:00:00.000Z",
+        },
+        {
+          relation_key: "podpunkt",
+          source_entity_id: "parent",
+          target_entity_id: "first",
+          created_at: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+      catalog: CATALOG,
+      planPresentation: PRESENTATION,
+      ...buildTreeOptions(),
+    });
+
+    assert.deepEqual(
+      tree.roots[0]?.children?.map((node) => node.id),
+      ["first", "second"],
+    );
+  });
 });
 
 describe("Plan empty state contract", () => {
@@ -365,5 +399,11 @@ describe("Plan empty state contract", () => {
     assert.match(source, /handleCreateRootRecord/);
     assert.match(source, /openCreateCard/);
     assert.doesNotMatch(source, /PlanViewDataEmptyState/);
+  });
+
+  it("ObjectPlanView waits for hierarchy entity hydration before rendering tree", () => {
+    const source = readFileSync(join(__dirname, "ObjectPlanView.jsx"), "utf8");
+
+    assert.match(source, /relationsLoading \|\| loading/);
   });
 });

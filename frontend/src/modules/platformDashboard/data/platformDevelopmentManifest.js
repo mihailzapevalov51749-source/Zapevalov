@@ -1248,7 +1248,7 @@ export const platformDevelopmentManifest = {
       resolutionChain: "Projection.titleFieldKey → Object Type Title Field → [id]",
       remainingOutOfScope: [
         "shared/shell/header (portal navigation)",
-        "modules/universalTable (legacy)",
+        "Universal Table frontend (removed, PR-2B)",
         "backend platform search API",
       ],
     },
@@ -1386,7 +1386,7 @@ export const platformDevelopmentManifest = {
       "Plan: legacy titleFieldKey/statusFieldKey/descriptionFieldKey дублируют Projection",
       "Card: sections.fieldKeys без обязательной привязки к projection",
       "Studio: нерабочие view types (board, calendar, tree, card tab)",
-      "legacy universalTable title/name (вне object platform)",
+      "legacy Universal Table data in БД (frontend removed, PR-2B)",
       "Две модели иерархии: Table tree-mode vs Plan",
     ],
     stages: [
@@ -1854,13 +1854,13 @@ export const platformDevelopmentManifest = {
       key: "universal-table-retirement",
       title: "Universal Table Retirement",
       description:
-        "Вывод старого табличного контура из платформы: новые данные создаются только через объектную модель.",
+        "Вывод старого табличного контура из платформы: frontend UT удалён (PR-2B); новые данные создаются только через объектную модель.",
       priority: "p0",
-      progress: 65,
+      progress: 80,
       status: "in_progress",
       impact:
-        "Пока legacy-таблицы остаются в продукте, платформа не может стать единой объектной системой.",
-      nextAction: "Завершить очистку Runtime Read Gateway и убрать fallback на старые таблицы.",
+        "Пока legacy-данные universal_tables остаются в БД, требуется backend/data cleanup.",
+      nextAction: "Backend API и DROP таблиц universal_tables/universal_views; миграция CMS-страниц.",
       relatedContours: ["Object Platform", "Runtime Entity", "Object Card"],
     },
     {

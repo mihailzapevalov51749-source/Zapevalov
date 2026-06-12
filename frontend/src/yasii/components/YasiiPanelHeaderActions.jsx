@@ -45,11 +45,15 @@ export default function YasiiPanelHeaderActions({
 
   const handleExpandOrCollapse = () => {
     if (isWorkspace) {
-      const returnPath = resolveYasiiReturnPath(
+      void resolveYasiiReturnPath(
         readYasiiPreWorkspacePath(tenantId, location.pathname),
-      );
-      session?.leaveYasiiPageToPanel?.();
-      navigate(returnPath);
+      ).then((returnPath) => {
+        if (!returnPath) {
+          return;
+        }
+        session?.leaveYasiiPageToPanel?.();
+        navigate(returnPath);
+      });
       return;
     }
 

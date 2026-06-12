@@ -1,14 +1,9 @@
 import { useState } from "react";
 
-import { getPageFull } from "../../../api/pagesApi";
 import { findNavigationItemById } from "../../../portal/utils/portalPageUtils";
 import useMenuEditor from "../../../modules/navigation/hooks/useMenuEditor";
-import {
-  isLegacyStorageNavigationItem,
-  renameLegacyStorageForPage,
-} from "../../../shared/legacy/adapters/legacyStorageAdapter";
-import { navigationService } from "../../../modules/navigation/services/navigationService";
 import { dispatchPageStatusNavigationRefresh } from "../../navigation/navigationReload";
+import { persistNavigationMenuBlockMove } from "../../navigation/navigationMenuSettings.js";
 import {
   patchDesignerSystemMenuSettings,
   resolveDesignerSystemItemKey,
@@ -56,35 +51,6 @@ export function usePlatformSidebarControls({
           show_icon: data?.show_icon,
         });
         return;
-      }
-
-      const nextTitle = String(data?.title || "").trim();
-
-      if (
-        navigationItem &&
-        nextTitle &&
-        isLegacyStorageNavigationItem(navigationItem) &&
-        navigationItem.page_id
-      ) {
-        try {
-          const linkedPage = await getPageFull(navigationItem.page_id);
-          const renameResult = await renameLegacyStorageForPage({
-            pageData: linkedPage,
-            title: nextTitle,
-            dedicatedPageId: navigationItem.page_id,
-          });
-
-          if (renameResult?.title) {
-            await menuEditor.updateItem?.(itemId, {
-              ...data,
-              title: renameResult.title,
-            });
-
-            return;
-          }
-        } catch (renameError) {
-          console.error("Failed to save universal table menu item:", renameError);
-        }
       }
 
       await menuEditor.updateItem?.(itemId, data);
@@ -156,7 +122,7 @@ export function usePlatformSidebarControls({
           const itemKey = resolveDesignerSystemItemKey(
             systemItem.sourceItem ?? { id: payload.id }
           );
-          patchDesignerSystemMenuSettings(portalId, itemKey, {
+          void patchDesignerSystemMenuSettings(portalId, itemKey, {
             title:
               typeof payload.data.title === "string" ? payload.data.title : undefined,
             icon: payload.data.icon,
@@ -180,6 +146,8 @@ export function usePlatformSidebarControls({
               typeof payload.data.is_expanded === "boolean"
                 ? payload.data.is_expanded
                 : undefined,
+          }).catch((patchError) => {
+            console.error("Failed to save designer system menu settings:", patchError);
           });
           return;
         }
@@ -201,46 +169,17 @@ export function usePlatformSidebarControls({
       case "move-menu-items":
         if (!canDragItems) return;
         if (!Array.isArray(payload?.items) || !payload.items.length) return;
-        if (mode === "designer") {
-          payload.items.forEach((item) => {
-            if (!String(item?.id || "").startsWith("system-designer-")) return;
-            const itemKey = resolveDesignerSystemItemKey({ id: item.id });
-            patchDesignerSystemMenuSettings(portalId, itemKey, {
-              sort_order:
-                typeof item.sort_order === "number" && Number.isFinite(item.sort_order)
-                  ? item.sort_order
-                  : undefined,
-              parent_id: item.parent_id ?? null,
-            });
-          });
-          const customItems = payload.items.filter(
-            (item) => !String(item?.id || "").startsWith("system-designer-")
-          );
-          if (!customItems.length) {
-            return;
-          }
-          navigationService
-            .moveItems(customItems)
-            .then(async () => {
-              await (typeof reloadNavigation === "function"
-                ? reloadNavigation()
-                : Promise.resolve());
-            })
-            .catch((moveError) => {
-              console.error("Failed to move menu items:", moveError);
-            });
-          return;
-        }
-        navigationService
-          .moveItems(payload.items)
-          .then(async () => {
-            await (typeof reloadNavigation === "function"
-              ? reloadNavigation()
-              : Promise.resolve());
-          })
-          .catch((moveError) => {
-            console.error("Failed to move menu items:", moveError);
-          });
+        void persistNavigationMenuBlockMove({
+          menuProfile: mode === "designer" ? "designer" : "platform",
+          tenantId: portalId,
+          itemsPayload: payload.items,
+          rootItems: Array.isArray(payload?.navigationItems)
+            ? payload.navigationItems
+            : navigationItems,
+          reloadNavigation,
+        }).catch((moveError) => {
+          console.error("Failed to move menu items:", moveError);
+        });
         return;
       case "open-menu-settings":
         if (!canEditMenu) {

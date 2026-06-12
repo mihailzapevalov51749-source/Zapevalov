@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { buildPlanTree } from "./buildPlanTree.js";
 import {
+  buildPlanEntityHydrationKey,
   collectHierarchyEntityIds,
   findMissingPlanEntityIds,
   indexPlanEntityItems,
+  isPlanTreeEntityHydrationPending,
   mergePlanEntityItems,
 } from "./planTreeEntityItems.js";
 
@@ -53,6 +55,25 @@ describe("planTreeEntityItems", () => {
     expect(merged).toHaveLength(2);
     expect(merged.find((item) => item.id === "a")?.values?.nazvanie).toBe("A from query");
     expect(merged.find((item) => item.id === "b")?.values?.nazvanie).toBe("B fetched");
+  });
+
+  it("tracks hydration pending until missing entity ids are loaded", () => {
+    const missing = ["b", "a"];
+    const key = buildPlanEntityHydrationKey(missing);
+
+    expect(key).toBe("a|b");
+    expect(
+      isPlanTreeEntityHydrationPending({
+        missingEntityIds: missing,
+        lastHydratedKey: "",
+      }),
+    ).toBe(true);
+    expect(
+      isPlanTreeEntityHydrationPending({
+        missingEntityIds: missing,
+        lastHydratedKey: key,
+      }),
+    ).toBe(false);
   });
 
   it("buildPlanTree resolves titles for hierarchy-only entities after merge", () => {

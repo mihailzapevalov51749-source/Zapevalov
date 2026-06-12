@@ -129,4 +129,23 @@ describe("resolvePlanAdapterContract", () => {
       "ierarhiya_idey",
     );
   });
+
+  it("keeps plan viewType when contract recovery is blocked", () => {
+    const tableContract = normalizeObjectViewDefinition(tableRawView, {
+      viewKey: "default_table",
+      isPublished: true,
+    });
+
+    const result = resolvePlanAdapterContract({
+      viewType: "plan",
+      objectTabKey: "missing_plan_tab",
+      contract: tableContract,
+      tabLookupViews: buildTabLookupViews([tableRawView]),
+      activeViewKey: TABLE_BASE_STATE_KEY,
+    });
+
+    expect(result.viewType).toBe("plan");
+    expect(result.recovered).toBe(false);
+    expect(result.blocked).toBe(true);
+  });
 });

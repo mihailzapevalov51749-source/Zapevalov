@@ -298,8 +298,17 @@ export function enrichTrashDependency(raw, trashItem, tenantId) {
   const locationSegments = buildLocationSegments(kind, trashItem);
   const route = resolveDependencyOpenRoute(kind, trashItem, tenantId);
 
+  const entityKind = String(raw?.entity_kind || kind).trim();
+  const entityId = raw?.entity_id;
+  const dependencyId =
+    entityId != null && entityId !== ""
+      ? `${entityKind}:${entityId}`
+      : raw?.node_key
+        ? String(raw.node_key)
+        : `${kind}:${raw?.label || title}`;
+
   return {
-    id: `${kind}:${raw?.label || title}`,
+    id: dependencyId,
     kind,
     groupKey: registry.groupKey,
     groupLabel: registry.groupLabel,

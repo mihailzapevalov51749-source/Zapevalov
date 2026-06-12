@@ -1,18 +1,24 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
 
+import {
+  TENANT_ROLE_OPTIONS_FALLBACK,
+  filterTenantSystemRoles,
+  resolveTenantRoleDisplay,
+} from "../../../shared/tenantRoles/tenantRoleModel.js";
 import UsersHeader from "./UsersHeader";
 import UsersList from "./UsersList";
 import UserEditorCard from "./UserEditorCard";
+import {
+  createTenantUser,
+  deleteTenantUser,
+  getTenantRoles,
+  getTenantUsers,
+  updateTenantUser,
+} from "./tenantUsersApi";
 import { styles } from "./usersStyles";
 
 const API_BASE_URL = "http://127.0.0.1:8010";
-
-const ROLE_OPTIONS_FALLBACK = [
-  { id: 1, name: "user", description: "Просмотр доступных страниц." },
-  { id: 2, name: "editor", description: "Просмотр и редактирование контента." },
-  { id: 3, name: "admin", description: "Администрирование портала." },
-  { id: 4, name: "superadmin", description: "Полный доступ к системе." },
-];
 
 const DEFAULT_AVATAR_SETTINGS = {
   x: 0,
@@ -42,7 +48,7 @@ const emptyUser = {
 
   is_active: true,
 
-  role_id: 1,
+  role_id: TENANT_ROLE_OPTIONS_FALLBACK[2].id,
   role: "user",
 };
 
@@ -90,11 +96,7 @@ function normalizeUser(user = {}) {
     ),
 
     role_id: user.role_id ?? user.roleId ?? user.role?.id ?? 1,
-    role:
-      user.role_name ||
-      user.roleName ||
-      (typeof user.role === "string" ? user.role : user.role?.name) ||
-      "user",
+    role: resolveTenantRoleDisplay(user) || "user",
 
     is_active:
       user.is_active === undefined || user.is_active === null
@@ -170,10 +172,22 @@ async function deleteUser(userId) {
   });
 }
 
+function resolveRolesForVariant(variant, roles) {
+  if (variant === "tenant") {
+    return filterTenantSystemRoles(roles);
+  }
+
+  return Array.isArray(roles) ? roles : [];
+}
+
 export default function AdminUsersPage({ variant = "tenant" } = {}) {
-  void variant; // platform | tenant — API scope split отложен
+  const { tenantId: tenantIdParam } = useParams();
+  const isTenantVariant = variant === "tenant";
+  const tenantId = isTenantVariant ? Number(tenantIdParam) : null;
   const [users, setUsers] = useState([]);
-  const [roles, setRoles] = useState(ROLE_OPTIONS_FALLBACK);
+  const [roles, setRoles] = useState(
+    isTenantVariant ? TENANT_ROLE_OPTIONS_FALLBACK : [],
+  );
   const [selectedUser, setSelectedUser] = useState(null);
   const [form, setForm] = useState(emptyUser);
   const [searchQuery, setSearchQuery] = useState("");
@@ -206,18 +220,19 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
     );
   }, [users, searchQuery]);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  const loadData = useCallback(async () => {
+    if (isTenantVariant && (!Number.isFinite(tenantId) || tenantId <= 0)) {
+      setError("Не удалось определить компанию для списка пользователей.");
+      return;
+    }
 
-  const loadData = async () => {
     try {
       setLoading(true);
       setError("");
 
       const [usersData, rolesData] = await Promise.allSettled([
-        getUsers(),
-        getRoles(),
+        isTenantVariant ? getTenantUsers(tenantId) : getUsers(),
+        isTenantVariant ? getTenantRoles(tenantId) : getRoles(),
       ]);
 
       if (usersData.status === "fulfilled") {
@@ -242,19 +257,29 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
       }
 
       if (rolesData.status === "fulfilled") {
-        setRoles(
+        const loadedRoles =
           Array.isArray(rolesData.value) && rolesData.value.length > 0
             ? rolesData.value
-            : ROLE_OPTIONS_FALLBACK
-        );
+            : TENANT_ROLE_OPTIONS_FALLBACK;
+
+        setRoles(resolveRolesForVariant(variant, loadedRoles));
+      } else if (isTenantVariant) {
+        setRoles(TENANT_ROLE_OPTIONS_FALLBACK);
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, [isTenantVariant, tenantId, variant]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleCreateUser = () => {
-    const firstRole = roles[0] || ROLE_OPTIONS_FALLBACK[0];
+    const firstRole =
+      roles.find((role) => role.name === "user")
+      || roles[roles.length - 1]
+      || TENANT_ROLE_OPTIONS_FALLBACK[2];
 
     const newUser = {
       ...emptyUser,
@@ -354,8 +379,12 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
       }
 
       const savedUser = form.id
-        ? await updateUser(form.id, payload)
-        : await createUser(payload);
+        ? isTenantVariant
+          ? await updateTenantUser(tenantId, form.id, payload)
+          : await updateUser(form.id, payload)
+        : isTenantVariant
+          ? await createTenantUser(tenantId, payload)
+          : await createUser(payload);
 
       const updated = form.id
         ? normalizeExistingUser(savedUser)
@@ -414,7 +443,11 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
       setDeleting(true);
       setError("");
 
-      await deleteUser(form.id);
+      if (isTenantVariant) {
+        await deleteTenantUser(tenantId, form.id);
+      } else {
+        await deleteUser(form.id);
+      }
 
       setUsers((prev) =>
         prev.filter((user) => String(user.id) !== String(form.id))
@@ -454,6 +487,7 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
         <UserEditorCard
           user={form}
           roles={roles}
+          tenantId={isTenantVariant ? tenantId : null}
           saving={saving}
           deleting={deleting}
           onChange={handleChange}

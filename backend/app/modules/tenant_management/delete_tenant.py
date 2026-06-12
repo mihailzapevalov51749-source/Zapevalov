@@ -59,13 +59,10 @@ from app.modules.tenant_management.exceptions import (
     SystemTenantDeleteForbiddenError,
     TenantNotFoundError,
 )
-from app.modules.universal_tables.models import (
-    UniversalTable,
-    UniversalTableColumn,
-    UniversalTableRow,
-)
-from app.modules.universal_views.models import UniversalView
 from app.modules.user_activity.models import UserActivitySession, UserPresenceState
+from app.modules.control_plane.customer_companies.models import CustomerCompany
+from app.modules.tenant_users.models import TenantUserMembership
+from app.modules.users.models import User
 
 SYSTEM_TENANT_ID = 1
 
@@ -212,6 +209,13 @@ def _delete_tenant_data(db: Session, tenant_id: int) -> None:
     _delete_chats_for_workspaces(db, workspace_ids)
     _delete_polymorphic_entity_content(db, runtime_entity_ids)
 
+    db.query(TenantUserMembership).filter(TenantUserMembership.tenant_id == tenant_id).delete(
+        synchronize_session=False
+    )
+    db.query(User).filter(User.tenant_id == tenant_id).delete(synchronize_session=False)
+    db.query(CustomerCompany).filter(CustomerCompany.primary_portal_id == tenant_id).delete(
+        synchronize_session=False
+    )
     db.query(UserActivitySession).filter(UserActivitySession.tenant_id == tenant_id).delete(
         synchronize_session=False
     )
@@ -250,25 +254,6 @@ def _delete_tenant_data(db: Session, tenant_id: int) -> None:
         ]
 
     if block_ids:
-        table_ids = [
-            row.id
-            for row in db.query(UniversalTable.id)
-            .filter(UniversalTable.block_id.in_(block_ids))
-            .all()
-        ]
-        if table_ids:
-            db.query(UniversalTableRow).filter(
-                UniversalTableRow.table_id.in_(table_ids)
-            ).delete(synchronize_session=False)
-            db.query(UniversalView).filter(UniversalView.table_id.in_(table_ids)).delete(
-                synchronize_session=False
-            )
-            db.query(UniversalTableColumn).filter(
-                UniversalTableColumn.table_id.in_(table_ids)
-            ).delete(synchronize_session=False)
-            db.query(UniversalTable).filter(UniversalTable.id.in_(table_ids)).delete(
-                synchronize_session=False
-            )
         db.query(Block).filter(Block.id.in_(block_ids)).delete(synchronize_session=False)
 
     if section_ids:

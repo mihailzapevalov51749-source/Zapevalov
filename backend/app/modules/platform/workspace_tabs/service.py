@@ -142,8 +142,17 @@ def _get_owned_tab(
 def list_workspace_tabs(
     db: Session,
     current_user: User,
+    *,
+    tenant_id: int | None = None,
 ) -> list[WorkspaceTabRead]:
-    entities = repository.list_tabs_for_user(db, actor_user_id(current_user))
+    if tenant_id is not None:
+        _ensure_tenant_exists(db, tenant_id)
+
+    entities = repository.list_tabs_for_user(
+        db,
+        actor_user_id(current_user),
+        tenant_id=tenant_id,
+    )
     return [WorkspaceTabRead.model_validate(entity) for entity in entities]
 
 

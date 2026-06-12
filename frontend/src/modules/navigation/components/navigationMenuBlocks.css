@@ -1,0 +1,34 @@
+.navigation-menu-block-zone {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.navigation-menu-block-zone.is-edit-mode {
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  padding: 4px 2px;
+  min-height: 36px;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.navigation-menu-block-zone.is-edit-mode.is-source-block {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.navigation-menu-block-zone.is-edit-mode.is-drop-target {
+  border-color: #2563eb;
+  background: #eef4ff;
+}
+
+.navigation-menu-block-zone__empty {
+  min-height: 28px;
+  width: 100%;
+}
+
+.navigation-menu-block-drop-line {
+  height: 2px;
+  background: #2563eb;
+  border-radius: 999px;
+  box-shadow: 0 0 12px rgba(37, 99, 255, 0.35);
+}

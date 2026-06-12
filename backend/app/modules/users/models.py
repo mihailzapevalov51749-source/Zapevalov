@@ -49,6 +49,16 @@ class User(Base):
     # ======================
     hashed_password = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True)
+    is_system_user = Column(Boolean, default=False, nullable=False)
+    is_hidden_user = Column(Boolean, default=False, nullable=False)
+    login_disabled = Column(Boolean, default=False, nullable=False)
+    account_status = Column(String(32), default="active", nullable=False)
+
+    # ======================
+    # Tenant scope (NULL = platform user)
+    # ======================
+    tenant_id = Column(Integer, ForeignKey("portals.id", ondelete="CASCADE"), nullable=True, index=True)
+    is_company_owner = Column(Boolean, default=False, nullable=False, server_default="false")
 
     # ======================
     # Роль

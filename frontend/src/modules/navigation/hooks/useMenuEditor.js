@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { resolveNavigationDeleteError } from "../../../api/navigationApi";
-import { getLegacyStorageBlockedMessageForNavigationType } from "../../../shared/legacy";
+import { getLegacyTableNavigationBlockedMessage } from "../../blocks/registry/legacyTableBlockTypes";
 import { navigationService } from "../services/navigationService";
 import { getNavigationDeleteBlockReason } from "../utils/navigationDeletePolicy";
 
@@ -49,8 +49,7 @@ export default function useMenuEditor({ portalId, reload, navigationItems = [] }
     setIsSaving(true);
 
     try {
-      const legacyNavBlockedMessage =
-        getLegacyStorageBlockedMessageForNavigationType(type);
+      const legacyNavBlockedMessage = getLegacyTableNavigationBlockedMessage(type);
 
       if (legacyNavBlockedMessage) {
         throw new Error(legacyNavBlockedMessage);

@@ -3,6 +3,7 @@ import eyeClosedIcon from "../../../../assets/icons/eye-closed.png";
 import { isTableRowNumberPresentationFieldKey } from "../../../../shared/runtime/systemEntityFields";
 import { PlatformModal } from "../../../../shared/platformModal";
 import { resolveTableFieldLabels } from "../../services/columnPresentationUtils";
+import { notifyLastVisibleTableFieldGuard } from "../constants/objectTableFieldVisibilityGuard";
 import {
   OBJECT_TABLE_VIEW_CHILD_MODAL_DEFAULT_BOUNDS,
   OBJECT_TABLE_VIEW_FIELDS_PANEL_KEY,
@@ -29,7 +30,7 @@ export default function ObjectTableViewSettingsFieldsModal({
     const result = sessionApi?.toggleFieldVisibility?.(fieldKey);
 
     if (result?.ok === false && result.reason === "last_visible_field") {
-      window.alert("Нельзя скрыть все поля. Должно остаться хотя бы одно видимое.");
+      notifyLastVisibleTableFieldGuard();
     }
   };
 

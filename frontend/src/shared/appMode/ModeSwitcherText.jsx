@@ -7,6 +7,7 @@ export default function ModeSwitcherText({
   mode = "runtime",
   onToggle,
   variant = "runtime",
+  disabled = false,
 }) {
   const label = MODE_LABELS[mode] || MODE_LABELS.runtime;
 
@@ -16,6 +17,7 @@ export default function ModeSwitcherText({
       className={`mode-switcher-text mode-switcher-text--${variant}`}
       data-mode={mode}
       onClick={onToggle}
+      disabled={disabled}
       aria-label={`Текущий режим: ${label}. Переключить режим.`}
       title="Переключить режим"
     >

@@ -1,9 +1,9 @@
-import { generateViewKey } from "../../../objectViews/services/generateViewKey";
+import { generatePlatformKey } from "../../../../shared/keys/generatePlatformKey.js";
 import { getDefaultChoiceOptionColor } from "../../../../shared/navigation/menuColors";
 
 /** Autogenerate field key from label (same rules as object type / view keys). */
 export function generateFieldKey(name, reservedKeys = []) {
-  return generateViewKey(name, reservedKeys);
+  return generatePlatformKey(name, reservedKeys);
 }
 
 export function isChoiceFieldType(fieldType) {

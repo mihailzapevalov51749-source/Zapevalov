@@ -16,8 +16,6 @@ from app.modules.platform.designer.publish.models import (
     DesignerMetadataSnapshot,
     DesignerPublishRecord,
 )
-from app.modules.universal_tables.models import UniversalTable, UniversalTableColumn
-from app.modules.universal_views.models import UniversalView
 from app.modules.platform.runtime.entities.models import RuntimeEntity
 from app.modules.portals.models import Portal
 from app.modules.portals.repository import create_portal
@@ -44,22 +42,6 @@ def _purge_cloned_tenant(db: Session, target_id: int) -> None:
         ]
 
     if block_ids:
-        table_ids = [
-            row.id
-            for row in db.query(UniversalTable.id)
-            .filter(UniversalTable.block_id.in_(block_ids))
-            .all()
-        ]
-        if table_ids:
-            db.query(UniversalView).filter(UniversalView.table_id.in_(table_ids)).delete(
-                synchronize_session=False
-            )
-            db.query(UniversalTableColumn).filter(
-                UniversalTableColumn.table_id.in_(table_ids)
-            ).delete(synchronize_session=False)
-            db.query(UniversalTable).filter(UniversalTable.id.in_(table_ids)).delete(
-                synchronize_session=False
-            )
         db.query(Block).filter(Block.id.in_(block_ids)).delete(synchronize_session=False)
     if section_ids:
         db.query(Section).filter(Section.id.in_(section_ids)).delete(synchronize_session=False)

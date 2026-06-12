@@ -1,6 +1,5 @@
 /**
  * Visual tokens — docs/references VISUAL CONTRACT V1.
- * Do not import from modules/universalTable.
  */
 
 export const VE_COLOR_BORDER = "#e2e8f0";

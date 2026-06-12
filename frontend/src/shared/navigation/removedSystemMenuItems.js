@@ -1,16 +1,22 @@
-const REMOVED_OFFICE_MENU_TITLES = new Set(["мои задачи"]);
-
 export function isRemovedOfficeMenuItem(item) {
   if (!item || typeof item !== "object") {
     return false;
   }
 
-  const title = String(item.title || "").trim().toLowerCase();
+  const type = String(item.type || "").trim().toLowerCase();
+
+  if (type === "object_type" || item.object_type_id) {
+    return false;
+  }
+
   const route = String(item.route || item.url || item.path || "").trim().toLowerCase();
+
+  if (type === "universal_table") {
+    return true;
+  }
 
   return (
     item.id === "system-my-tasks" ||
-    REMOVED_OFFICE_MENU_TITLES.has(title) ||
     route === "/my-tasks" ||
     route.endsWith("/my-tasks")
   );

@@ -1,3 +1,7 @@
+import {
+  isCompanyOwner,
+  resolveTenantRoleDisplay,
+} from "../../../shared/tenantRoles/tenantRoleModel.js";
 import { styles } from "./usersStyles";
 
 const DEFAULT_AVATAR_SETTINGS = {
@@ -129,7 +133,7 @@ export default function UsersList({
                   </div>
                 </div>
 
-                <RoleBadge role={roleName} />
+                <RoleBadge role={roleName} user={user} />
 
                 <div style={localStyles.textCellWrap}>
                   {user.department || "Не указано"}
@@ -208,8 +212,15 @@ function Avatar({ user, size = 40 }) {
   );
 }
 
-function RoleBadge({ role }) {
-  return <span style={localStyles.roleBadge}>{role}</span>;
+function RoleBadge({ role, user }) {
+  return (
+    <div style={localStyles.roleBadgeWrap}>
+      <span style={localStyles.roleBadge}>{resolveTenantRoleDisplay(role)}</span>
+      {isCompanyOwner(user) ? (
+        <span style={localStyles.ownerBadge}>Владелец компании</span>
+      ) : null}
+    </div>
+  );
 }
 
 function StatusDot({ active }) {
@@ -276,12 +287,19 @@ const localStyles = {
     flexDirection: "column",
   },
 
+  roleBadgeWrap: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: 4,
+    minWidth: 0,
+  },
+
   roleBadge: {
     display: "inline-flex",
     justifyContent: "center",
     alignItems: "center",
-    width: "100%",
-    maxWidth: 112,
+    maxWidth: "100%",
     height: 24,
     borderRadius: 999,
     background: "#eef2ff",
@@ -292,6 +310,19 @@ const localStyles = {
     boxSizing: "border-box",
     overflow: "hidden",
     textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+
+  ownerBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    height: 22,
+    borderRadius: 999,
+    background: "#ecfdf5",
+    color: "#047857",
+    fontSize: 11,
+    fontWeight: 700,
+    padding: "0 8px",
     whiteSpace: "nowrap",
   },
 

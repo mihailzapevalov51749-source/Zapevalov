@@ -1,14 +1,13 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import SectionToolbar from "./SectionToolbar";
 import BlocksList from "../../blocks/components/BlocksList";
 import FreeLayoutSection from "./FreeLayoutSection";
 
 import {
-  getLegacyStorageCreationNoticeMessage,
-  isLegacyStorageBlockType,
-} from "../../../shared/legacy";
-import useSectionUniversalTableControls from "../hooks/useSectionUniversalTableControls";
+  isLegacyTableBlockType,
+  LEGACY_TABLE_BLOCK_CREATION_MESSAGE,
+} from "../../blocks/registry/legacyTableBlockTypes";
 
 export default function ContentSection({
   section,
@@ -29,63 +28,6 @@ export default function ContentSection({
 }) {
   const [isHovered, setIsHovered] = useState(false);
 
-  const {
-    tableBlock,
-    tableViewState,
-    representations,
-    activeRepresentationId,
-    isRepresentationDirty,
-    isBaseStateDirty,
-    handleSelectRepresentation,
-    handleCreateRepresentation,
-    handleDeleteRepresentation,
-    handleRenameRepresentation,
-    handleSaveRepresentation,
-    handleSaveAsRepresentation,
-    handleDuplicateRepresentation,
-    handleSetDefaultRepresentation,
-    handleToggleColumnVisibility,
-    toggleRepresentationVisibility,
-  } = useSectionUniversalTableControls({
-    section,
-    blocks,
-  });
-
-  const tableIdentity = useMemo(
-    () => ({
-      tableId:
-        tableBlock?.table?.id ||
-        tableBlock?.tableId ||
-        tableBlock?.table_id ||
-        tableBlock?.universalTableId ||
-        tableBlock?.universal_table_id ||
-        tableBlock?.settings?.tableId ||
-        tableBlock?.settings?.table_id ||
-        tableBlock?.content?.tableId ||
-        tableBlock?.content?.table_id ||
-        tableBlock?.id,
-
-      table_id:
-        tableBlock?.table?.id ||
-        tableBlock?.tableId ||
-        tableBlock?.table_id ||
-        tableBlock?.universalTableId ||
-        tableBlock?.universal_table_id ||
-        tableBlock?.settings?.tableId ||
-        tableBlock?.settings?.table_id ||
-        tableBlock?.content?.tableId ||
-        tableBlock?.content?.table_id ||
-        tableBlock?.id,
-
-      blockId: tableBlock?.id || null,
-      block_id: tableBlock?.id || null,
-
-      sectionId: section?.id || null,
-      section_id: section?.id || null,
-    }),
-    [tableBlock, section?.id]
-  );
-
   const isSectionDragActive = Boolean(sectionDragAndDrop?.draggedSectionId);
 
   const isBlockDropInside =
@@ -105,9 +47,9 @@ export default function ContentSection({
     section.type === "free" ||
     section.settings?.layout === "free";
 
-  const isLegacyStorageWidgetDrag = (event) => {
+  const isLegacyTableWidgetDrag = (event) => {
     const widgetType = event.dataTransfer.getData("widget/type");
-    return isLegacyStorageBlockType(widgetType);
+    return isLegacyTableBlockType(widgetType);
   };
 
   return (
@@ -136,7 +78,7 @@ export default function ContentSection({
         const widgetType = event.dataTransfer.getData("widget/type");
 
         if (widgetType) {
-          if (isLegacyStorageWidgetDrag(event)) {
+          if (isLegacyTableWidgetDrag(event)) {
             event.preventDefault();
             event.dataTransfer.dropEffect = "none";
             return;
@@ -154,10 +96,10 @@ export default function ContentSection({
         const widgetType = event.dataTransfer.getData("widget/type");
 
         if (widgetType) {
-          if (isLegacyStorageWidgetDrag(event)) {
+          if (isLegacyTableWidgetDrag(event)) {
             event.preventDefault();
             event.stopPropagation();
-            alert(getLegacyStorageCreationNoticeMessage());
+            alert(LEGACY_TABLE_BLOCK_CREATION_MESSAGE);
             return;
           }
 
@@ -176,7 +118,7 @@ export default function ContentSection({
         const blockId = event.dataTransfer.getData("block/id");
 
         if (widgetType) {
-          if (isLegacyStorageWidgetDrag(event)) {
+          if (isLegacyTableWidgetDrag(event)) {
             event.preventDefault();
             return;
           }
@@ -196,9 +138,9 @@ export default function ContentSection({
         const blockId = event.dataTransfer.getData("block/id");
 
         if (widgetType) {
-          if (isLegacyStorageWidgetDrag(event)) {
+          if (isLegacyTableWidgetDrag(event)) {
             event.preventDefault();
-            alert(getLegacyStorageCreationNoticeMessage());
+            alert(LEGACY_TABLE_BLOCK_CREATION_MESSAGE);
             return;
           }
 
@@ -301,22 +243,6 @@ export default function ContentSection({
             blockDragAndDrop={
               isSectionDragActive ? undefined : blockDragAndDrop
             }
-            tableViewState={tableViewState}
-            tableIdentity={tableIdentity}
-            representations={representations}
-            activeRepresentationId={activeRepresentationId}
-            isRepresentationDirty={isRepresentationDirty}
-            isBaseStateDirty={isBaseStateDirty}
-            onToggleColumnVisibility={handleToggleColumnVisibility}
-            onSelectRepresentation={handleSelectRepresentation}
-            onCreateRepresentation={handleCreateRepresentation}
-            onDeleteRepresentation={handleDeleteRepresentation}
-            onToggleRepresentationVisibility={toggleRepresentationVisibility}
-            onRenameRepresentation={handleRenameRepresentation}
-            onSaveRepresentation={handleSaveRepresentation}
-            onSaveAsRepresentation={handleSaveAsRepresentation}
-            onDuplicateRepresentation={handleDuplicateRepresentation}
-            onSetDefaultRepresentation={handleSetDefaultRepresentation}
           />
         )}
       </div>

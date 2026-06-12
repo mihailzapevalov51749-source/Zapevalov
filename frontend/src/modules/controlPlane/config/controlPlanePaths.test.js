@@ -5,17 +5,14 @@ import { describe, it } from "node:test";
 
 
 import {
-
   buildControlPlaneClientsPath,
-
+  buildControlPlaneCompaniesPath,
   buildControlPlaneRoute,
-
+  buildControlPlaneUsersRolesPath,
   isPlatformAdminLegacyPath,
-
   mapLegacyAdministrationPathToControlPlane,
-
+  mapLegacyClientsPathToCompaniesWorkspace,
   resolveControlPlaneReturnToStudioPath,
-
 } from "./controlPlanePaths.js";
 
 
@@ -35,13 +32,21 @@ describe("controlPlanePaths", () => {
     );
 
     assert.equal(
-
       buildControlPlaneClientsPath("companies"),
-
       "/control-plane/clients/companies",
-
     );
-
+    assert.equal(
+      buildControlPlaneCompaniesPath("clients"),
+      "/control-plane/companies/clients",
+    );
+    assert.equal(
+      buildControlPlaneUsersRolesPath("users"),
+      "/control-plane/users-roles/users",
+    );
+    assert.equal(
+      buildControlPlaneUsersRolesPath("roles"),
+      "/control-plane/users-roles/roles",
+    );
   });
 
 
@@ -56,16 +61,13 @@ describe("controlPlanePaths", () => {
 
       ),
 
-      "/control-plane/clients/companies",
+      "/control-plane/companies/clients",
 
     );
 
     assert.equal(
-
       mapLegacyAdministrationPathToControlPlane("/admin/clients/registry"),
-
-      "/control-plane/clients/registry",
-
+      "/control-plane/companies/clients",
     );
 
     assert.equal(
@@ -80,7 +82,7 @@ describe("controlPlanePaths", () => {
 
       mapLegacyAdministrationPathToControlPlane("/admin/users"),
 
-      "/control-plane/platform-users",
+      "/control-plane/users-roles/users",
 
     );
 
@@ -129,6 +131,16 @@ describe("controlPlanePaths", () => {
     assert.match(path, /^\/designer\/tenant\/1\//);
   });
 
+  it("maps legacy control-plane clients routes to companies workspace", () => {
+    assert.equal(
+      mapLegacyClientsPathToCompaniesWorkspace("/control-plane/clients/registry/14"),
+      "/control-plane/companies/clients/14",
+    );
+    assert.equal(
+      mapLegacyClientsPathToCompaniesWorkspace("/control-plane/clients/create"),
+      "/control-plane/companies/clients",
+    );
+  });
 });
 
 

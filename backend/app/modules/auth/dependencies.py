@@ -4,6 +4,7 @@ from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.modules.users.bootstrap_owner_service import attach_platform_owner_flag
 from app.modules.users.models import User
 from .security import SECRET_KEY, ALGORITHM
 
@@ -44,4 +45,4 @@ def get_current_user(
             detail="Пользователь отключен",
         )
 
-    return user
+    return attach_platform_owner_flag(db, user)

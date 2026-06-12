@@ -1,3 +1,4 @@
+import { patchNavigationMenuSettings } from "../navigation/navigationMenuBlocks.js";
 import {
   PLATFORM_UI_PREF_KEYS,
   PLATFORM_UI_SCOPES,
@@ -8,6 +9,9 @@ const SCOPE = PLATFORM_UI_SCOPES.CONTROL_PLANE;
 
 export const CONTROL_PLANE_SIDEBAR_COLLAPSED_CHANGED_EVENT =
   "yasnopro:control-plane-sidebar-collapsed-changed";
+
+export const CONTROL_PLANE_SYSTEM_MENU_SETTINGS_CHANGED_EVENT =
+  "yasnopro:control-plane-system-menu-settings-changed";
 
 function readRaw(key) {
   const storageKey = buildPlatformUiStorageKey(SCOPE, key);
@@ -132,6 +136,21 @@ export function writeControlPlaneSystemMenuSettings(settings) {
     PLATFORM_UI_PREF_KEYS.SYSTEM_MENU_SETTINGS,
     JSON.stringify(settings && typeof settings === "object" ? settings : {}),
   );
+
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(
+    new CustomEvent(CONTROL_PLANE_SYSTEM_MENU_SETTINGS_CHANGED_EVENT),
+  );
+}
+
+export function patchControlPlaneSystemMenuOrder(items = []) {
+  const current = readControlPlaneSystemMenuSettings();
+  const next = patchNavigationMenuSettings(current, items);
+  writeControlPlaneSystemMenuSettings(next);
+  return next;
 }
 
 /** @deprecated Use readControlPlaneMenuState */

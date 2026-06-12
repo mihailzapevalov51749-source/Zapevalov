@@ -25,6 +25,7 @@ import {
   PAGE_LAYOUT_TOOLBAR_ZONE,
   useResolvedPageLayoutContract,
 } from "../../../shared/appShell/pageLayoutContract";
+import { showPlatformNotification } from "../../../shared/platformNotification/PlatformNotification";
 
 const DEFAULT_VIEW_KEY = "default_table";
 const DEFAULT_VIEW_LABEL = "Таблица";
@@ -140,11 +141,21 @@ export default function ObjectTypeDataPage() {
         );
       }
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Не удалось обновить публикацию"));
+      showPlatformNotification({
+        message: getApiErrorMessage(err, "Не удалось обновить публикацию"),
+        variant: "warning",
+      });
     } finally {
       setPublishing(false);
     }
   }, [objectType, objectTypeId, tenantId]);
+
+  const handleDuplicateObject = useCallback(() => {
+    showPlatformNotification({
+      message: "Дублирование объекта будет доступно в следующем релизе.",
+      variant: "info",
+    });
+  }, []);
 
   const handleManagePublication = useCallback(() => {
     setMenuPublishMessage("");
@@ -294,7 +305,7 @@ export default function ObjectTypeDataPage() {
           onManagePublication={handleManagePublication}
           showManagePublication={Boolean(lifecycle.needsMenuPlacement)}
           onRenameObject={() => navigate(settingsPath)}
-          onDuplicateObject={() => window.alert("Дублирование объекта будет доступно в следующем релизе.")}
+          onDuplicateObject={handleDuplicateObject}
           onDeleteObject={() => navigate(settingsPath)}
         />
       ) : null}

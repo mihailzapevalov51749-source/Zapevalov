@@ -1,7 +1,11 @@
 const STORAGE_KEY = "yasnopro:designer-system-menu-settings:v1";
 const CHANGE_EVENT = "yasnopro:designer-system-menu-settings:changed";
 
-function readAll() {
+const serverSettingsCache = new Map();
+const serverSettingsLoaded = new Set();
+const serverSettingsLoadPromises = new Map();
+
+function readAllLocal() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return {};
@@ -12,16 +16,86 @@ function readAll() {
   }
 }
 
-function writeAll(next) {
+function writeAllLocal(next) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
 }
 
-function tenantKey(tenantId) {
-  const normalized = Number(tenantId) || 1;
-  return `tenant:${normalized}`;
+function normalizeTenantId(tenantId) {
+  const normalized = Number(tenantId);
+  return Number.isFinite(normalized) && normalized > 0 ? normalized : 1;
 }
 
-function systemItemKey(item) {
+function tenantKey(tenantId) {
+  return `tenant:${normalizeTenantId(tenantId)}`;
+}
+
+function readLocalSettings(tenantId) {
+  const all = readAllLocal();
+  const tenantSettings = all[tenantKey(tenantId)];
+  return tenantSettings && typeof tenantSettings === "object" ? tenantSettings : {};
+}
+
+function writeLocalSettings(tenantId, settings) {
+  const all = readAllLocal();
+  all[tenantKey(tenantId)] = settings && typeof settings === "object" ? settings : {};
+  writeAllLocal(all);
+}
+
+function normalizeSettingEntry(entry) {
+  if (!entry || typeof entry !== "object") {
+    return {};
+  }
+
+  return {
+    ...(entry.title != null ? { title: entry.title } : {}),
+    ...(entry.icon != null ? { icon: entry.icon } : {}),
+    ...(entry.icon_type != null ? { icon_type: entry.icon_type } : {}),
+    ...(entry.icon_file_url != null ? { icon_file_url: entry.icon_file_url } : {}),
+    ...(entry.color != null ? { color: entry.color } : {}),
+    ...(typeof entry.sort_order === "number" ? { sort_order: entry.sort_order } : {}),
+    ...(typeof entry.is_visible === "boolean" ? { is_visible: entry.is_visible } : {}),
+    ...(typeof entry.is_bold === "boolean" ? { is_bold: entry.is_bold } : {}),
+    ...(typeof entry.is_italic === "boolean" ? { is_italic: entry.is_italic } : {}),
+    ...(typeof entry.is_expanded === "boolean" ? { is_expanded: entry.is_expanded } : {}),
+    ...(typeof entry.block_id === "number" ? { block_id: entry.block_id } : {}),
+  };
+}
+
+function mapApiSettingsToCache(settings) {
+  const source = settings && typeof settings === "object" ? settings : {};
+  const mapped = {};
+
+  for (const [itemKey, entry] of Object.entries(source)) {
+    const normalized = normalizeSettingEntry(entry);
+    if (Object.keys(normalized).length > 0) {
+      mapped[itemKey] = normalized;
+    }
+  }
+
+  return mapped;
+}
+
+async function getDesignerSystemMenuSettingsApi() {
+  return import("../../../modules/designer/api/designerSystemMenuSettingsApi.js");
+}
+
+function dispatchSettingsChanged(tenantId) {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(CHANGE_EVENT, {
+        detail: { tenantId: normalizeTenantId(tenantId) },
+      }),
+    );
+  }
+}
+
+function setServerCache(tenantId, settings) {
+  const normalizedTenantId = normalizeTenantId(tenantId);
+  serverSettingsCache.set(normalizedTenantId, settings);
+  serverSettingsLoaded.add(normalizedTenantId);
+}
+
+export function systemItemKey(item) {
   const id = String(item?.id || "").trim();
   if (id.startsWith("system-designer-")) {
     return id.replace("system-designer-", "");
@@ -34,37 +108,120 @@ function systemItemKey(item) {
 }
 
 export function getDesignerSystemMenuSettings(tenantId) {
-  const all = readAll();
-  const key = tenantKey(tenantId);
-  const tenantSettings = all[key];
-  return tenantSettings && typeof tenantSettings === "object" ? tenantSettings : {};
+  const normalizedTenantId = normalizeTenantId(tenantId);
+
+  if (serverSettingsCache.has(normalizedTenantId)) {
+    return serverSettingsCache.get(normalizedTenantId);
+  }
+
+  return readLocalSettings(normalizedTenantId);
 }
 
-export function saveDesignerSystemMenuSettings(tenantId, settings) {
-  const all = readAll();
-  all[tenantKey(tenantId)] = settings && typeof settings === "object" ? settings : {};
-  writeAll(all);
-  window.dispatchEvent(new CustomEvent(CHANGE_EVENT, { detail: { tenantId } }));
+export async function loadDesignerSystemMenuSettings(tenantId) {
+  const normalizedTenantId = normalizeTenantId(tenantId);
+
+  if (serverSettingsLoadPromises.has(normalizedTenantId)) {
+    return serverSettingsLoadPromises.get(normalizedTenantId);
+  }
+
+  const promise = (async () => {
+    try {
+      const api = await getDesignerSystemMenuSettingsApi();
+      const remoteSettings = mapApiSettingsToCache(
+        await api.fetchDesignerSystemMenuSettings(normalizedTenantId),
+      );
+
+      if (Object.keys(remoteSettings).length > 0) {
+        setServerCache(normalizedTenantId, remoteSettings);
+        writeLocalSettings(normalizedTenantId, remoteSettings);
+      } else {
+        const localFallback = readLocalSettings(normalizedTenantId);
+        setServerCache(normalizedTenantId, localFallback);
+      }
+    } catch {
+      setServerCache(normalizedTenantId, readLocalSettings(normalizedTenantId));
+    } finally {
+      serverSettingsLoadPromises.delete(normalizedTenantId);
+      dispatchSettingsChanged(normalizedTenantId);
+    }
+
+    return getDesignerSystemMenuSettings(normalizedTenantId);
+  })();
+
+  serverSettingsLoadPromises.set(normalizedTenantId, promise);
+  return promise;
 }
 
-export function patchDesignerSystemMenuSettings(tenantId, itemKey, patch) {
-  if (!itemKey) return;
-  const current = getDesignerSystemMenuSettings(tenantId);
+export function isDesignerSystemMenuSettingsLoaded(tenantId) {
+  return serverSettingsLoaded.has(normalizeTenantId(tenantId));
+}
+
+export async function saveDesignerSystemMenuSettings(tenantId, settings) {
+  const normalizedTenantId = normalizeTenantId(tenantId);
+  const nextSettings =
+    settings && typeof settings === "object" ? { ...settings } : {};
+
+  setServerCache(normalizedTenantId, nextSettings);
+  writeLocalSettings(normalizedTenantId, nextSettings);
+  dispatchSettingsChanged(normalizedTenantId);
+
+  try {
+    const payload = {};
+    for (const [itemKey, entry] of Object.entries(nextSettings)) {
+      payload[itemKey] = normalizeSettingEntry(entry);
+    }
+    const api = await getDesignerSystemMenuSettingsApi();
+    const saved = mapApiSettingsToCache(
+      await api.putDesignerSystemMenuSettingsBulk(normalizedTenantId, payload),
+    );
+    if (Object.keys(saved).length > 0) {
+      setServerCache(normalizedTenantId, { ...nextSettings, ...saved });
+    }
+  } catch {
+    // local cache remains as optimistic fallback
+  }
+
+  dispatchSettingsChanged(normalizedTenantId);
+  return getDesignerSystemMenuSettings(normalizedTenantId);
+}
+
+export async function patchDesignerSystemMenuSettings(tenantId, itemKey, patch) {
+  if (!itemKey) return getDesignerSystemMenuSettings(tenantId);
+
+  const normalizedTenantId = normalizeTenantId(tenantId);
+  const current = getDesignerSystemMenuSettings(normalizedTenantId);
+  const nextEntry = {
+    ...(current[itemKey] && typeof current[itemKey] === "object" ? current[itemKey] : {}),
+    ...(patch && typeof patch === "object" ? patch : {}),
+  };
   const next = {
     ...current,
-    [itemKey]: {
-      ...(current[itemKey] && typeof current[itemKey] === "object" ? current[itemKey] : {}),
-      ...(patch && typeof patch === "object" ? patch : {}),
-    },
+    [itemKey]: nextEntry,
   };
-  saveDesignerSystemMenuSettings(tenantId, next);
+
+  setServerCache(normalizedTenantId, next);
+  writeLocalSettings(normalizedTenantId, next);
+  dispatchSettingsChanged(normalizedTenantId);
+
+  try {
+    const api = await getDesignerSystemMenuSettingsApi();
+    await api.putDesignerSystemMenuSetting(
+      normalizedTenantId,
+      itemKey,
+      normalizeSettingEntry(nextEntry),
+    );
+  } catch {
+    // keep local optimistic state
+  }
+
+  return getDesignerSystemMenuSettings(normalizedTenantId);
 }
 
 export function applyDesignerSystemMenuSettings(
   items,
   tenantId,
   isSuperadmin,
-  options = {}
+  options = {},
 ) {
   const showHiddenInEditMode = options.showHiddenInEditMode === true;
   const settings = getDesignerSystemMenuSettings(tenantId);
@@ -75,7 +232,7 @@ export function applyDesignerSystemMenuSettings(
       const itemSettings =
         key && settings[key] && typeof settings[key] === "object" ? settings[key] : {};
       const defaultVisible = item?.is_visible !== false;
-      const isAdminItem = key === "administration";
+      const isAdminItem = key === "administration" || key === "tenant-administration";
       if (isAdminItem && !Boolean(isSuperadmin)) {
         return null;
       }
@@ -116,6 +273,10 @@ export function applyDesignerSystemMenuSettings(
             : item?.is_expanded,
         is_visible: isVisible,
         sort_order: sortOrder,
+        block_id:
+          typeof itemSettings.block_id === "number" && Number.isFinite(itemSettings.block_id)
+            ? itemSettings.block_id
+            : item?.block_id,
         system_key: key || item?.system_key,
       };
     })
@@ -131,6 +292,21 @@ export function applyDesignerSystemMenuSettings(
 
 export function getDesignerSystemMenuSettingsEventName() {
   return CHANGE_EVENT;
+}
+
+/** @internal test helper — clears in-memory server cache between isolated test runs */
+export function resetDesignerSystemMenuSettingsCache(tenantId = null) {
+  if (tenantId != null) {
+    const normalizedTenantId = normalizeTenantId(tenantId);
+    serverSettingsCache.delete(normalizedTenantId);
+    serverSettingsLoaded.delete(normalizedTenantId);
+    serverSettingsLoadPromises.delete(normalizedTenantId);
+    return;
+  }
+
+  serverSettingsCache.clear();
+  serverSettingsLoaded.clear();
+  serverSettingsLoadPromises.clear();
 }
 
 export function resolveDesignerSystemItemKey(input) {

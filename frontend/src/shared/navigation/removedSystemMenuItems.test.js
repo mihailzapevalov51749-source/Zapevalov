@@ -32,4 +32,36 @@ describe("removedSystemMenuItems", () => {
       { id: "section", title: "Раздел", children: [] },
     ]);
   });
+
+  it("keeps object_type items even when title is Мои задачи", () => {
+    expect(
+      isRemovedOfficeMenuItem({
+        id: 85,
+        title: "Мои задачи",
+        type: "object_type",
+        url: "/portal/1/object-types/zadachnik",
+      }),
+    ).toBe(false);
+  });
+
+  it("keeps object_type zadachnik menu item", () => {
+    expect(
+      isRemovedOfficeMenuItem({
+        id: 85,
+        title: "Задачник",
+        type: "object_type",
+        url: "/portal/1/object-types/zadachnik",
+      }),
+    ).toBe(false);
+  });
+
+  it("hides universal_table legacy items", () => {
+    expect(
+      isRemovedOfficeMenuItem({
+        id: "tasks",
+        title: "Мои задачи",
+        type: "universal_table",
+      }),
+    ).toBe(true);
+  });
 });

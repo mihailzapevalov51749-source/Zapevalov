@@ -1,6 +1,10 @@
 import usersIcon from "../../../assets/icons/users.png";
 
-import { buildControlPlaneClientsPath, buildControlPlaneRoute } from "../../controlPlane/config/controlPlanePaths.js";
+import {
+  buildControlPlaneClientsPath,
+  buildControlPlaneRoute,
+  buildControlPlaneUsersRolesPath,
+} from "../../controlPlane/config/controlPlanePaths.js";
 
 const PLATFORM_BASE = buildControlPlaneRoute();
 
@@ -25,11 +29,11 @@ export const platformAdminSections = [
   },
   {
     id: "platform-users",
-    title: "Пользователи платформы",
+    title: "Пользователи и роли",
     subtitle: "Управление платформой",
     description:
-      "Глобальные аккаунты входа в платформу ЯсноПро.",
-    route: `${PLATFORM_BASE}/platform-users`,
+      "Пространство управления пользователями платформы и ролями доступа.",
+    route: buildControlPlaneUsersRolesPath("users"),
     icon: usersIcon,
     actionLabel: "Все пользователи",
     metrics: [
@@ -41,15 +45,15 @@ export const platformAdminSections = [
   {
     id: "platform-roles",
     title: "Роли платформы",
-    subtitle: "Управление платформой",
+    subtitle: "Пользователи и роли",
     description:
-      "Глобальные роли, права доступа и политики безопасности платформы.",
-    route: `${PLATFORM_BASE}/platform-roles`,
-    actionLabel: "Управление ролями",
+      "Роли платформы, права доступа к контурам, разделам Control Plane и административные полномочия.",
+    route: buildControlPlaneUsersRolesPath("roles"),
+    actionLabel: "Открыть вкладку",
     metrics: [
-      { label: "Ролей", value: "32", tone: "primary" },
-      { label: "Политик доступа", value: "15" },
-      { label: "Назначений", value: "186" },
+      { label: "Системных ролей", value: "6", tone: "primary" },
+      { label: "Контуров", value: "5" },
+      { label: "Разделов CP", value: "5" },
     ],
   },
   {

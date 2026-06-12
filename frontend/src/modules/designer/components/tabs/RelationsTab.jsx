@@ -17,6 +17,8 @@ import {
 } from "../../../../shared/objectSettings";
 import { isHierarchyRelationDefinition } from "../../../../shared/relation/hierarchyRelationProfile.js";
 import { DEFAULT_HIERARCHY_LABELS } from "../../../../shared/relation/hierarchyLabels.js";
+import { usePlatformConfirm } from "../../../../shared/platformModal";
+import { notifyDesignerStudioApiError } from "../../utils/notifyDesignerStudioApiError";
 
 export default function RelationsTab({
   tenantId,
@@ -24,6 +26,7 @@ export default function RelationsTab({
   objectType,
   onSchemaChanged = null,
 }) {
+  const platformConfirm = usePlatformConfirm();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -140,7 +143,7 @@ export default function RelationsTab({
       await loadItems();
       await onSchemaChanged?.();
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Не удалось сохранить связь"));
+      notifyDesignerStudioApiError(err, "Не удалось сохранить связь");
     } finally {
       setSaving(false);
     }
@@ -148,7 +151,16 @@ export default function RelationsTab({
 
   const handleDelete = async () => {
     if (!selected) return;
-    if (!window.confirm(`Удалить связь "${selected.name}"?`)) return;
+
+    const confirmed = await platformConfirm({
+      title: "Удалить связь?",
+      message: `Удалить связь "${selected.name}"?`,
+      confirmLabel: "Удалить",
+      cancelLabel: "Отмена",
+      variant: "danger",
+    });
+
+    if (!confirmed) return;
 
     try {
       await designerApi.deleteRelation(tenantId, selected.id);
@@ -156,7 +168,7 @@ export default function RelationsTab({
       await loadItems();
       await onSchemaChanged?.();
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Не удалось удалить связь"));
+      notifyDesignerStudioApiError(err, "Не удалось удалить связь");
     }
   };
 

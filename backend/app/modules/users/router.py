@@ -15,7 +15,23 @@ logger = logging.getLogger(__name__)
 from app.db.session import get_db
 from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.security import hash_password, verify_password
-from app.modules.users.models import User, Role
+from app.modules.control_plane.platform_profile.constants import PLATFORM_SETTINGS_SINGLETON_ID
+from app.modules.control_plane.platform_profile.models import PlatformSettings
+from app.modules.platform_event_journal.audit_constants import (
+    PlatformAuditStatus,
+    PlatformEventCategory,
+    PlatformEventCode,
+)
+from app.modules.platform_event_journal.constants import PlatformEventJournalSource
+from app.modules.platform_dashboard.datetime_utils import utc_now
+from app.modules.platform_event_journal.service import record_platform_event
+from app.modules.tenant_users.membership_access import list_active_tenant_memberships
+from app.modules.users.bootstrap_owner_service import (
+    ensure_bootstrap_owner_recovery,
+    is_bootstrap_owner,
+    is_visible_platform_user,
+)
+from app.modules.users.models import Role, User
 from app.modules.users.schemas import ChangePasswordRequest, UserResponse, UserUpdate
 
 router = APIRouter(tags=["Users"])
@@ -117,7 +133,26 @@ def send_invite_email(to_email: str, login: str, password: str):
         ) from error
 
 
-def serialize_user(user: User) -> dict:
+def serialize_user(user: User, db: Session | None = None) -> dict:
+    tenant_id = getattr(user, "tenant_id", None)
+    memberships: list[dict] = []
+    is_platform_owner = bool(getattr(user, "is_platform_owner", False))
+
+    if db is not None:
+        if not is_platform_owner:
+            from app.modules.users.bootstrap_owner_service import user_is_platform_owner
+
+            is_platform_owner = user_is_platform_owner(db, user)
+
+        memberships = [
+            {
+                "tenant_id": membership.tenant_id,
+                "role_key": membership.role_key,
+                "is_active": bool(membership.is_active),
+            }
+            for membership in list_active_tenant_memberships(db, user.id)
+        ]
+
     return {
         "id": user.id,
         "email": user.email,
@@ -131,6 +166,15 @@ def serialize_user(user: User) -> dict:
         "avatar_url": user.avatar_url,
         "avatar_settings": user.avatar_settings,
         "is_active": user.is_active,
+        "is_system_user": bool(getattr(user, "is_system_user", False)),
+        "is_hidden_user": bool(getattr(user, "is_hidden_user", False)),
+        "login_disabled": bool(getattr(user, "login_disabled", False)),
+        "account_status": getattr(user, "account_status", "active"),
+        "tenant_id": tenant_id,
+        "tenant_memberships": memberships,
+        "is_platform_user": tenant_id is None,
+        "is_platform_owner": is_platform_owner,
+        "is_company_owner": bool(getattr(user, "is_company_owner", False)),
         "role_id": user.role_id,
         "role": user.role.name if user.role else None,
         "role_description": user.role.description if user.role else None,
@@ -180,6 +224,26 @@ def admin_create_user(
     )
 
     db.add(user)
+    db.flush()
+
+    if is_visible_platform_user(user):
+        record_platform_event(
+            db,
+            event_code=PlatformEventCode.PLATFORM_USER_CREATED.value,
+            event_category=PlatformEventCategory.PLATFORM_USER.value,
+            title=f"Создан пользователь платформы {user.email}",
+            description=user.full_name,
+            status=PlatformAuditStatus.DONE.value,
+            source=PlatformEventJournalSource.MANUAL.value,
+            actor_user=current_user,
+            target_type="platform_user",
+            target_id=user.id,
+            target_name=user.full_name,
+            metadata={"email": user.email, "role_id": user.role_id},
+            slug=f"platform-user-created-{user.id}-{int(utc_now().timestamp() * 1000)}",
+            commit=False,
+        )
+
     db.commit()
     db.refresh(user)
 
@@ -228,8 +292,11 @@ def admin_send_user_invite(
 
 
 @router.get("/users/me", response_model=UserResponse)
-def get_me(current_user: User = Depends(get_current_user)):
-    return serialize_user(current_user)
+def get_me(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return serialize_user(current_user, db)
 
 
 @router.patch("/users/me", response_model=UserResponse)
@@ -241,13 +308,7 @@ def update_me(
     update_data = payload.model_dump(exclude_unset=True)
 
     allowed_fields = {
-        "full_name",
         "phone",
-        "position",
-        "department",
-        "city",
-        "manager",
-        "mentor",
         "avatar_url",
         "avatar_settings",
     }
@@ -260,7 +321,7 @@ def update_me(
     db.commit()
     db.refresh(current_user)
 
-    return serialize_user(current_user)
+    return serialize_user(current_user, db)
 
 
 @router.patch("/users/me/password")
@@ -316,7 +377,7 @@ def get_users(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    query = db.query(User)
+    query = db.query(User).filter(User.is_hidden_user.is_(False), User.tenant_id.is_(None))
 
     value = (search or "").strip()
 
@@ -334,7 +395,7 @@ def get_users(
 
     users = query.order_by(User.full_name.asc()).limit(50).all()
 
-    return [serialize_user(user) for user in users]
+    return [serialize_user(user, db) for user in users]
 
 
 @router.get("/admin/users")
@@ -344,9 +405,14 @@ def admin_get_users(
 ):
     check_admin(current_user)
 
-    users = db.query(User).order_by(User.id.asc()).all()
+    users = (
+        db.query(User)
+        .filter(User.is_hidden_user.is_(False), User.tenant_id.is_(None))
+        .order_by(User.id.asc())
+        .all()
+    )
 
-    return [serialize_user(user) for user in users]
+    return [serialize_user(user, db) for user in users]
 
 
 @router.patch("/admin/users/{user_id}")
@@ -360,7 +426,7 @@ def admin_update_user(
 
     user = db.query(User).filter(User.id == user_id).first()
 
-    if not user:
+    if not user or not is_visible_platform_user(user):
         raise HTTPException(status_code=404, detail="Пользователь не найден")
 
     allowed_fields = {
@@ -377,6 +443,8 @@ def admin_update_user(
         "avatar_settings",
     }
 
+    previous_is_active = bool(user.is_active)
+
     for field, value in payload.items():
         if field in allowed_fields:
             setattr(user, field, value)
@@ -386,7 +454,45 @@ def admin_update_user(
     if password:
         user.hashed_password = hash_password(password)
 
+    settings_row = db.get(PlatformSettings, PLATFORM_SETTINGS_SINGLETON_ID)
+    if settings_row is not None and settings_row.platform_owner_user_id == user.id:
+        if payload.get("is_active") is False:
+            settings_row.platform_owner_user_id = None
+            settings_row.platform_owner_full_name = None
+            settings_row.platform_owner_email = None
+            settings_row.platform_owner_phone = None
+            settings_row.platform_owner_avatar_url = None
+            settings_row.platform_owner_avatar_settings = None
+
     db.add(user)
+    ensure_bootstrap_owner_recovery(db)
+    db.flush()
+
+    if is_visible_platform_user(user):
+        event_code = PlatformEventCode.PLATFORM_USER_UPDATED.value
+        if "is_active" in payload and bool(user.is_active) != previous_is_active:
+            event_code = (
+                PlatformEventCode.PLATFORM_USER_UNBLOCKED.value
+                if user.is_active
+                else PlatformEventCode.PLATFORM_USER_BLOCKED.value
+            )
+        record_platform_event(
+            db,
+            event_code=event_code,
+            event_category=PlatformEventCategory.PLATFORM_USER.value,
+            title=f"Изменён пользователь платформы {user.email}",
+            description=user.full_name,
+            status=PlatformAuditStatus.DONE.value,
+            source=PlatformEventJournalSource.MANUAL.value,
+            actor_user=current_user,
+            target_type="platform_user",
+            target_id=user.id,
+            target_name=user.full_name,
+            metadata={"email": user.email, "role_id": user.role_id, "is_active": user.is_active},
+            slug=f"platform-user-updated-{user.id}-{int(utc_now().timestamp() * 1000)}",
+            commit=False,
+        )
+
     db.commit()
     db.refresh(user)
 
@@ -415,9 +521,46 @@ def admin_delete_user(
             detail="Пользователь не найден",
         )
 
+    if not is_visible_platform_user(user):
+        raise HTTPException(
+            status_code=404,
+            detail="Пользователь не найден",
+        )
+
     deleted_user_id = user.id
+    deleted_email = user.email
+    deleted_name = user.full_name
+
+    settings_row = db.get(PlatformSettings, PLATFORM_SETTINGS_SINGLETON_ID)
+    if settings_row is not None and settings_row.platform_owner_user_id == user.id:
+        settings_row.platform_owner_user_id = None
+        settings_row.platform_owner_full_name = None
+        settings_row.platform_owner_email = None
+        settings_row.platform_owner_phone = None
+        settings_row.platform_owner_avatar_url = None
+        settings_row.platform_owner_avatar_settings = None
 
     db.delete(user)
+    ensure_bootstrap_owner_recovery(db)
+    db.flush()
+
+    record_platform_event(
+        db,
+        event_code=PlatformEventCode.PLATFORM_USER_DELETED.value,
+        event_category=PlatformEventCategory.PLATFORM_USER.value,
+        title=f"Удалён пользователь платформы {deleted_email}",
+        description=deleted_name,
+        status=PlatformAuditStatus.DONE.value,
+        source=PlatformEventJournalSource.MANUAL.value,
+        actor_user=current_user,
+        target_type="platform_user",
+        target_id=deleted_user_id,
+        target_name=deleted_name,
+        metadata={"email": deleted_email},
+        slug=f"platform-user-deleted-{deleted_user_id}-{int(utc_now().timestamp() * 1000)}",
+        commit=False,
+    )
+
     db.commit()
 
     return {

@@ -14,10 +14,9 @@ import useNavigationTree from "../modules/navigation/hooks/useNavigationTree";
 import { setEntityLocationRegistryEntry } from "../modules/navigation/entityLocationRegistry";
 import useWidgetDragAndDrop from "../modules/editor/hooks/useWidgetDragAndDrop";
 import {
-  getLegacyStorageCreationNoticeMessage,
-  isLegacyStorageBlockType,
-  isLegacyUniversalTableStorageBlockType,
-} from "../shared/legacy";
+  isLegacyTableBlockType,
+  LEGACY_TABLE_BLOCK_CREATION_MESSAGE,
+} from "../modules/blocks/registry/legacyTableBlockTypes";
 
 import useBlockDragAndDrop from "../modules/blocks/hooks/useBlockDragAndDrop";
 import {
@@ -35,9 +34,11 @@ import {
 } from "../modules/sections/services/sectionService";
 
 import LibraryPageView from "../modules/documentLibraries/components/LibraryPageView";
-import LegacyStorageSystemRouteView from "../shared/legacy/components/LegacyStorageSystemRouteView";
 
 import PortalLayout from "../layouts/PortalLayout";
+import {
+  resolvePortalHomePageId,
+} from "./utils/resolvePortalHomePage.js";
 import {
   resolvePortalIdFromPath,
   resolvePortalNavigationClickTarget,
@@ -53,6 +54,7 @@ import BlockSettingsModal from "./components/BlockSettingsModal";
 import PageSettingsPopover from "./components/PageSettingsPopover";
 import PageCanvasToast from "./components/PageCanvasToast";
 import SystemMessage from "../system/SystemMessage";
+import { usePlatformConfirm } from "../shared/platformModal";
 
 import { findBlockInPageData, mergeBlockUpdate } from "./utils/blockEditUtils";
 
@@ -75,7 +77,10 @@ import {
   buildControlPlaneRoute,
   resolveStudioTenantIdFromPath,
 } from "../modules/admin/config/adminPaths";
-import { isPlatformAdminLegacySuffix } from "../modules/controlPlane/config/controlPlanePaths";
+import {
+  buildControlPlaneUsersRolesPath,
+  isPlatformAdminLegacySuffix,
+} from "../modules/controlPlane/config/controlPlanePaths";
 
 import CorporateChatPage from "../modules/chats/pages/CorporateChatPage";
 
@@ -86,13 +91,6 @@ import {
   calculateDropPosition,
 } from "./utils/portalPageUtils";
 
-import {
-  isLegacyStorageNavigationItem,
-  renameLegacyStorage,
-  resolveLegacyStorageTableIdForPage,
-  subscribeToLegacyStorageTitle,
-  syncLegacyStorageTitleAcrossUi,
-} from "../shared/legacy/adapters/legacyStorageAdapter";
 import { LAYOUT_MODES } from "../shared/layout/layoutModes";
 import { resolveSidebarWidth, resolveWorkspaceLeftOffset } from "../shared/layout/shellGeometry";
 import { SHELL_FEATURE_FLAGS } from "../shared/shell/shellFeatureFlags";
@@ -386,10 +384,10 @@ function getAdminPageByPath(pathname) {
   }
 
   if (adminPath === "/admin/users") {
-    return <AdminPathRedirect targetPath={buildControlPlaneRoute("platform-users")} />;
+    return <AdminPathRedirect targetPath={buildControlPlaneUsersRolesPath("users")} />;
   }
   if (adminPath === "/admin/roles") {
-    return <AdminPathRedirect targetPath={buildControlPlaneRoute("platform-roles")} />;
+    return <AdminPathRedirect targetPath={buildControlPlaneUsersRolesPath("roles")} />;
   }
   if (adminPath === "/admin/system-settings" || adminPath === "/admin/system") {
     return <AdminPathRedirect targetPath={buildControlPlaneRoute("settings")} />;
@@ -415,7 +413,6 @@ function getAdminPageByPath(pathname) {
 function getSystemPageMeta({
   pathname,
   isAdminPage,
-  isUniversalTablePage,
   isCorporateChatPage,
   isDocumentLibraryPage,
   activeNavigationItem,
@@ -503,7 +500,7 @@ function getSystemPageMeta({
 
   if (adminPath === "/admin/roles") {
     return {
-      title: "Роли платформы",
+      title: "Роли и доступы",
       subtitle: "Глобальные права и политики безопасности платформы",
     };
   }
@@ -550,13 +547,6 @@ function getSystemPageMeta({
     return {
       title: "AI-ассистенты",
       subtitle: "",
-    };
-  }
-
-  if (isUniversalTablePage) {
-    return {
-      title: "Универсальная таблица",
-      subtitle: "Работа с данными и представлениями",
     };
   }
 
@@ -614,6 +604,7 @@ function resolveDesignerSectionTitle(pathname) {
 }
 
 export default function PortalPageView() {
+  const platformConfirm = usePlatformConfirm();
   const navigate = useNavigate();
   const location = useLocation();
   const { portalId: portalIdParam, pageId: pageIdParam } = useParams();
@@ -624,7 +615,6 @@ export default function PortalPageView() {
   );
   const pageId = pageIdParam ? Number(pageIdParam) : null;
 
-  const isUniversalTablePage = location.pathname === "/universal-table";
   const isAdminPage =
     location.pathname.startsWith("/admin") ||
     /^\/designer\/tenant\/\d+\/administration(\/|$)/.test(location.pathname);
@@ -635,7 +625,6 @@ export default function PortalPageView() {
 
   const isPortalCmsPage =
     /^\/portal\/\d+\/page\/\d+/.test(location.pathname) &&
-    !isUniversalTablePage &&
     !isAdminPage &&
     !isCorporateChatPage;
 
@@ -725,7 +714,6 @@ export default function PortalPageView() {
     (pageId ? findNavigationItemByPageId(navigation, pageId) : null);
 
   const isDocumentLibraryPage =
-    !isUniversalTablePage &&
     !isAdminPage &&
     !isCorporateChatPage &&
     activeNavigationItem?.type === "document_library";
@@ -733,7 +721,6 @@ export default function PortalPageView() {
   const topBarMeta = getSystemPageMeta({
     pathname: location.pathname,
     isAdminPage,
-    isUniversalTablePage,
     isCorporateChatPage,
     isDocumentLibraryPage,
     activeNavigationItem,
@@ -942,7 +929,6 @@ export default function PortalPageView() {
   const headerSearch = useHeaderSearchController({ searchContext, enabled: true });
 
   const isCanvasEditPage =
-    !isUniversalTablePage &&
     !isAdminPage &&
     !isCorporateChatPage &&
     !isDocumentLibraryPage &&
@@ -1045,7 +1031,6 @@ export default function PortalPageView() {
 
   const loadCurrentPage = async ({ keepPrevious = false } = {}) => {
     if (
-      isUniversalTablePage ||
       isAdminPage ||
       isCorporateChatPage ||
       !pageId ||
@@ -1055,6 +1040,8 @@ export default function PortalPageView() {
       return;
     }
 
+    const expectedPortalId = Number(portalId);
+
     try {
       if (!keepPrevious) {
         setError("");
@@ -1063,7 +1050,24 @@ export default function PortalPageView() {
 
       const result = await getPageFull(pageId, {
         officeAccess: shouldRequestOfficePageAccess(location.pathname),
+        portalId: expectedPortalId,
       });
+
+      const pagePortalId = Number(result?.page?.portal_id);
+      if (
+        Number.isFinite(expectedPortalId) &&
+        expectedPortalId > 0 &&
+        Number.isFinite(pagePortalId) &&
+        pagePortalId > 0 &&
+        pagePortalId !== expectedPortalId
+      ) {
+        const homePageId = await resolvePortalHomePageId(expectedPortalId);
+        if (homePageId !== pageId) {
+          navigate(`/portal/${expectedPortalId}/page/${homePageId}`, { replace: true });
+          return;
+        }
+      }
+
       setPageData(result);
     } catch (e) {
       console.error(e);
@@ -1072,13 +1076,25 @@ export default function PortalPageView() {
   };
 
   useEffect(() => {
+    setPageData(null);
+    setSelectedSection(null);
+    setSelectedBlock(null);
+    setError("");
+    setIsEditMode(false);
+    setDeleteSectionState(EMPTY_DELETE_SECTION_STATE);
+    setRuntimeHeaderModel(null);
+    setLibraryContextPath({ ...EMPTY_LIBRARY_CONTEXT_PATH });
+  }, [portalId]);
+
+  useEffect(() => {
     loadCurrentPage();
   }, [
     pageId,
+    portalId,
     isDocumentLibraryPage,
     isAdminPage,
-    isUniversalTablePage,
     isCorporateChatPage,
+    location.pathname,
   ]);
 
   useEffect(() => {
@@ -1122,7 +1138,7 @@ export default function PortalPageView() {
       page: pageData?.page ?? null,
       user,
       navigation: Array.isArray(navigation) ? navigation : [],
-      activePageId: isUniversalTablePage ? "system-universal-table" : pageId ?? null,
+      activePageId: pageId ?? null,
       activeItemId: activeNavigationItem?.id ?? null,
       collapsed,
       search: {
@@ -1147,7 +1163,6 @@ export default function PortalPageView() {
     navigation,
     pageId,
     activeNavigationItem?.id,
-    isUniversalTablePage,
     headerSearch.searchQuery,
   ]);
 
@@ -1158,49 +1173,6 @@ export default function PortalPageView() {
 
     registerPageEntities(pageSections, pageId);
   }, [pageSections, pageId, isCorporateChatPage]);
-
-  useEffect(() => {
-    const handleTableTitleChanged = async (event) => {
-      const { tableId, title, dedicatedPageId } = event.detail || {};
-      const normalizedTitle = String(title || "").trim();
-
-      if (!tableId || !normalizedTitle) return;
-
-      try {
-        await syncLegacyStorageTitleAcrossUi({
-          tableId,
-          title: normalizedTitle,
-          pageId,
-          pageData,
-          navigation,
-          updateNavigationItem,
-          updatePage,
-          activeNavigationItem,
-          dedicatedPageId,
-          onPageTitleDraft: setPageTitleDraft,
-          onPageDataUpdate: (savedPage) => {
-            setPageData((previous) =>
-              previous
-                ? {
-                    ...previous,
-                    page: {
-                      ...previous.page,
-                      ...savedPage,
-                    },
-                  }
-                : previous
-            );
-          },
-        });
-
-        await reloadNavigation();
-      } catch (syncError) {
-        console.error(syncError);
-      }
-    };
-
-    return subscribeToLegacyStorageTitle(handleTableTitleChanged);
-  }, [navigation, pageId, pageData, activeNavigationItem, reloadNavigation]);
 
   const preserveScrollAndReload = async () => {
     const scrollElement = document.querySelector("[data-page-canvas]");
@@ -1333,7 +1305,7 @@ export default function PortalPageView() {
   };
 
   const handleAddSection = async () => {
-    if (isUniversalTablePage || isAdminPage || isCorporateChatPage || !pageId) {
+    if (isAdminPage || isCorporateChatPage || !pageId) {
       return;
     }
 
@@ -1449,10 +1421,10 @@ export default function PortalPageView() {
   };
 
   const handleAddBlockToSection = async (sectionId, blockType, dropPoint) => {
-    if (isUniversalTablePage || isAdminPage || isCorporateChatPage) return;
+    if (isAdminPage || isCorporateChatPage) return;
 
-    if (isLegacyStorageBlockType(blockType)) {
-      showCanvasError(getLegacyStorageCreationNoticeMessage(), dropPoint);
+    if (isLegacyTableBlockType(blockType)) {
+      showCanvasError(LEGACY_TABLE_BLOCK_CREATION_MESSAGE, dropPoint);
       return;
     }
 
@@ -1485,7 +1457,7 @@ export default function PortalPageView() {
   };
 
   const handleEditBlock = (block) => {
-    if (isLegacyUniversalTableStorageBlockType(block?.type)) {
+    if (isLegacyTableBlockType(block?.type)) {
       return;
     }
 
@@ -1558,9 +1530,13 @@ export default function PortalPageView() {
 
   const handleDeleteBlock = async (block, options = {}) => {
     if (!options.skipConfirm) {
-      const confirmed = window.confirm(
-        `Удалить блок "${block.title || "Блок"}"?`
-      );
+      const confirmed = await platformConfirm({
+        title: "Удалить блок?",
+        message: `Удалить блок "${block.title || "Блок"}"?`,
+        confirmLabel: "Удалить",
+        cancelLabel: "Отмена",
+        variant: "danger",
+      });
 
       if (!confirmed) return;
     }
@@ -1681,20 +1657,6 @@ export default function PortalPageView() {
     try {
       setError("");
 
-      const primaryTableId = await resolveLegacyStorageTableIdForPage(pageData);
-      const isDedicatedTablePage =
-        isLegacyStorageNavigationItem(activeNavigationItem);
-
-      if (isDedicatedTablePage && primaryTableId) {
-        await renameLegacyStorage({
-          tableId: primaryTableId,
-          title: nextTitle,
-          dedicatedPageId: pageId,
-        });
-
-        return;
-      }
-
       if (nextTitle === pageData.page.title) {
         return;
       }
@@ -1799,8 +1761,8 @@ export default function PortalPageView() {
       return;
     }
 
-    if (isLegacyStorageBlockType(blockType)) {
-      showCanvasError(getLegacyStorageCreationNoticeMessage(), dropPoint);
+    if (isLegacyTableBlockType(blockType)) {
+      showCanvasError(LEGACY_TABLE_BLOCK_CREATION_MESSAGE, dropPoint);
       return;
     }
 
@@ -1870,7 +1832,6 @@ export default function PortalPageView() {
     data-page-canvas
     onDragOver={
       isEditMode &&
-      !isUniversalTablePage &&
       !isDocumentLibraryPage &&
       !isAdminPage &&
       !isCorporateChatPage
@@ -1879,7 +1840,6 @@ export default function PortalPageView() {
     }
     onDrop={
       isEditMode &&
-      !isUniversalTablePage &&
       !isDocumentLibraryPage &&
       !isAdminPage &&
       !isCorporateChatPage
@@ -1893,11 +1853,9 @@ export default function PortalPageView() {
       width: "100%",
       display: "flex",
       flexDirection: "column",
-      overflow:
-        isUniversalTablePage || isCorporateChatPage ? "hidden" : "auto",
+      overflow: isCorporateChatPage ? "hidden" : "auto",
       padding:
         isDocumentLibraryPage ||
-        isUniversalTablePage ||
         isCorporateChatPage ||
         Boolean(workspaceRuntimeContext)
           ? 0
@@ -1908,39 +1866,15 @@ export default function PortalPageView() {
     {navigationError && <SystemMessage>{navigationError}</SystemMessage>}
     {error && <SystemMessage>{error}</SystemMessage>}
 
-    {isUniversalTablePage && (
-      <div
-        style={{
-          flex: 1,
-          minHeight: 0,
-          width: "100%",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
-      >
-        <LegacyStorageSystemRouteView isEditMode={isEditMode} />
-      </div>
+    {isCorporateChatPage && <CorporateChatPage />}
+
+    {!isCorporateChatPage && isAdminPage && adminPageContent}
+
+    {!isCorporateChatPage && isAdminPage && !adminPageContent && (
+      <SystemMessage>Раздел администрирования не найден</SystemMessage>
     )}
 
-    {!isUniversalTablePage && isCorporateChatPage && (
-      <CorporateChatPage />
-    )}
-
-    {!isUniversalTablePage &&
-      !isCorporateChatPage &&
-      isAdminPage &&
-      adminPageContent}
-
-    {!isUniversalTablePage &&
-      !isCorporateChatPage &&
-      isAdminPage &&
-      !adminPageContent && (
-        <SystemMessage>Раздел администрирования не найден</SystemMessage>
-      )}
-
-    {!isUniversalTablePage &&
-      !isAdminPage &&
+    {!isAdminPage &&
       !isCorporateChatPage &&
       isDocumentLibraryPage &&
       activeNavigationItem &&
@@ -1957,24 +1891,21 @@ export default function PortalPageView() {
         </SystemMessage>
       ))}
 
-    {!isUniversalTablePage &&
-      !isAdminPage &&
-      !isCorporateChatPage &&
+    {    !isAdminPage &&
+    !isCorporateChatPage &&
       !isDocumentLibraryPage &&
       !pageData &&
       pageId && <SystemMessage>Загрузка...</SystemMessage>}
 
-    {!isUniversalTablePage &&
-      !isAdminPage &&
-      !isCorporateChatPage &&
+    {    !isAdminPage &&
+    !isCorporateChatPage &&
       !isDocumentLibraryPage &&
       pageData &&
       sections.length === 0 &&
       isEditMode && <EmptyDropZone />}
 
-    {!isUniversalTablePage &&
-      !isAdminPage &&
-      !isCorporateChatPage &&
+    {    !isAdminPage &&
+    !isCorporateChatPage &&
       !isDocumentLibraryPage &&
       pageData &&
       sections.length > 0 && (
@@ -2072,34 +2003,28 @@ export default function PortalPageView() {
       {navigationError && <SystemMessage>{navigationError}</SystemMessage>}
       {error && <SystemMessage>{error}</SystemMessage>}
 
-      {!isUniversalTablePage && isCorporateChatPage && <CorporateChatPage />}
+      {isCorporateChatPage && <CorporateChatPage />}
 
-      {!isUniversalTablePage && !isCorporateChatPage && isAdminPage && adminPageContent}
+      {!isCorporateChatPage && isAdminPage && adminPageContent}
 
-      {!isUniversalTablePage &&
-        !isCorporateChatPage &&
-        isAdminPage &&
-        !adminPageContent && (
-          <SystemMessage>Раздел администрирования не найден</SystemMessage>
-        )}
+      {!isCorporateChatPage && isAdminPage && !adminPageContent && (
+        <SystemMessage>Раздел администрирования не найден</SystemMessage>
+      )}
 
-      {!isUniversalTablePage &&
-        !isAdminPage &&
+      {!isAdminPage &&
         !isCorporateChatPage &&
         !isDocumentLibraryPage &&
         !pageData &&
         pageId && <SystemMessage>Загрузка...</SystemMessage>}
 
-      {!isUniversalTablePage &&
-        !isAdminPage &&
+      {!isAdminPage &&
         !isCorporateChatPage &&
         !isDocumentLibraryPage &&
         pageData &&
         sections.length === 0 &&
         isEditMode && <EmptyDropZone />}
 
-      {!isUniversalTablePage &&
-        !isAdminPage &&
+      {!isAdminPage &&
         !isCorporateChatPage &&
         !isDocumentLibraryPage &&
         pageData &&
@@ -2198,7 +2123,7 @@ export default function PortalPageView() {
     <PortalLayout
       portalId={portalId}
       navigation={navigation}
-      activePageId={isUniversalTablePage ? "system-universal-table" : pageId}
+      activePageId={pageId}
       activeSidebarItemId={navigationContext.currentNavigationItemId}
       activeSidebarParentIds={navigationContext.activeParentIds}
       onSelectPage={handleSelectPage}

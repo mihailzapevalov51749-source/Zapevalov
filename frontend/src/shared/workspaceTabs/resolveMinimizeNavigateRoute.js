@@ -1,4 +1,5 @@
 import { resolveRuntimeFallbackPath } from "../appMode/appModeNavigation.js";
+import { peekTenantRuntimeEntryPath } from "../tenantContext/resolveTenantRuntimeEntryPath.js";
 
 function normalizeText(value) {
   return String(value || "").trim();
@@ -15,6 +16,15 @@ export function resolveFallbackRoute(tenantId) {
 
 function routesDiffer(leftRoute, rightRoute) {
   return extractPathname(leftRoute) !== extractPathname(rightRoute);
+}
+
+function resolvePortalTenantHomePath(portalId) {
+  const normalizedPortalId = Number(portalId);
+  if (!Number.isFinite(normalizedPortalId) || normalizedPortalId <= 0) {
+    return null;
+  }
+
+  return peekTenantRuntimeEntryPath(normalizedPortalId);
 }
 
 function resolveSafeParentRoute(currentRoute, tenantId) {
@@ -42,12 +52,18 @@ function resolveSafeParentRoute(currentRoute, tenantId) {
 
   const portalPageMatch = pathname.match(/^\/portal\/(\d+)\/page\/\d+/);
   if (portalPageMatch) {
-    return `/portal/${portalPageMatch[1]}/page/1`;
+    return (
+      resolvePortalTenantHomePath(portalPageMatch[1]) ||
+      resolveFallbackRoute(normalizedTenantId)
+    );
   }
 
   const portalWorkspaceMatch = pathname.match(/^\/portal\/(\d+)\/workspaces\/[^/]+/);
   if (portalWorkspaceMatch) {
-    return `/portal/${portalWorkspaceMatch[1]}/page/1`;
+    return (
+      resolvePortalTenantHomePath(portalWorkspaceMatch[1]) ||
+      resolveFallbackRoute(normalizedTenantId)
+    );
   }
 
   return resolveFallbackRoute(normalizedTenantId);

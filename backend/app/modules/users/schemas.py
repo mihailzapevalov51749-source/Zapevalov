@@ -58,6 +58,12 @@ class UserUpdate(BaseModel):
     avatar_settings: dict[str, Any] | None = None
 
 
+class TenantMembershipRead(BaseModel):
+    tenant_id: int
+    role_key: str
+    is_active: bool = True
+
+
 class UserResponse(BaseModel):
     id: int
 
@@ -75,6 +81,16 @@ class UserResponse(BaseModel):
     avatar_settings: dict[str, Any] | None = None
 
     is_active: bool
+    is_system_user: bool = False
+    is_hidden_user: bool = False
+    login_disabled: bool = False
+    account_status: str | None = None
+
+    tenant_id: int | None = None
+    tenant_memberships: list[TenantMembershipRead] = []
+    is_platform_user: bool = True
+    is_platform_owner: bool = False
+    is_company_owner: bool = False
 
     role_id: int | None = None
     role: str | None = None

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import PlatformQuickCreateForm from "../../../shared/quickCreate/PlatformQuickCreateForm.jsx";
 import { ObjectEntityCardModal } from "../../objectEntities";
@@ -33,6 +33,7 @@ import {
 } from "./planTreeDragDrop.js";
 import { resolveEffectivePlanTreeParentId } from "./planTreeRootAnchor.js";
 import { ensurePlanTreeRootOrder } from "./planTreeRootOrderApi.js";
+import { appendPlanTreeSiblingOrder } from "./planTreeSiblingOrder.js";
 import { duplicatePlanTreeNode } from "./duplicatePlanTreeNode.js";
 import { executePlanTreeContextMenuAction } from "./executePlanTreeContextMenuAction.js";
 import { resolveFirstVisiblePlanTabKey } from "./planLayoutSettings.js";
@@ -41,9 +42,9 @@ import {
   PLAN_TREE_EMPTY_FALLBACK_MESSAGE,
 } from "./planEmptyStateMessages.js";
 import { logPlanDebug } from "./planViewDebug.js";
-import { applyPlanEntityPatches } from "./applyPlanEntityPatches.js";
 import { resolvePlanInfoDisplayFields } from "./resolvePlanInfoDisplayFields.js";
 import usePlanInfoFieldSave from "./usePlanInfoFieldSave.js";
+import { usePlatformConfirm } from "../../../shared/platformModal";
 
 import "./objectPlanView.css";
 
@@ -69,7 +70,7 @@ function collectExpandableNodeIds(nodes, acc = []) {
 
 
 
-function PlanViewLoadingState({ minHeight = 320 }) {
+export function PlanViewLoadingState({ minHeight = 320 }) {
 
   return (
 
@@ -112,7 +113,6 @@ export default function ObjectPlanView({
   planPreviewEditor = null,
 
 }) {
-
   const previewMode = mode === "studio-preview";
 
   const planPresentation = useMemo(
@@ -273,14 +273,12 @@ function ObjectPlanViewConfigured({
 }) {
 
   const previewMode = mode === "studio-preview";
-
-
+  const platformConfirm = usePlatformConfirm();
 
   const [selectedNodeId, setSelectedNodeId] = useState(null);
 
   const [expandedNodeIds, setExpandedNodeIds] = useState(() => new Set());
   const [entityPatches, setEntityPatches] = useState({});
-  const initialExpansionAppliedRef = useRef(false);
 
   const [movingNodeId, setMovingNodeId] = useState(null);
 
@@ -312,11 +310,6 @@ function ObjectPlanViewConfigured({
     return Array.isArray(rawItems) ? rawItems : [];
 
   }, [query?.listResult?.items]);
-
-  const patchedItems = useMemo(
-    () => applyPlanEntityPatches(items, entityPatches),
-    [items, entityPatches],
-  );
 
   const catalog = query?.catalog ?? null;
 
@@ -354,6 +347,7 @@ function ObjectPlanViewConfigured({
     loading,
     error,
     planEntityCount,
+    planTreeEntityCount,
     hierarchyInstances,
     rootAnchorId,
     reload: reloadHierarchy,
@@ -361,13 +355,14 @@ function ObjectPlanViewConfigured({
     tenantId,
     catalog,
     objectTypeKey,
-    items: patchedItems,
+    viewKey: resolvedContract?.key,
     planPresentation,
     titleFieldKey,
     statusFieldKey,
     statusField,
     previewMode,
     enabled: hierarchyEnabled,
+    entityPatches,
   });
 
   const handlePlanEntitySaved = useCallback(
@@ -376,6 +371,7 @@ function ObjectPlanViewConfigured({
         const createdId = String(entity?.id ?? "").trim();
         const parentEntityId = String(meta?.parentEntityId ?? "").trim();
         const isRootCreate = !parentEntityId && !meta?.subtaskLinked;
+        let linkedToPlan = Boolean(meta?.subtaskLinked);
 
         if (createdId && isRootCreate && hierarchyRelationKey) {
           let anchorId = String(rootAnchorId ?? "").trim();
@@ -403,6 +399,7 @@ function ObjectPlanViewConfigured({
                 nodeId: createdId,
                 newParentId: anchorId,
               });
+              linkedToPlan = true;
             } catch (linkError) {
               setMoveError(
                 linkError instanceof Error
@@ -410,6 +407,26 @@ function ObjectPlanViewConfigured({
                   : "Запись создана, но не удалось добавить её в план",
               );
             }
+          }
+        }
+
+        if (createdId && linkedToPlan && hierarchyRelationKey) {
+          try {
+            await appendPlanTreeSiblingOrder({
+              tenantId,
+              relationKey: hierarchyRelationKey,
+              relationDefinition: hierarchyRelation,
+              instances: hierarchyInstances,
+              parentEntityId: meta?.subtaskLinked ? parentEntityId : null,
+              rootAnchorId,
+              childEntityId: createdId,
+            });
+          } catch (appendError) {
+            setMoveError(
+              appendError instanceof Error
+                ? appendError.message
+                : "Запись создана, но не удалось установить порядок в плане",
+            );
           }
         }
       }
@@ -433,6 +450,7 @@ function ObjectPlanViewConfigured({
       query,
       reloadHierarchy,
       rootAnchorId,
+      setMoveError,
       tenantId,
     ],
   );
@@ -458,40 +476,19 @@ function ObjectPlanViewConfigured({
 
 
   useEffect(() => {
-    if (!tree.roots.length) {
-      initialExpansionAppliedRef.current = false;
+    if (loading) {
       return;
     }
 
-    if (initialExpansionAppliedRef.current) {
-      return;
-    }
-
-    setExpandedNodeIds(new Set(collectExpandableNodeIds(tree.roots)));
-    initialExpansionAppliedRef.current = true;
-  }, [tree.roots]);
-
-
-
-  useEffect(() => {
-
     if (!tree.roots.length) {
-
       setSelectedNodeId(null);
-
       return;
-
     }
-
-
 
     if (!selectedNodeId || !tree.nodesById.has(selectedNodeId)) {
-
       setSelectedNodeId(tree.roots[0]?.id ?? null);
-
     }
-
-  }, [tree.roots, tree.nodesById, selectedNodeId]);
+  }, [tree.roots, tree.nodesById, selectedNodeId, loading]);
 
 
 
@@ -585,6 +582,15 @@ function ObjectPlanViewConfigured({
 
   }, [query, reloadHierarchy]);
 
+  const refreshPlanDataAfterInfoFieldSave = useCallback(async () => {
+    await query?.reload?.();
+
+    await reloadHierarchy({
+      background: true,
+      invalidateCache: true,
+    });
+  }, [query, reloadHierarchy]);
+
   const handlePlanEntityPatched = useCallback((entityId, valuesPatch) => {
     setEntityPatches((previous) => ({
       ...previous,
@@ -599,7 +605,8 @@ function ObjectPlanViewConfigured({
     async (entityId) => {
       const normalizedId = String(entityId || "").trim();
 
-      await query?.reload?.();
+      await refreshPlanDataAfterInfoFieldSave();
+
       setEntityPatches((previous) => {
         if (!previous[normalizedId]) {
           return previous;
@@ -610,7 +617,7 @@ function ObjectPlanViewConfigured({
         return next;
       });
     },
-    [query],
+    [refreshPlanDataAfterInfoFieldSave],
   );
 
   const planInfoFieldSave = usePlanInfoFieldSave({
@@ -722,15 +729,25 @@ function ObjectPlanViewConfigured({
               values,
             }),
           reparentNode: String(newParentId ?? "").trim()
-            ? (createdId, parentId) =>
-                reparentPlanNode({
+            ? async (createdId, parentId) => {
+                await reparentPlanNode({
                   tenantId,
                   relationKey: hierarchyRelationKey,
                   relationDefinition: hierarchyRelation,
                   instances: hierarchyInstances,
                   nodeId: createdId,
                   newParentId: parentId,
-                })
+                });
+                await appendPlanTreeSiblingOrder({
+                  tenantId,
+                  relationKey: hierarchyRelationKey,
+                  relationDefinition: hierarchyRelation,
+                  instances: hierarchyInstances,
+                  parentEntityId: parentId,
+                  rootAnchorId,
+                  childEntityId: createdId,
+                });
+              }
             : undefined,
           refreshTree: refreshPlanData,
           onCreated: setSelectedNodeId,
@@ -750,6 +767,7 @@ function ObjectPlanViewConfigured({
       hierarchyRelationKey,
       hierarchyRelation,
       hierarchyInstances,
+      rootAnchorId,
       refreshPlanData,
     ],
   );
@@ -855,7 +873,13 @@ function ObjectPlanViewConfigured({
             await duplicatePlanNode(node, node.parentId);
           },
           deleteNode: async (nodeId) => {
-            const confirmed = window.confirm("Удалить запись из плана?");
+            const confirmed = await platformConfirm({
+              title: "Удалить запись из плана?",
+              message: "Удалить запись из плана?",
+              confirmLabel: "Удалить",
+              cancelLabel: "Отмена",
+              variant: "danger",
+            });
 
             if (!confirmed) {
               return;
@@ -885,6 +909,7 @@ function ObjectPlanViewConfigured({
       entityCard,
       tree.nodesById,
       duplicatePlanNode,
+      platformConfirm,
       tenantId,
       objectTypeKey,
     ],
@@ -934,17 +959,15 @@ function ObjectPlanViewConfigured({
 
     !loading &&
 
-    !query?.loading &&
-
     !error &&
 
     !query?.error &&
 
-    planEntityCount === 0;
+    planTreeEntityCount === 0;
 
 
 
-  if (relationsLoading || query?.loading) {
+  if (relationsLoading || loading) {
 
     return <PlanViewLoadingState minHeight={minHeight} />;
 

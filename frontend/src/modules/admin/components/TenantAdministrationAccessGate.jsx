@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 
-import { getMe } from "../../../api/authApi";
+import { getMe, normalizeCurrentUser } from "../../../api/authApi";
 import { canAccessTenantAdministration } from "../access/adminAccess";
 
 export default function TenantAdministrationAccessGate({ children }) {
-  const [user, setUser] = useState(null);
+  const outletContext = useOutletContext();
+  const [user, setUser] = useState(() =>
+    normalizeCurrentUser(outletContext?.user ?? null),
+  );
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -18,7 +22,7 @@ export default function TenantAdministrationAccessGate({ children }) {
         }
       } catch {
         if (isMounted) {
-          setUser(null);
+          setUser(normalizeCurrentUser(outletContext?.user ?? null));
         }
       } finally {
         if (isMounted) {
@@ -32,7 +36,7 @@ export default function TenantAdministrationAccessGate({ children }) {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [outletContext?.user]);
 
   if (isLoading) {
     return <div style={{ padding: 24, color: "#64748b" }}>Проверка доступа...</div>;

@@ -75,6 +75,36 @@ def get_entity(
     return query.first()
 
 
+def list_entities_by_ids(
+    db: Session,
+    tenant_id: int,
+    object_type_key: str,
+    entity_ids: list[UUID],
+    *,
+    chunk_size: int = 2000,
+) -> list[RuntimeEntity]:
+    normalized_ids = [UUID(str(item)) for item in dict.fromkeys(entity_ids)]
+    if not normalized_ids:
+        return []
+
+    loaded: list[RuntimeEntity] = []
+    for offset in range(0, len(normalized_ids), max(chunk_size, 1)):
+        chunk = normalized_ids[offset : offset + chunk_size]
+        rows = (
+            db.query(RuntimeEntity)
+            .options(joinedload(RuntimeEntity.values))
+            .filter(
+                RuntimeEntity.tenant_id == tenant_id,
+                RuntimeEntity.object_type_key == object_type_key,
+                RuntimeEntity.id.in_(chunk),
+                RuntimeEntity.deleted_at.is_(None),
+            )
+        )
+        loaded.extend(apply_user_visible_entity_filter(rows).all())
+
+    return loaded
+
+
 def list_entities(
     db: Session,
     tenant_id: int,

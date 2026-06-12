@@ -21,6 +21,7 @@ import {
   resolvePlanTreeRootIds,
 } from "./planTreeRootAnchor.js";
 import { sanitizePlanHierarchyInstances } from "./sanitizePlanHierarchyInstances.js";
+import { sortPlanHierarchySiblingIds } from "./planTreeSiblingOrder.js";
 
 function findCatalogRelation(catalog, relationKey) {
   const relations = Array.isArray(catalog?.relations) ? catalog.relations : [];
@@ -228,8 +229,15 @@ export function buildPlanTree({
 
     activeStack.add(normalizedId);
 
-    const childIds = (childrenByParent.get(normalizedId) || []).filter(
-      (childId) => String(childId).trim() !== normalizedId,
+    const childIds = sortPlanHierarchySiblingIds(
+      (childrenByParent.get(normalizedId) || []).filter(
+        (childId) => String(childId).trim() !== normalizedId,
+      ),
+      {
+        instanceByChildId,
+        entitiesById,
+        resolveTitle: (entity) => resolveNodeTitle(entity),
+      },
     );
     const children = childIds
       .map((childId) => buildNode(childId, depth + 1, activeStack))
@@ -314,7 +322,16 @@ export function buildPlanTree({
     }
   }
 
-  const roots = rootIds.map((id) => buildNode(id, 0)).filter(Boolean);
+  const roots = sortPlanHierarchySiblingIds(
+    rootIds,
+    {
+      instanceByChildId,
+      entitiesById,
+      resolveTitle: (entity) => resolveNodeTitle(entity),
+    },
+  )
+    .map((id) => buildNode(id, 0))
+    .filter(Boolean);
   assignPlanTreeHierarchyNumbers(roots);
 
   return {

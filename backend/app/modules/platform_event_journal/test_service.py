@@ -2,24 +2,24 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.db.base import Base
+from app.modules.platform_event_journal.constants import (
+    PlatformEventJournalKind,
+    PlatformEventJournalScope,
+)
 from app.modules.platform_event_journal.models import PlatformEventJournalEntry
 from app.modules.platform_event_journal.seed import PLATFORM_EVENT_JOURNAL_BOOTSTRAP_ENTRIES
+from app.modules.platform_event_journal.seed_classification import classify_seed_slug
 from app.modules.platform_event_journal.service import (
     ensure_platform_event_journal_bootstrap,
     list_platform_event_journal_entries,
+    list_tenant_event_journal_entries,
     record_platform_event_journal_entry,
 )
-from app.modules.users.models import User  # noqa: F401
-
 
 @pytest.fixture()
 def db_session():
     engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(
-        bind=engine,
-        tables=[User.__table__, PlatformEventJournalEntry.__table__],
-    )
+    PlatformEventJournalEntry.__table__.create(bind=engine, checkfirst=True)
     session = sessionmaker(bind=engine)()
     try:
         yield session
@@ -57,10 +57,41 @@ def test_record_platform_event_journal_entry_is_slug_idempotent(db_session):
     assert db_session.query(PlatformEventJournalEntry).count() == 1
 
 
-def test_list_platform_event_journal_entries_includes_bootstrap(db_session):
-    items = list_platform_event_journal_entries(db_session)
-    titles = {item.title for item in items}
+def test_list_platform_event_journal_entries_excludes_studio_bootstrap(db_session):
+    ensure_platform_event_journal_bootstrap(db_session)
+    db_session.commit()
 
-    assert "Удалён раздел Платформа из Studio" in titles
-    assert "Усовершенствован Журнал событий" in titles
-    assert "Dashboard обновлялся" not in titles
+    platform_items = list_platform_event_journal_entries(db_session)
+    tenant_items = list_tenant_event_journal_entries(db_session, 1)
+    platform_titles = {item.title for item in platform_items}
+    tenant_slugs = {item.slug for item in tenant_items}
+
+    expected_dev = sum(
+        1
+        for entry in PLATFORM_EVENT_JOURNAL_BOOTSTRAP_ENTRIES
+        if classify_seed_slug(
+            entry.slug,
+            event_type=entry.event_type,
+            dev_tenant_id=1,
+        )[1]
+        == PlatformEventJournalKind.DEV_DEVELOPMENT.value
+    )
+    expected_platform = sum(
+        1
+        for entry in PLATFORM_EVENT_JOURNAL_BOOTSTRAP_ENTRIES
+        if classify_seed_slug(
+            entry.slug,
+            event_type=entry.event_type,
+            dev_tenant_id=1,
+        )[1]
+        == PlatformEventJournalKind.PLATFORM_AUDIT.value
+    )
+
+    assert "Удалён раздел Платформа из Studio" not in platform_titles
+    assert "event-journal-created" in tenant_slugs
+    assert len(tenant_slugs) == expected_dev
+    assert len(platform_items) == expected_platform
+    assert all(item.scope == PlatformEventJournalScope.TENANT.value for item in tenant_items)
+    assert db_session.query(PlatformEventJournalEntry).count() == len(
+        PLATFORM_EVENT_JOURNAL_BOOTSTRAP_ENTRIES,
+    )

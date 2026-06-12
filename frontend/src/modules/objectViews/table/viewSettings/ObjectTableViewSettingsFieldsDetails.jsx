@@ -1,5 +1,7 @@
 import PlatformFieldVisibilityEyeIcon from "../../../../shared/fieldVisibility/PlatformFieldVisibilityEyeIcon";
-import { isTableRowNumberPresentationFieldKey } from "../../../../shared/runtime/systemEntityFields";import { resolveTableFieldLabels } from "../../services/columnPresentationUtils";
+import { isTableRowNumberPresentationFieldKey } from "../../../../shared/runtime/systemEntityFields";
+import { notifyLastVisibleTableFieldGuard } from "../constants/objectTableFieldVisibilityGuard";
+import { resolveTableFieldLabels } from "../../services/columnPresentationUtils";
 
 export default function ObjectTableViewSettingsFieldsDetails({
   effectiveContract,
@@ -17,7 +19,7 @@ export default function ObjectTableViewSettingsFieldsDetails({
     const result = sessionApi?.toggleFieldVisibility?.(fieldKey);
 
     if (result?.ok === false && result.reason === "last_visible_field") {
-      window.alert("Нельзя скрыть все поля. Должно остаться хотя бы одно видимое.");
+      notifyLastVisibleTableFieldGuard();
     }
   };
 

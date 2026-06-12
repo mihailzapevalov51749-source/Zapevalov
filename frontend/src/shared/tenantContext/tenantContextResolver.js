@@ -1,3 +1,6 @@
+import { getStoredRuntimePath } from "../appMode/appModeStorage.js";
+import { peekPortalHomePagePath } from "../../portal/utils/resolvePortalHomePage.js";
+
 const PORTAL_TENANT_RE = /^\/portal\/(\d+)(?:\/|$)/;
 const DESIGNER_TENANT_RE = /^\/designer\/tenant\/(\d+)(?:\/|$)/;
 
@@ -37,9 +40,19 @@ export function pathBelongsToTenant(fullPath, tenantId) {
   return resolveTenantIdFromPath(fullPath) === normalizedTenantId;
 }
 
+/**
+ * @deprecated Use resolveTenantRuntimeEntryPath() for async resolution.
+ * Sync peek only: stored path or cached home page. Never hardcodes page/1.
+ * @returns {string | null}
+ */
 export function buildDefaultRuntimePath(tenantId) {
   const id = Number(tenantId);
-  return Number.isFinite(id) && id > 0 ? `/portal/${id}/page/1` : "/portal/1/page/1";
+  const normalizedTenantId = Number.isFinite(id) && id > 0 ? id : 1;
+  const stored = getStoredRuntimePath(normalizedTenantId);
+  if (stored && pathBelongsToTenant(stored, normalizedTenantId)) {
+    return stored;
+  }
+  return peekPortalHomePagePath(normalizedTenantId);
 }
 
 export function buildDefaultDesignerPath(tenantId) {

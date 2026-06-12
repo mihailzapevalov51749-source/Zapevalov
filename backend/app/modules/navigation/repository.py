@@ -4,6 +4,7 @@ from typing import Optional
 from app.modules.platform.designer.shared.soft_delete import apply_soft_delete
 
 from .models import NavigationItem
+from .runtime_protected_pages import apply_runtime_protected_nav_flags
 
 
 def create_item(db: Session, data):
@@ -23,6 +24,7 @@ def create_item(db: Session, data):
     payload.pop("path", None)
 
     item = NavigationItem(**payload)
+    apply_runtime_protected_nav_flags(item)
     db.add(item)
     db.commit()
     db.refresh(item)
@@ -80,6 +82,7 @@ def update_item(db: Session, item_id: int, data):
     for key, value in update_data.items():
         setattr(item, key, value)
 
+    apply_runtime_protected_nav_flags(item)
     db.commit()
     db.refresh(item)
     return item

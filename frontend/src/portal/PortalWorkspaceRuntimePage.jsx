@@ -268,10 +268,24 @@ export default function PortalWorkspaceRuntimePage() {
       }
 
       try {
-        await getPageFull(activePageId, { officeAccess: true });
-        if (!cancelled) {
-          setPageExists(true);
+        const data = await getPageFull(activePageId, {
+          officeAccess: true,
+          portalId,
+        });
+        if (cancelled) {
+          return;
         }
+
+        const expectedPortalId = Number(portalId);
+        const pagePortalId = Number(data?.page?.portal_id);
+        const portalMismatch =
+          Number.isFinite(expectedPortalId) &&
+          expectedPortalId > 0 &&
+          Number.isFinite(pagePortalId) &&
+          pagePortalId > 0 &&
+          pagePortalId !== expectedPortalId;
+
+        setPageExists(!portalMismatch);
       } catch {
         if (!cancelled) {
           setPageExists(false);
@@ -283,7 +297,7 @@ export default function PortalWorkspaceRuntimePage() {
     return () => {
       cancelled = true;
     };
-  }, [activePageId, activeTabType]);
+  }, [activePageId, activeTabType, portalId]);
 
   const openWorkspacePageEditor = useCallback(() => {
     if (!workspace || activeTabType !== "page" || !activePageId) {
@@ -381,7 +395,7 @@ export default function PortalWorkspaceRuntimePage() {
       if (!activePageId || !pageExists) return <SystemMessage>Страница не найдена</SystemMessage>;
       return (
         <PortalPageRuntimeContent
-          key={`${activeTab.id ?? "tab"}-${activePageId ?? "none"}`}
+          key={`${portalId}-${activeTab.id ?? "tab"}-${activePageId ?? "none"}`}
           portalId={portalId}
           pageId={activePageId}
           workspace={workspace}

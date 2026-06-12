@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import { showPlatformNotification } from "../platformNotification/PlatformNotification";
+import { TENANT_HOME_PAGE_NOT_FOUND_MESSAGE } from "../tenantContext/resolveTenantRuntimeEntryPath";
 import {
   resolveOfficeToStudioPath,
-  resolveStudioToOfficePath,
+  resolveStudioToOfficePathAsync,
 } from "./appModeNavigation";
 import ModeSwitcherText from "./ModeSwitcherText";
 
@@ -15,6 +18,7 @@ export default function AppModeSwitch({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isSwitching, setIsSwitching] = useState(false);
 
   const isDesigner = location.pathname.startsWith("/designer");
   const activeMode =
@@ -24,9 +28,26 @@ export default function AppModeSwitch({
         ? "designer"
         : "runtime";
 
-  const handleToggleMode = () => {
+  const handleToggleMode = async () => {
+    if (isSwitching) {
+      return;
+    }
+
     if (activeMode === "designer") {
-      navigate(resolveStudioToOfficePath(location.pathname));
+      setIsSwitching(true);
+      try {
+        const path = await resolveStudioToOfficePathAsync(location.pathname);
+        if (!path) {
+          showPlatformNotification({
+            message: TENANT_HOME_PAGE_NOT_FOUND_MESSAGE,
+            variant: "warning",
+          });
+          return;
+        }
+        navigate(path);
+      } finally {
+        setIsSwitching(false);
+      }
       return;
     }
 
@@ -38,6 +59,7 @@ export default function AppModeSwitch({
       mode={activeMode}
       onToggle={handleToggleMode}
       variant={variant}
+      disabled={isSwitching}
     />
   );
 }

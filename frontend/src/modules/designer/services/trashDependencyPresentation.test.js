@@ -27,6 +27,31 @@ describe("buildTrashDependencyPresentation", () => {
     );
   });
 
+  it("uses entity id for stable dependency keys", () => {
+    const result = buildTrashDependencyPresentation(
+      [
+        {
+          label: "Секции страницы (1)",
+          kind: "page_section",
+          entity_kind: "page",
+          entity_id: 348,
+        },
+        {
+          label: "Секции страницы (1)",
+          kind: "page_section",
+          entity_kind: "page",
+          entity_id: 351,
+        },
+      ],
+      { kind: "page", id: 348, title: "Страница A" },
+      1,
+    );
+
+    const ids = result.enriched.map((item) => item.id);
+    expect(ids).toEqual(["page:348", "page:351"]);
+    expect(new Set(ids).size).toBe(2);
+  });
+
   it("groups multiple dependency kinds", () => {
     const result = buildTrashDependencyPresentation(
       [

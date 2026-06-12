@@ -4,9 +4,7 @@ import { useNavigate } from "react-router-dom";
 import {
   getTenantRegistrySummary,
 } from "../api/tenantRegistryApi";
-import {
-  buildControlPlaneClientsPath,
-} from "../config/controlPlanePaths";
+import { buildControlPlaneCompaniesPath } from "../config/controlPlanePaths";
 
 const toneColorMap = {
   success: "#16A34A",
@@ -128,16 +126,9 @@ export default function ControlPlaneDashboardPage() {
           <button
             type="button"
             style={primaryActionStyle}
-            onClick={() => navigate(buildControlPlaneClientsPath("create"))}
+            onClick={() => navigate(buildControlPlaneCompaniesPath("clients"))}
           >
-            Создать компанию
-          </button>
-          <button
-            type="button"
-            style={secondaryActionStyle}
-            onClick={() => navigate(buildControlPlaneClientsPath("registry"))}
-          >
-            Открыть Tenant Registry
+            Открыть компании
           </button>
         </div>
       </DashboardSection>

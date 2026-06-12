@@ -57,6 +57,7 @@ export function applySystemSettingsToItem(item, settings) {
     ...item,
     ...itemSettings,
     isSystem: true,
+    block_id: itemSettings.block_id ?? item.block_id,
     is_visible:
       itemSettings.is_visible === undefined
         ? item.is_visible
@@ -86,4 +87,26 @@ export function applySystemMenuSettingsToTree(tree = [], systemSettings = {}) {
 
     return applySystemSettingsToItem({ ...nextItem, isSystem: true }, systemSettings);
   });
+}
+
+export function sortNavigationTreeBySortOrder(tree = []) {
+  if (!Array.isArray(tree) || tree.length === 0) {
+    return [];
+  }
+
+  return [...tree]
+    .sort((left, right) => {
+      const leftOrder = Number(left?.sort_order ?? 0);
+      const rightOrder = Number(right?.sort_order ?? 0);
+      if (leftOrder !== rightOrder) {
+        return leftOrder - rightOrder;
+      }
+      return String(left?.id || "").localeCompare(String(right?.id || ""));
+    })
+    .map((item) => ({
+      ...item,
+      children: Array.isArray(item.children)
+        ? sortNavigationTreeBySortOrder(item.children)
+        : item.children,
+    }));
 }

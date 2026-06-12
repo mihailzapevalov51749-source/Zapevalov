@@ -9,7 +9,8 @@ import {
   UI_PREF_KEYS,
 } from "../uiStorage/uiStorageKeys.js";
 
-const DEFAULT_RUNTIME_PATH = "/portal/1/page/1";
+import { peekTenantRuntimeEntryPath } from "../tenantContext/resolveTenantRuntimeEntryPath.js";
+
 const TECHNICAL_ROUTE_PREFIXES = ["/login", "/auth", "/error", "/not-found"];
 
 function normalizeFullPath(path) {
@@ -181,9 +182,9 @@ export function getDesignerPath(tenantId = 1) {
   return `/designer/tenant/${tenantId}/object-types`;
 }
 
-/** @deprecated Prefer resolveStudioToOfficePath / resolveRuntimeFallbackPath. */
+/** @deprecated Prefer resolveTenantRuntimeEntryPath / resolveRuntimeFallbackPath. */
 export function getLastRuntimePath(tenantId = 1) {
-  return getStoredRuntimePath(tenantId) || DEFAULT_RUNTIME_PATH;
+  return peekTenantRuntimeEntryPath(tenantId);
 }
 
 /** @deprecated Prefer resolveOfficeToStudioPath / buildDefaultDesignerPath. */

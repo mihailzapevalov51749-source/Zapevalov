@@ -15,6 +15,7 @@ import saveIcon from "../../../../assets/icons/save.gif";
 
 import PlatformModalShell from "../../../../shared/platformModal/PlatformModalShell";
 import usePlatformModalLayout from "../../../../shared/platformModal/usePlatformModalLayout";
+import { usePlatformConfirm } from "../../../../shared/platformModal";
 import ObjectTableCreateViewDialog from "../components/ObjectTableCreateViewDialog";
 import ObjectTableRenameViewDialog from "../components/ObjectTableRenameViewDialog";
 
@@ -67,6 +68,7 @@ export default function ObjectTableViewSettingsModal({
   actionError = "",
   onAppliedFilters,
 }) {
+  const platformConfirm = usePlatformConfirm();
   const [childSection, setChildSection] = useState(null);
   const [isSaveAsOpen, setIsSaveAsOpen] = useState(false);
   const [isRenameOpen, setIsRenameOpen] = useState(false);
@@ -136,10 +138,14 @@ export default function ObjectTableViewSettingsModal({
     }
   };
 
-  const handleDelete = () => {
-    const confirmed = window.confirm(
-      `Удалить представление «${viewName}»?`,
-    );
+  const handleDelete = async () => {
+    const confirmed = await platformConfirm({
+      title: "Удалить представление?",
+      message: `Удалить представление «${viewName}»?`,
+      confirmLabel: "Удалить",
+      cancelLabel: "Отмена",
+      variant: "danger",
+    });
 
     if (confirmed) {
       onDelete?.();

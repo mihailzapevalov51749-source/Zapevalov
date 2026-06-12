@@ -1,11 +1,60 @@
-import { useState } from "react";
-import { login } from "../../api/authApi";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+
+import { getMe, getTenantLoginBranding, login, logout } from "../../api/authApi";
+import {
+  parseRequestedTenantId,
+  resolvePostLoginPath,
+} from "../../shared/auth/postLoginRedirect";
+import { buildLoginCompanySubtitle } from "./loginCompanySubtitle";
 
 export default function LoginPage({ onLogin }) {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedTenantId = parseRequestedTenantId(searchParams);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [companyDisplayName, setCompanyDisplayName] = useState(null);
+  const [companyBrandingLoaded, setCompanyBrandingLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!requestedTenantId) {
+      setCompanyDisplayName(null);
+      setCompanyBrandingLoaded(true);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setCompanyBrandingLoaded(false);
+    setCompanyDisplayName(null);
+
+    getTenantLoginBranding(requestedTenantId)
+      .then((displayName) => {
+        if (!cancelled) {
+          setCompanyDisplayName(displayName);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCompanyDisplayName(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setCompanyBrandingLoaded(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [requestedTenantId]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -15,13 +64,27 @@ export default function LoginPage({ onLogin }) {
 
     try {
       await login(email, password);
-      onLogin();
+      const user = await getMe();
+      const redirect = await resolvePostLoginPath(user, { requestedTenantId });
+
+      if (!redirect.path) {
+        logout();
+        setError(redirect.error || "Не удалось определить стартовый маршрут");
+        return;
+      }
+
+      await onLogin?.();
+      navigate(redirect.path, { replace: true });
     } catch (e) {
       setError(e.message || "Ошибка входа");
     } finally {
       setLoading(false);
     }
   };
+
+  const companySubtitle = requestedTenantId
+    ? buildLoginCompanySubtitle(companyBrandingLoaded ? companyDisplayName : null)
+    : null;
 
   return (
     <div
@@ -47,6 +110,10 @@ export default function LoginPage({ onLogin }) {
         }}
       >
         <h2 style={{ margin: 0 }}>Вход</h2>
+
+        {companySubtitle ? (
+          <p style={{ margin: 0, color: "#64748b", fontSize: 14 }}>{companySubtitle}</p>
+        ) : null}
 
         <input
           type="email"
@@ -90,9 +157,9 @@ export default function LoginPage({ onLogin }) {
           {loading ? "Вход..." : "Войти"}
         </button>
 
-        {error && (
+        {error ? (
           <div style={{ color: "red", fontSize: 14 }}>{error}</div>
-        )}
+        ) : null}
       </form>
     </div>
   );

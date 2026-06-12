@@ -1,7 +1,7 @@
 import {
-  getLegacyStorageCreationNoticeMessage,
-  isLegacyStorageBlockType,
-} from "../../../shared/legacy";
+  isLegacyTableBlockType,
+  LEGACY_TABLE_BLOCK_CREATION_MESSAGE,
+} from "../../blocks/registry/legacyTableBlockTypes";
 
 export default function useWidgetDragAndDrop({
   onAddSection,
@@ -42,8 +42,8 @@ export default function useWidgetDragAndDrop({
       return;
     }
 
-    if (isLegacyStorageBlockType(widgetType)) {
-      onError?.(getLegacyStorageCreationNoticeMessage());
+    if (isLegacyTableBlockType(widgetType)) {
+      onError?.(LEGACY_TABLE_BLOCK_CREATION_MESSAGE);
       return;
     }
 
@@ -59,7 +59,7 @@ export default function useWidgetDragAndDrop({
     if (!widgetType) return;
 
     if (
-      isLegacyStorageBlockType(widgetType) &&
+      isLegacyTableBlockType(widgetType) &&
       typeof isFlexibleSection === "function" &&
       !isFlexibleSection(sectionId)
     ) {
@@ -83,8 +83,8 @@ export default function useWidgetDragAndDrop({
       return;
     }
 
-    if (isLegacyStorageBlockType(widgetType)) {
-      onError?.(getLegacyStorageCreationNoticeMessage());
+    if (isLegacyTableBlockType(widgetType)) {
+      onError?.(LEGACY_TABLE_BLOCK_CREATION_MESSAGE);
       return;
     }
 

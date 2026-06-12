@@ -10,7 +10,17 @@ class TenantType(StrEnum):
     TEMPLATE = "TEMPLATE"
     DEMO = "DEMO"
     CLIENT = "CLIENT"
+    PARTNER = "PARTNER"
+    TRAINING = "TRAINING"
     LEGACY_TEMPLATE = "LEGACY_TEMPLATE"
+
+
+PROVISIONING_TENANT_TYPES = frozenset({
+    TenantType.CLIENT,
+    TenantType.DEMO,
+    TenantType.PARTNER,
+    TenantType.TRAINING,
+})
 
 
 class TenantStatus(StrEnum):

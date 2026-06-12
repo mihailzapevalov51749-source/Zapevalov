@@ -14,7 +14,7 @@ import {
   sectionHeaderStyle,
   textBase,
   topLineStyle,
-} from "../../../universalTable/components/filters/filterModalStyles";
+} from "../../../../shared/viewEngine/filterModalStyles";
 
 export {
   bodyStyle,

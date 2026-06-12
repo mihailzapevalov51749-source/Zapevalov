@@ -6,16 +6,32 @@ from sqlalchemy.orm import Session
 from app.modules.platform.workspace_tabs.models import UserWorkspaceTab
 
 
-def list_tabs_for_user(db: Session, user_id: int) -> list[UserWorkspaceTab]:
-    return (
-        db.query(UserWorkspaceTab)
-        .filter(UserWorkspaceTab.user_id == user_id)
-        .order_by(
-            UserWorkspaceTab.sort_order.asc(),
-            UserWorkspaceTab.created_at.asc(),
+def list_tabs_for_user(
+    db: Session,
+    user_id: int,
+    *,
+    tenant_id: int | None = None,
+) -> list[UserWorkspaceTab]:
+    query = db.query(UserWorkspaceTab).filter(UserWorkspaceTab.user_id == user_id)
+
+    if tenant_id is not None:
+        portal_prefix = f"/portal/{tenant_id}/%"
+        designer_prefix = f"/designer/tenant/{tenant_id}/%"
+        query = query.filter(
+            (UserWorkspaceTab.tenant_id == tenant_id)
+            | (
+                UserWorkspaceTab.tenant_id.is_(None)
+                & (
+                    UserWorkspaceTab.route.like(portal_prefix)
+                    | UserWorkspaceTab.route.like(designer_prefix)
+                )
+            )
         )
-        .all()
-    )
+
+    return query.order_by(
+        UserWorkspaceTab.sort_order.asc(),
+        UserWorkspaceTab.created_at.asc(),
+    ).all()
 
 
 def get_tab_for_user(

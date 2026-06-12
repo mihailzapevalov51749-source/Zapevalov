@@ -25,6 +25,7 @@ import { resolveControlPlanePageMeta } from "../config/controlPlaneNavigation.js
 import { resolveControlPlaneSectionKey, resolveControlPlaneReturnToStudioPath } from "../config/controlPlanePaths.js";
 import { createControlPlaneSidebarContract } from "./createControlPlaneSidebarContract.js";
 import { useControlPlaneSidebarState } from "./useControlPlaneSidebarState.js";
+import { usePlatformSettings } from "../platformProfile/PlatformSettingsProvider.jsx";
 
 const DEFAULT_AVATAR_SETTINGS = {
   x: 0,
@@ -61,6 +62,7 @@ function normalizeAvatarSettings(settings) {
 export default function ControlPlaneShell() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { platformName, platformShortName } = usePlatformSettings();
   const { openProfileSidePanel } = useProfileSidePanel();
   const { sidebarCollapsed, toggleSidebarCollapsed } = useControlPlaneSidebarState();
   const [menuScale, setMenuScale] = useState(() => readControlPlaneLeftMenuScale(1));
@@ -83,6 +85,12 @@ export default function ControlPlaneShell() {
   useEffect(() => {
     writeControlPlaneActiveSection(resolveControlPlaneSectionKey(location.pathname));
   }, [location.pathname]);
+
+  useEffect(() => {
+    const brand = platformName || "ЯсноПро";
+    const pageTitle = pageMeta.title ? `${pageMeta.title} — ${brand}` : brand;
+    document.title = pageTitle;
+  }, [pageMeta.title, platformName]);
 
   const handleMenuScaleChange = useCallback((value) => {
     const rounded = writeControlPlaneLeftMenuScale(value);
@@ -142,26 +150,33 @@ export default function ControlPlaneShell() {
         menuScale,
         isEditMode: isMenuEditMode,
         onChangeMenuScale: handleMenuScaleChange,
+        platformName,
       }),
-    [handleMenuScaleChange, isMenuEditMode, location.pathname, menuScale],
+    [handleMenuScaleChange, isMenuEditMode, location.pathname, menuScale, platformName],
   );
 
   const headerContract = useMemo(() => {
     const pathChain = [
       {
         id: "control-plane-root",
-        label: "Control Plane",
+        label: platformShortName || platformName || "Control Plane",
         path: "/control-plane",
       },
-      ...(location.pathname !== "/control-plane"
-        ? [
-            {
-              id: "control-plane-current",
-              label: pageMeta.title,
-              path: location.pathname,
-            },
-          ]
-        : []),
+      ...(Array.isArray(pageMeta.breadcrumbTrail) && pageMeta.breadcrumbTrail.length > 0
+        ? pageMeta.breadcrumbTrail.map((item, index) => ({
+            id: `control-plane-breadcrumb-${index}`,
+            label: item.label,
+            path: item.path,
+          }))
+        : location.pathname !== "/control-plane"
+          ? [
+              {
+                id: "control-plane-current",
+                label: pageMeta.title,
+                path: location.pathname,
+              },
+            ]
+          : []),
     ];
 
     return createDesignerHeaderContract({
@@ -198,8 +213,11 @@ export default function ControlPlaneShell() {
     location.pathname,
     markAsRead,
     notifications,
+    pageMeta.breadcrumbTrail,
     pageMeta.subtitle,
     pageMeta.title,
+    platformName,
+    platformShortName,
     searchContext.label,
     unreadCount,
   ]);

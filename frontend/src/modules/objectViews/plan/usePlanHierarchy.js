@@ -1,19 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { listRelationInstancesByKey } from "../../../api/runtimeRelationsApi.js";
 import { resolvePlanTreeHierarchyRelationKey } from "../../../shared/relation/resolvePlanTreeHierarchyRelationKey.js";
-import { ensurePlanTreeRootOrder } from "./planTreeRootOrderApi.js";
-import { logPlanTreeApiError } from "./planTreeMoveDebug.js";
 import { buildHierarchyEdgeMaps } from "../table/services/buildHierarchyEdgeMaps.js";
 import { buildPlanTree } from "./buildPlanTree.js";
 import { buildPlanPreviewMock } from "./buildPlanPreviewMock.js";
+import { applyPlanEntityPatches } from "./applyPlanEntityPatches.js";
+import { fetchPlanTree } from "./planTreeApi.js";
 import {
-  collectHierarchyEntityIds,
-  fetchPlanTreeEntitiesByIds,
-  findMissingPlanEntityIds,
-  indexPlanEntityItems,
-  mergePlanEntityItems,
-} from "./planTreeEntityItems.js";
+  buildPlanTreeCacheKey,
+  getCachedPlanTree,
+  invalidatePlanTreeCache,
+  setCachedPlanTree,
+} from "./planTreeCache.js";
 
 function findCatalogRelation(catalog, relationKey) {
   const relations = Array.isArray(catalog?.relations) ? catalog.relations : [];
@@ -26,13 +24,7 @@ function findCatalogRelation(catalog, relationKey) {
 }
 
 /**
- * Loads hierarchy edges for Plan view.
- *
- * Studio Preview (`previewMode`) uses mock tree data when hierarchyRelationKey is set.
- * Office uses published contract hierarchyRelationKey and runtime relation instances only.
- *
- * Plan tree entity payloads are merged from paginated query items plus hierarchy-only
- * entities loaded by id (Plan must not depend on table pagination).
+ * Loads plan tree via bulk backend endpoint (entities + hierarchy edges).
  */
 const EMPTY_PLAN_TREE = Object.freeze({
   roots: [],
@@ -45,7 +37,7 @@ export default function usePlanHierarchy({
   tenantId,
   catalog = null,
   objectTypeKey = null,
-  items = [],
+  viewKey = null,
   planPresentation = null,
   titleFieldKey = null,
   statusFieldKey = null,
@@ -53,6 +45,7 @@ export default function usePlanHierarchy({
   progressFieldKey = null,
   previewMode = false,
   enabled = true,
+  entityPatches = null,
 }) {
   const configuredHierarchyRelationKey = String(
     planPresentation?.hierarchyRelationKey || "",
@@ -67,167 +60,157 @@ export default function usePlanHierarchy({
     [catalog, objectTypeKey, configuredHierarchyRelationKey],
   );
 
-  const [instances, setInstances] = useState([]);
-  const [hierarchyLoading, setHierarchyLoading] = useState(false);
+  const cacheKey = useMemo(
+    () =>
+      buildPlanTreeCacheKey({
+        tenantId,
+        objectTypeKey,
+        viewKey,
+        relationKey: hierarchyRelationKey,
+      }),
+    [tenantId, objectTypeKey, viewKey, hierarchyRelationKey],
+  );
+
+  const [payload, setPayload] = useState(() =>
+    previewMode || !enabled ? null : getCachedPlanTree(cacheKey),
+  );
+  const [loading, setLoading] = useState(() => {
+    if (!enabled || previewMode) {
+      return false;
+    }
+
+    return !getCachedPlanTree(cacheKey);
+  });
+  const [revalidating, setRevalidating] = useState(false);
   const [hierarchyError, setHierarchyError] = useState("");
-  const [supplementaryItems, setSupplementaryItems] = useState([]);
-  const [entitiesLoading, setEntitiesLoading] = useState(false);
-  const [rootAnchorId, setRootAnchorId] = useState(null);
-  const rootOrderEnsureKeyRef = useRef("");
+  const requestIdRef = useRef(0);
 
-  useEffect(() => {
-    setRootAnchorId(null);
-    rootOrderEnsureKeyRef.current = "";
-  }, [objectTypeKey, hierarchyRelationKey]);
+  const instances = useMemo(
+    () => (Array.isArray(payload?.instances) ? payload.instances : []),
+    [payload],
+  );
+  const planTreeItems = useMemo(() => {
+    const base = Array.isArray(payload?.entities) ? payload.entities : [];
+    return applyPlanEntityPatches(base, entityPatches);
+  }, [payload, entityPatches]);
+  const rootAnchorId = payload?.anchorEntityId ?? null;
 
-  const loadInstances = useCallback(async () => {
-    if (!enabled) {
-      setInstances([]);
-      setHierarchyError("");
-      setHierarchyLoading(false);
-      return;
-    }
-
-    if (previewMode) {
-      setInstances([]);
-      setHierarchyError("");
-      setHierarchyLoading(false);
-      return;
-    }
-
-    if (!tenantId || !hierarchyRelationKey) {
-      setInstances([]);
-      setHierarchyError("");
-      return;
-    }
-
-    setHierarchyLoading(true);
-    setHierarchyError("");
-
-    try {
-      let data = await listRelationInstancesByKey(tenantId, hierarchyRelationKey);
-      data = Array.isArray(data) ? data : [];
-
-      const ensureKey = `${objectTypeKey}:${hierarchyRelationKey}`;
-
-      if (
-        objectTypeKey &&
-        hierarchyRelationKey &&
-        rootOrderEnsureKeyRef.current !== ensureKey
-      ) {
-        const ensureUrl = `/runtime/plan-tree/tenants/${tenantId}/object-types/${objectTypeKey}/hierarchy/${hierarchyRelationKey}/ensure-root-order`;
-
-        try {
-          const ensured = await ensurePlanTreeRootOrder(
-            tenantId,
-            objectTypeKey,
-            hierarchyRelationKey,
-          );
-          const anchorId = String(ensured?.anchorEntityId ?? "").trim();
-
-          if (anchorId) {
-            setRootAnchorId(anchorId);
-            rootOrderEnsureKeyRef.current = ensureKey;
-          }
-
-          data = await listRelationInstancesByKey(tenantId, hierarchyRelationKey);
-          data = Array.isArray(data) ? data : [];
-        } catch (ensureError) {
-          logPlanTreeApiError({
-            url: ensureUrl,
-            method: "POST",
-            payload: null,
-            response: ensureError?.response?.data,
-            error: ensureError,
-          });
-        }
+  const loadPlanTree = useCallback(
+    async ({ background = false, invalidateCache = false } = {}) => {
+      if (!enabled || previewMode) {
+        setPayload(null);
+        setHierarchyError("");
+        setLoading(false);
+        setRevalidating(false);
+        return;
       }
 
-      setInstances(data);
-    } catch (loadError) {
-      setInstances([]);
-      setHierarchyError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Не удалось загрузить иерархию плана",
-      );
-    } finally {
-      setHierarchyLoading(false);
-    }
-  }, [enabled, previewMode, tenantId, hierarchyRelationKey, objectTypeKey]);
+      if (!tenantId || !objectTypeKey || !viewKey || !hierarchyRelationKey) {
+        setPayload(null);
+        setHierarchyError("");
+        setLoading(false);
+        setRevalidating(false);
+        return;
+      }
+
+      if (invalidateCache) {
+        invalidatePlanTreeCache({
+          tenantId,
+          objectTypeKey,
+          viewKey,
+          relationKey: hierarchyRelationKey,
+        });
+      }
+
+      const cached = !invalidateCache ? getCachedPlanTree(cacheKey) : null;
+
+      if (cached) {
+        setPayload(cached);
+        setLoading(false);
+      } else if (!background) {
+        setLoading(true);
+      }
+
+      if (background || cached) {
+        setRevalidating(true);
+      }
+
+      const requestId = requestIdRef.current + 1;
+      requestIdRef.current = requestId;
+      setHierarchyError("");
+
+      try {
+        const nextPayload = await fetchPlanTree(
+          tenantId,
+          objectTypeKey,
+          viewKey,
+          hierarchyRelationKey,
+        );
+
+        if (requestIdRef.current !== requestId) {
+          return;
+        }
+
+        setPayload(nextPayload);
+        setCachedPlanTree(cacheKey, nextPayload);
+      } catch (loadError) {
+        if (requestIdRef.current !== requestId) {
+          return;
+        }
+
+        if (!cached) {
+          setPayload(null);
+        }
+
+        setHierarchyError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Не удалось загрузить план",
+        );
+      } finally {
+        if (requestIdRef.current === requestId) {
+          setLoading(false);
+          setRevalidating(false);
+        }
+      }
+    },
+    [
+      enabled,
+      previewMode,
+      tenantId,
+      objectTypeKey,
+      viewKey,
+      hierarchyRelationKey,
+      cacheKey,
+    ],
+  );
 
   useEffect(() => {
-    void loadInstances();
-  }, [loadInstances]);
+    if (!enabled || previewMode) {
+      setPayload(null);
+      setLoading(false);
+      setRevalidating(false);
+      return;
+    }
+
+    const cached = getCachedPlanTree(cacheKey);
+
+    if (cached) {
+      setPayload(cached);
+      setLoading(false);
+      void loadPlanTree({ background: true });
+      return;
+    }
+
+    void loadPlanTree({ background: false });
+  }, [enabled, previewMode, cacheKey, loadPlanTree]);
 
   const relationDefinition = useMemo(
     () => findCatalogRelation(catalog, hierarchyRelationKey),
     [catalog, hierarchyRelationKey],
   );
 
-  useEffect(() => {
-    if (!enabled || previewMode || !tenantId || !objectTypeKey || !hierarchyRelationKey) {
-      setSupplementaryItems([]);
-      setEntitiesLoading(false);
-      return undefined;
-    }
-
-    if (!instances.length) {
-      setSupplementaryItems([]);
-      setEntitiesLoading(false);
-      return undefined;
-    }
-
-    const hierarchyEntityIds = collectHierarchyEntityIds(instances, relationDefinition);
-    const indexedItems = indexPlanEntityItems(items);
-    const missingIds = findMissingPlanEntityIds(hierarchyEntityIds, indexedItems);
-
-    if (!missingIds.length) {
-      setSupplementaryItems([]);
-      setEntitiesLoading(false);
-      return undefined;
-    }
-
-    let cancelled = false;
-
-    (async () => {
-      setEntitiesLoading(true);
-
-      try {
-        const fetched = await fetchPlanTreeEntitiesByIds({
-          tenantId,
-          objectTypeKey,
-          entityIds: missingIds,
-        });
-
-        if (!cancelled) {
-          setSupplementaryItems(fetched);
-        }
-      } finally {
-        if (!cancelled) {
-          setEntitiesLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    enabled,
-    previewMode,
-    tenantId,
-    objectTypeKey,
-    hierarchyRelationKey,
-    instances,
-    relationDefinition,
-    items,
-  ]);
-
-  const planTreeItems = useMemo(
-    () => mergePlanEntityItems(items, supplementaryItems),
-    [items, supplementaryItems],
-  );
+  const treeReady = Boolean(payload) && !loading;
 
   const tree = useMemo(() => {
     if (!enabled) {
@@ -236,6 +219,10 @@ export default function usePlanHierarchy({
 
     if (previewMode) {
       return buildPlanPreviewMock();
+    }
+
+    if (!treeReady) {
+      return EMPTY_PLAN_TREE;
     }
 
     try {
@@ -262,6 +249,7 @@ export default function usePlanHierarchy({
   }, [
     enabled,
     previewMode,
+    treeReady,
     planTreeItems,
     instances,
     catalog,
@@ -279,6 +267,15 @@ export default function usePlanHierarchy({
     [instances, relationDefinition],
   );
 
+  const reload = useCallback(
+    (options = {}) =>
+      loadPlanTree({
+        background: Boolean(options.background),
+        invalidateCache: options.invalidateCache !== false,
+      }),
+    [loadPlanTree],
+  );
+
   return {
     tree,
     hierarchyRelationKey,
@@ -288,16 +285,15 @@ export default function usePlanHierarchy({
       : previewMode
         ? tree.roots.length
         : instances.length,
-    /** Office: paginated query items (before hierarchy merge). */
-    planEntityCount: !enabled ? 0 : items.length,
-    /** Office: items passed to buildPlanTree after hierarchy merge. */
+    planEntityCount: !enabled ? 0 : planTreeItems.length,
     planTreeEntityCount: !enabled ? 0 : planTreeItems.length,
     planTreeRootCount: tree.roots.length,
-    loading: enabled ? hierarchyLoading || entitiesLoading : false,
+    loading,
+    revalidating,
+    treeReady,
     error: enabled ? hierarchyError : "",
-    reload: loadInstances,
+    reload,
     rootAnchorId,
     ...edgeMaps,
   };
 }
-

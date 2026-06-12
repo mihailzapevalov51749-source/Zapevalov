@@ -22,9 +22,17 @@ from app.modules.platform.designer.object_types.cascade_delete import (
     find_external_dependencies,
 )
 from app.modules.platform.designer.object_types import service as object_type_service
+from app.modules.platform.designer.trash.bulk_purge import execute_planned_bulk_purge
+from app.modules.pages.protected_pages import (
+    PROTECTED_PAGE_DELETE_MESSAGE,
+    PROTECTED_PAGE_HARD_DELETE_MESSAGE,
+    assert_page_deletion_allowed,
+    is_protected_page,
+)
 from app.modules.platform.designer.trash.schemas import (
     TrashCascadeCountItem,
     TrashDependencyActionResponse,
+    TrashBulkPurgeResponse,
     TrashBulkResponse,
     TrashBulkResultItem,
     TrashDependencyRead,
@@ -361,6 +369,40 @@ def _load_entity(
     return entity
 
 
+def _build_protected_page_blocked_response(
+    db: Session,
+    *,
+    tenant_id: int,
+    kind: TrashEntityKind,
+    entity_id: str,
+    require_deleted: bool,
+    hard_delete: bool,
+) -> TrashPurgeBlockedResponse | None:
+    if kind != "page":
+        return None
+    page = _load_entity(
+        db,
+        tenant_id=tenant_id,
+        kind="page",
+        entity_id=entity_id,
+        require_deleted=require_deleted,
+    )
+    if page is None or not is_protected_page(db, tenant_id=tenant_id, page=page):
+        return None
+    message = PROTECTED_PAGE_HARD_DELETE_MESSAGE if hard_delete else PROTECTED_PAGE_DELETE_MESSAGE
+    return TrashPurgeBlockedResponse(
+        blocked=True,
+        protected=True,
+        message="Удаление запрещено",
+        dependencies=[
+            TrashDependencyRead(
+                label=message,
+                kind="protected_page",
+            ),
+        ],
+    )
+
+
 def collect_purge_dependencies(
     db: Session,
     *,
@@ -397,6 +439,14 @@ def purge_trash_item(db: Session, *, tenant_id: int, kind: TrashEntityKind, enti
     entity = _load_entity(db, tenant_id=tenant_id, kind=kind, entity_id=entity_id, require_deleted=True)
     if entity is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Элемент корзины не найден")
+
+    if kind == "page":
+        assert_page_deletion_allowed(
+            db,
+            tenant_id=tenant_id,
+            page=entity,
+            hard_delete=True,
+        )
 
     if kind == "object_type":
         object_type_service.purge_object_type_from_trash(
@@ -439,22 +489,8 @@ def restore_trash_bulk(db: Session, *, tenant_id: int, items: list[TrashItemRef]
     return TrashBulkResponse(results=results)
 
 
-def purge_trash_bulk(db: Session, *, tenant_id: int, items: list[TrashItemRef]) -> TrashBulkResponse:
-    results: list[TrashBulkResultItem] = []
-    for item in items:
-        try:
-            purge_trash_item(db, tenant_id=tenant_id, kind=item.kind, entity_id=item.id)
-            results.append(TrashBulkResultItem(kind=item.kind, id=item.id, success=True))
-        except HTTPException as exc:
-            results.append(
-                TrashBulkResultItem(
-                    kind=item.kind,
-                    id=item.id,
-                    success=False,
-                    error=_http_exception_error_message(exc),
-                ),
-            )
-    return TrashBulkResponse(results=results)
+def purge_trash_bulk(db: Session, *, tenant_id: int, items: list[TrashItemRef]) -> TrashBulkPurgeResponse:
+    return execute_planned_bulk_purge(db, tenant_id=tenant_id, items=items)
 
 
 def check_purge_allowed(
@@ -464,6 +500,17 @@ def check_purge_allowed(
     kind: TrashEntityKind,
     entity_id: str,
 ) -> TrashPurgeBlockedResponse | None:
+    protected = _build_protected_page_blocked_response(
+        db,
+        tenant_id=tenant_id,
+        kind=kind,
+        entity_id=entity_id,
+        require_deleted=True,
+        hard_delete=True,
+    )
+    if protected is not None:
+        return protected
+
     if kind == "object_type":
         entity = _load_entity(
             db,
@@ -530,16 +577,26 @@ def clear_purge_dependencies(
     tenant_id: int,
     kind: TrashEntityKind,
     entity_id: str,
+    deleted_by: int | None = None,
 ) -> TrashDependencyActionResponse:
     entity = _load_entity(db, tenant_id=tenant_id, kind=kind, entity_id=entity_id, require_deleted=True)
     if entity is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Элемент корзины не найден")
+
+    if kind == "page":
+        assert_page_deletion_allowed(
+            db,
+            tenant_id=tenant_id,
+            page=entity,
+            hard_delete=True,
+        )
 
     cleared = dependency_resolution_service.clear_dependencies(
         db,
         tenant_id=tenant_id,
         kind=kind,
         entity_id=entity_id,
+        deleted_by=deleted_by,
     )
     purge_trash_item(db, tenant_id=tenant_id, kind=kind, entity_id=entity_id)
     return TrashDependencyActionResponse(mode="clear", cleared_dependencies=cleared)
@@ -552,10 +609,19 @@ def cascade_purge_with_dependencies(
     kind: TrashEntityKind,
     entity_id: str,
     confirm: bool,
+    deleted_by: int | None = None,
 ) -> TrashDependencyActionResponse:
     entity = _load_entity(db, tenant_id=tenant_id, kind=kind, entity_id=entity_id, require_deleted=True)
     if entity is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Элемент корзины не найден")
+
+    if kind == "page":
+        assert_page_deletion_allowed(
+            db,
+            tenant_id=tenant_id,
+            page=entity,
+            hard_delete=True,
+        )
 
     title = str(getattr(entity, "title", None) or getattr(entity, "name", None) or "Объект")
     tree = dependency_resolution_service.build_dependency_tree(
@@ -581,6 +647,7 @@ def cascade_purge_with_dependencies(
         tenant_id=tenant_id,
         kind=kind,
         entity_id=entity_id,
+        deleted_by=deleted_by,
     )
     purge_trash_item(db, tenant_id=tenant_id, kind=kind, entity_id=entity_id)
     deleted_items = [TrashItemRef(kind=kind, id=entity_id)]

@@ -31,6 +31,8 @@ import {
   ObjectSettingsSplitLayout,
   buildObjectSettingsLayoutStorageKey,
 } from "../../../../shared/objectSettings";
+import { usePlatformConfirm } from "../../../../shared/platformModal";
+import { notifyDesignerStudioApiError } from "../../utils/notifyDesignerStudioApiError";
 
 export default function ViewsTab({
   tenantId,
@@ -41,6 +43,7 @@ export default function ViewsTab({
   registerSave = null,
   onDirtyChange = null,
 }) {
+  const platformConfirm = usePlatformConfirm();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -250,7 +253,7 @@ export default function ViewsTab({
       await planStudio?.reloadViews?.();
       await onSchemaChanged?.();
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Не удалось сохранить вкладку"));
+      notifyDesignerStudioApiError(err, "Не удалось сохранить вкладку");
     } finally {
       setSaving(false);
     }
@@ -278,10 +281,24 @@ export default function ViewsTab({
   const handleDelete = async () => {
     if (!selected) return;
     if (selected.is_system && selected.is_default) {
-      window.alert("Системную default вкладку нельзя удалить");
+      await platformConfirm({
+        title: "Системную вкладку нельзя удалить",
+        message: "Системную default вкладку нельзя удалить",
+        variant: "warning",
+        confirmLabel: "Понятно",
+        cancelLabel: "Закрыть",
+      });
       return;
     }
-    if (!window.confirm(`Удалить вкладку "${selected.name}"?`)) return;
+    const confirmed = await platformConfirm({
+      title: "Удалить представление?",
+      message: `Удалить вкладку "${selected.name}"?`,
+      confirmLabel: "Удалить",
+      cancelLabel: "Отмена",
+      variant: "danger",
+    });
+
+    if (!confirmed) return;
 
     try {
       await designerApi.deleteView(tenantId, selected.id);
@@ -289,7 +306,7 @@ export default function ViewsTab({
       await loadItems();
       await onSchemaChanged?.();
     } catch (err) {
-      window.alert(getApiErrorMessage(err, "Не удалось удалить вкладку"));
+      notifyDesignerStudioApiError(err, "Не удалось удалить вкладку");
     }
   };
 

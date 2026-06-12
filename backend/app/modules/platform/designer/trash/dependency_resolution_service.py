@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import Callable
 from uuid import UUID
 
@@ -11,6 +10,7 @@ from app.modules.blocks.models import Block
 from app.modules.navigation.models import NavigationItem
 from app.modules.pages.models import Page
 from app.modules.platform.designer.field_definitions.models import DesignerFieldDefinition
+from app.modules.platform.designer.shared.soft_delete import apply_soft_delete
 from app.modules.platform.designer.trash.schemas import (
     DependencyTreeNodeRead,
     DependencyTreeRead,
@@ -18,15 +18,15 @@ from app.modules.platform.designer.trash.schemas import (
     TrashEntityKind,
 )
 from app.modules.platform.designer.view_definitions.models import DesignerViewDefinition
-from app.modules.platform.designer.workspaces.models import DesignerWorkspaceTab
+from app.modules.platform.designer.workspaces.models import DesignerWorkspace, DesignerWorkspaceTab
 from app.modules.sections.models import Section
 
 
 @dataclass(slots=True)
 class ResolvedDependency:
     node: DependencyTreeNodeRead
-    clear: Callable[[Session], bool] | None = None
-    cascade: Callable[[Session], int] | None = None
+    clear: Callable[[Session, int | None], bool] | None = None
+    cascade: Callable[[Session, int | None], int] | None = None
 
 
 class DependencyResolutionService:
@@ -79,11 +79,12 @@ class DependencyResolutionService:
         tenant_id: int,
         kind: TrashEntityKind,
         entity_id: str,
+        deleted_by: int | None = None,
     ) -> list[TrashDependencyRead]:
         deps = self._resolve(db, tenant_id, kind, entity_id)
         cleared: list[TrashDependencyRead] = []
         for dep in deps:
-            if dep.clear and dep.clear(db):
+            if dep.clear and dep.clear(db, deleted_by):
                 cleared.append(self._to_dependency_read(dep.node))
         return cleared
 
@@ -94,12 +95,13 @@ class DependencyResolutionService:
         tenant_id: int,
         kind: TrashEntityKind,
         entity_id: str,
+        deleted_by: int | None = None,
     ) -> list[tuple[TrashEntityKind, str]]:
         deps = self._resolve(db, tenant_id, kind, entity_id)
         deleted: list[tuple[TrashEntityKind, str]] = []
         for dep in deps:
             if dep.cascade:
-                dep.cascade(db)
+                dep.cascade(db, deleted_by)
                 if dep.node.entity_kind in {"workspace", "workspace_tab", "object_type", "object_view", "object_relation", "page", "navigation"} and dep.node.entity_id:
                     deleted.append((dep.node.entity_kind, dep.node.entity_id))
         return deleted
@@ -143,8 +145,12 @@ class DependencyResolutionService:
                         entity_id=str(nav.id),
                         path=["Студия", "Навигация", nav.title],
                     ),
-                    clear=lambda session, nav_item=nav: self._detach_navigation_page(session, nav_item),
-                    cascade=lambda session, nav_item=nav: self._soft_delete_navigation(session, nav_item),
+                    clear=lambda session, _deleted_by=None, nav_item=nav: self._detach_navigation_page(session, nav_item),
+                    cascade=lambda session, deleted_by=None, nav_item=nav: self._soft_delete_navigation(
+                        session,
+                        nav_item,
+                        deleted_by=deleted_by,
+                    ),
                 ),
             )
 
@@ -169,8 +175,40 @@ class DependencyResolutionService:
                         entity_id=str(tab.id),
                         path=["Студия", "Рабочие пространства", tab.title],
                     ),
-                    clear=lambda session, row=tab: self._detach_workspace_tab_page(session, row),
-                    cascade=lambda session, row=tab: self._soft_delete_workspace_tab(session, row),
+                    clear=lambda session, _deleted_by=None, row=tab: self._detach_workspace_tab_page(session, row),
+                    cascade=lambda session, deleted_by=None, row=tab: self._soft_delete_workspace_tab(
+                        session,
+                        row,
+                        deleted_by=deleted_by,
+                    ),
+                ),
+            )
+
+        workspace_rows = (
+            db.query(DesignerWorkspace)
+            .filter(
+                DesignerWorkspace.tenant_id == tenant_id,
+                DesignerWorkspace.home_page_id == page_id,
+                DesignerWorkspace.deleted_at.is_(None),
+            )
+            .all()
+        )
+        for workspace in workspace_rows:
+            dependencies.append(
+                ResolvedDependency(
+                    node=DependencyTreeNodeRead(
+                        node_key=f"workspace_home:{workspace.id}",
+                        kind="workspace",
+                        title=f'Рабочее пространство "{workspace.title}" — домашняя страница',
+                        entity_kind="workspace",
+                        entity_id=str(workspace.id),
+                        path=["Студия", "Рабочие пространства", workspace.title],
+                    ),
+                    clear=lambda session, _deleted_by=None, row=workspace: self._detach_workspace_home_page(
+                        session,
+                        row,
+                    ),
+                    cascade=None,
                 ),
             )
 
@@ -200,8 +238,8 @@ class DependencyResolutionService:
                         path=["Студия", "Страницы"],
                         children=section_children,
                     ),
-                    clear=lambda session, pid=page_id: self._clear_page_sections(session, pid),
-                    cascade=lambda session, pid=page_id: self._cascade_delete_page_sections(session, pid),
+                    clear=lambda session, _deleted_by=None, pid=page_id: self._clear_page_sections(session, pid),
+                    cascade=lambda session, _deleted_by=None, pid=page_id: self._cascade_delete_page_sections(session, pid),
                 ),
             )
 
@@ -258,7 +296,7 @@ class DependencyResolutionService:
                                 entity_id=str(tab.id),
                                 path=["Студия", "Рабочие пространства", workspace.title, tab.title],
                             ),
-                            clear=lambda session, row=tab: self._detach_workspace_tab_object_type(session, row),
+                            clear=lambda session, _deleted_by=None, row=tab: self._detach_workspace_tab_object_type(session, row),
                         ),
                     )
             else:
@@ -300,7 +338,11 @@ class DependencyResolutionService:
                         entity_id=str(tab.id),
                         path=["Студия", "Рабочие пространства", tab.title],
                     ),
-                    cascade=lambda session, row=tab: self._soft_delete_workspace_tab(session, row),
+                    cascade=lambda session, deleted_by=None, row=tab: self._soft_delete_workspace_tab(
+                        session,
+                        row,
+                        deleted_by=deleted_by,
+                    ),
                 ),
             )
         return dependencies
@@ -338,8 +380,12 @@ class DependencyResolutionService:
                         for child in children
                     ],
                 ),
-                clear=lambda session, nid=nav_id: self._detach_navigation_children(session, nid),
-                cascade=lambda session, nid=nav_id: self._cascade_delete_navigation_children(session, nid),
+                clear=lambda session, _deleted_by=None, nid=nav_id: self._detach_navigation_children(session, nid),
+                cascade=lambda session, deleted_by=None, nid=nav_id: self._cascade_delete_navigation_children(
+                    session,
+                    nid,
+                    deleted_by=deleted_by,
+                ),
             ),
         ]
 
@@ -392,6 +438,13 @@ class DependencyResolutionService:
         return changed
 
     @staticmethod
+    def _detach_workspace_home_page(db: Session, workspace: DesignerWorkspace) -> bool:
+        if workspace.home_page_id is None:
+            return False
+        workspace.home_page_id = None
+        return True
+
+    @staticmethod
     def _clear_page_sections(db: Session, page_id: int) -> bool:
         section_ids = [row.id for row in db.query(Section.id).filter(Section.page_id == page_id).all()]
         if not section_ids:
@@ -437,28 +490,48 @@ class DependencyResolutionService:
         return changed > 0
 
     @staticmethod
-    def _cascade_delete_navigation_children(db: Session, nav_id: int) -> int:
+    def _cascade_delete_navigation_children(
+        db: Session,
+        nav_id: int,
+        *,
+        deleted_by: int | None = None,
+    ) -> int:
         rows = db.query(NavigationItem).filter(
             NavigationItem.parent_id == nav_id,
             NavigationItem.deleted_at.is_(None),
         ).all()
         for row in rows:
-            row.deleted_at = row.deleted_at or datetime.now(timezone.utc)
+            apply_soft_delete(row, deleted_by=deleted_by)
         return len(rows)
 
     @staticmethod
-    def _soft_delete_navigation(db: Session, nav: NavigationItem) -> int:
-        nav.deleted_at = nav.deleted_at or datetime.now(timezone.utc)
+    def _soft_delete_navigation(
+        db: Session,
+        nav: NavigationItem,
+        *,
+        deleted_by: int | None = None,
+    ) -> int:
+        apply_soft_delete(nav, deleted_by=deleted_by)
         return 1
 
     @staticmethod
-    def _soft_delete_workspace_tab(db: Session, tab: DesignerWorkspaceTab) -> int:
-        tab.deleted_at = tab.deleted_at or datetime.now(timezone.utc)
+    def _soft_delete_workspace_tab(
+        db: Session,
+        tab: DesignerWorkspaceTab,
+        *,
+        deleted_by: int | None = None,
+    ) -> int:
+        apply_soft_delete(tab, deleted_by=deleted_by)
         return 1
 
     @staticmethod
-    def _soft_delete_object_view(db: Session, view: DesignerViewDefinition) -> int:
-        view.deleted_at = view.deleted_at or datetime.now(timezone.utc)
+    def _soft_delete_object_view(
+        db: Session,
+        view: DesignerViewDefinition,
+        *,
+        deleted_by: int | None = None,
+    ) -> int:
+        apply_soft_delete(view, deleted_by=deleted_by)
         return 1
 
 

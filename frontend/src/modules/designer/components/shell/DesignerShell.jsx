@@ -20,10 +20,13 @@ import { usePlatformSidebarControls } from "../../../../shared/shell/sidebar/use
 import {
   applyDesignerSystemMenuSettings,
   getDesignerSystemMenuSettingsEventName,
+  loadDesignerSystemMenuSettings,
 } from "../../../../shared/shell/sidebar/designerSystemMenuSettings";
 import { defaultCapabilitiesForMode } from "../../../../shared/shell/provider/appShellTypes";
 import { emitDesignerShadowSnapshot } from "../../../../shared/shell/shadow/designer";
-import { resolveStudioToOfficePath } from "../../../../shared/appMode/appModeNavigation";
+import { resolveStudioToOfficePathAsync } from "../../../../shared/appMode/appModeNavigation";
+import { showPlatformNotification } from "../../../../shared/platformNotification/PlatformNotification";
+import { TENANT_HOME_PAGE_NOT_FOUND_MESSAGE } from "../../../../shared/tenantContext/resolveTenantRuntimeEntryPath";
 import {
   readLeftMenuScale,
   writeLeftMenuScale,
@@ -103,15 +106,8 @@ function normalizeAvatarSettings(settings) {
   return DEFAULT_AVATAR_SETTINGS;
 }
 
-function resolveRoleName(user) {
-  return String(user?.role || user?.role_name || user?.roleName || "").trim().toLowerCase();
-}
-
-function isSuperadminUser(user) {
-  if (!user) return false;
-  if (resolveRoleName(user) === "superadmin") return true;
-  const roleId = Number(user?.role_id ?? user?.roleId ?? user?.role?.id);
-  return Number.isFinite(roleId) && roleId === 4;
+function canSeeTenantAdministrationMenu(user) {
+  return canAccessTenantAdministration(user);
 }
 
 function hasNavigationRoute(items, route) {
@@ -279,6 +275,20 @@ export default function DesignerShell() {
   useEffect(() => {
     setMenuScale(readLeftMenuScale(resolvedPortalId));
   }, [resolvedPortalId]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    loadDesignerSystemMenuSettings(resolvedPortalId).then(() => {
+      if (isMounted) {
+        setSystemSettingsVersion((previous) => previous + 1);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [resolvedPortalId]);
   const [headerUser, setHeaderUser] = useState(() => getCachedHeaderUser());
   const [isPageEditMode, setIsPageEditMode] = useState(false);
   const [activeObjectTypeName, setActiveObjectTypeName] = useState("");
@@ -286,7 +296,7 @@ export default function DesignerShell() {
   const [activeWorkspaceTitle, setActiveWorkspaceTitle] = useState("");
   const [systemSettingsVersion, setSystemSettingsVersion] = useState(0);
   const { notifications, unreadCount, markAsRead } = useNotifications();
-  const isSuperadmin = isSuperadminUser(headerUser ?? user);
+  const canSeeAdministrationMenu = canSeeTenantAdministrationMenu(headerUser ?? user);
 
   const isDesignerCustomPage = /\/designer\/tenant\/\d+\/page\/\d+/.test(
     location.pathname
@@ -379,7 +389,7 @@ export default function DesignerShell() {
     const withSettings = applyDesignerSystemMenuSettings(
       baseItems,
       resolvedPortalId,
-      isSuperadmin,
+      canSeeAdministrationMenu,
       {
         showHiddenInEditMode: sidebarControls.isEditMode,
       },
@@ -406,7 +416,7 @@ export default function DesignerShell() {
   }, [
     resolvedPortalId,
     studioTenantType,
-    isSuperadmin,
+    canSeeAdministrationMenu,
     sidebarControls.isEditMode,
     systemSettingsVersion,
     navigation,
@@ -752,7 +762,16 @@ export default function DesignerShell() {
     (actionKey, payload) => {
       switch (actionKey) {
         case "app-mode-switch":
-          navigate(resolveStudioToOfficePath(location.pathname));
+          void resolveStudioToOfficePathAsync(location.pathname).then((path) => {
+            if (!path) {
+              showPlatformNotification({
+                message: TENANT_HOME_PAGE_NOT_FOUND_MESSAGE,
+                variant: "warning",
+              });
+              return;
+            }
+            navigate(path);
+          });
           return;
         case "search-change":
         case "search":

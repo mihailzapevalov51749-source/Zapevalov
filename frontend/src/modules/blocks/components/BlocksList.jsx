@@ -9,47 +9,9 @@ export default function BlocksList({
   onDeleteBlock,
   onBlockUpdated,
   blockDragAndDrop,
-
-  tableViewState,
-  tableIdentity,
-  representations,
-  activeRepresentationId,
-  isRepresentationDirty,
-  isBaseStateDirty,
-
-  onToggleColumnVisibility,
-  onSelectRepresentation,
-  onCreateRepresentation,
-  onDeleteRepresentation,
-  onToggleRepresentationVisibility,
-  onRenameRepresentation,
-  onSaveRepresentation,
-  onSaveAsRepresentation,
-  onDuplicateRepresentation,
-  onSetDefaultRepresentation,
 }) {
   const dropTarget = blockDragAndDrop?.dropTarget;
   const draggedBlockId = blockDragAndDrop?.draggedBlockId;
-
-  const tableRepresentationProps = {
-    tableViewState,
-    tableIdentity,
-    representations,
-    activeRepresentationId,
-    isRepresentationDirty,
-    isBaseStateDirty,
-
-    onToggleColumnVisibility,
-    onSelectRepresentation,
-    onCreateRepresentation,
-    onDeleteRepresentation,
-    onToggleRepresentationVisibility,
-    onRenameRepresentation,
-    onSaveRepresentation,
-    onSaveAsRepresentation,
-    onDuplicateRepresentation,
-    onSetDefaultRepresentation,
-  };
 
   if (blocks.length === 0) {
     return (
@@ -111,7 +73,6 @@ export default function BlocksList({
             onDelete={onDeleteBlock}
             onBlockUpdated={onBlockUpdated}
             draggable={isEditMode}
-            tableRepresentationProps={tableRepresentationProps}
             onDragStart={(event) =>
               blockDragAndDrop?.handleBlockDragStart(event, block, sectionId)
             }
@@ -134,9 +95,13 @@ export default function BlocksList({
 }
 
 function getGridTemplateColumns(layout) {
-  if (layout === "two_columns") return "repeat(2, minmax(0, 1fr))";
-  if (layout === "three_columns") return "repeat(3, minmax(0, 1fr))";
-  if (layout === "grid") return "repeat(auto-fit, minmax(220px, 1fr))";
+  if (layout === "two_columns") {
+    return "repeat(2, minmax(0, 1fr))";
+  }
 
-  return "1fr";
+  if (layout === "three_columns") {
+    return "repeat(3, minmax(0, 1fr))";
+  }
+
+  return "minmax(0, 1fr)";
 }

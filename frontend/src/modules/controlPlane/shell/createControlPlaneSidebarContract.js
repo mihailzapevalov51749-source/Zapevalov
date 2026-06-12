@@ -17,6 +17,7 @@ export function createControlPlaneSidebarContract({
   menuScale = 1,
   isEditMode = false,
   onChangeMenuScale,
+  platformName,
 }) {
   const activeItemId = resolveControlPlaneActiveNavItemId(activePath);
   const activeParentIds = resolveControlPlaneActiveParentIds(activePath);
@@ -32,8 +33,9 @@ export function createControlPlaneSidebarContract({
     canEditMenu: true,
     canCreateItem: false,
     canOpenSettings: true,
-    canDragItems: false,
+    canDragItems: true,
     brand: {
+      title: String(platformName || "").trim() || "ЯсноПро",
       subtitle: "Control Plane",
     },
   });

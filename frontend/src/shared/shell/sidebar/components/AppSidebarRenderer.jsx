@@ -6,6 +6,7 @@ import chevronLeftIcon from "../../../../assets/icons/Chevronleft.png";
 import settingsIcon from "../../../../assets/icons/settings.gif";
 import saveIcon from "../../../../assets/icons/save.gif";
 import MenuTree from "../../../../modules/navigation/components/MenuTree";
+import useBlockedMenuDragAndDrop from "../../../../modules/navigation/hooks/useBlockedMenuDragAndDrop";
 import useMenuDragAndDrop from "../../../../modules/navigation/hooks/useMenuDragAndDrop";
 import { getNavigationDeleteBlockReason } from "../../../../modules/navigation/utils/navigationDeletePolicy";
 import { LAYOUT_TOKENS } from "../../../layout/layoutTokens";
@@ -15,14 +16,19 @@ import {
   applySystemMenuSettingsToTree,
   isSystemMenuItem,
 } from "../../../navigation/applySystemMenuSettingsToTree.js";
+import {
+  persistNavigationMenuBlockMove,
+  readNavigationMenuBlockSettings,
+} from "../../../navigation/navigationMenuSettings.js";
+import { getDesignerSystemMenuSettingsEventName } from "../designerSystemMenuSettings.js";
 import SidebarTodayActiveTime from "./SidebarTodayActiveTime";
 import TenantEnvironmentBadge from "../../../tenantEnvironment/TenantEnvironmentBadge";
 import { useTenantEnvironment } from "../../../tenantEnvironment/useTenantEnvironment";
 import { resolveTenantIdFromPathname } from "../../../tenantContext/tenantContextResolver.js";
 import { isControlPlanePath } from "../../../../modules/controlPlane/config/controlPlanePaths.js";
 import {
+  CONTROL_PLANE_SYSTEM_MENU_SETTINGS_CHANGED_EVENT,
   readControlPlaneSystemMenuSettings,
-  writeControlPlaneSystemMenuSettings,
 } from "../../../uiStorage/controlPlaneUiStorage.js";
 import {
   readSystemMenuSettings,
@@ -115,9 +121,39 @@ function ShellSidebarView({
     setSystemMenuSettings(readSystemMenuSettings(tenantId));
   }, [isControlPlane, tenantId]);
 
+  useEffect(() => {
+    if (!isControlPlane) {
+      return undefined;
+    }
+
+    const handleSettingsChanged = () => {
+      setSystemMenuSettings(readControlPlaneSystemMenuSettings());
+    };
+
+    window.addEventListener(
+      CONTROL_PLANE_SYSTEM_MENU_SETTINGS_CHANGED_EVENT,
+      handleSettingsChanged,
+    );
+
+    return () => {
+      window.removeEventListener(
+        CONTROL_PLANE_SYSTEM_MENU_SETTINGS_CHANGED_EVENT,
+        handleSettingsChanged,
+      );
+    };
+  }, [isControlPlane]);
+
+  const menuProfile = isControlPlane
+    ? "control-plane"
+    : hasDesignerScope
+      ? "designer"
+      : "platform";
+
+  const [menuBlockSettingsVersion, setMenuBlockSettingsVersion] = useState(0);
+
   const dragAndDrop = useMenuDragAndDrop({
     items: navigationItems,
-    isEnabled: canDragMenu,
+    isEnabled: hasDesignerScope && canDragMenu,
     reload: reloadNavigation,
     onMove: async (itemsPayload) => {
       if (typeof onAction === "function") {
@@ -126,18 +162,69 @@ function ShellSidebarView({
     },
   });
 
-  const finalTree = useMemo(() => {
-    if (hasDesignerScope) {
-      return dragAndDrop.tree;
-    }
-
-    const treeWithProtectedSettings = applySystemMenuSettingsToTree(
-      dragAndDrop.tree,
-      systemMenuSettings,
-    );
+  const rootItemsForBlocks = useMemo(() => {
+    const baseTree = navigationItems;
+    const treeWithProtectedSettings =
+      isControlPlane || !hasDesignerScope
+        ? applySystemMenuSettingsToTree(baseTree, systemMenuSettings)
+        : baseTree;
 
     return filterRemovedOfficeMenuItems(treeWithProtectedSettings);
-  }, [dragAndDrop.tree, hasDesignerScope, systemMenuSettings]);
+  }, [hasDesignerScope, isControlPlane, navigationItems, systemMenuSettings]);
+
+  const menuBlockSettings = useMemo(
+    () =>
+      readNavigationMenuBlockSettings({
+        menuProfile,
+        tenantId,
+        rootItems: rootItemsForBlocks,
+      }),
+    [menuProfile, tenantId, rootItemsForBlocks, systemMenuSettings, menuBlockSettingsVersion],
+  );
+
+  useEffect(() => {
+    if (!hasDesignerScope || !tenantId) {
+      return undefined;
+    }
+
+    const handleDesignerSettingsChanged = () => {
+      setMenuBlockSettingsVersion((previous) => previous + 1);
+    };
+
+    window.addEventListener(
+      getDesignerSystemMenuSettingsEventName(),
+      handleDesignerSettingsChanged,
+    );
+
+    return () => {
+      window.removeEventListener(
+        getDesignerSystemMenuSettingsEventName(),
+        handleDesignerSettingsChanged,
+      );
+    };
+  }, [hasDesignerScope, tenantId]);
+
+  const blockedMenuDrag = useBlockedMenuDragAndDrop({
+    rootItems: rootItemsForBlocks,
+    settings: menuBlockSettings,
+    menuProfile,
+    isEnabled: canDragMenu,
+    onMove: async (itemsPayload) => {
+      const result = await persistNavigationMenuBlockMove({
+        menuProfile,
+        tenantId,
+        itemsPayload,
+        rootItems: rootItemsForBlocks,
+        reloadNavigation,
+      });
+
+      setMenuBlockSettingsVersion((previous) => previous + 1);
+
+      if (menuProfile === "control-plane" || menuProfile === "platform") {
+        setSystemMenuSettings(result.settings);
+      }
+    },
+  });
 
   const logoSrc = brand.logoSrc || defaultBrandLogo;
   const sidebarVisual = LAYOUT_TOKENS.sidebar;
@@ -324,7 +411,9 @@ function ShellSidebarView({
         ) : null}
 
         <MenuTree
-          items={finalTree}
+          items={rootItemsForBlocks}
+          navigationBlocks={blockedMenuDrag.blocks}
+          blockedDragAndDrop={canDragMenu ? blockedMenuDrag : null}
           activePageId={menuActivePageId}
           activeSidebarItemId={activeItemId ?? null}
           activeSidebarParentIds={activeParentIds}
@@ -333,10 +422,12 @@ function ShellSidebarView({
           isEditMode={editMode}
           onUpdateItem={handleUpdateItem}
           onDeleteItem={handleDeleteItem}
-          dragAndDrop={canDragMenu ? dragAndDrop : null}
+          dragAndDrop={hasDesignerScope && canDragMenu ? dragAndDrop : null}
           scale={menuScale}
           sidebarCollapsed={collapsed}
-          sidebarMode={hasDesignerScope ? "designer" : "runtime"}
+          sidebarMode={
+            hasDesignerScope ? "designer" : isControlPlane ? "control-plane" : "runtime"
+          }
           routeOwner={routeOwner}
           tenantId={tenantId}
         />
@@ -700,13 +791,14 @@ function isPersistableNavigationItem(item) {
 
   const itemType = String(item.type || "");
   const itemId = String(item.id || "");
+  const isControlPlaneItem = itemId.startsWith("cp-");
   const isSystem = itemType === "system_page" || itemId.startsWith("system-");
   const hasBackendKey =
     typeof item.sort_order === "number" ||
     item.page_id != null ||
     (itemId.length > 0 && !itemId.startsWith("designer-"));
 
-  if (!isSystem && hasBackendKey) {
+  if ((!isSystem || isControlPlaneItem) && hasBackendKey) {
     return true;
   }
 

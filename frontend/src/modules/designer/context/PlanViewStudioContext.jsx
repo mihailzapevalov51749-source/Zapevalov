@@ -8,7 +8,6 @@ import {
   useState,
 } from "react";
 
-import { getApiErrorMessage } from "../api/platformApiClient";
 import * as designerApi from "../api/designerApi";
 import { resolveStudioDraftProjection } from "../utils/resolveStudioDraftProjection";
 import {
@@ -27,6 +26,7 @@ import {
 } from "../utils/planViewStudioSave.js";
 import { saveStudioViewDraft } from "../utils/saveStudioViewDraft.js";
 import { logPlanDebug } from "../../objectViews/plan/planViewDebug.js";
+import { notifyDesignerStudioApiError } from "../utils/notifyDesignerStudioApiError";
 import {
   canHidePlanTab,
   normalizePlanLayoutSettings,
@@ -394,7 +394,7 @@ export function PlanViewStudioProvider({
         await onSchemaChanged?.();
         return true;
       } catch (err) {
-        window.alert(getApiErrorMessage(err, "Не удалось переименовать поле"));
+        notifyDesignerStudioApiError(err, "Не удалось переименовать поле");
         return false;
       }
     },

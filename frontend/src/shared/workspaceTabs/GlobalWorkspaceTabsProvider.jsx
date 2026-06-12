@@ -14,6 +14,7 @@ import {
   buildWorkspaceTabPayload,
   resolveCurrentWorkspaceTabDescriptor,
 } from "./resolveCurrentWorkspaceTabDescriptor";
+import { resolveRuntimeFallbackPathAsync } from "../appMode/appModeNavigation.js";
 import { resolveMinimizeNavigateRoute } from "./resolveMinimizeNavigateRoute.js";
 import { showPlatformNotification } from "../platformNotification/PlatformNotification";
 import * as workspaceTabsApi from "./workspaceTabsApi";
@@ -21,6 +22,11 @@ import {
   resolveNextWorkspaceTabSortOrder,
   sortWorkspaceTabs,
 } from "./workspaceTabsOrder.js";
+import { filterWorkspaceTabsForTenant } from "./workspaceTabTenantScope.js";
+import {
+  beginWorkspaceTabsReloadRequest,
+  isStaleWorkspaceTabsReloadResponse,
+} from "./workspaceTabsReloadRace.js";
 
 const GlobalWorkspaceTabsContext = createContext(null);
 
@@ -41,31 +47,71 @@ export function GlobalWorkspaceTabsProvider({ children, titleOverride = "" }) {
       }),
     [location, titleOverride],
   );
+  const currentTenantId = currentDescriptor.tenantId ?? null;
+  const previousTenantIdRef = useRef(currentTenantId);
+  const currentTenantIdRef = useRef(currentTenantId);
+  const reloadRequestSeqRef = useRef(0);
+
+  useEffect(() => {
+    currentTenantIdRef.current = currentTenantId;
+  }, [currentTenantId]);
 
   const reloadTabs = useCallback(async () => {
+    const { requestId } = beginWorkspaceTabsReloadRequest(reloadRequestSeqRef);
+    const requestTenantId = currentTenantId;
+    const requestRoute = currentDescriptor.route;
+
     setLoading(true);
     setError("");
 
+    const isStaleResponse = () =>
+      isStaleWorkspaceTabsReloadResponse({
+        requestId,
+        requestSeqRef: reloadRequestSeqRef,
+        requestTenantId,
+        currentTenantId: currentTenantIdRef.current,
+      });
+
     try {
-      const items = await workspaceTabsApi.listWorkspaceTabs();
-      const normalized = sortWorkspaceTabs(items);
+      const items = await workspaceTabsApi.listWorkspaceTabs({
+        tenantId: requestTenantId ?? undefined,
+      });
+
+      if (isStaleResponse()) {
+        return;
+      }
+
+      const normalized = sortWorkspaceTabs(
+        filterWorkspaceTabsForTenant(items, requestTenantId),
+      );
       setTabs(normalized);
 
-      const currentRoute = currentDescriptor.route;
-      const matched = normalized.find((tab) => tab.route === currentRoute);
+      const matched = normalized.find((tab) => tab.route === requestRoute);
       setActiveTabId(matched?.id ? String(matched.id) : null);
     } catch (err) {
+      if (isStaleResponse()) {
+        return;
+      }
+
       setTabs([]);
       setActiveTabId(null);
       setError(err?.response?.data?.detail || err?.message || "Не удалось загрузить вкладки");
     } finally {
-      setLoading(false);
+      if (!isStaleResponse()) {
+        setLoading(false);
+      }
     }
-  }, [currentDescriptor.route]);
+  }, [currentDescriptor.route, currentTenantId]);
 
   useEffect(() => {
+    if (previousTenantIdRef.current !== currentTenantId) {
+      previousTenantIdRef.current = currentTenantId;
+      setTabs([]);
+      setActiveTabId(null);
+    }
+
     reloadTabs();
-  }, [reloadTabs]);
+  }, [currentTenantId, reloadTabs]);
 
   const pinCurrentPage = useCallback(async () => {
     const payload = buildWorkspaceTabPayload(currentDescriptor, {
@@ -112,12 +158,16 @@ export function GlobalWorkspaceTabsProvider({ children, titleOverride = "" }) {
 
         await reloadTabs();
 
-        const navigateRoute = resolveMinimizeNavigateRoute({
+        let navigateRoute = resolveMinimizeNavigateRoute({
           currentRoute: currentDescriptor.route,
           contractFallbackRoute,
           tenantId: currentDescriptor.tenantId,
           tabOpenRoute: saved.route,
         });
+
+        if (!navigateRoute) {
+          navigateRoute = await resolveRuntimeFallbackPathAsync(currentDescriptor.tenantId);
+        }
 
         if (navigateRoute) {
           navigate(navigateRoute);

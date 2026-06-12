@@ -76,6 +76,30 @@ async function parseError(response, fallbackMessage) {
   return extractApiDetail(errorText) || errorText || fallbackMessage;
 }
 
+export async function getTenantLoginBranding(tenantId) {
+  const normalizedTenantId = Number(tenantId);
+  if (!Number.isFinite(normalizedTenantId) || normalizedTenantId <= 0) {
+    return null;
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/auth/tenant-login-branding?tenantId=${normalizedTenantId}`,
+  );
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = await response.json();
+  const displayName = String(data?.display_name || "").trim();
+
+  return displayName || null;
+}
+
 export async function login(email, password) {
   const response = await fetch(`${API_BASE_URL}/auth/login`, {
     method: "POST",
@@ -125,6 +149,17 @@ export async function register({ email, password, full_name }) {
   return response.json();
 }
 
+export function normalizeCurrentUser(data) {
+  if (!data || typeof data !== "object") {
+    return data;
+  }
+
+  return {
+    ...data,
+    is_platform_owner: Boolean(data.is_platform_owner ?? data.isPlatformOwner),
+  };
+}
+
 export async function getMe() {
   const response = await fetch(`${API_BASE_URL}/users/me`, {
     headers: getAuthHeaders(),
@@ -135,7 +170,7 @@ export async function getMe() {
     throw new Error("Пользователь не авторизован");
   }
 
-  return response.json();
+  return normalizeCurrentUser(await response.json());
 }
 
 export async function updateMe(payload) {

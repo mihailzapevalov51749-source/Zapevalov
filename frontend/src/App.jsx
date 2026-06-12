@@ -6,6 +6,7 @@ import PortalObjectRuntimePage from "./portal/PortalObjectRuntimePage";
 import PortalLibraryRuntimePage from "./portal/PortalLibraryRuntimePage";
 import PortalWorkspaceRuntimePage from "./portal/PortalWorkspaceRuntimePage";
 import LoginPage from "./pages/login/LoginPage";
+import LoginEntryRedirect from "./pages/login/LoginEntryRedirect";
 import OnlyOfficeTest from "./test/OnlyOfficeTest";
 import AppSidebarRendererPreview from "./shared/shell/sidebar/dev/AppSidebarRendererPreview";
 import AppHeaderRendererPreview from "./shared/shell/header/dev/AppHeaderRendererPreview";
@@ -53,6 +54,8 @@ import { YasiiFloatingButton } from "./yasii";
 import ControlPlaneLayout from "./modules/controlPlane/layout/ControlPlaneLayout.jsx";
 import LegacyControlPlaneRedirect from "./modules/controlPlane/layout/LegacyControlPlaneRedirect.jsx";
 import TenantAdministrationRouter from "./modules/admin/routes/TenantAdministrationRouter.jsx";
+import PlatformSetupGate from "./modules/platformSetup/PlatformSetupGate.jsx";
+import { PlatformConfirmProvider } from "./shared/platformModal";
 
 function isSuperadmin(user) {
   if (!user) return false;
@@ -138,9 +141,11 @@ export default function App() {
   }
 
   return (
+    <PlatformSetupGate user={user} onUserRefresh={loadUser}>
     <YasiiAssistantProvider>
       <GlobalWorkspaceTabsProvider>
         <ProfileSidePanelProvider>
+        <PlatformConfirmProvider>
         <AppShell>
           <ModePathTracker />
           <PlatformZoneTracker />
@@ -148,7 +153,8 @@ export default function App() {
           <UserActivityBootstrap />
           <YasiiFloatingButton />
           <Routes>
-      <Route path="/" element={<RootEntryRedirect />} />
+      <Route path="/" element={<RootEntryRedirect user={user} />} />
+      <Route path="/login" element={<LoginEntryRedirect user={user} />} />
 
       <Route path="/yasii" element={<YasiiWorkspacePage />} />
 
@@ -178,8 +184,6 @@ export default function App() {
       ) : null}
 
       <Route path="/tasks" element={<PortalPageView />} />
-
-      <Route path="/universal-table" element={<PortalPageView />} />
 
       <Route
         path="/portal/:portalId/page/:pageId"
@@ -286,8 +290,10 @@ export default function App() {
       <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AppShell>
+        </PlatformConfirmProvider>
         </ProfileSidePanelProvider>
       </GlobalWorkspaceTabsProvider>
     </YasiiAssistantProvider>
+    </PlatformSetupGate>
   );
 }

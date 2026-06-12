@@ -22,7 +22,13 @@ from app.modules.platform.designer.workspaces.router import (
 from app.modules.platform.designer.pages.router import (
     router as pages_registry_router,
 )
+from app.modules.platform.designer.system_menu_settings.router import (
+    router as system_menu_settings_router,
+)
 from app.modules.platform.designer.trash.router import router as trash_router
+from app.modules.platform.designer.event_journal.router import (
+    router as event_journal_router,
+)
 from app.modules.platform.action_engine.action_definitions.router import (
     object_type_action_definitions_router,
 )
@@ -37,6 +43,7 @@ from app.modules.platform.shared.dependencies import (
     require_designer_user,
     require_tenant,
 )
+from app.modules.tenant_users.router import router as tenant_administration_router
 
 # Без tags на агрегаторе — иначе Swagger дублирует endpoints в "designer" + domain tags.
 router = APIRouter(prefix="/designer")
@@ -88,6 +95,7 @@ tenant_router.include_router(publish_router)
 tenant_router.include_router(workspaces_router)
 tenant_router.include_router(pages_registry_router)
 tenant_router.include_router(trash_router)
+tenant_router.include_router(event_journal_router)
 tenant_router.include_router(action_engine_router)
 
 tenant_router.include_router(
@@ -104,5 +112,8 @@ tenant_router.include_router(
     action_definition_form_router,
     prefix="/object-types/{object_type_id}/action-definitions/{action_definition_id}/form",
 )
+
+tenant_router.include_router(tenant_administration_router)
+tenant_router.include_router(system_menu_settings_router)
 
 router.include_router(tenant_router)

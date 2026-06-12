@@ -1,7 +1,15 @@
 import { platformApiClient } from "../../modules/designer/api/platformApiClient";
 
-export async function listWorkspaceTabs() {
-  const { data } = await platformApiClient.get("/workspace-tabs");
+export async function listWorkspaceTabs({ tenantId } = {}) {
+  const params = {};
+  const normalizedTenantId = Number(tenantId);
+  if (Number.isFinite(normalizedTenantId) && normalizedTenantId > 0) {
+    params.tenant_id = normalizedTenantId;
+  }
+
+  const { data } = await platformApiClient.get("/workspace-tabs", {
+    params: Object.keys(params).length ? params : undefined,
+  });
   return Array.isArray(data) ? data : [];
 }
 

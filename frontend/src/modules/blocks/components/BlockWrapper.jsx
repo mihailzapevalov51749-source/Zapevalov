@@ -1,9 +1,6 @@
 import { useRef, useState } from "react";
 
-import {
-  isLegacyUniversalTableStorageBlockType,
-  LegacyStorageExistingBadge,
-} from "../../../shared/legacy";
+import { isLegacyTableBlockType } from "../registry/legacyTableBlockTypes";
 import BlockToolbar from "./BlockToolbar";
 
 export default function BlockWrapper({
@@ -26,13 +23,10 @@ export default function BlockWrapper({
   const suppressClickRef = useRef(false);
   const pointerRef = useRef({ x: 0, y: 0, moved: false });
 
-  const isLegacyUtStorageBlock = isLegacyUniversalTableStorageBlockType(
-    block?.type
-  );
+  const isLegacyUtStorageBlock = isLegacyTableBlockType(block?.type);
 
   const isTableBlock =
     isLegacyUtStorageBlock ||
-    ["table", "tables", "table_block", "tableBlock"].includes(block?.type) ||
     Array.isArray(block?.content?.columns) ||
     Array.isArray(block?.content?.rows);
 
@@ -147,10 +141,6 @@ export default function BlockWrapper({
       {isEditMode && isHovered && !isTableBlock && (
         <BlockToolbar onDelete={() => onDelete?.()} />
       )}
-
-      {isEditMode && isLegacyUtStorageBlock ? (
-        <LegacyStorageExistingBadge />
-      ) : null}
 
       <div
         data-block-content-area="true"

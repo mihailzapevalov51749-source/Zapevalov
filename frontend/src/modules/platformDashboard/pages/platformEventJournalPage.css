@@ -37,6 +37,29 @@
   color: var(--color-danger, #d92d20);
 }
 
+.platform-event-journal__empty {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 16px;
+  border: 1px dashed var(--color-border, #e4e7ec);
+  border-radius: 8px;
+  background: var(--color-surface-muted, #f9fafb);
+}
+
+.platform-event-journal__empty-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-primary, #101828);
+}
+
+.platform-event-journal__empty-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-secondary, #667085);
+}
+
 .platform-event-journal__layout {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(240px, 0.9fr);
@@ -55,12 +78,15 @@
 }
 
 .platform-event-journal__row {
-  display: grid;
-  grid-template-columns: 78px 8px minmax(0, 1fr) 8px auto;
+  display: flex;
+  flex-wrap: nowrap;
   align-items: center;
+  gap: 0;
   width: 100%;
-  min-height: 28px;
-  padding: 4px 10px;
+  height: 32px;
+  min-height: 32px;
+  max-height: 32px;
+  padding: 0 12px;
   border: 0;
   border-bottom: 1px solid var(--color-border, #e4e7ec);
   background: transparent;
@@ -68,7 +94,9 @@
   cursor: pointer;
   font: inherit;
   font-size: 12px;
+  line-height: 32px;
   color: inherit;
+  overflow: hidden;
 }
 
 .platform-event-journal__row:last-child {
@@ -85,6 +113,7 @@
 }
 
 .platform-event-journal__cell {
+  flex: 0 0 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -92,40 +121,82 @@
 }
 
 .platform-event-journal__cell--date {
+  flex: 0 0 82px;
+  width: 82px;
   color: var(--color-text-secondary, #667085);
   font-variant-numeric: tabular-nums;
 }
 
-.platform-event-journal__cell--status {
+.platform-event-journal__cell--title {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--color-text-primary, #101828);
+}
+
+.platform-event-journal__cell--category {
+  flex: 0 0 100px;
+  width: 100px;
   color: var(--color-text-secondary, #667085);
   font-size: 11px;
+  text-align: left;
+}
+
+.platform-event-journal__cell--type {
+  flex: 0 0 148px;
+  width: 148px;
+  color: var(--color-text-secondary, #667085);
+  font-size: 11px;
+  text-align: left;
 }
 
 .platform-event-journal__separator {
+  flex: 0 0 14px;
+  width: 14px;
   color: var(--color-border-strong, #d0d5dd);
   text-align: center;
   font-size: 11px;
+  user-select: none;
 }
 
 .platform-event-journal__detail {
   border: 1px solid var(--color-border, #e4e7ec);
-  border-radius: 8px;
-  padding: 10px 12px;
+  border-radius: 10px;
+  padding: 16px 20px;
   background: var(--color-surface, #fff);
 }
 
 .platform-event-journal__detail-title {
-  margin: 0 0 8px;
-  font-size: 14px;
+  margin: 0 0 14px;
+  font-size: 15px;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.35;
+  color: var(--color-text-primary, #101828);
 }
 
 .platform-event-journal__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+}
+
+.platform-event-journal__group {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px 10px;
+  gap: 14px 20px;
   margin: 0;
+}
+
+.platform-event-journal__group--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.platform-event-journal__group--description {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  margin-top: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border, #e4e7ec);
 }
 
 .platform-event-journal__field {
@@ -137,23 +208,39 @@
 }
 
 .platform-event-journal__field dt {
-  margin: 0 0 2px;
+  margin: 0 0 6px;
   color: var(--color-text-secondary, #667085);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
 }
 
 .platform-event-journal__field dd {
   margin: 0;
-  font-size: 12px;
+  font-size: 13px;
+  line-height: 1.45;
   white-space: pre-wrap;
   word-break: break-word;
+  color: var(--color-text-primary, #344054);
+}
+
+.platform-event-journal__group--description .platform-event-journal__field dt {
+  margin-bottom: 8px;
+}
+
+.platform-event-journal__group--description .platform-event-journal__field dd {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--color-text-primary, #101828);
 }
 
 @media (max-width: 960px) {
   .platform-event-journal__layout {
     grid-template-columns: 1fr;
+  }
+
+  .platform-event-journal__detail {
+    padding: 18px 20px;
   }
 }

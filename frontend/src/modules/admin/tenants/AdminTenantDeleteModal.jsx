@@ -1,4 +1,11 @@
 import { PlatformModal } from "../../../shared/platformModal";
+import "../../../shared/platformModal/platformModalFooter.css";
+import "../../../shared/quickCreate/platformQuickCreateModal.css";
+import {
+  CONTROL_PLANE_DELETE_COMPANY_MODAL_DEFAULT_BOUNDS,
+  CONTROL_PLANE_DELETE_COMPANY_MODAL_KEY,
+  CONTROL_PLANE_MODAL_VIEWPORT_INSET,
+} from "../../controlPlane/companies/controlPlaneModalKeys.js";
 import { adminTenantsStyles as styles } from "./adminTenantsStyles";
 
 const DELETE_LIST_ITEMS = [
@@ -30,40 +37,47 @@ export default function AdminTenantDeleteModal({
     !isSubmitting;
 
   const footer = (
-    <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-      <button
-        type="button"
-        style={styles.secondaryButton}
-        onClick={onClose}
-        disabled={isSubmitting}
-      >
-        Отмена
-      </button>
-      <button
-        type="button"
-        style={{
-          ...styles.primaryButton,
-          background: canDelete ? "#dc2626" : "#94a3b8",
-          cursor: canDelete ? "pointer" : "not-allowed",
-        }}
-        onClick={onConfirm}
-        disabled={!canDelete}
-      >
-        {isSubmitting ? "Удаление..." : "Удалить"}
-      </button>
+    <div className="platform-modal-footer" data-platform-modal-no-drag>
+      <div className="platform-modal-footer__leading" />
+      <div className="platform-modal-footer__actions">
+        <button
+          type="button"
+          className="platform-quick-create-modal__btn platform-quick-create-modal__btn--ghost"
+          onClick={onClose}
+          disabled={isSubmitting}
+        >
+          Отмена
+        </button>
+        <button
+          type="button"
+          className="platform-quick-create-modal__btn platform-quick-create-modal__btn--primary"
+          style={{
+            background: canDelete ? "#dc2626" : "#94a3b8",
+            borderColor: canDelete ? "#dc2626" : "#94a3b8",
+            cursor: canDelete ? "pointer" : "not-allowed",
+          }}
+          onClick={onConfirm}
+          disabled={!canDelete}
+        >
+          {isSubmitting ? "Удаление..." : "Удалить"}
+        </button>
+      </div>
     </div>
   );
 
   return (
     <PlatformModal
       open={open}
-      modalKey="admin_tenant_delete_modal"
+      modalKey={CONTROL_PLANE_DELETE_COMPANY_MODAL_KEY}
       onClose={onClose}
       title="Удалить tenant?"
       ariaLabel="Подтверждение удаления tenant"
+      canCustomizeLayout
+      keepFullyVisible
+      viewportInset={CONTROL_PLANE_MODAL_VIEWPORT_INSET}
       footer={footer}
       layoutPreset="compact"
-      defaultBounds={{ width: 520, height: 420 }}
+      defaultBounds={CONTROL_PLANE_DELETE_COMPANY_MODAL_DEFAULT_BOUNDS}
       contentStyle={{ padding: "16px 20px" }}
     >
       {isSystemTenant ? (

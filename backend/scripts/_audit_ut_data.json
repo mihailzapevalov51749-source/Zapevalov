@@ -1,0 +1,17 @@
+{
+  "counts": {
+    "universal_tables": 0,
+    "universal_table_rows": 0,
+    "universal_table_columns": 0,
+    "universal_views": 0,
+    "legacy_blocks": 0
+  },
+  "pages_with_legacy_blocks": 0,
+  "comments_universal_table": 0,
+  "orphan_universal_tables": 0,
+  "pages": [],
+  "navigation": [],
+  "publication_bindings_on_ut_pages": null,
+  "workspaces_on_ut_pages": [],
+  "orphan_table_samples": []
+}

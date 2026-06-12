@@ -780,8 +780,9 @@ def delete_view(
                 ),
             )
 
-    entity.updated_by = _actor_user_id(current_user)
-    entity = repository.soft_delete_view(db, entity)
+    actor_id = _actor_user_id(current_user)
+    entity.updated_by = actor_id
+    entity = repository.soft_delete_view(db, entity, deleted_by=actor_id)
     _touch_parent_object_type(db, tenant_id, entity.object_type_id, current_user)
     return _to_read(entity, object_type)
 

@@ -31,7 +31,9 @@ import {
 import { logPlanDebug } from "./plan/planViewDebug.js";
 import { resolvePlanPresentationFromContract } from "./plan/planViewContract.js";
 import ObjectTableView from "./table/ObjectTableView";
-import ObjectPlanView from "./plan/ObjectPlanView.jsx";
+import ObjectPlanView, {
+  PlanViewLoadingState,
+} from "./plan/ObjectPlanView.jsx";
 import ObjectQuickFormView from "./quickForm/ObjectQuickFormView.jsx";
 import {
   isPlanContractMismatch,
@@ -389,16 +391,27 @@ export default function ObjectViewHost({
     planAdapterResolution.blocked,
   ]);
 
-  const resolvedViewType = String(
-    isPlanViewType(viewType)
-      ? planAdapterResolution.viewType
-      : viewType ||
-          catalogSyncedResolvedContract?.viewType ||
-          definitions.viewType ||
-          "table",
-  )
-    .trim()
-    .toLowerCase();
+  const resolvedViewType = useMemo(() => {
+    if (isPlanViewType(viewType)) {
+      return "plan";
+    }
+
+    return String(
+      viewType ||
+        catalogSyncedResolvedContract?.viewType ||
+        definitions.viewType ||
+        "table",
+    )
+      .trim()
+      .toLowerCase();
+  }, [
+    viewType,
+    catalogSyncedResolvedContract?.viewType,
+    definitions.viewType,
+  ]);
+
+  const isPlanViewContractPending =
+    isPlanViewType(viewType) && definitions.loading;
 
   const objectTabRouteKey = useMemo(
     () =>
@@ -746,6 +759,19 @@ export default function ObjectViewHost({
     .join(" ");
 
   if (resolvedViewType === "plan") {
+    if (isPlanViewContractPending) {
+      return (
+        <div
+          className={rootClassName}
+          data-object-view-host="plan"
+          data-runtime-source={source || undefined}
+          style={OBJECT_VIEW_HOST_TABLE_LAYOUT_STYLE}
+        >
+          <PlanViewLoadingState minHeight={minHeight} />
+        </div>
+      );
+    }
+
     return (
       <div
         className={rootClassName}

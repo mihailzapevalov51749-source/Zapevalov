@@ -4,8 +4,6 @@ import re
 
 from app.modules.navigation.models import NavigationItem
 
-_REMOVED_OFFICE_MENU_TITLES = {"мои задачи"}
-
 _REMOVED_DESIGNER_SYSTEM_KEYS = {
     "designer.relations",
     "designer.views",
@@ -38,19 +36,19 @@ def _normalized_url(item: NavigationItem) -> str:
 
 
 def is_removed_office_navigation_item(item: NavigationItem) -> bool:
+    if item.type == "object_type" or item.object_type_id is not None:
+        return False
+
     title = _normalized_title(item)
     url = _normalized_url(item)
 
-    if title in _REMOVED_OFFICE_MENU_TITLES:
+    if item.type == "universal_table":
         return True
 
     if item.system_key in {"office.my_tasks", "runtime.my_tasks"}:
         return True
 
     if "/my-tasks" in url:
-        return True
-
-    if item.type == "universal_table" and title in _REMOVED_OFFICE_MENU_TITLES:
         return True
 
     return False

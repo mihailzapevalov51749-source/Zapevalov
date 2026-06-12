@@ -96,15 +96,31 @@
   gap: 4px;
   margin-top: 4px;
   width: 100%;
+  padding: 2px 4px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
   font-size: 10px;
   font-weight: 400;
   color: #aeb7c5;
   line-height: 1;
   text-align: center;
   user-select: none;
-  pointer-events: none;
+  cursor: pointer;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  transition: color 140ms ease, background 140ms ease;
+}
+
+.app-sidebar-today-active-time:hover {
+  color: #94a3b8;
+  background: #f8fafc;
+}
+
+.app-sidebar-today-active-time:focus-visible {
+  outline: 2px solid color-mix(in srgb, #6941c6 35%, transparent);
+  outline-offset: 1px;
 }
 
 .app-sidebar-today-active-time__dot {
