@@ -335,6 +335,67 @@ describe("Global workspace tabs UI integration", () => {
 
   });
 
+  it("bottom minimized pages panel is not rendered when empty", () => {
+    const appShellSource = readFileSync(
+      join(workspaceTabsDir, "../appShell/AppShell.jsx"),
+      "utf8",
+    );
+    const cssSource = readFileSync(
+      join(workspaceTabsDir, "../appShell/appShell.css"),
+      "utf8",
+    );
+
+    assert.match(appShellSource, /hasBottomTabs/);
+    assert.match(appShellSource, /hasBottomTabs \? \(/);
+    assert.match(cssSource, /--app-shell-bottom-tabs-height:\s*0px/);
+  });
+
+  it("bottom minimized pages panel renders when items exist", () => {
+    const appShellSource = readFileSync(
+      join(workspaceTabsDir, "../appShell/AppShell.jsx"),
+      "utf8",
+    );
+    const barSource = readFileSync(
+      join(workspaceTabsDir, "GlobalWorkspaceTabsBar.jsx"),
+      "utf8",
+    );
+
+    assert.match(appShellSource, /GlobalWorkspaceTabsBar/);
+    assert.match(appShellSource, /tabs\.length > 0/);
+    assert.match(barSource, /tabs\.map/);
+  });
+
+  it("panel unmounts after last item removed", () => {
+    const appShellSource = readFileSync(
+      join(workspaceTabsDir, "../appShell/AppShell.jsx"),
+      "utf8",
+    );
+    const providerSource = readFileSync(
+      join(workspaceTabsDir, "GlobalWorkspaceTabsProvider.jsx"),
+      "utf8",
+    );
+
+    assert.match(appShellSource, /tabs\.length > 0/);
+    assert.match(providerSource, /deleteWorkspaceTab/);
+    assert.match(providerSource, /setTabs\(remaining\)/);
+  });
+
+  it("chat composer is not covered by empty panel", () => {
+    const cssSource = readFileSync(
+      join(workspaceTabsDir, "../appShell/appShell.css"),
+      "utf8",
+    );
+
+    assert.match(
+      cssSource,
+      /\.app-shell\[data-has-bottom-tabs="true"\][^}]*--app-shell-bottom-tabs-height:\s*32px/s,
+    );
+    assert.match(
+      cssSource,
+      /\.app-shell-frame__workspace[^}]*padding-bottom:\s*var\(--app-shell-bottom-tabs-height\)/,
+    );
+  });
+
 
 
   it("bottom bar uses browser-like compact working-page tabs with close", () => {

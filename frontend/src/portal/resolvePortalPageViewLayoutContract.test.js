@@ -71,6 +71,38 @@ describe("resolvePortalPageViewLayoutContractOverrides", () => {
     assert.equal(contract.toolbarZoneId, null);
   });
 
+  it("detects corporate chat by runtime navigation system_key", () => {
+    const contract = resolvePortalPageViewLayoutContractOverrides(
+      { pathname: "/portal/2/page/128" },
+      128,
+      {
+        activeNavigationItem: {
+          system_key: "runtime.chat",
+          menu_scope: "runtime",
+          title: "Чат",
+        },
+      },
+    );
+
+    assert.equal(contract.canMinimize, false);
+    assert.equal(contract.toolbarZoneId, null);
+  });
+
+  it("does not treat unrelated CMS page as chat when system_key missing", () => {
+    const contract = resolvePortalPageViewLayoutContractOverrides(
+      { pathname: "/portal/2/page/128" },
+      128,
+      {
+        activeNavigationItem: {
+          menu_scope: "runtime",
+          title: "Главная",
+        },
+      },
+    );
+
+    assert.equal(contract.pageType, PAGE_LAYOUT_PAGE_TYPE.OFFICE_PAGE);
+  });
+
   it("returns office_page contract for portal CMS route", () => {
     const contract = resolvePortalPageViewLayoutContractOverrides(
       { pathname: "/portal/1/page/12" },
@@ -231,5 +263,13 @@ describe("PortalPageView embedded studio shell rendering", () => {
     assert.match(source, /resolvePortalPageViewLayoutContractOverrides/);
     assert.match(source, /portalLayoutContractOverrides/);
     assert.match(source, /useResolvedPageLayoutContract\(portalLayoutContractOverrides\)/);
+  });
+
+  it("does not load runtime navigation inside designer embedded shell", () => {
+    const source = readFileSync(join(portalDir, "PortalPageView.jsx"), "utf8");
+
+    assert.match(source, /enabled:\s*!isDesignerShellEmbeddedRoute/);
+    assert.match(source, /navigationError && !isDesignerShellEmbeddedRoute/);
+    assert.match(source, /resolveStudioTenantIdFromPath\(location\.pathname\)/);
   });
 });

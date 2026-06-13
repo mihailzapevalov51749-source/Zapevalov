@@ -10,6 +10,7 @@ import {
 } from "../../blocks/registry/legacyTableBlockTypes";
 
 export default function ContentSection({
+  portalId,
   section,
   blocks = [],
   sections = [],
@@ -221,6 +222,7 @@ export default function ContentSection({
       >
         {isFreeLayout ? (
           <FreeLayoutSection
+            portalId={portalId}
             section={section}
             sectionId={section.id}
             blocks={blocks}
@@ -233,6 +235,7 @@ export default function ContentSection({
           />
         ) : (
           <BlocksList
+            portalId={portalId}
             sectionId={section.id}
             blocks={blocks}
             isEditMode={isEditMode}

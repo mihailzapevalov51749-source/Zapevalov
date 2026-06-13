@@ -1,4 +1,4 @@
-﻿const API_BASE_URL = "http://127.0.0.1:8010";
+﻿import { openFileViewer } from "../../../shared/files/openFileViewer";
 
 export default function DocumentsBlockView({ block, isEditMode, onEdit }) {
   const documents =
@@ -11,6 +11,33 @@ export default function DocumentsBlockView({ block, isEditMode, onEdit }) {
     event.stopPropagation();
 
     onEdit?.(block);
+  };
+
+  const handleOpenDocument = (event, doc, fileName) => {
+    if (isEditMode) {
+      event.preventDefault();
+      event.stopPropagation();
+      onEdit?.(block);
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const rawUrl = doc.url || doc.file_url || doc.fileUrl;
+    if (!rawUrl) {
+      return;
+    }
+
+    openFileViewer({
+      fileUrl: rawUrl,
+      fileName,
+      sourceType: "documents_block",
+      context: {
+        source: "documents_block",
+        block_id: block?.id || null,
+      },
+    });
   };
 
   const DragHandle = () => (
@@ -76,7 +103,7 @@ export default function DocumentsBlockView({ block, isEditMode, onEdit }) {
           }}
         >
           {documents.map((doc, index) => {
-            const href = getFileSrc(doc.url || doc.file_url || doc.fileUrl);
+            const rawUrl = doc.url || doc.file_url || doc.fileUrl;
 
             const fileName =
               doc.name ||
@@ -94,19 +121,12 @@ export default function DocumentsBlockView({ block, isEditMode, onEdit }) {
             const type = getFileType(fileName);
 
             return (
-              <a
-                key={`${href}-${index}`}
+              <button
+                key={`${rawUrl || fileName}-${index}`}
+                type="button"
                 data-document-block-content="true"
-                href={isEditMode ? undefined : href}
-                target={isEditMode ? undefined : "_blank"}
-                rel={isEditMode ? undefined : "noreferrer"}
-                onClick={(event) => {
-                  if (isEditMode) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    onEdit?.(block);
-                  }
-                }}
+                disabled={isEditMode || !rawUrl}
+                onClick={(event) => handleOpenDocument(event, doc, fileName)}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -114,12 +134,14 @@ export default function DocumentsBlockView({ block, isEditMode, onEdit }) {
                   width: "fit-content",
                   maxWidth: "100%",
                   padding: "2px 0",
+                  border: "none",
+                  background: "transparent",
                   textDecoration: "none",
                   color: "#0f172a",
                   fontSize: 14,
                   fontWeight: 600,
                   lineHeight: 1.2,
-                  cursor: isEditMode ? "default" : "pointer",
+                  cursor: isEditMode || !rawUrl ? "default" : "pointer",
                 }}
               >
                 <FileIcon type={type} />
@@ -134,7 +156,7 @@ export default function DocumentsBlockView({ block, isEditMode, onEdit }) {
                 >
                   {displayName}
                 </span>
-              </a>
+              </button>
             );
           })}
         </div>
@@ -208,10 +230,4 @@ function getFileType(fileName = "") {
   if (["ppt", "pptx"].includes(ext)) return "ppt";
 
   return "file";
-}
-
-function getFileSrc(fileUrl) {
-  if (!fileUrl) return "";
-  if (fileUrl.startsWith("http")) return fileUrl;
-  return `${API_BASE_URL}${fileUrl}`;
 }

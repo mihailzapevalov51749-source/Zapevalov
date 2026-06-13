@@ -1,24 +1,41 @@
-import axios from "axios";
+import { platformApiClient } from "../../../api/authenticatedApiClient";
 
-const API = "http://127.0.0.1:8010";
+function requirePortalId(portalId) {
+  const normalized = Number(portalId);
+  if (!Number.isFinite(normalized) || normalized <= 0) {
+    throw new Error("Требуется portal_id для операции с разделом");
+  }
+  return normalized;
+}
 
-export async function updateSection(sectionId, data) {
-  const response = await axios.put(`${API}/sections/${sectionId}`, data);
+export async function updateSection(portalId, sectionId, data) {
+  const normalizedPortalId = requirePortalId(portalId);
+  const response = await platformApiClient.put(
+    `/sections/portal/${normalizedPortalId}/${sectionId}`,
+    data,
+  );
   return response.data;
 }
 
-export async function deleteSection(sectionId) {
-  const response = await axios.delete(`${API}/sections/${sectionId}`);
+export async function deleteSection(portalId, sectionId) {
+  const normalizedPortalId = requirePortalId(portalId);
+  const response = await platformApiClient.delete(
+    `/sections/portal/${normalizedPortalId}/${sectionId}`,
+  );
   return response.data;
 }
 
-export async function moveSection(sectionId, targetOrderIndex) {
-  const response = await axios.post(`${API}/sections/move`, [
-    {
-      id: Number(sectionId),
-      sort_order: Number(targetOrderIndex),
-    },
-  ]);
+export async function moveSection(portalId, sectionId, targetOrderIndex) {
+  const normalizedPortalId = requirePortalId(portalId);
+  const response = await platformApiClient.post(
+    `/sections/portal/${normalizedPortalId}/move`,
+    [
+      {
+        id: Number(sectionId),
+        sort_order: Number(targetOrderIndex),
+      },
+    ],
+  );
 
   return response.data;
 }

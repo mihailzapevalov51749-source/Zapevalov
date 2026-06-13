@@ -1,4 +1,4 @@
-import { apiClient } from "../../api/apiClient";
+import { buildFileUrl } from "../files/api/filesApi";
 
 /** Same accept list as left menu + webp from files API. */
 export const ICON_FILE_ACCEPT = ".svg,.png,.jpg,.jpeg,.webp";
@@ -136,8 +136,7 @@ export function resolveIconFileSrc(iconFileUrl) {
     return iconFileUrl;
   }
 
-  const baseUrl = apiClient.defaults.baseURL || "";
-  return `${baseUrl}${iconFileUrl}`;
+  return buildFileUrl(iconFileUrl);
 }
 
 export function getObjectTypeIconFields(source) {

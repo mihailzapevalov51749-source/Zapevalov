@@ -105,7 +105,7 @@ export const chatModalStyles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    cursor: "grab",
+    cursor: "pointer",
     userSelect: "none",
     flexShrink: 0,
   },
@@ -137,6 +137,17 @@ export const chatModalStyles = {
     fontSize: 28,
     fontWeight: 700,
     lineHeight: 1,
+  },
+
+  avatarPlaceholder: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: 600,
+    lineHeight: 1.15,
+    textAlign: "center",
+    padding: "0 8px",
+    userSelect: "none",
+    pointerEvents: "none",
   },
 
   avatarActions: {

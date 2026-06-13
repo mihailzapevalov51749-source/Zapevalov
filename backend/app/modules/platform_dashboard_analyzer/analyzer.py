@@ -181,7 +181,7 @@ def _component_checks(ctx: ScanContext, slug: str) -> list[EvidenceItem]:
         checks = [
             ("backend_model", "Backend", 20, backend_has_module(backend, "modules/platform")),
             ("api_endpoint", "API", 20, backend_has_router_marker(backend, "platform_designer_router") and backend_has_router_marker(backend, "platform_runtime_router")),
-            ("frontend_api", "Frontend API", 15, frontend_uses_real_api(frontend, "platformDashboardApi") or frontend_has_marker(frontend, "designerApi")),
+            ("frontend_api", "Frontend API", 15, frontend_uses_real_api(frontend, "platformEventJournalApi") or frontend_has_marker(frontend, "designerApi")),
             ("ui_integration", "UI", 20, frontend_has_module(frontend, "modules/designer") and frontend_has_module(frontend, "modules/objectViews")),
             ("persistence", "Persistence", 15, backend_has_table(backend, "runtime_entities") and backend_has_table(backend, "designer_object_types")),
             ("tests", "Tests", 10, backend_has_tests(backend, "platform", "object_view")),
@@ -342,10 +342,7 @@ def _component_checks(ctx: ScanContext, slug: str) -> list[EvidenceItem]:
             ("tests", "Tests", 10, backend_has_tests(backend, "ai_fix")),
         ]
 
-    no_fallback = slug != "object-platform" or "platformDevelopmentManifest" not in frontend.file_contents.get(
-        "modules/platformDashboard/pages/PlatformDevelopmentPage.jsx",
-        "",
-    )
+    no_fallback = slug != "object-platform" or not frontend_has_marker(frontend, "platformDevelopmentManifest")
     checks.append(("fallback_removed", "Fallback удалён", 0, no_fallback))
 
     return [EvidenceItem(key=key, label=label, weight=weight, passed=passed) for key, label, weight, passed in checks]

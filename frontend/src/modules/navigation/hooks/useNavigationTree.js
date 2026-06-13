@@ -73,6 +73,7 @@ export default function useNavigationTree(portalId, options = {}) {
   const mode = options?.mode;
   const context = options?.context;
   const forEditMode = Boolean(options?.forEditMode);
+  const enabled = options?.enabled !== false;
   const [navigation, setNavigation] = useState([]);
   const [isLoadingNavigation, setIsLoadingNavigation] = useState(false);
   const [navigationError, setNavigationError] = useState("");
@@ -86,6 +87,10 @@ export default function useNavigationTree(portalId, options = {}) {
   }, [portalId]);
 
   const reloadNavigation = useCallback(async () => {
+    if (!enabled) {
+      return;
+    }
+
     const { requestId } = beginNavigationReloadRequest(reloadRequestSeqRef);
     const requestPortalId = portalId;
 
@@ -152,9 +157,16 @@ export default function useNavigationTree(portalId, options = {}) {
         setIsLoadingNavigation(false);
       }
     }
-  }, [portalId, scope, mode, context, forEditMode]);
+  }, [portalId, scope, mode, context, forEditMode, enabled]);
 
   useEffect(() => {
+    if (!enabled) {
+      setNavigation([]);
+      setNavigationError("");
+      setIsLoadingNavigation(false);
+      return;
+    }
+
     if (previousPortalIdRef.current !== portalId) {
       previousPortalIdRef.current = portalId;
       setNavigation([]);
@@ -162,7 +174,7 @@ export default function useNavigationTree(portalId, options = {}) {
     }
 
     reloadNavigation();
-  }, [portalId, reloadNavigation]);
+  }, [portalId, reloadNavigation, enabled]);
 
   return {
     navigation,

@@ -1,9 +1,9 @@
-import { apiClient } from "../../api/apiClient";
+import { platformApiClient } from "../../api/authenticatedApiClient";
 
 const homePageIdByPortal = new Map();
 
 async function fetchPortalHomePageId(normalizedPortalId) {
-  const { data } = await apiClient.get(`/pages/portal/${normalizedPortalId}`);
+  const { data } = await platformApiClient.get(`/pages/portal/${normalizedPortalId}`);
   const pages = Array.isArray(data) ? data : [];
   const homePage =
     pages.find((page) => page?.is_home === true) ||

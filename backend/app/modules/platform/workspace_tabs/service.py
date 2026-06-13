@@ -19,6 +19,13 @@ from app.modules.platform.workspace_tabs.schemas import (
     WorkspaceTabReorder,
     WorkspaceTabUpdate,
 )
+from app.modules.platform.workspace_tabs.tenant_access import (
+    assert_user_has_workspace_tab_tenant_access,
+    get_workspace_tab_for_user,
+    resolve_tab_tenant_id,
+    resolve_tenant_id_from_route,
+    user_can_access_workspace_tab_tenant,
+)
 from app.modules.portals.models import Portal
 from app.modules.users.models import User
 
@@ -130,13 +137,28 @@ def _get_owned_tab(
     current_user: User,
     tab_id: UUID,
 ) -> UserWorkspaceTab:
-    entity = repository.get_tab_for_user(db, actor_user_id(current_user), tab_id)
+    entity = get_workspace_tab_for_user(db, current_user, tab_id)
     if not entity:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Workspace tab не найден",
         )
     return entity
+
+
+def _resolve_effective_tenant_id(
+    *,
+    tenant_id: int | None,
+    route: str,
+) -> int | None:
+    route_tenant_id = resolve_tenant_id_from_route(route)
+    if tenant_id is not None and route_tenant_id is not None:
+        if int(tenant_id) != int(route_tenant_id):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="tenant_id не соответствует tenant в route",
+            )
+    return tenant_id if tenant_id is not None else route_tenant_id
 
 
 def list_workspace_tabs(
@@ -147,13 +169,24 @@ def list_workspace_tabs(
 ) -> list[WorkspaceTabRead]:
     if tenant_id is not None:
         _ensure_tenant_exists(db, tenant_id)
+        assert_user_has_workspace_tab_tenant_access(db, current_user, tenant_id)
 
     entities = repository.list_tabs_for_user(
         db,
         actor_user_id(current_user),
         tenant_id=tenant_id,
     )
-    return [WorkspaceTabRead.model_validate(entity) for entity in entities]
+
+    visible_entities = [
+        entity
+        for entity in entities
+        if user_can_access_workspace_tab_tenant(
+            db,
+            current_user,
+            resolve_tab_tenant_id(entity),
+        )
+    ]
+    return [WorkspaceTabRead.model_validate(entity) for entity in visible_entities]
 
 
 def create_workspace_tab(
@@ -169,8 +202,23 @@ def create_workspace_tab(
         context_json=payload.context_json,
     )
 
-    _ensure_tenant_exists(db, payload.tenant_id)
-    _can_manage_tab(current_user, module_key=module_key, tenant_id=payload.tenant_id)
+    effective_tenant_id = _resolve_effective_tenant_id(
+        tenant_id=payload.tenant_id,
+        route=route,
+    )
+    if effective_tenant_id is not None:
+        _ensure_tenant_exists(db, effective_tenant_id)
+        assert_user_has_workspace_tab_tenant_access(
+            db,
+            current_user,
+            effective_tenant_id,
+        )
+
+    _can_manage_tab(
+        current_user,
+        module_key=module_key,
+        tenant_id=effective_tenant_id,
+    )
 
     user_id = actor_user_id(current_user)
     existing = repository.get_tab_by_route(db, user_id, route)
@@ -190,7 +238,7 @@ def create_workspace_tab(
 
     entity = UserWorkspaceTab(
         user_id=user_id,
-        tenant_id=payload.tenant_id,
+        tenant_id=effective_tenant_id,
         title=title,
         route=route,
         module_key=module_key,
@@ -293,6 +341,13 @@ def reorder_workspace_tabs(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Одна или несколько вкладок не найдены",
+        )
+
+    for entity in entities.values():
+        assert_user_has_workspace_tab_tenant_access(
+            db,
+            current_user,
+            resolve_tab_tenant_id(entity),
         )
 
     for item in payload.items:

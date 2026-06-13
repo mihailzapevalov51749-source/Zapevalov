@@ -1,0 +1,57 @@
+.chat-settings-modal__avatar-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-settings-modal__delete-confirm {
+  margin-top: 4px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+}
+
+.chat-settings-modal__delete-confirm-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #991b1b;
+}
+
+.chat-settings-modal__delete-confirm-text {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #7f1d1d;
+}
+
+.chat-settings-modal__delete-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.platform-quick-create-modal__btn--danger {
+  min-width: 88px;
+  min-height: 36px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  background: #ffffff;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.platform-quick-create-modal__btn--danger:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.platform-quick-create-modal__btn--danger:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}

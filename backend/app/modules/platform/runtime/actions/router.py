@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.modules.platform.runtime.actions import service
 from app.modules.platform.runtime.actions.schemas import PublishedRuntimeAction
-from app.modules.platform.shared.dependencies import require_tenant
+from app.modules.platform.shared.dependencies import require_tenant_membership
 
 TenantIdPath = Annotated[
     int,
@@ -38,7 +38,7 @@ def list_actions_for_placement(
     object_type_key: ObjectTypeKeyPath,
     placement_key: PlacementKeyPath,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.get_actions_for_placement(
         db,

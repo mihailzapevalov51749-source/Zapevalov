@@ -86,9 +86,23 @@ export function isBlockedNotificationTarget(targetOrContext) {
   );
 }
 
+export function parsePositivePortalId(value) {
+  const normalized = normalizeId(value);
+  if (!normalized) {
+    return null;
+  }
+
+  const parsed = Number(normalized);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  return parsed;
+}
+
 export function resolveRuntimeRouteFromPublishedRef(
   publishedRuntimeRef,
-  portalId = 1,
+  portalId = null,
 ) {
   if (!publishedRuntimeRef || typeof publishedRuntimeRef !== "object") {
     return null;
@@ -110,7 +124,10 @@ export function resolveRuntimeRouteFromPublishedRef(
     return null;
   }
 
-  const pid = Number(portalId) || 1;
+  const pid = parsePositivePortalId(portalId);
+  if (!pid) {
+    return null;
+  }
 
   return `/portal/${pid}/object-types/${encodeURIComponent(objectTypeKey)}`;
 }
@@ -118,15 +135,50 @@ export function resolveRuntimeRouteFromPublishedRef(
 export function resolvePortalIdFromPathname(pathname = "") {
   const portalMatch = String(pathname || "").match(/\/portal\/(\d+)/);
   if (portalMatch) {
-    return Number(portalMatch[1]) || 1;
+    return parsePositivePortalId(portalMatch[1]);
   }
 
   const designerMatch = String(pathname || "").match(/\/designer\/tenant\/(\d+)/);
   if (designerMatch) {
-    return Number(designerMatch[1]) || 1;
+    return parsePositivePortalId(designerMatch[1]);
   }
 
-  return 1;
+  return null;
+}
+
+export function resolveNotificationTenantId(notification = {}, pathname = "") {
+  if (!notification || typeof notification !== "object") {
+    return resolvePortalIdFromPathname(pathname);
+  }
+
+  const context =
+    notification.context && typeof notification.context === "object"
+      ? notification.context
+      : {};
+
+  const candidates = [
+    context.tenant_id,
+    context.tenantId,
+    context.portal_id,
+    context.portalId,
+    notification.tenant_id,
+    notification.tenantId,
+    notification.portal_id,
+    notification.portalId,
+    notification.detail?.context?.tenant_id,
+    notification.detail?.context?.tenantId,
+    notification.detail?.context?.portal_id,
+    notification.detail?.context?.portalId,
+  ];
+
+  for (const candidate of candidates) {
+    const parsed = parsePositivePortalId(candidate);
+    if (parsed) {
+      return parsed;
+    }
+  }
+
+  return resolvePortalIdFromPathname(pathname);
 }
 
 export function resolveObjectOverlayContext(pendingTarget) {

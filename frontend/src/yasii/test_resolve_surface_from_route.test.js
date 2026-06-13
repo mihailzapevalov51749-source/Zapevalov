@@ -17,8 +17,17 @@ describe("resolveSurfaceFromRoute", () => {
     const resolved = resolveSurfaceFromRoute("/portal/1/object-types/contacts/data");
 
     assert.equal(resolved.surfaceId, EMBEDDED_SURFACE_IDS.REGISTRY);
+    assert.equal(resolved.contextData.tenantId, "1");
     assert.equal(resolved.contextData.registryId, "contacts");
     assert.match(resolved.contextData.widgetId, /^registry-/);
+  });
+
+  it("resolves portal page route with tenant and page id", () => {
+    const resolved = resolveSurfaceFromRoute("/portal/15/page/42");
+
+    assert.equal(resolved.surfaceId, EMBEDDED_SURFACE_IDS.GLOBAL);
+    assert.equal(resolved.contextData.tenantId, "15");
+    assert.equal(resolved.contextData.metadata.pageId, "42");
   });
 
   it("resolves designer object data route to registry surface", () => {

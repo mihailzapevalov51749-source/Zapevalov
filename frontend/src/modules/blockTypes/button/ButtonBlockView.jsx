@@ -4,7 +4,7 @@ import { updateBlock } from "../../blocks/services/blockService";
 
 const API_BASE_URL = "http://127.0.0.1:8010";
 
-export default function ButtonBlockView({ block, isEditMode, onBlockUpdated }) {
+export default function ButtonBlockView({ portalId, block, isEditMode, onBlockUpdated }) {
   const settings = block.settings || {};
   const content = block.content || {};
 
@@ -47,7 +47,7 @@ export default function ButtonBlockView({ block, isEditMode, onBlockUpdated }) {
     try {
       setIsSaving(true);
 
-      const savedBlock = await updateBlock(block.id, {
+      const savedBlock = await updateBlock(portalId, block.id, {
         title: showTitle ? nextLabel : block.title,
         content: {
           ...(block.content || {}),

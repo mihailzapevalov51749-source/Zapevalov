@@ -20,6 +20,8 @@ import {
   writeControlPlaneMenuState,
 } from "../../../shared/uiStorage/controlPlaneUiStorage.js";
 import { isControlPlanePath } from "../../controlPlane/config/controlPlanePaths.js";
+import { useChatUnread } from "../../chats/context/ChatUnreadProvider.jsx";
+import { isRuntimeChatNavigationItem } from "../../../portal/resolveCorporateChatPage.js";
 
 const BASE = {
   rowHeight: 40,
@@ -135,6 +137,12 @@ export default function MenuItem({
   routeOwner = null,
   tenantId = 1,
 }) {
+  const { totalUnreadCount } = useChatUnread();
+  const showChatUnreadBadge =
+    !isEditMode &&
+    isRuntimeChatNavigationItem(item) &&
+    Number(totalUnreadCount) > 0;
+
   const iconSource = useMemo(() => resolveSidebarNavigationIconSource(item), [item]);
 
   const [isHovered, setIsHovered] = useState(false);
@@ -486,6 +494,33 @@ export default function MenuItem({
           </span>
           )}
         </div>
+
+        {!isEditMode && showChatUnreadBadge && (
+          <span
+            style={{
+              minWidth: sidebarCollapsed ? 16 : 18,
+              height: sidebarCollapsed ? 16 : 18,
+              padding: sidebarCollapsed ? "0 4px" : "0 5px",
+              borderRadius: 999,
+              background: "#2563EB",
+              color: "#FFFFFF",
+              fontSize: sidebarCollapsed ? 9 : 10,
+              fontWeight: 700,
+              lineHeight: sidebarCollapsed ? "14px" : "16px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              boxSizing: "border-box",
+              position: sidebarCollapsed ? "absolute" : "static",
+              top: sidebarCollapsed ? 4 : undefined,
+              right: sidebarCollapsed ? 4 : undefined,
+            }}
+            aria-label={`Непрочитанные сообщения: ${totalUnreadCount}`}
+          >
+            {totalUnreadCount > 99 ? "99+" : totalUnreadCount}
+          </span>
+        )}
 
         {isEditMode && !sidebarCollapsed && (
           <button

@@ -33,6 +33,8 @@ import {
   PAGE_LAYOUT_TOOLBAR_ZONE,
   useResolvedPageLayoutContract,
 } from "../shared/appShell/pageLayoutContract";
+import { YasiiSurfaceContextProvider } from "../yasii/context/YasiiSurfaceContext.jsx";
+import { buildWorkspaceSurfaceValue } from "../yasii/runtime/yasiiRuntimeSurfaceContext.js";
 
 const WORKSPACE_HOME_DEBUG = import.meta.env?.DEV === true;
 
@@ -347,6 +349,26 @@ export default function PortalWorkspaceRuntimePage() {
   const searchContext = useHeaderSearchContext(headerSearchContextInput);
   const headerSearch = useHeaderSearchController({ searchContext, enabled: true });
 
+  const yasiiWorkspaceSurfaceValue = useMemo(
+    () =>
+      buildWorkspaceSurfaceValue({
+        tenantId: portalId,
+        pathname: location.pathname,
+        workspaceSlug,
+        workspaceId: workspace?.id,
+        tabSlug: activeTab?.slug,
+        tabTitle: activeTab?.title,
+      }),
+    [
+      activeTab?.slug,
+      activeTab?.title,
+      location.pathname,
+      portalId,
+      workspace?.id,
+      workspaceSlug,
+    ],
+  );
+
   const renderContent = useCallback(() => {
     if (loading) return <SystemMessage>Загрузка рабочего пространства...</SystemMessage>;
     if (error) return <SystemMessage>{error}</SystemMessage>;
@@ -419,7 +441,8 @@ export default function PortalWorkspaceRuntimePage() {
   ]);
 
   return (
-    <PortalLayout
+    <YasiiSurfaceContextProvider value={yasiiWorkspaceSurfaceValue}>
+      <PortalLayout
       portalId={portalId}
       navigation={navigation}
       activePageId={location.pathname}
@@ -506,5 +529,6 @@ export default function PortalWorkspaceRuntimePage() {
         </div>
       </div>
     </PortalLayout>
+    </YasiiSurfaceContextProvider>
   );
 }

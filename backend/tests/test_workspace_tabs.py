@@ -77,6 +77,9 @@ def test_create_workspace_tab_accepts_profile_panel_page_type() -> None:
         "app.modules.platform.workspace_tabs.service._ensure_tenant_exists",
         return_value=None,
     ), patch(
+        "app.modules.platform.workspace_tabs.service.assert_user_has_workspace_tab_tenant_access",
+        return_value=None,
+    ), patch(
         "app.modules.platform.workspace_tabs.service.repository.get_tab_by_route",
         return_value=None,
     ), patch(
@@ -109,6 +112,9 @@ def test_create_workspace_tab_persists_new_tab() -> None:
         "app.modules.platform.workspace_tabs.service._ensure_tenant_exists",
         return_value=None,
     ), patch(
+        "app.modules.platform.workspace_tabs.service.assert_user_has_workspace_tab_tenant_access",
+        return_value=None,
+    ), patch(
         "app.modules.platform.workspace_tabs.service.repository.get_tab_by_route",
         return_value=None,
     ), patch(
@@ -139,6 +145,9 @@ def test_create_workspace_tab_duplicate_route_returns_existing() -> None:
 
     with patch(
         "app.modules.platform.workspace_tabs.service._ensure_tenant_exists",
+        return_value=None,
+    ), patch(
+        "app.modules.platform.workspace_tabs.service.assert_user_has_workspace_tab_tenant_access",
         return_value=None,
     ), patch(
         "app.modules.platform.workspace_tabs.service.repository.get_tab_by_route",
@@ -203,7 +212,7 @@ def test_update_workspace_tab_requires_ownership() -> None:
     other_tab = _tab_entity(user_id=2)
 
     with patch(
-        "app.modules.platform.workspace_tabs.service.repository.get_tab_for_user",
+        "app.modules.platform.workspace_tabs.service.get_workspace_tab_for_user",
         return_value=None,
     ):
         with pytest.raises(HTTPException) as exc:
@@ -223,7 +232,7 @@ def test_cannot_update_another_users_tab_even_if_found() -> None:
     tab = _tab_entity(user_id=1)
 
     with patch(
-        "app.modules.platform.workspace_tabs.service.repository.get_tab_for_user",
+        "app.modules.platform.workspace_tabs.service.get_workspace_tab_for_user",
         return_value=tab,
     ), patch(
         "app.modules.platform.workspace_tabs.service.repository.save_tab",
@@ -246,7 +255,7 @@ def test_delete_workspace_tab_own_tab() -> None:
     tab = _tab_entity(user_id=1)
 
     with patch(
-        "app.modules.platform.workspace_tabs.service.repository.get_tab_for_user",
+        "app.modules.platform.workspace_tabs.service.get_workspace_tab_for_user",
         return_value=tab,
     ), patch(
         "app.modules.platform.workspace_tabs.service.repository.delete_tab",
@@ -262,7 +271,7 @@ def test_open_workspace_tab_updates_last_opened_at() -> None:
     tab = _tab_entity(user_id=1)
 
     with patch(
-        "app.modules.platform.workspace_tabs.service.repository.get_tab_for_user",
+        "app.modules.platform.workspace_tabs.service.get_workspace_tab_for_user",
         return_value=tab,
     ), patch(
         "app.modules.platform.workspace_tabs.service.repository.touch_tab_opened",
@@ -350,6 +359,9 @@ def test_create_allows_studio_for_designer() -> None:
 
     with patch(
         "app.modules.platform.workspace_tabs.service._ensure_tenant_exists",
+        return_value=None,
+    ), patch(
+        "app.modules.platform.workspace_tabs.service.assert_user_has_workspace_tab_tenant_access",
         return_value=None,
     ), patch(
         "app.modules.platform.workspace_tabs.service.repository.get_tab_by_route",

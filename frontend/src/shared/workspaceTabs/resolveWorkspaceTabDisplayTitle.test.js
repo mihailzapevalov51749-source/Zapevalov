@@ -145,6 +145,24 @@ describe("resolveWorkspaceTabDisplayTitle", () => {
     assert.doesNotMatch(title, /Лисас Идеева/i);
   });
 
+  it("formats cloned tenant chat page by runtime.chat system_key", () => {
+    const title = resolveWorkspaceTabDisplayTitle({
+      title: "Страница 128",
+      route: "/portal/2/page/128",
+      module_key: "office",
+      page_type: "page",
+      context_json: {
+        pageId: 128,
+        system_key: "runtime.chat",
+        menu_scope: "runtime",
+        pageTitle: "Чат",
+        layoutPageType: PAGE_LAYOUT_PAGE_TYPE.OFFICE_PAGE,
+      },
+    });
+
+    assert.equal(title, "Офис: Чат");
+  });
+
   it("formats portal dashboard as Офис: Развитие продукта", () => {
     const title = resolveWorkspaceTabDisplayTitle({
       route: "/portal/1/platform",

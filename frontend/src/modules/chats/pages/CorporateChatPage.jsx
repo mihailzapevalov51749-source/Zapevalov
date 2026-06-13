@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import ChatCreateModal from "../components/ChatCreateModal";
 import ChatParticipantsModal from "../components/ChatParticipantsModal";
@@ -14,13 +14,23 @@ import {
   createChatMessage,
   deleteChatMessage,
   getChatMessages,
-  getChats,
+  getOrCreateDirectChat,
   updateChat,
   updateChatMessage,
 } from "../api/chatsApi";
+import { useChatUnread } from "../context/ChatUnreadProvider";
+import { getLatestMessageId } from "../utils/chatUnreadUtils";
+import { isChatCreator } from "../utils/chatAccessUtils";
+import {
+  hasActiveChatMessageActivityChanged,
+  isMessagesContainerNearBottom,
+  mergeChatMessages,
+  shouldRefreshActiveChatMessages,
+} from "../utils/chatMessageUtils";
 
 import { buildFileUrl } from "../../../shared/files/api/filesApi";
 import { buildFileDiscussionContext } from "../../../shared/files/services/fileDiscussionContext";
+import { getMe } from "../../../api/authApi";
 
 import {
   PAGE_LAYOUT_PAGE_TYPE,
@@ -71,7 +81,7 @@ function getFileSize(file = {}) {
   return file.file_size || file.fileSize || file.size || null;
 }
 
-export default function CorporateChatPage() {
+export default function CorporateChatPage({ tenantId }) {
   useResolvedPageLayoutContract({
     pageType: PAGE_LAYOUT_PAGE_TYPE.CHAT_ROOM,
     toolbarZoneId: PAGE_LAYOUT_TOOLBAR_ZONE.APP_HEADER,
@@ -79,8 +89,19 @@ export default function CorporateChatPage() {
   });
 
   const messagesRef = useRef(null);
+  const lastMarkedReadRef = useRef({ key: "" });
+  const previousActiveChatRef = useRef(null);
+  const shouldStickToBottomRef = useRef(true);
+  const isRefreshingActiveMessagesRef = useRef(false);
 
-  const [chats, setChats] = useState([]);
+  const {
+    chats,
+    isLoadingChats,
+    refreshChats,
+    upsertChat,
+    markChatAsRead,
+  } = useChatUnread();
+
   const [activeChatId, setActiveChatId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [highlightedMessageId, setHighlightedMessageId] = useState(null);
@@ -90,13 +111,21 @@ export default function CorporateChatPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
 
-  const [isLoadingChats, setIsLoadingChats] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const [error, setError] = useState("");
 
   const activeChat = useMemo(() => {
-    return chats.find((chat) => chat.id === activeChatId) || null;
+    return (
+      chats.find((chat) => String(chat.id) === String(activeChatId)) || null
+    );
   }, [chats, activeChatId]);
+
+  const canManageActiveChat = isChatCreator(activeChat, currentUser);
+
+  const upsertChatInList = (chat) => {
+    upsertChat(chat);
+  };
 
   const rootMessages = useMemo(() => {
     return messages.filter((message) => !getParentMessageId(message));
@@ -118,54 +147,154 @@ export default function CorporateChatPage() {
     }, {});
   }, [messages]);
 
-  const loadChats = async () => {
-    try {
-      setError("");
-      setIsLoadingChats(true);
-
-      const data = await getChats();
-      const normalizedChats = Array.isArray(data) ? data : [];
-
-      setChats(normalizedChats);
-      setActiveChatId((prev) => prev || normalizedChats[0]?.id || null);
-    } catch (requestError) {
-      console.error("Ошибка загрузки чатов", requestError);
-      setError("Не удалось загрузить чаты");
-    } finally {
-      setIsLoadingChats(false);
+  useEffect(() => {
+    if (activeChatId || !chats.length) {
+      return;
     }
-  };
 
-  const loadMessages = async (chatId) => {
+    setActiveChatId(chats[0]?.id || null);
+  }, [activeChatId, chats]);
+
+  const loadMessages = useCallback(async (chatId, { background = false } = {}) => {
     if (!chatId) return;
 
+    if (background && isRefreshingActiveMessagesRef.current) {
+      return;
+    }
+
     try {
-      setError("");
-      setIsLoadingMessages(true);
+      if (!background) {
+        setError("");
+        setIsLoadingMessages(true);
+      } else {
+        isRefreshingActiveMessagesRef.current = true;
+      }
 
       const data = await getChatMessages(chatId, {
         limit: 100,
         offset: 0,
       });
 
-      setMessages(Array.isArray(data?.items) ? data.items : []);
+      const incomingMessages = Array.isArray(data?.items) ? data.items : [];
+
+      setMessages((previousMessages) =>
+        background
+          ? mergeChatMessages(previousMessages, incomingMessages)
+          : incomingMessages,
+      );
     } catch (requestError) {
       console.error("Ошибка загрузки сообщений", requestError);
-      setError("Не удалось загрузить сообщения");
-    } finally {
-      setIsLoadingMessages(false);
-    }
-  };
 
-  useEffect(() => {
-    loadChats();
+      if (!background) {
+        setError("Не удалось загрузить сообщения");
+      }
+    } finally {
+      if (!background) {
+        setIsLoadingMessages(false);
+      } else {
+        isRefreshingActiveMessagesRef.current = false;
+      }
+    }
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    getMe()
+      .then((user) => {
+        if (!cancelled) {
+          setCurrentUser(user);
+        }
+      })
+      .catch((requestError) => {
+        console.error("Ошибка загрузки текущего пользователя", requestError);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    previousActiveChatRef.current = null;
+    shouldStickToBottomRef.current = true;
     loadMessages(activeChatId);
+    lastMarkedReadRef.current.key = "";
+  }, [activeChatId, loadMessages]);
+
+  useEffect(() => {
+    if (!activeChatId || !activeChat) {
+      previousActiveChatRef.current = null;
+      return;
+    }
+
+    const previousChat = previousActiveChatRef.current;
+    previousActiveChatRef.current = activeChat;
+
+    if (
+      !previousChat
+      || String(previousChat.id) !== String(activeChat.id)
+      || !hasActiveChatMessageActivityChanged(previousChat, activeChat)
+    ) {
+      return;
+    }
+
+    if (
+      !shouldRefreshActiveChatMessages({
+        activeChat,
+        localMessages: messages,
+      })
+    ) {
+      return;
+    }
+
+    loadMessages(activeChatId, { background: true });
+  }, [activeChat, activeChatId, loadMessages, messages]);
+
+  useEffect(() => {
+    if (!activeChatId || isLoadingMessages) {
+      return;
+    }
+
+    const latestMessageId = getLatestMessageId(messages);
+
+    if (!latestMessageId) {
+      return;
+    }
+
+    const markKey = `${activeChatId}:${latestMessageId}`;
+
+    if (lastMarkedReadRef.current.key === markKey) {
+      return;
+    }
+
+    lastMarkedReadRef.current.key = markKey;
+    markChatAsRead(activeChatId, latestMessageId);
+  }, [activeChatId, isLoadingMessages, markChatAsRead, messages]);
+
+  useEffect(() => {
+    const container = messagesRef.current;
+
+    if (!container) {
+      return undefined;
+    }
+
+    function handleScroll() {
+      shouldStickToBottomRef.current = isMessagesContainerNearBottom(container);
+    }
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      container.removeEventListener("scroll", handleScroll);
+    };
   }, [activeChatId]);
 
   useEffect(() => {
+    if (!shouldStickToBottomRef.current) {
+      return;
+    }
+
     requestAnimationFrame(() => {
       const container = messagesRef.current;
 
@@ -232,13 +361,42 @@ export default function CorporateChatPage() {
       avatar_url: null,
       avatar_settings: null,
       workspace_id: null,
+      tenant_id: tenantId,
       participant_ids: payload.participant_ids || [],
     });
 
-    await loadChats();
-
     if (createdChat?.id) {
+      upsertChatInList(createdChat);
       setActiveChatId(createdChat.id);
+      return;
+    }
+
+    await refreshChats({ background: true });
+  };
+
+  const handleOpenDirectChat = async (user) => {
+    const targetUserId = user?.id ?? user?.user_id ?? user?.userId;
+
+    if (!targetUserId) {
+      setError("Не удалось определить пользователя для личного чата");
+      throw new Error("Не удалось определить пользователя для личного чата");
+    }
+
+    try {
+      setError("");
+
+      const chat = await getOrCreateDirectChat(targetUserId, tenantId);
+
+      if (!chat?.id) {
+        throw new Error("Сервер не вернул личный чат");
+      }
+
+      upsertChatInList(chat);
+      setActiveChatId(chat.id);
+    } catch (requestError) {
+      console.error("Ошибка открытия личного чата", requestError);
+      setError("Не удалось открыть личный чат");
+      throw requestError;
     }
   };
 
@@ -256,19 +414,10 @@ export default function CorporateChatPage() {
       });
 
       if (updatedChat) {
-        setChats((prev) =>
-          prev.map((chat) =>
-            String(chat.id) === String(activeChatId)
-              ? {
-                  ...chat,
-                  ...updatedChat,
-                }
-              : chat
-          )
-        );
+        upsertChatInList(updatedChat);
       }
 
-      await loadChats();
+      await refreshChats({ background: true });
     } catch (requestError) {
       console.error("Ошибка сохранения настроек чата", requestError);
       setError("Не удалось сохранить настройки чата");
@@ -287,8 +436,9 @@ export default function CorporateChatPage() {
     });
 
     setMessages((prev) => [...prev, message]);
+    shouldStickToBottomRef.current = true;
 
-    await loadChats();
+    await refreshChats({ background: true });
   };
 
   const handleReply = async (payload = {}) => {
@@ -308,8 +458,9 @@ export default function CorporateChatPage() {
     });
 
     setMessages((prev) => [...prev, message]);
+    shouldStickToBottomRef.current = true;
 
-    await loadChats();
+    await refreshChats({ background: true });
   };
 
   const handleReaction = async (payload = {}) => {
@@ -351,7 +502,7 @@ export default function CorporateChatPage() {
       prev.filter((message) => String(message.id) !== String(messageId))
     );
 
-    await loadChats();
+    await refreshChats({ background: true });
   };
 
   const handleOpenFile = (file) => {
@@ -395,14 +546,18 @@ export default function CorporateChatPage() {
       <ChatSidebar
         chats={chats}
         activeChatId={activeChatId}
+        currentUser={currentUser}
         isLoadingChats={isLoadingChats}
         onSelectChat={setActiveChatId}
+        onOpenDirectChat={handleOpenDirectChat}
         onCreateGroupChat={() => setIsCreateChatOpen(true)}
+        tenantId={tenantId}
       />
 
       <ChatWindow
         messagesRef={messagesRef}
         activeChat={activeChat}
+        currentUser={currentUser}
         rootMessages={rootMessages}
         repliesByParentId={repliesByParentId}
         highlightedMessageId={highlightedMessageId}
@@ -413,7 +568,11 @@ export default function CorporateChatPage() {
         onReaction={handleReaction}
         onEditMessage={handleEditMessage}
         onDeleteMessage={handleDeleteMessage}
-        onOpenSettings={() => setIsSettingsOpen((prev) => !prev)}
+        onOpenSettings={() => {
+          if (isChatCreator(activeChat, currentUser)) {
+            setIsSettingsOpen(true);
+          }
+        }}
         onOpenParticipants={() => setIsParticipantsOpen((prev) => !prev)}
         onOpenFile={handleOpenFile}
       />
@@ -422,11 +581,12 @@ export default function CorporateChatPage() {
         isOpen={isCreateChatOpen}
         onClose={() => setIsCreateChatOpen(false)}
         onCreate={handleCreateGroupChat}
+        tenantId={tenantId}
       />
 
       <ChatSettingsModal
         chat={activeChat}
-        isOpen={isSettingsOpen}
+        isOpen={isSettingsOpen && canManageActiveChat}
         onClose={() => setIsSettingsOpen(false)}
         onSave={handleUpdateChatSettings}
       />
@@ -435,6 +595,8 @@ export default function CorporateChatPage() {
         chat={activeChat}
         isOpen={isParticipantsOpen}
         onClose={() => setIsParticipantsOpen(false)}
+        currentUser={currentUser}
+        tenantId={tenantId}
       />
 
       <FileViewerModal

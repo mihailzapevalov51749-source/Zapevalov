@@ -57,6 +57,7 @@ def create_chat(
     avatar_url: str | None,
     avatar_settings: dict | None = None,
     workspace_id: int | None,
+    tenant_id: int | None,
     created_by_id: int,
     participant_ids: list[int],
 ):
@@ -67,6 +68,7 @@ def create_chat(
         avatar_url=avatar_url,
         avatar_settings=avatar_settings,
         workspace_id=workspace_id,
+        tenant_id=tenant_id,
         created_by_id=created_by_id,
     )
 
@@ -558,6 +560,7 @@ def get_or_create_direct_chat(
     *,
     current_user_id: int,
     target_user_id: int,
+    tenant_id: int,
 ):
     existing_chat = get_direct_chat_between_users(
         db,
@@ -566,6 +569,12 @@ def get_or_create_direct_chat(
     )
 
     if existing_chat:
+        if existing_chat.tenant_id is not None and int(existing_chat.tenant_id) != int(tenant_id):
+            return existing_chat
+        if existing_chat.tenant_id is None:
+            existing_chat.tenant_id = tenant_id
+            db.commit()
+            db.refresh(existing_chat)
         return existing_chat
 
     return create_chat(
@@ -576,6 +585,7 @@ def get_or_create_direct_chat(
         avatar_url=None,
         avatar_settings=None,
         workspace_id=None,
+        tenant_id=tenant_id,
         created_by_id=current_user_id,
         participant_ids=[target_user_id],
     )

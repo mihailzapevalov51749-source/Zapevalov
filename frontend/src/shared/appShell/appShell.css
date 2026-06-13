@@ -1,5 +1,5 @@
 .app-shell {
-  --app-shell-bottom-tabs-height: 32px;
+  --app-shell-bottom-tabs-height: 0px;
 
   height: 100vh;
   width: 100%;
@@ -8,11 +8,9 @@
   position: relative;
 }
 
-
-
-
-
-
+.app-shell[data-has-bottom-tabs="true"] {
+  --app-shell-bottom-tabs-height: 32px;
+}
 
 .app-shell__main {
   height: 100%;

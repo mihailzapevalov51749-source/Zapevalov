@@ -1,4 +1,115 @@
-const API_BASE_URL = "http://127.0.0.1:8010";
+const API_BASE_URL =
+  import.meta.env?.VITE_API_BASE_URL || "http://127.0.0.1:8010";
+
+function normalizeProtectedFilePath(fileUrlOrPath) {
+  const raw = String(fileUrlOrPath || "").trim();
+  if (!raw) {
+    return "";
+  }
+
+  if (raw.startsWith("http://") || raw.startsWith("https://")) {
+    try {
+      const url = new URL(raw);
+      if (url.origin === API_BASE_URL.replace(/\/$/, "")) {
+        return url.pathname;
+      }
+      return raw;
+    } catch {
+      return raw;
+    }
+  }
+
+  return raw.startsWith("/") ? raw : `/${raw}`;
+}
+
+const PROTECTED_DOCUMENT_PATH_PATTERNS = [
+  /\/files\/documents\//i,
+  /\/uploads\/documents\//i,
+  /\/tenants\/\d+\/documents\/\d+\/download/i,
+];
+
+export function isProtectedDocumentFilePath(fileUrlOrPath) {
+  const raw = String(fileUrlOrPath || "").trim();
+  if (!raw || raw.startsWith("blob:")) {
+    return false;
+  }
+
+  const path = normalizeProtectedFilePath(raw);
+  if (!path || path.startsWith("http")) {
+    return false;
+  }
+
+  return PROTECTED_DOCUMENT_PATH_PATTERNS.some((pattern) => pattern.test(path));
+}
+
+export async function fetchProtectedFileBlobUrl(fileUrlOrPath) {
+  const normalizedPath = normalizeProtectedFilePath(fileUrlOrPath);
+  if (!normalizedPath || normalizedPath.startsWith("http")) {
+    throw new Error("Некорректный путь к защищённому файлу");
+  }
+
+  const token = getAuthToken();
+  const response = await fetch(`${API_BASE_URL}${normalizedPath}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    let message = "Не удалось загрузить файл";
+    try {
+      const data = await response.json();
+      message = data?.detail || message;
+    } catch {
+      // ignore
+    }
+    throw new Error(message);
+  }
+
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
+}
+
+export async function downloadProtectedDocumentFile({
+  fileUrl,
+  fileName = "document",
+}) {
+  const blobUrl = await fetchProtectedFileBlobUrl(fileUrl);
+
+  try {
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = fileName;
+    link.click();
+  } finally {
+    URL.revokeObjectURL(blobUrl);
+  }
+}
+
+const PUBLIC_STATIC_UPLOAD_PREFIXES = [
+  ["/files/images/", "/uploads/images/"],
+  ["/files/icons/", "/uploads/icons/"],
+  ["/files/avatars/", "/uploads/avatars/"],
+];
+
+/**
+ * Map authenticated /files/* paths to still-public StaticFiles mounts.
+ * <img> tags cannot send Bearer tokens; CMS image/icon assets stay on /uploads/*.
+ */
+export function resolvePublicStaticUploadPath(fileUrl) {
+  const normalizedUrl = String(fileUrl || "").trim();
+  if (!normalizedUrl) {
+    return "";
+  }
+
+  for (const [apiPrefix, staticPrefix] of PUBLIC_STATIC_UPLOAD_PREFIXES) {
+    if (normalizedUrl.startsWith(apiPrefix)) {
+      return `${staticPrefix}${normalizedUrl.slice(apiPrefix.length)}`;
+    }
+  }
+
+  return normalizedUrl;
+}
 
 function getAuthToken() {
   return (
@@ -56,6 +167,37 @@ export async function uploadFile({
   return response.json();
 }
 
+function remapApiOriginStaticPath(absoluteUrl) {
+  const normalizedUrl = String(absoluteUrl || "").trim();
+  if (
+    !normalizedUrl.startsWith("http://")
+    && !normalizedUrl.startsWith("https://")
+  ) {
+    return normalizedUrl;
+  }
+
+  try {
+    const url = new URL(normalizedUrl);
+    const apiBase = new URL(`${API_BASE_URL.replace(/\/$/, "")}/`);
+    if (url.origin !== apiBase.origin) {
+      return normalizedUrl;
+    }
+
+    const publicPath = resolvePublicStaticUploadPath(url.pathname);
+    if (publicPath.startsWith("/uploads/")) {
+      return `${url.origin}${publicPath}`;
+    }
+
+    return normalizedUrl;
+  } catch {
+    return normalizedUrl;
+  }
+}
+
+export function buildAvatarUrl(avatarUrl) {
+  return buildFileUrl(avatarUrl);
+}
+
 export function buildFileUrl(fileUrl) {
   if (!fileUrl) {
     return "";
@@ -71,7 +213,15 @@ export function buildFileUrl(fileUrl) {
     normalizedUrl.startsWith("http://") ||
     normalizedUrl.startsWith("https://")
   ) {
-    return normalizedUrl;
+    return remapApiOriginStaticPath(normalizedUrl);
+  }
+
+  const publicPath = resolvePublicStaticUploadPath(
+    normalizedUrl.startsWith("/") ? normalizedUrl : `/${normalizedUrl}`,
+  );
+
+  if (publicPath.startsWith("/uploads/")) {
+    return `${API_BASE_URL}${publicPath}`;
   }
 
   if (normalizedUrl.startsWith("/uploads/")) {
@@ -80,6 +230,10 @@ export function buildFileUrl(fileUrl) {
 
   if (normalizedUrl.startsWith("uploads/")) {
     return `${API_BASE_URL}/${normalizedUrl}`;
+  }
+
+  if (publicPath.startsWith("/")) {
+    return `${API_BASE_URL}${publicPath}`;
   }
 
   if (normalizedUrl.startsWith("/")) {

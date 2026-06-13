@@ -78,6 +78,7 @@ export function YasiiAssistantProvider({ children }) {
       }
       return resolveInitialYasiiPresentation(nextPinned);
     });
+    setMessages([createWelcomeMessage()]);
   }, [tenantId, location.pathname]);
 
   useEffect(() => {

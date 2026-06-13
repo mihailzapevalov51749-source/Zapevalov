@@ -1,3 +1,5 @@
+import { buildAvatarUrl } from "../../files/api/filesApi.js";
+
 const API_BASE_URL = "http://127.0.0.1:8010";
 
 export const COLLAPSE_TEXT_LENGTH = 260;
@@ -90,13 +92,14 @@ export function getMessageAuthorName(message) {
 }
 
 export function getMessageAvatarUrl(message) {
-  return (
+  const rawUrl =
     message?.author?.avatarUrl ||
     message?.author?.avatar_url ||
     message?.created_by?.avatarUrl ||
     message?.created_by?.avatar_url ||
-    ""
-  );
+    "";
+
+  return rawUrl ? buildAvatarUrl(rawUrl) : "";
 }
 
 export function getMessageAvatarSettings(message) {

@@ -1,13 +1,20 @@
-import axios from "axios";
+import { platformApiClient } from "./authenticatedApiClient";
 
 import { assertLegacyTableBlockCreationAllowed } from "../modules/blocks/registry/legacyTableBlockTypes";
 
-const API = "http://127.0.0.1:8010";
+function requirePortalId(portalId) {
+  const normalized = Number(portalId);
+  if (!Number.isFinite(normalized) || normalized <= 0) {
+    throw new Error("Требуется portal_id для операции с блоком");
+  }
+  return normalized;
+}
 
-export async function createBlock(sectionId, blockType, position = null) {
+export async function createBlock(portalId, sectionId, blockType, position = null) {
   assertLegacyTableBlockCreationAllowed(blockType);
 
-  const response = await axios.post(`${API}/blocks`, {
+  const normalizedPortalId = requirePortalId(portalId);
+  const response = await platformApiClient.post(`/blocks/portal/${normalizedPortalId}/`, {
     section_id: sectionId,
     type: blockType,
     title: getDefaultTitle(blockType),

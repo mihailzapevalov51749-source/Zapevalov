@@ -13,13 +13,15 @@ function readSource(relativePath) {
 describe("yasiiEmbeddedApi endpoints", () => {
   it("targets ACE handoff endpoint", () => {
     const source = readSource("./yasiiEmbeddedApi.js");
-    assert.match(source, /\/ai-context\/handoff/);
+    assert.match(source, /\/ai-context\/tenants\/\$\{tenantId\}\/handoff/);
     assert.match(source, /createAceHandoff/);
+    assert.match(source, /platformApiClient/);
+    assert.doesNotMatch(source, /from ["'].*\/api\/apiClient/);
   });
 
   it("targets embedded query endpoint", () => {
     const source = readSource("./yasiiEmbeddedApi.js");
-    assert.match(source, /\/yasii\/embedded\/query/);
+    assert.match(source, /\/yasii\/tenants\/\$\{tenantId\}\/embedded\/query/);
     assert.match(source, /sendEmbeddedQuery/);
   });
 });

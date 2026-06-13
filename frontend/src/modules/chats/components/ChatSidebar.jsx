@@ -1,11 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
-  getOrCreateDirectChat,
   searchUsers,
 } from "../api/chatsApi";
 
 import { chatLayoutStyles } from "../styles/corporateChatStyles";
+import { buildAvatarUrl } from "../../../shared/files/api/filesApi";
+import {
+  resolveChatDisplayAvatar,
+  resolveChatDisplayInitials,
+  resolveChatDisplayTitle,
+} from "../utils/resolveChatDisplayTitle";
+import { useChatUnreadCountForChat } from "../context/ChatUnreadProvider";
+import { getChatUnreadCount } from "../utils/chatUnreadUtils";
 
 import searchIcon from "../../../assets/icons/search.png";
 
@@ -42,18 +49,8 @@ function normalizeAvatarSettings(settings) {
   return DEFAULT_AVATAR_SETTINGS;
 }
 
-function getChatInitials(chat) {
-  const title = String(chat?.title || "Ч").trim();
-
-  if (!title) return "Ч";
-
-  return title
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase();
+function getChatInitials(chat, currentUser) {
+  return resolveChatDisplayInitials(chat, currentUser);
 }
 
 function getUserInitials(user) {
@@ -74,8 +71,9 @@ function getUserInitials(user) {
 }
 
 function renderUserAvatar(user) {
-  const avatarUrl =
-    user?.avatar_url || user?.avatarUrl;
+  const avatarUrl = buildAvatarUrl(
+    user?.avatar_url || user?.avatarUrl,
+  );
 
   const settings = normalizeAvatarSettings(
     user?.avatar_settings || user?.avatarSettings
@@ -107,13 +105,11 @@ function renderUserAvatar(user) {
   return getUserInitials(user);
 }
 
-function renderChatAvatar(chat) {
-  const avatarUrl =
-    chat?.avatar_url || chat?.avatarUrl;
+function renderChatAvatar(chat, currentUser) {
+  const displayAvatar = resolveChatDisplayAvatar(chat, currentUser);
+  const avatarUrl = buildAvatarUrl(displayAvatar.avatar_url);
 
-  const settings = normalizeAvatarSettings(
-    chat?.avatar_settings || chat?.avatarSettings
-  );
+  const settings = normalizeAvatarSettings(displayAvatar.avatar_settings);
 
   const ratio =
     SIDEBAR_AVATAR_SIZE / PROFILE_AVATAR_SIZE;
@@ -138,7 +134,7 @@ function renderChatAvatar(chat) {
     );
   }
 
-  return getChatInitials(chat);
+  return getChatInitials(chat, currentUser);
 }
 
 function getLastMessageText(chat) {
@@ -150,8 +146,65 @@ function getLastMessageText(chat) {
   );
 }
 
-function getUnreadCount(chat) {
-  return chat?.unread_count || chat?.unreadCount || 0;
+function ChatUnreadBadge({ count }) {
+  if (!count || count <= 0) {
+    return null;
+  }
+
+  return (
+    <div style={chatLayoutStyles.unreadBadge}>
+      {count > 99 ? "99+" : count}
+    </div>
+  );
+}
+
+function ChatListItem({
+  chat,
+  activeChatId,
+  currentUser,
+  onSelectChat,
+}) {
+  const isActive = String(chat.id) === String(activeChatId);
+  const unreadCount = useChatUnreadCountForChat(chat.id, chat);
+  const lastMessageTime = getLastMessageTime(chat);
+
+  return (
+    <button
+      key={chat.id}
+      type="button"
+      style={{
+        ...chatLayoutStyles.chatButton,
+        ...(isActive
+          ? chatLayoutStyles.activeChatButton
+          : {}),
+      }}
+      onClick={() => onSelectChat?.(chat.id)}
+    >
+      <div style={chatLayoutStyles.chatAvatar}>
+       {renderChatAvatar(chat, currentUser)}
+       </div>
+
+      <div style={chatLayoutStyles.chatMain}>
+        <div style={chatLayoutStyles.chatTitleRow}>
+          <div style={chatLayoutStyles.chatTitle}>
+            {resolveChatDisplayTitle(chat, currentUser)}
+          </div>
+        </div>
+
+        <div style={chatLayoutStyles.chatPreview}>
+          {getLastMessageText(chat)}
+        </div>
+      </div>
+
+      <div style={chatLayoutStyles.chatMeta}>
+        <div style={chatLayoutStyles.chatTime}>
+          {lastMessageTime}
+        </div>
+
+        <ChatUnreadBadge count={unreadCount} />
+      </div>
+    </button>
+  );
 }
 
 function getLastMessageTime(chat) {
@@ -171,59 +224,6 @@ function getLastMessageTime(chat) {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-function renderChatItem({
-  chat,
-  activeChatId,
-  onSelectChat,
-}) {
-  const isActive = chat.id === activeChatId;
-
-  const unreadCount = getUnreadCount(chat);
-  const lastMessageTime = getLastMessageTime(chat);
-
-  return (
-    <button
-      key={chat.id}
-      type="button"
-      style={{
-        ...chatLayoutStyles.chatButton,
-        ...(isActive
-          ? chatLayoutStyles.activeChatButton
-          : {}),
-      }}
-      onClick={() => onSelectChat?.(chat.id)}
-    >
-      <div style={chatLayoutStyles.chatAvatar}>
-       {renderChatAvatar(chat)}
-       </div>
-
-      <div style={chatLayoutStyles.chatMain}>
-        <div style={chatLayoutStyles.chatTitleRow}>
-          <div style={chatLayoutStyles.chatTitle}>
-            {chat.title}
-          </div>
-        </div>
-
-        <div style={chatLayoutStyles.chatPreview}>
-          {getLastMessageText(chat)}
-        </div>
-      </div>
-
-      <div style={chatLayoutStyles.chatMeta}>
-        <div style={chatLayoutStyles.chatTime}>
-          {lastMessageTime}
-        </div>
-
-        {unreadCount > 0 && (
-          <div style={chatLayoutStyles.unreadBadge}>
-            {unreadCount > 99 ? "99+" : unreadCount}
-          </div>
-        )}
-      </div>
-    </button>
-  );
 }
 
 function renderUserItem({
@@ -263,9 +263,12 @@ function renderUserItem({
 export default function ChatSidebar({
   chats = [],
   activeChatId,
+  currentUser,
   isLoadingChats,
   onSelectChat,
+  onOpenDirectChat,
   onCreateGroupChat,
+  tenantId,
 }) {
   const [activeFilter, setActiveFilter] =
     useState("all");
@@ -277,10 +280,12 @@ export default function ChatSidebar({
   const [isSearchingUsers, setIsSearchingUsers] =
     useState(false);
 
+  const showInitialChatLoading = isLoadingChats && chats.length === 0;
+
   useEffect(() => {
     const query = searchValue.trim();
 
-    if (!query) {
+    if (!query || !tenantId) {
       setFoundUsers([]);
       return;
     }
@@ -289,7 +294,7 @@ export default function ChatSidebar({
       try {
         setIsSearchingUsers(true);
 
-        const users = await searchUsers(query);
+        const users = await searchUsers(tenantId, query);
 
         setFoundUsers(Array.isArray(users) ? users : []);
       } catch (error) {
@@ -305,14 +310,14 @@ export default function ChatSidebar({
     }, 300);
 
     return () => clearTimeout(timeout);
-  }, [searchValue]);
+  }, [searchValue, tenantId]);
 
   const filteredChats = useMemo(() => {
     const query = searchValue.trim().toLowerCase();
 
     return chats.filter((chat) => {
       const title = String(
-        chat?.title || ""
+        resolveChatDisplayTitle(chat, currentUser) || ""
       ).toLowerCase();
 
       const description = String(
@@ -332,7 +337,7 @@ export default function ChatSidebar({
       if (!matchesSearch) return false;
 
       if (activeFilter === "unread") {
-        return getUnreadCount(chat) > 0;
+        return getChatUnreadCount(chat) > 0;
       }
 
       if (activeFilter === "favorite") {
@@ -343,21 +348,22 @@ export default function ChatSidebar({
 
       return true;
     });
-  }, [activeFilter, chats, searchValue]);
+  }, [activeFilter, chats, currentUser, searchValue]);
 
   async function handleOpenDirectChat(user) {
-    try {
-      const chat = await getOrCreateDirectChat(
-        user.id
-      );
+    if (!onOpenDirectChat) {
+      return;
+    }
 
-      if (chat?.id) {
-        onSelectChat?.(chat.id);
-      }
+    try {
+      await onOpenDirectChat(user);
+
+      setSearchValue("");
+      setFoundUsers([]);
     } catch (error) {
       console.error(
         "Ошибка открытия личного чата",
-        error
+        error,
       );
     }
   }
@@ -493,13 +499,13 @@ export default function ChatSidebar({
       </div>
 
       <div style={chatLayoutStyles.sidebarBody}>
-        {isLoadingChats && (
+        {showInitialChatLoading && (
           <div style={chatLayoutStyles.subtitle}>
             Загрузка чатов...
           </div>
         )}
 
-        {!isLoadingChats && hasSearch && (
+        {!showInitialChatLoading && hasSearch && (
           <>
             {!!filteredChats.length && (
               <div style={{ marginBottom: 16 }}>
@@ -523,13 +529,15 @@ export default function ChatSidebar({
                     gap: 2,
                   }}
                 >
-                  {filteredChats.map((chat) =>
-                    renderChatItem({
-                      chat,
-                      activeChatId,
-                      onSelectChat,
-                    })
-                  )}
+                  {filteredChats.map((chat) => (
+                    <ChatListItem
+                      key={chat.id}
+                      chat={chat}
+                      activeChatId={activeChatId}
+                      currentUser={currentUser}
+                      onSelectChat={onSelectChat}
+                    />
+                  ))}
                 </div>
               </div>
             )}
@@ -577,7 +585,7 @@ export default function ChatSidebar({
           </>
         )}
 
-        {!isLoadingChats &&
+        {!showInitialChatLoading &&
           !hasSearch &&
           sections.map((section) => {
             if (!section.chats.length) {
@@ -609,13 +617,15 @@ export default function ChatSidebar({
                     gap: 2,
                   }}
                 >
-                  {section.chats.map((chat) =>
-                    renderChatItem({
-                      chat,
-                      activeChatId,
-                      onSelectChat,
-                    })
-                  )}
+                  {section.chats.map((chat) => (
+                    <ChatListItem
+                      key={chat.id}
+                      chat={chat}
+                      activeChatId={activeChatId}
+                      currentUser={currentUser}
+                      onSelectChat={onSelectChat}
+                    />
+                  ))}
                 </div>
               </div>
             );

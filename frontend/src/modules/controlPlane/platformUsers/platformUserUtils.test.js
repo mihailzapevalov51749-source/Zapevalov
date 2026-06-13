@@ -80,6 +80,14 @@ test("resolveUserAvatarUrl uses shared avatar fields", () => {
     resolveUserAvatarUrl({ avatar_url: "https://example.com/b.png" }),
     "https://example.com/b.png",
   );
+  assert.equal(
+    resolveUserAvatarUrl({ avatar_url: "/uploads/avatars/user.png" }),
+    "http://127.0.0.1:8010/uploads/avatars/user.png",
+  );
+  assert.equal(
+    resolveUserAvatarUrl({ avatar_url: "/files/avatars/user.png" }),
+    "http://127.0.0.1:8010/uploads/avatars/user.png",
+  );
 });
 
 test("mergePlatformUserWithSessionProfile reuses session avatar", () => {

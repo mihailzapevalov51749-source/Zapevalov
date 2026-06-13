@@ -23,6 +23,7 @@ import {
 } from "../../../shared/uiStorage/controlPlaneUiStorage.js";
 import { resolveControlPlanePageMeta } from "../config/controlPlaneNavigation.js";
 import { resolveControlPlaneSectionKey, resolveControlPlaneReturnToStudioPath } from "../config/controlPlanePaths.js";
+import { resolveUserAvatarUrl } from "../platformUsers/platformUserUtils.js";
 import { createControlPlaneSidebarContract } from "./createControlPlaneSidebarContract.js";
 import { useControlPlaneSidebarState } from "./useControlPlaneSidebarState.js";
 import { usePlatformSettings } from "../platformProfile/PlatformSettingsProvider.jsx";
@@ -184,7 +185,7 @@ export default function ControlPlaneShell() {
         id: headerUser?.id,
         name: headerUser?.full_name,
         email: headerUser?.email,
-        avatarUrl: headerUser?.avatar_url,
+        avatarUrl: resolveUserAvatarUrl(headerUser),
       },
       pathname: location.pathname,
       title: pageMeta.title,

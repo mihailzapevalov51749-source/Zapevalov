@@ -291,8 +291,7 @@ export default function DesignerPagesPage() {
     setCreateSubmitError("");
 
     try {
-      const created = await createPage({
-        portal_id: tenantId,
+      const created = await createPage(tenantId, {
         title,
         status: "draft",
       });
@@ -333,7 +332,7 @@ export default function DesignerPagesPage() {
     setActionError("");
 
     try {
-      await updatePage(selectedPageId, { status: nextStatus });
+      await updatePage(tenantId, selectedPageId, { status: nextStatus });
       dispatchPageStatusNavigationRefresh();
       await refreshAfterMutation(selectedPageId);
     } catch (error) {

@@ -22,6 +22,7 @@ import MoveDocumentModal from "./MoveDocumentModal";
 import * as styles from "./libraryStyles";
 
 export default function LibraryPageView({
+  tenantId,
   libraryId: libraryIdProp,
   title = "Библиотека документов",
   onContextPathChange,
@@ -85,9 +86,12 @@ export default function LibraryPageView({
     closeWorkspaceDocumentUrl,
     isDeepLinkReady,
   } = useLibraryDocuments({
+    tenantId,
     libraryId: resolvedLibraryId,
     enableDeepLinkUrl,
   });
+
+  const resolveFileUrl = (document) => getFileUrl(document, tenantId);
 
   const currentParentId =
     folderPath.length > 0
@@ -334,7 +338,12 @@ export default function LibraryPageView({
       setIsMoving(true);
       setMoveError("");
 
-      await moveLibraryDocument(document.id, targetParentId);
+      await moveLibraryDocument(
+        tenantId,
+        resolvedLibraryId,
+        document.id,
+        targetParentId,
+      );
 
       setMoveTarget(null);
       clearSelection();
@@ -362,7 +371,12 @@ export default function LibraryPageView({
       for (const document of uniqueDocuments) {
         if (document.id === targetParentId) continue;
 
-        await moveLibraryDocument(document.id, targetParentId);
+        await moveLibraryDocument(
+        tenantId,
+        resolvedLibraryId,
+        document.id,
+        targetParentId,
+      );
       }
 
       clearSelection();
@@ -399,7 +413,7 @@ export default function LibraryPageView({
         documentId={embeddedWorkspaceDocumentId}
         libraryId={resolvedLibraryId}
         libraryName={title}
-        tenantId={routeParams.portalId ?? routeParams.tenantId ?? resolvedLibraryId}
+        tenantId={tenantId}
         folderId={currentParentId}
         onDocumentLoaded={handleEmbeddedDocumentLoaded}
         onClose={handleCloseEmbeddedWorkspaceDocument}
@@ -484,7 +498,8 @@ export default function LibraryPageView({
                 onPreviewFile={handlePreviewFile}
                 onDropMoveDocument={handleDropMoveDocument}
                 onDropMoveDocuments={handleDropMoveDocuments}
-                getFileUrl={getFileUrl}
+                getFileUrl={resolveFileUrl}
+                tenantId={tenantId}
                 getTypeLabel={getTypeLabel}
                 getIcon={getIcon}
                 formatDocumentDate={formatDocumentDate}
@@ -509,7 +524,8 @@ export default function LibraryPageView({
                 onPreviewFile={handlePreviewFile}
                 onDropMoveDocument={handleDropMoveDocument}
                 onDropMoveDocuments={handleDropMoveDocuments}
-                getFileUrl={getFileUrl}
+                getFileUrl={resolveFileUrl}
+                tenantId={tenantId}
                 getTypeLabel={getTypeLabel}
                 getIcon={getIcon}
                 formatDocumentDate={formatDocumentDate}

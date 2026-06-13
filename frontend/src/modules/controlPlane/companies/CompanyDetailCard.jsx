@@ -27,6 +27,7 @@ export default function CompanyDetailCard({
   onOpenOffice,
   onClone,
   onDelete,
+  onChangeAdministrator,
   onClose,
 }) {
   if (loading) {
@@ -121,7 +122,12 @@ export default function CompanyDetailCard({
           )}
 
           <div style={styles.superadminActions}>
-            <button type="button" style={styles.disabledButton} disabled title="Скоро">
+            <button
+              type="button"
+              style={styles.secondaryButton}
+              onClick={onChangeAdministrator}
+              disabled={!onChangeAdministrator}
+            >
               Сменить администратора
             </button>
             <button type="button" style={styles.disabledButton} disabled title="Скоро">

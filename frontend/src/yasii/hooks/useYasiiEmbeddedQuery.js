@@ -92,6 +92,9 @@ export default function useYasiiEmbeddedQuery({  buildHostContext,
     }
 
     if (handoffScopeKey !== scopeKey) {
+      setHandoff(null);
+      setHandoffCreatedAt(null);
+      setHandoffScopeKey(null);
       refreshHandoff();
     }
   }, [enabled, handoff, handoffLoading, handoffScopeKey, refreshHandoff, scopeKey]);
@@ -130,9 +133,11 @@ export default function useYasiiEmbeddedQuery({  buildHostContext,
       setError(null);
 
       try {
+        const hostContext = buildHostContext();
         const response = await sendEmbeddedQuery({
           handoffId: handoff.handoffId,
           queryText: text,
+          tenantId: hostContext?.tenantId,
         });
         const payload = response?.payload ?? {};
         const trace = Array.isArray(payload.trace) ? payload.trace : undefined;
@@ -161,6 +166,7 @@ export default function useYasiiEmbeddedQuery({  buildHostContext,
       handoffScopeKey,
       loading,
       scopeKey,
+      buildHostContext,
     ],
   );
 

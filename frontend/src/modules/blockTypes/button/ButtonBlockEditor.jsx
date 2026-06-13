@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { buildFileUrl } from "../../../shared/files/api/filesApi";
 
 export default function ButtonBlockEditor({
   block,
@@ -436,12 +437,7 @@ function ColorField({
 }
 
 function normalizePreviewUrl(url) {
-  const API_BASE_URL = "http://127.0.0.1:8010";
-
-  if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  if (url.startsWith("/")) return `${API_BASE_URL}${url}`;
-  return url;
+  return buildFileUrl(url);
 }
 
 const headerStyle = {

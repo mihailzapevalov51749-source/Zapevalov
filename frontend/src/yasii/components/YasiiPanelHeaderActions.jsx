@@ -47,6 +47,7 @@ export default function YasiiPanelHeaderActions({
     if (isWorkspace) {
       void resolveYasiiReturnPath(
         readYasiiPreWorkspacePath(tenantId, location.pathname),
+        tenantId,
       ).then((returnPath) => {
         if (!returnPath) {
           return;

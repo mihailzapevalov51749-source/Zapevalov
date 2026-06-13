@@ -33,6 +33,8 @@ class Chat(Base):
 
     workspace_id = Column(Integer, nullable=True)
 
+    tenant_id = Column(Integer, nullable=True, index=True)
+
     created_by_id = Column(
         Integer,
         ForeignKey("users.id"),

@@ -1,5 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 
+import {
+  buildWorkspacePreviewPayload,
+  downloadLibraryDocument,
+} from "../services/documentLibrariesService";
+
 function getDocumentFileName(document) {
   return (
     document?.file_name ||
@@ -32,6 +37,7 @@ export default function LibraryRow({
   onDropMove,
   onDropMoveDocuments,
 
+  tenantId,
   getFileUrl,
   getTypeLabel,
   getIcon,
@@ -168,38 +174,29 @@ export default function LibraryRow({
     onOpenFolder(document);
   };
 
-  const handleOpenFile = (event) => {
+  const handleOpenFile = async (event) => {
     stopEvent(event);
 
-    const fileUrl = getFileUrl(document);
+    try {
+      const payload = await buildWorkspacePreviewPayload(document, tenantId);
+      if (!payload) return;
 
-    if (!fileUrl) return;
-
-    onPreviewFile?.({
-      fileUrl,
-      fileName: getDocumentFileName(document),
-      fileType: document.document_type,
-      raw: document,
-    });
-
-    onToggleMenu?.();
+      onPreviewFile?.(payload);
+      onToggleMenu?.();
+    } catch (openError) {
+      console.error(openError);
+    }
   };
 
-  const handleDownload = (event) => {
+  const handleDownload = async (event) => {
     stopEvent(event);
 
-    const fileUrl = getFileUrl(document);
-
-    if (!fileUrl) return;
-
-    const link = window.document.createElement("a");
-    link.href = fileUrl;
-    link.download = getDocumentFileName(document);
-    link.target = "_blank";
-    link.rel = "noreferrer";
-    link.click();
-
-    onToggleMenu?.();
+    try {
+      await downloadLibraryDocument(document, tenantId);
+      onToggleMenu?.();
+    } catch (downloadError) {
+      console.error(downloadError);
+    }
   };
 
   const handleToggleSelect = (event) => {

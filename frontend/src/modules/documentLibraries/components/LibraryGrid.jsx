@@ -19,6 +19,7 @@ export default function LibraryGrid({
   onDropMoveDocument,
   onDropMoveDocuments,
 
+  tenantId,
   getFileUrl,
   getTypeLabel,
   getIcon,
@@ -65,6 +66,7 @@ export default function LibraryGrid({
           onPreviewFile={onPreviewFile}
           onDropMove={onDropMoveDocument}
           onDropMoveDocuments={onDropMoveDocuments}
+          tenantId={tenantId}
           getFileUrl={getFileUrl}
           getTypeLabel={getTypeLabel}
           getIcon={getIcon}

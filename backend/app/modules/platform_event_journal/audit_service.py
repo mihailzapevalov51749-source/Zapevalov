@@ -20,6 +20,7 @@ from app.modules.platform_event_journal.constants import (
     PlatformEventJournalScope,
     PlatformEventJournalSource,
 )
+from app.modules.platform_event_journal.dev_journal_content import normalize_dev_journal_content
 from app.modules.platform_event_journal.seed_classification import resolve_dev_tenant_portal_id
 from app.modules.platform_event_journal.models import PlatformEventJournalEntry
 from app.modules.platform_event_journal.schemas import PlatformEventJournalEntryRead
@@ -281,20 +282,23 @@ def record_dev_development_event(
     commit: bool = False,
 ) -> PlatformEventJournalEntryRead | None:
     """Record platform product development history in DEV tenant journal."""
-    normalized_legacy_type = str(event_type or "").strip().lower()
-    dev_tenant_id = resolve_dev_tenant_portal_id(db)
-    category = TENANT_LEGACY_EVENT_TYPE_CATEGORY_MAP.get(
-        normalized_legacy_type,
-        TenantEventCategory.SYSTEM.value,
+    normalized_title, normalized_description, resolved_event_type, resolved_category = (
+        normalize_dev_journal_content(
+            slug=slug,
+            title=title,
+            description=description,
+            event_type=event_type,
+        )
     )
+    dev_tenant_id = resolve_dev_tenant_portal_id(db)
     return _persist_journal_entry(
         db,
         scope=PlatformEventJournalScope.TENANT.value,
         journal_kind=PlatformEventJournalKind.DEV_DEVELOPMENT.value,
         event_code=TenantEventCode.LEGACY.value,
-        event_category=category,
-        title=title,
-        description=description,
+        event_category=resolved_category,
+        title=normalized_title,
+        description=normalized_description,
         status=status,
         actor_name=author,
         actor_user_id=author_user_id,
@@ -302,7 +306,7 @@ def record_dev_development_event(
         source=source,
         tenant_id=dev_tenant_id,
         occurred_at=occurred_at,
-        metadata={"legacy_event_type": normalized_legacy_type},
+        metadata={"legacy_event_type": resolved_event_type},
         commit=commit,
     )
 

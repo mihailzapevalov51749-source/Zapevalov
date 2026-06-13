@@ -13,7 +13,7 @@ from app.modules.platform.runtime.office_user_views.schemas import (
     OfficeUserTableViewStateRead,
     OfficeUserTableViewUpdate,
 )
-from app.modules.platform.shared.dependencies import require_tenant
+from app.modules.platform.shared.dependencies import require_tenant_membership
 from app.modules.users.models import User
 
 TenantIdPath = Annotated[int, Path(..., ge=1)]
@@ -34,7 +34,7 @@ def list_office_user_table_views(
     tenant_id: TenantIdPath,
     object_type_key: ObjectTypeKeyPath,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
     current_user: User = Depends(get_current_user),
 ):
     return service.list_user_table_views(
@@ -55,7 +55,7 @@ def create_office_user_table_view(
     object_type_key: ObjectTypeKeyPath,
     payload: OfficeUserTableViewCreate,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
     current_user: User = Depends(get_current_user),
 ):
     return service.create_user_table_view(
@@ -77,7 +77,7 @@ def update_office_user_table_view(
     view_id: ViewIdPath,
     payload: OfficeUserTableViewUpdate,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
     current_user: User = Depends(get_current_user),
 ):
     return service.update_user_table_view(
@@ -99,7 +99,7 @@ def delete_office_user_table_view(
     object_type_key: ObjectTypeKeyPath,
     view_id: ViewIdPath,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
     current_user: User = Depends(get_current_user),
 ):
     service.delete_user_table_view(

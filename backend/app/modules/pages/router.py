@@ -3,26 +3,29 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.modules.auth.dependencies import get_current_user
+from app.modules.platform.shared.dependencies import require_portal_membership
 from app.modules.users.models import User
 
 from .schemas import PageCreate, PageUpdate, PageResponse, PageFullResponse
-from .tenant_access import get_request_portal_id
 from . import service
 
 router = APIRouter(prefix="/pages", tags=["Pages"])
 
 
-@router.post("/", response_model=PageResponse)
+@router.post("/portal/{portal_id}/", response_model=PageResponse)
 def create_page(
     data: PageCreate,
     db: Session = Depends(get_db),
-    portal_id: int = Depends(get_request_portal_id),
+    portal_id: int = Depends(require_portal_membership),
 ):
     return service.create_page(db, data, portal_id=portal_id)
 
 
 @router.get("/portal/{portal_id}", response_model=list[PageResponse])
-def get_pages_by_portal(portal_id: int, db: Session = Depends(get_db)):
+def get_pages_by_portal(
+    db: Session = Depends(get_db),
+    portal_id: int = Depends(require_portal_membership),
+):
     return service.get_pages_by_portal(
         db,
         portal_id,
@@ -30,11 +33,11 @@ def get_pages_by_portal(portal_id: int, db: Session = Depends(get_db)):
     )
 
 
-@router.get("/{page_id}", response_model=PageResponse)
+@router.get("/portal/{portal_id}/{page_id}", response_model=PageResponse)
 def get_page(
     page_id: int,
     db: Session = Depends(get_db),
-    portal_id: int = Depends(get_request_portal_id),
+    portal_id: int = Depends(require_portal_membership),
 ):
     page = service.get_page(db, page_id, portal_id=portal_id)
 
@@ -44,7 +47,7 @@ def get_page(
     return page
 
 
-@router.get("/{page_id}/full", response_model=PageFullResponse)
+@router.get("/portal/{portal_id}/{page_id}/full", response_model=PageFullResponse)
 def get_page_full(
     page_id: int,
     office_access: bool = Query(
@@ -52,7 +55,7 @@ def get_page_full(
         description="Проверка доступа страницы в Office runtime (draft блокируется).",
     ),
     db: Session = Depends(get_db),
-    portal_id: int = Depends(get_request_portal_id),
+    portal_id: int = Depends(require_portal_membership),
 ):
     data = service.get_page_full(
         db,
@@ -67,12 +70,12 @@ def get_page_full(
     return data
 
 
-@router.put("/{page_id}", response_model=PageResponse)
+@router.put("/portal/{portal_id}/{page_id}", response_model=PageResponse)
 def update_page(
     page_id: int,
     data: PageUpdate,
     db: Session = Depends(get_db),
-    portal_id: int = Depends(get_request_portal_id),
+    portal_id: int = Depends(require_portal_membership),
 ):
     page = service.update_page(db, page_id, data, portal_id=portal_id)
 
@@ -82,12 +85,12 @@ def update_page(
     return page
 
 
-@router.delete("/{page_id}")
+@router.delete("/portal/{portal_id}/{page_id}")
 def delete_page(
     page_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    portal_id: int = Depends(get_request_portal_id),
+    portal_id: int = Depends(require_portal_membership),
 ):
     page = service.delete_page(
         db,

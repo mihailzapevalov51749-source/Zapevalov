@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { updateBlock } from "../../blocks/services/blockService";
 
-export default function LinkBlockView({ block, isEditMode, onBlockUpdated }) {
+export default function LinkBlockView({ portalId, block, isEditMode, onBlockUpdated }) {
   const content = block?.content || {};
   const settings = block?.settings || {};
 
@@ -29,7 +29,7 @@ export default function LinkBlockView({ block, isEditMode, onBlockUpdated }) {
     try {
       setIsSaving(true);
 
-      const savedBlock = await updateBlock(block.id, {
+      const savedBlock = await updateBlock(portalId, block.id, {
         title: nextLabel,
         content: {
           ...(block.content || {}),

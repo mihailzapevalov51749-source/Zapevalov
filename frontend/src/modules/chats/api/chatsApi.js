@@ -159,16 +159,26 @@ export function searchChats(query) {
   });
 }
 
-export function getUsers() {
-  return request("/users/");
+export function getUsers(tenantId, params = {}) {
+  return searchChatUsers(tenantId, params.search);
 }
 
-export function searchUsers(query) {
+export function searchChatUsers(tenantId, query) {
+  const normalizedTenantId = Number(tenantId);
+  if (!Number.isFinite(normalizedTenantId) || normalizedTenantId <= 0) {
+    return Promise.reject(new Error("tenantId обязателен для поиска сотрудников"));
+  }
+
   return request(
-    `/users/${buildQuery({
+    `/chats/users/search${buildQuery({
+      tenant_id: normalizedTenantId,
       search: query,
-    })}`
+    })}`,
   );
+}
+
+export function searchUsers(tenantId, query) {
+  return searchChatUsers(tenantId, query);
 }
 
 export function createChat(payload) {
@@ -187,7 +197,7 @@ export function deleteChat(chatId) {
   });
 }
 
-export function getOrCreateDirectChat(userId) {
+export function getOrCreateDirectChat(userId, tenantId) {
   return request("/chats/direct", {
     method: "POST",
     headers: {
@@ -195,6 +205,7 @@ export function getOrCreateDirectChat(userId) {
     },
     body: JSON.stringify({
       user_id: userId,
+      tenant_id: tenantId,
     }),
   });
 }

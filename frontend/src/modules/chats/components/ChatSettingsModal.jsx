@@ -1,4 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+
+import PlatformModal from "../../../shared/platformModal/PlatformModal";
+import "../../../shared/platformModal/platformModalFooter.css";
+import "../../../shared/quickCreate/platformQuickCreateModal.css";
 
 import { deleteChat } from "../api/chatsApi";
 
@@ -6,29 +10,43 @@ import ChatAvatarEditor, {
   DEFAULT_AVATAR_SETTINGS,
   normalizeAvatarSettings,
 } from "./ChatAvatarEditor";
+import {
+  CHAT_MODAL_CONTENT_STYLE,
+  CHAT_MODAL_VIEWPORT_INSET,
+  CHAT_SETTINGS_MODAL_DEFAULT_BOUNDS,
+  CHAT_SETTINGS_MODAL_KEY,
+} from "./chatModalKeys.js";
+import "./chatSettingsModal.css";
 
-import deleteIcon from "../../../assets/icons/delet.png";
-import saveIcon from "../../../assets/icons/save.gif";
+const CHAT_SETTINGS_FORM_ID = "chat-settings-modal-form";
 
-import { chatModalStyles } from "../styles/chatModalStyles";
+function FormField({ id, label, required = false, children }) {
+  return (
+    <div className="platform-quick-create-modal__field">
+      <label className="platform-quick-create-modal__label" htmlFor={id}>
+        {label}
+        {required ? (
+          <span className="platform-quick-create-modal__required" aria-hidden>
+            *
+          </span>
+        ) : null}
+      </label>
+      <div className="platform-quick-create-modal__control">{children}</div>
+    </div>
+  );
+}
 
 export default function ChatSettingsModal({
   chat,
   isOpen,
-  anchorRect,
   onClose,
   onSave,
 }) {
-  const modalRef = useRef(null);
-
   const [title, setTitle] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
-  const [avatarSettings, setAvatarSettings] = useState(
-    DEFAULT_AVATAR_SETTINGS
-  );
+  const [avatarSettings, setAvatarSettings] = useState(DEFAULT_AVATAR_SETTINGS);
   const [isSaving, setIsSaving] = useState(false);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] =
-    useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (!isOpen || !chat) return;
@@ -36,36 +54,15 @@ export default function ChatSettingsModal({
     setTitle(chat.title || "");
     setAvatarUrl(chat.avatar_url || chat.avatarUrl || "");
     setAvatarSettings(
-      normalizeAvatarSettings(
-        chat.avatar_settings || chat.avatarSettings
-      )
+      normalizeAvatarSettings(chat.avatar_settings || chat.avatarSettings),
     );
     setIsSaving(false);
     setIsDeleteConfirmOpen(false);
   }, [isOpen, chat]);
 
-  useEffect(() => {
-    if (!isOpen) return;
+  async function handleSave(event) {
+    event.preventDefault();
 
-    function handleClickOutside(event) {
-      if (
-        modalRef.current &&
-        !modalRef.current.contains(event.target)
-      ) {
-        onClose?.();
-      }
-    }
-
-    window.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      window.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isOpen, onClose]);
-
-  if (!isOpen || !chat) return null;
-
-  async function handleSave() {
     if (!title.trim() || isSaving) return;
 
     try {
@@ -94,7 +91,6 @@ export default function ChatSettingsModal({
       await deleteChat(chat.id);
 
       onClose?.();
-
       window.location.reload();
     } catch (error) {
       console.error("Ошибка удаления чата", error);
@@ -104,132 +100,119 @@ export default function ChatSettingsModal({
     }
   }
 
-  const top = (anchorRect?.bottom || 64) + 40;
-
-  const right = Math.max(
-    12,
-    window.innerWidth - (anchorRect?.right || window.innerWidth) - 36
-  );
-
   return (
-    <div
-      ref={modalRef}
-      style={{
-        ...chatModalStyles.popover,
-        top,
-        right,
-      }}
-    >
-      <div style={chatModalStyles.header}>
-        <div style={chatModalStyles.title}>Настройки чата</div>
-
-        <div style={chatModalStyles.headerActions}>
-          <button
-            type="button"
-            onClick={() => setIsDeleteConfirmOpen(true)}
-            disabled={isSaving}
-            title="Удалить чат"
-            style={chatModalStyles.iconButton}
-          >
-            <img
-              src={deleteIcon}
-              alt=""
-              style={{
-                ...chatModalStyles.headerIcon,
-                filter: chatModalStyles.filters.red,
-              }}
-            />
-          </button>
-
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isSaving || !title.trim()}
-            title="Сохранить"
-            style={{
-              ...chatModalStyles.iconButton,
-              opacity: isSaving || !title.trim() ? 0.45 : 1,
-            }}
-          >
-            <img
-              src={saveIcon}
-              alt=""
-              style={chatModalStyles.headerIcon}
-            />
-          </button>
-
-          <button
-            type="button"
-            onClick={onClose}
-            title="Закрыть"
-            style={chatModalStyles.closeButton}
-          >
-            ×
-          </button>
-        </div>
-      </div>
-
-      <div style={chatModalStyles.contentRow}>
-        <ChatAvatarEditor
-          avatarUrl={avatarUrl}
-          avatarSettings={avatarSettings}
-          title={title}
-          onChange={(nextAvatar) => {
-            setAvatarUrl(
-              nextAvatar?.avatar_url ||
-                nextAvatar?.avatarUrl ||
-                ""
-            );
-
-            setAvatarSettings(
-              normalizeAvatarSettings(
-                nextAvatar?.avatar_settings ||
-                  nextAvatar?.avatarSettings
-              )
-            );
-          }}
-        />
-
-        <input
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          placeholder="Название чата"
-          style={chatModalStyles.titleInput}
-        />
-      </div>
-
-      {isDeleteConfirmOpen && (
-        <div style={chatModalStyles.confirmBox}>
-          <div style={chatModalStyles.confirmTitle}>
-            Удалить чат?
-          </div>
-
-          <div style={chatModalStyles.confirmText}>
-            Чат «{chat.title || title}» будет удалён без возможности
-            восстановления.
-          </div>
-
-          <div style={chatModalStyles.confirmActions}>
+    <PlatformModal
+      modalKey={CHAT_SETTINGS_MODAL_KEY}
+      open={isOpen && Boolean(chat)}
+      onClose={onClose}
+      title="Настройки чата"
+      subtitle={chat?.title || "Групповой чат"}
+      canCustomizeLayout
+      keepFullyVisible
+      viewportInset={CHAT_MODAL_VIEWPORT_INSET}
+      defaultBounds={CHAT_SETTINGS_MODAL_DEFAULT_BOUNDS}
+      ariaLabel="Настройки чата"
+      contentStyle={CHAT_MODAL_CONTENT_STYLE}
+      footer={
+        <div className="platform-modal-footer" data-platform-modal-no-drag>
+          <div className="platform-modal-footer__leading">
             <button
               type="button"
-              onClick={() => setIsDeleteConfirmOpen(false)}
+              className="platform-quick-create-modal__btn platform-quick-create-modal__btn--danger"
+              onClick={() => setIsDeleteConfirmOpen(true)}
               disabled={isSaving}
-              style={chatModalStyles.confirmCancelButton}
-            >
-              Отмена
-            </button>
-
-            <button
-              type="button"
-              onClick={handleDeleteChat}
-              disabled={isSaving}
-              style={chatModalStyles.confirmDeleteButton}
             >
               Удалить
             </button>
           </div>
+          <div className="platform-modal-footer__actions">
+            <button
+              type="button"
+              className="platform-quick-create-modal__btn platform-quick-create-modal__btn--ghost"
+              onClick={onClose}
+              disabled={isSaving}
+            >
+              Отмена
+            </button>
+            <button
+              type="submit"
+              form={CHAT_SETTINGS_FORM_ID}
+              className="platform-quick-create-modal__btn platform-quick-create-modal__btn--primary"
+              disabled={isSaving || !title.trim()}
+            >
+              {isSaving ? "Сохранение..." : "Сохранить"}
+            </button>
+          </div>
         </div>
-      )}
-    </div>
+      }
+    >
+      <div className="platform-quick-create-modal__body">
+        <form
+          id={CHAT_SETTINGS_FORM_ID}
+          className="platform-quick-create-modal__form"
+          onSubmit={handleSave}
+          noValidate
+        >
+          <div className="platform-quick-create-modal__fields">
+            <div className="chat-settings-modal__avatar-field">
+              <span className="platform-quick-create-modal__label">Аватар чата</span>
+              <ChatAvatarEditor
+                avatarUrl={avatarUrl}
+                avatarSettings={avatarSettings}
+                onChange={(nextAvatar) => {
+                  setAvatarUrl(
+                    nextAvatar?.avatar_url || nextAvatar?.avatarUrl || "",
+                  );
+                  setAvatarSettings(
+                    normalizeAvatarSettings(
+                      nextAvatar?.avatar_settings || nextAvatar?.avatarSettings,
+                    ),
+                  );
+                }}
+              />
+            </div>
+
+            <FormField id="chat-settings-title" label="Название чата" required>
+              <input
+                id="chat-settings-title"
+                className="field-editor-input"
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                placeholder="Название чата"
+              />
+            </FormField>
+          </div>
+
+          {isDeleteConfirmOpen ? (
+            <div className="chat-settings-modal__delete-confirm" role="alert">
+              <p className="chat-settings-modal__delete-confirm-title">
+                Удалить чат?
+              </p>
+              <p className="chat-settings-modal__delete-confirm-text">
+                Чат «{chat?.title || title}» будет удалён без возможности восстановления.
+              </p>
+              <div className="chat-settings-modal__delete-confirm-actions">
+                <button
+                  type="button"
+                  className="platform-quick-create-modal__btn platform-quick-create-modal__btn--ghost"
+                  onClick={() => setIsDeleteConfirmOpen(false)}
+                  disabled={isSaving}
+                >
+                  Отмена
+                </button>
+                <button
+                  type="button"
+                  className="platform-quick-create-modal__btn platform-quick-create-modal__btn--danger"
+                  onClick={handleDeleteChat}
+                  disabled={isSaving}
+                >
+                  {isSaving ? "Удаление..." : "Удалить"}
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </form>
+      </div>
+    </PlatformModal>
   );
 }

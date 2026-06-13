@@ -6,6 +6,7 @@ import DocumentsBlockEditor from "../../blockTypes/documents/DocumentsBlockEdito
 import ImageBlockEditor from "../../blockTypes/image/ImageBlockEditor";
 import TextBlockEditor from "../../blockTypes/text/TextBlockEditor";
 import CardsBlockEditor from "../../blockTypes/cards/CardsBlockEditor";
+import { uploadFile as uploadFileWithAuth } from "../../../shared/files/api/filesApi";
 export default function BlockEditorModal({
   block,
   onSave,
@@ -287,25 +288,11 @@ function Field({ label, children }) {
 }
 
 async function uploadFile(file, type) {
-  const formData = new FormData();
-  formData.append("file", file);
-
   const endpoint =
-    type === "image"
-      ? "http://127.0.0.1:8010/files/upload-image"
-      : "http://127.0.0.1:8010/files/upload-document";
+    type === "image" ? "/files/upload-image" : "/files/upload-document";
 
-  const response = await fetch(endpoint, {
-    method: "POST",
-    body: formData,
-  });
-
-  if (!response.ok) {
-    throw new Error("Ошибка загрузки файла");
-  }
-
-  const data = await response.json();
-  return data.file_url;
+  const data = await uploadFileWithAuth({ file, endpoint });
+  return data.file_url || data.fileUrl;
 }
 
 const headerStyle = {

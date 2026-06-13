@@ -2,7 +2,9 @@
 
 from pydantic import BaseModel, Field
 
-from app.modules.ai_context.handoff import HandoffNotFoundError, validate_handoff
+from app.modules.ai_context.handoff import HandoffNotFoundError
+from app.modules.ai_context.handoff_access import HandoffAccessDeniedError, validate_handoff_for_caller
+from app.modules.yasii.tenant_context import apply_server_identity_to_runtime_payload
 from app.modules.yasii.contracts import YASIIEmbeddedQueryRequest, YASIIRequest, YASIIResponse
 from app.modules.yasii.effective_scope import EffectiveScopeBuildContext, derive_effective_scope
 from app.modules.yasii.runtime_demo_service import run_demo_pipeline
@@ -60,18 +62,44 @@ class RuntimeOrchestrator:
         )
 
 
-def orchestrate_runtime_request(request: YASIIRequest) -> YASIIResponse:
+def orchestrate_runtime_request(
+    request: YASIIRequest,
+    *,
+    tenant_id: int | None = None,
+    user_id: int | None = None,
+) -> YASIIResponse:
     """Official runtime entry: delegate to wired demo pipeline (P4-W08)."""
+    if tenant_id is not None and user_id is not None:
+        payload = apply_server_identity_to_runtime_payload(
+            dict(request.payload or {}),
+            tenant_id=tenant_id,
+            user_id=user_id,
+        )
+        request = request.model_copy(update={"payload": payload})
     return run_demo_pipeline(request)
 
 
-def orchestrate_embedded_request(request: YASIIEmbeddedQueryRequest) -> YASIIResponse:
+def orchestrate_embedded_request(
+    request: YASIIEmbeddedQueryRequest,
+    *,
+    tenant_id: int | None = None,
+    user_id: int | None = None,
+) -> YASIIResponse:
     """Embedded runtime entry: ACE handoff → EffectiveScope → demo pipeline (P7-W01)."""
     handoff_id = str(request.handoffId or "").strip()
     if not handoff_id:
         raise HandoffNotFoundError("")
 
-    handoff = validate_handoff(handoff_id)
+    if tenant_id is not None and user_id is not None:
+        handoff = validate_handoff_for_caller(
+            handoff_id,
+            tenant_id=tenant_id,
+            user_id=user_id,
+        )
+    else:
+        from app.modules.ai_context.handoff import validate_handoff
+
+        handoff = validate_handoff(handoff_id)
     scope = derive_effective_scope(
         EffectiveScopeBuildContext(
             requestId=handoff.handoffId,

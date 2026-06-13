@@ -1,6 +1,7 @@
 import {
   normalizeAvatarSettings,
 } from "../../../shared/avatar/avatarUtils.js";
+import { buildAvatarUrl } from "../../../shared/files/api/filesApi.js";
 import {
   COMPANY_ACCESS_MODES,
   loadPlatformRoleCatalog,
@@ -15,7 +16,7 @@ export function resolveUserAvatarUrl(user = {}) {
     return "";
   }
 
-  return (
+  const rawUrl =
     user.avatar_url
     || user.avatarUrl
     || user.photo_url
@@ -24,8 +25,9 @@ export function resolveUserAvatarUrl(user = {}) {
     || user.imageUrl
     || user.avatar?.url
     || user.avatar?.absolute_url
-    || ""
-  );
+    || "";
+
+  return rawUrl ? buildAvatarUrl(rawUrl) : "";
 }
 
 export function resolveUserAvatarSettings(user = {}) {

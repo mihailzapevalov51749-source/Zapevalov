@@ -28,6 +28,7 @@ export default function LibraryTable({
 
   onPreviewFile,
 
+  tenantId,
   getFileUrl,
   getTypeLabel,
   getIcon,
@@ -365,6 +366,7 @@ export default function LibraryTable({
             onDropMoveDocuments={
               onDropMoveDocuments
             }
+            tenantId={tenantId}
             getFileUrl={getFileUrl}
             getTypeLabel={getTypeLabel}
             getIcon={getIcon}

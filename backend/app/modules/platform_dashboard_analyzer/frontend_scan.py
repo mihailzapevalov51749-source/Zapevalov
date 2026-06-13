@@ -84,5 +84,5 @@ def frontend_has_marker(scan: FrontendScanResult, marker: str) -> bool:
 
 
 def frontend_uses_real_api(scan: FrontendScanResult, api_marker: str) -> bool:
-    dashboard_api = scan.file_contents.get("modules/platformDashboard/api/platformDashboardApi.js", "")
-    return api_marker in dashboard_api or frontend_has_marker(scan, api_marker)
+    journal_api = scan.file_contents.get("modules/platformDashboard/api/platformEventJournalApi.js", "")
+    return api_marker in journal_api or frontend_has_marker(scan, api_marker)

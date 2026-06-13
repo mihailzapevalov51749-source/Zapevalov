@@ -152,12 +152,23 @@ function ShellSidebarView({
   const [menuBlockSettingsVersion, setMenuBlockSettingsVersion] = useState(0);
 
   const dragAndDrop = useMenuDragAndDrop({
+    portalId: tenantId,
     items: navigationItems,
     isEnabled: hasDesignerScope && canDragMenu,
     reload: reloadNavigation,
     onMove: async (itemsPayload) => {
-      if (typeof onAction === "function") {
-        onAction("move-menu-items", { items: itemsPayload });
+      const result = await persistNavigationMenuBlockMove({
+        menuProfile,
+        tenantId,
+        itemsPayload,
+        rootItems: rootItemsForBlocks,
+        reloadNavigation,
+      });
+
+      setMenuBlockSettingsVersion((previous) => previous + 1);
+
+      if (menuProfile === "control-plane" || menuProfile === "platform") {
+        setSystemMenuSettings(result.settings);
       }
     },
   });

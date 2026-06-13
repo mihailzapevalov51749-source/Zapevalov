@@ -11,7 +11,7 @@ from app.modules.platform.runtime.plan_tree.schemas import (
     PlanTreeReorderSiblingsRead,
     PlanTreeReorderSiblingsRequest,
 )
-from app.modules.platform.shared.dependencies import require_tenant
+from app.modules.platform.shared.dependencies import require_tenant_membership
 
 TenantIdPath = Annotated[int, Path(..., description="Идентификатор tenant (portal).", ge=1)]
 ObjectTypeKeyPath = Annotated[str, Path(..., max_length=64)]
@@ -38,7 +38,7 @@ def get_plan_tree(
         description="Hierarchy relation key override (defaults to plan view contract).",
     ),
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.get_plan_tree(
         db,
@@ -58,7 +58,7 @@ def ensure_plan_tree_root_order(
     object_type_key: ObjectTypeKeyPath,
     relation_key: RelationKeyPath,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.ensure_root_order(db, tenant_id, object_type_key, relation_key)
 
@@ -72,6 +72,6 @@ def reorder_plan_tree_siblings(
     relation_key: RelationKeyPath,
     payload: PlanTreeReorderSiblingsRequest,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.reorder_siblings(db, tenant_id, relation_key, payload)

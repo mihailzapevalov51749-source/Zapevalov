@@ -52,6 +52,23 @@ def get_item(db: Session, item_id: int, *, include_deleted: bool = False):
     return query.first()
 
 
+def get_item_for_portal(
+    db: Session,
+    item_id: int,
+    portal_id: int,
+    *,
+    include_deleted: bool = False,
+):
+    from app.modules.navigation.tenant_access import get_navigation_item_for_portal
+
+    return get_navigation_item_for_portal(
+        db,
+        item_id,
+        portal_id,
+        include_deleted=include_deleted,
+    )
+
+
 def count_active_children(db: Session, item_id: int) -> int:
     return (
         db.query(NavigationItem)
@@ -63,8 +80,8 @@ def count_active_children(db: Session, item_id: int) -> int:
     )
 
 
-def update_item(db: Session, item_id: int, data):
-    item = get_item(db, item_id)
+def update_item(db: Session, item_id: int, portal_id: int, data):
+    item = get_item_for_portal(db, item_id, portal_id)
 
     if not item:
         return None
@@ -88,8 +105,8 @@ def update_item(db: Session, item_id: int, data):
     return item
 
 
-def delete_item(db: Session, item_id: int, *, deleted_by: int | None = None):
-    item = get_item(db, item_id)
+def delete_item(db: Session, item_id: int, portal_id: int, *, deleted_by: int | None = None):
+    item = get_item_for_portal(db, item_id, portal_id, include_deleted=True)
 
     if not item or item.deleted_at is not None:
         return None
@@ -100,15 +117,22 @@ def delete_item(db: Session, item_id: int, *, deleted_by: int | None = None):
     return item
 
 
-def move_items(db: Session, items):
+def move_items(db: Session, portal_id: int, items):
     updated = []
 
     for item_data in items:
-        item = get_item(db, item_data.id)
-        if item:
-            item.parent_id = item_data.parent_id
-            item.sort_order = item_data.sort_order
-            updated.append(item)
+        item = get_item_for_portal(db, item_data.id, portal_id)
+        if not item:
+            continue
+
+        if item_data.parent_id is not None:
+            parent = get_item_for_portal(db, item_data.parent_id, portal_id)
+            if not parent:
+                continue
+
+        item.parent_id = item_data.parent_id
+        item.sort_order = item_data.sort_order
+        updated.append(item)
 
     db.commit()
 

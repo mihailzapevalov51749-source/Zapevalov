@@ -7,7 +7,7 @@ const GRID_ROW_HEIGHT = 10;
 const GRID_GAP = 2;
 const MIN_TEXT_BLOCK_ROWS = 4;
 
-export default function TextBlockView({ block, isEditMode, onBlockUpdated }) {
+export default function TextBlockView({ portalId, block, isEditMode, onBlockUpdated }) {
   const textareaRef = useRef(null);
   const textViewRef = useRef(null);
   const toolbarRef = useRef(null);
@@ -134,7 +134,7 @@ export default function TextBlockView({ block, isEditMode, onBlockUpdated }) {
     try {
       setIsSaving(true);
 
-      const savedBlock = await updateBlock(block.id, {
+      const savedBlock = await updateBlock(portalId, block.id, {
         content: {
           ...(block.content || {}),
           text: nextText,
@@ -207,7 +207,7 @@ export default function TextBlockView({ block, isEditMode, onBlockUpdated }) {
         },
       };
 
-      const savedBlock = await updateBlock(block.id, {
+      const savedBlock = await updateBlock(portalId, block.id, {
         content: {
           ...(block.content || {}),
           text: draftText,

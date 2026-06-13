@@ -1,3 +1,5 @@
+import { buildAvatarUrl } from "../../files/api/filesApi.js";
+
 const DEFAULT_AVATAR_SETTINGS = {
   x: 0,
   y: 0,
@@ -48,6 +50,7 @@ export default function MessageAvatar({
   avatarSettings,
   size = 28,
 }) {
+  const resolvedAvatarUrl = buildAvatarUrl(avatarUrl);
   const normalized = normalizeAvatarSettings(avatarSettings);
 
   const avatarRatio = size / PROFILE_AVATAR_SIZE;
@@ -74,9 +77,9 @@ export default function MessageAvatar({
         flexShrink: 0,
       }}
     >
-      {avatarUrl ? (
+      {resolvedAvatarUrl ? (
         <img
-          src={avatarUrl}
+          src={resolvedAvatarUrl}
           alt={authorName || "Аватар"}
           draggable={false}
           style={{

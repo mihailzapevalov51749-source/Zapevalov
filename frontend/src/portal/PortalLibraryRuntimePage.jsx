@@ -706,6 +706,8 @@ export default function PortalLibraryRuntimePage() {
 
             <LibraryPageView
 
+              tenantId={tenantId}
+
               libraryId={libraryId}
 
               title={topBarTitle}

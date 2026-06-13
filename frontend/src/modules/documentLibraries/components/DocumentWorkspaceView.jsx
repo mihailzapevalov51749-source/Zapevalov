@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { getLibraryDocumentById } from "../api/documentLibrariesApi";
-import { buildWorkspacePreviewPayload } from "../services/documentLibrariesService";
+import {
+  getLibraryDocumentById,
+} from "../api/documentLibrariesApi";
+import {
+  buildWorkspacePreviewPayload,
+} from "../services/documentLibrariesService";
 import { resolveFolderPath } from "../utils/libraryFolderPath";
 import FileViewerWorkspace from "../../../shared/files/components/FileViewerWorkspace";
 import { YasiiSurfaceContextProvider } from "../../../yasii/context/YasiiSurfaceContext.jsx";
@@ -32,6 +36,7 @@ export default function DocumentWorkspaceView({
 }) {
   const [documentRecord, setDocumentRecord] = useState(null);
   const [folderPath, setFolderPath] = useState([]);
+  const [preview, setPreview] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const onDocumentLoadedRef = useRef(onDocumentLoaded);
@@ -42,13 +47,19 @@ export default function DocumentWorkspaceView({
 
   useEffect(() => {
     let cancelled = false;
+    let blobUrlToRevoke = null;
 
     const loadDocument = async () => {
       setIsLoading(true);
       setError("");
+      setPreview(null);
 
       try {
-        const record = await getLibraryDocumentById(documentId);
+        const record = await getLibraryDocumentById(
+          tenantId,
+          libraryId,
+          documentId,
+        );
         if (cancelled) {
           return;
         }
@@ -69,7 +80,8 @@ export default function DocumentWorkspaceView({
           const resolved = await resolveFolderPath({
             libraryId,
             targetFolderId,
-            getDocumentById: getLibraryDocumentById,
+            getDocumentById: (targetDocumentId) =>
+              getLibraryDocumentById(tenantId, libraryId, targetDocumentId),
           });
           resolvedFolderPath = resolved.folderPath;
         }
@@ -78,17 +90,20 @@ export default function DocumentWorkspaceView({
           return;
         }
 
+        const nextPreview = await buildWorkspacePreviewPayload(record, tenantId);
+        if (nextPreview?.revokeOnCleanup) {
+          blobUrlToRevoke = nextPreview.fileUrl;
+        }
+
         setDocumentRecord(record);
         setFolderPath(resolvedFolderPath);
+        setPreview(nextPreview);
 
         if (typeof onDocumentLoadedRef.current === "function") {
           onDocumentLoadedRef.current({
             documentRecord: record,
             folderPath: resolvedFolderPath,
-            documentTitle: getDocumentTitle(
-              record,
-              buildWorkspacePreviewPayload(record),
-            ),
+            documentTitle: getDocumentTitle(record, nextPreview),
           });
         }
       } catch (loadError) {
@@ -97,6 +112,7 @@ export default function DocumentWorkspaceView({
           setError("Не удалось загрузить документ");
           setDocumentRecord(null);
           setFolderPath([]);
+          setPreview(null);
         }
       } finally {
         if (!cancelled) {
@@ -109,15 +125,16 @@ export default function DocumentWorkspaceView({
 
     return () => {
       cancelled = true;
+      if (blobUrlToRevoke) {
+        URL.revokeObjectURL(blobUrlToRevoke);
+      }
     };
-  }, [documentId, libraryId, folderId]);
-
-  const preview = buildWorkspacePreviewPayload(documentRecord);
+  }, [documentId, libraryId, tenantId, folderId]);
 
   const yasiiSurfaceValue = useMemo(
     () =>
       buildDocumentYasiiSurfaceValue({
-        tenantId: tenantId ?? libraryId,
+        tenantId: tenantId ?? "",
         userId: userId ?? resolvePlatformDashboardUserId(),
         libraryId,
         libraryName,

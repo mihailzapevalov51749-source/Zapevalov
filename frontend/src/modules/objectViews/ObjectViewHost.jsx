@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import {
   canAccessDesigner,
@@ -41,6 +42,11 @@ import {
   resolvePlanAdapterContract,
 } from "./services/resolvePlanAdapterContract.js";
 import { useObjectTypePreviewTab } from "../designer/context/ObjectTypePreviewTabContext.jsx";
+import { YasiiSurfaceContextProvider } from "../../yasii/context/YasiiSurfaceContext.jsx";
+import {
+  buildPlanViewSurfaceValue,
+  buildQuickFormSurfaceValue,
+} from "../../yasii/runtime/yasiiRuntimeSurfaceContext.js";
 
 const UNSUPPORTED_VIEW_PLACEHOLDER_STYLE = {
   padding: 24,
@@ -93,6 +99,7 @@ export default function ObjectViewHost({
   const [publishedViewRaw, setPublishedViewRaw] = useState(null);
   const [runtimeCatalog, setRuntimeCatalog] = useState(null);
   const previewTabContext = useObjectTypePreviewTab();
+  const location = useLocation();
   const planPreviewEditor =
     planPreviewEditorProp ??
     (mode === "studio-preview" ? previewTabContext?.planPreviewEditor ?? null : null);
@@ -758,6 +765,28 @@ export default function ObjectViewHost({
     .filter(Boolean)
     .join(" ");
 
+  const planSurfaceValue = useMemo(
+    () =>
+      buildPlanViewSurfaceValue({
+        tenantId,
+        pathname: location.pathname,
+        objectTypeKey,
+        objectTypeId,
+      }),
+    [location.pathname, objectTypeId, objectTypeKey, tenantId],
+  );
+
+  const quickFormSurfaceValue = useMemo(
+    () =>
+      buildQuickFormSurfaceValue({
+        tenantId,
+        pathname: location.pathname,
+        objectTypeKey,
+        objectTypeId,
+      }),
+    [location.pathname, objectTypeId, objectTypeKey, tenantId],
+  );
+
   if (resolvedViewType === "plan") {
     if (isPlanViewContractPending) {
       return (
@@ -773,23 +802,25 @@ export default function ObjectViewHost({
     }
 
     return (
-      <div
-        className={rootClassName}
-        data-object-view-host="plan"
-        data-runtime-source={source || undefined}
-        style={OBJECT_VIEW_HOST_TABLE_LAYOUT_STYLE}
-      >
-        <ObjectPlanView
-          tenantId={tenantId}
-          objectTypeId={objectTypeId}
-          mode={mode}
-          query={query}
-          resolvedContract={planAdapterContract}
-          objectTypeKey={objectTypeKey}
-          minHeight={minHeight}
-          planPreviewEditor={planPreviewEditor}
-        />
-      </div>
+      <YasiiSurfaceContextProvider value={planSurfaceValue}>
+        <div
+          className={rootClassName}
+          data-object-view-host="plan"
+          data-runtime-source={source || undefined}
+          style={OBJECT_VIEW_HOST_TABLE_LAYOUT_STYLE}
+        >
+          <ObjectPlanView
+            tenantId={tenantId}
+            objectTypeId={objectTypeId}
+            mode={mode}
+            query={query}
+            resolvedContract={planAdapterContract}
+            objectTypeKey={objectTypeKey}
+            minHeight={minHeight}
+            planPreviewEditor={planPreviewEditor}
+          />
+        </div>
+      </YasiiSurfaceContextProvider>
     );
   }
 
@@ -800,21 +831,23 @@ export default function ObjectViewHost({
         : runtimeCatalog;
 
     return (
-      <div
-        className={rootClassName}
-        data-object-view-host="quick_form"
-        data-runtime-source={source || undefined}
-        style={OBJECT_VIEW_HOST_TABLE_LAYOUT_STYLE}
-      >
-        <ObjectQuickFormView
-          tenantId={tenantId}
-          objectTypeKey={objectTypeKey}
-          catalog={previewCatalog}
-          resolvedContract={catalogSyncedResolvedContract}
-          mode={mode}
-          minHeight={minHeight}
-        />
-      </div>
+      <YasiiSurfaceContextProvider value={quickFormSurfaceValue}>
+        <div
+          className={rootClassName}
+          data-object-view-host="quick_form"
+          data-runtime-source={source || undefined}
+          style={OBJECT_VIEW_HOST_TABLE_LAYOUT_STYLE}
+        >
+          <ObjectQuickFormView
+            tenantId={tenantId}
+            objectTypeKey={objectTypeKey}
+            catalog={previewCatalog}
+            resolvedContract={catalogSyncedResolvedContract}
+            mode={mode}
+            minHeight={minHeight}
+          />
+        </div>
+      </YasiiSurfaceContextProvider>
     );
   }
 

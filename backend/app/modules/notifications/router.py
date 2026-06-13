@@ -26,7 +26,7 @@ def get_notifications(
 ):
     return NotificationService.get_user_notifications(
         db,
-        user_id=current_user.id,
+        current_user=current_user,
         limit=limit,
         category=category,
         only_unread=only_unread,
@@ -40,7 +40,7 @@ def get_unread_count(
 ):
     count = NotificationService.get_unread_count(
         db,
-        user_id=current_user.id,
+        current_user=current_user,
     )
 
     return {
@@ -55,7 +55,7 @@ def mark_all_notifications_as_read(
 ):
     count = NotificationService.mark_all_as_read(
         db,
-        user_id=current_user.id,
+        current_user=current_user,
     )
 
     return {
@@ -73,7 +73,7 @@ def mark_notification_as_read(
     NotificationService.mark_as_read(
         db,
         notification_id=notification_id,
-        user_id=current_user.id,
+        current_user=current_user,
     )
 
     return {

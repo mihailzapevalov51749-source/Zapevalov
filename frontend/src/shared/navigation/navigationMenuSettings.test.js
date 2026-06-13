@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -107,4 +108,17 @@ test("readNavigationMenuBlockSettings uses tenant settings for platform profile"
     assert.equal(settings[7].block_id, 3);
     assert.equal(getDesignerSystemMenuSettings(TENANT_ID).objects, undefined);
   });
+});
+
+test("persistNavigationMenuBlockMove passes tenantId to navigationService.moveItems", () => {
+  const source = readFileSync(
+    new URL("./navigationMenuSettings.js", import.meta.url),
+    "utf8",
+  );
+
+  assert.match(source, /navigationService\.moveItems\(tenantId, customDbPayload\)/);
+  assert.match(
+    source,
+    /didPersist[\s\S]*await reloadNavigation\(\);/,
+  );
 });

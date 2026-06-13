@@ -5,7 +5,7 @@ import PortalLayout from "../../layouts/PortalLayout";
 import useNavigationTree from "../../modules/navigation/hooks/useNavigationTree";
 import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../../shared/navigation/navigationReload";
 import { resolveYasiiReturnPath } from "../../shared/appMode/appModeNavigation";
-import { readYasiiPreWorkspacePath } from "../workspace/yasiiWorkspaceModeStorage.js";
+import { readYasiiPreWorkspacePath, resolveYasiiTenantId } from "../workspace/yasiiWorkspaceModeStorage.js";
 import { YasiiSurfaceContextProvider } from "../context/YasiiSurfaceContext.jsx";
 import { useYasiiAssistantSession } from "../context/YasiiAssistantContext.jsx";
 import YasiiEmbeddedPanel from "../components/YasiiEmbeddedPanel.jsx";
@@ -22,8 +22,6 @@ import {
   writeLeftMenuScale,
 } from "../../shared/uiStorage/leftMenuScaleStorage.js";
 
-const DEFAULT_PORTAL_ID = 1;
-
 export default function YasiiWorkspacePage() {
   useResolvedPageLayoutContract({
     pageType: PAGE_LAYOUT_PAGE_TYPE.YASII_WORKSPACE,
@@ -38,7 +36,7 @@ export default function YasiiWorkspacePage() {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const portalId = DEFAULT_PORTAL_ID;
+  const portalId = resolveYasiiTenantId(location.pathname);
   const session = useYasiiAssistantSession();
 
   useEffect(() => {
@@ -135,6 +133,7 @@ export default function YasiiWorkspacePage() {
   const handleCloseWorkspace = useCallback(() => {
     void resolveYasiiReturnPath(
       readYasiiPreWorkspacePath(portalId, location.pathname),
+      portalId,
     ).then((returnPath) => {
       if (!returnPath) {
         return;

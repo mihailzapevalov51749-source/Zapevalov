@@ -5,6 +5,7 @@ import {
   isCompanyOwner,
 } from "../../../shared/tenantRoles/tenantRoleModel.js";
 import { sendTenantUserInvite } from "./tenantUsersApi";
+import { buildAvatarUrl } from "../../../shared/files/api/filesApi";
 import { styles } from "./usersStyles";
 
 const API_BASE_URL = "http://127.0.0.1:8010";
@@ -596,7 +597,7 @@ function Avatar({ user, size }) {
     <div style={{ ...cardStyles.avatar, width: size, height: size }}>
       {user?.avatar_url ? (
         <img
-          src={user.avatar_url}
+          src={buildAvatarUrl(user.avatar_url)}
           alt=""
           draggable={false}
           style={{

@@ -4,8 +4,12 @@ import {
   PAGE_LAYOUT_PAGE_TYPE,
   PAGE_LAYOUT_TOOLBAR_ZONE,
 } from "../shared/appShell/pageLayoutContract/pageLayoutContractTypes.js";
+import {
+  CORPORATE_CHAT_PAGE_ID,
+  resolveIsCorporateChatPage,
+} from "./resolveCorporateChatPage.js";
 
-export const CORPORATE_CHAT_PAGE_ID = 35;
+export { CORPORATE_CHAT_PAGE_ID };
 
 export { isDesignerShellEmbeddedPortalRoute } from "../shared/shell/shellLayoutMode.js";
 
@@ -166,6 +170,7 @@ function buildCmsContractFields({
  *   navigationItemTitle?: string,
  *   pageTitleDraft?: string,
  *   headerTitle?: string,
+ *   activeNavigationItem?: { system_key?: string | null, menu_scope?: string | null, title?: string | null } | null,
  *   workspaceRuntimeContext?: { slug?: string, tabSlug?: string } | null,
  * }} [options]
  */
@@ -174,7 +179,10 @@ export function resolvePortalPageViewLayoutContractOverrides(location, pageId, o
   const isAdminPage =
     pathname.startsWith("/admin") ||
     /^\/designer\/tenant\/\d+\/administration(\/|$)/.test(pathname);
-  const isCorporateChatPage = Number(pageId) === CORPORATE_CHAT_PAGE_ID;
+  const isCorporateChatPage = resolveIsCorporateChatPage({
+    pageId,
+    activeNavigationItem: options.activeNavigationItem,
+  });
   const isDesignerCustomPageRoute = /^\/designer\/tenant\/\d+\/page\/\d+/.test(pathname);
   const isPortalCmsPage =
     /^\/portal\/\d+\/page\/\d+/.test(pathname) &&

@@ -15,28 +15,26 @@ import {
   isBlockedNotificationTarget,
   isFileNotificationTarget,
   isRuntimeEntityNotificationTarget,
+  resolveNotificationTenantId,
   resolveObjectOverlayContext,
-  resolvePortalIdFromPathname,
 } from "../navigation/notificationTargetRouting";
 import { Z_INDEX_TOKENS } from "../../../shared/layout/zIndexTokens";
 import { LAYOUT_MODES } from "../../../shared/layout/layoutModes";
 import { resolveWorkspaceLeftOffset } from "../../../shared/layout/shellGeometry";
 import { readShellSidebarCollapsedForCurrentUrl } from "../../../shared/shell/useShellSidebarState";
-import { apiClient } from "../../../api/apiClient";
+import { fetchProtectedFileBlobUrl, isProtectedDocumentFilePath } from "../../../shared/files/api/filesApi";
+import { fetchLibraryDocumentBlobUrl } from "../../documentLibraries/api/documentLibrariesApi";
 import {
   getLibraryDocumentByFileKey,
-  getFileUrl,
 } from "../../documentLibraries/services/documentLibrariesService";
-
-const API_BASE_URL = String(apiClient?.defaults?.baseURL || "").replace(/\/$/, "");
 
 function normalizeId(value) {
   return String(value ?? "").trim();
 }
 
-function buildUploadedFileUrl(fileId) {
+function buildUploadedFilePath(fileId) {
   if (!fileId) return "";
-  return `${API_BASE_URL}/files/documents/${fileId}`;
+  return `/files/documents/${fileId}`;
 }
 
 const BLOCKED_OVERLAY_STYLE = {
@@ -92,6 +90,13 @@ function getBlockedCopy(type) {
       title: "Контекст уведомления недоступен",
       message:
         "Объект не опубликован, удалён или ссылка из уведомления устарела.",
+    };
+  }
+
+  if (type === "tenant_unresolved") {
+    return {
+      title: "Не удалось открыть уведомление",
+      message: "Не удалось определить компанию для открытия уведомления.",
     };
   }
 
@@ -213,7 +218,6 @@ function NotificationObjectEntityOverlay({
 
 export default function NotificationOverlayHost() {
   const location = useLocation();
-  const tenantId = resolvePortalIdFromPathname(location.pathname);
 
   const [overlayState, setOverlayState] = useState(null);
   const [objectOverlaySession, setObjectOverlaySession] = useState(null);
@@ -229,6 +233,10 @@ export default function NotificationOverlayHost() {
   }
 
   function clearOverlayState() {
+    const current = overlayStateRef.current;
+    if (current?.file?.revokeOnCleanup && current?.file?.fileUrl) {
+      URL.revokeObjectURL(current.file.fileUrl);
+    }
     updateOverlayState(null);
     lastTargetKeyRef.current = "";
     window.__YASNOPRO_PENDING_NOTIFICATION_TARGET__ = null;
@@ -282,6 +290,27 @@ export default function NotificationOverlayHost() {
           return;
         }
 
+        const resolvedTenantId = resolveNotificationTenantId(
+          { ...rawDetail, context },
+          location.pathname,
+        );
+
+        if (!resolvedTenantId) {
+          console.warn(
+            "[NotificationOverlayHost] tenant unresolved for runtime entity notification",
+            {
+              entityType: context.entity_type,
+              entityId: context.entity_id,
+              pathname: location.pathname,
+            },
+          );
+          updateOverlayState({
+            type: "tenant_unresolved",
+            ...getBlockedCopy("tenant_unresolved"),
+          });
+          return;
+        }
+
         const targetKey = [
           mergedTarget.type,
           overlayContext.objectTypeKey,
@@ -302,6 +331,7 @@ export default function NotificationOverlayHost() {
         setObjectOverlaySession({
           target: mergedTarget,
           overlayContext,
+          tenantId: resolvedTenantId,
         });
         return;
       }
@@ -325,20 +355,70 @@ export default function NotificationOverlayHost() {
           return;
         }
 
+        const resolvedTenantId = resolveNotificationTenantId(
+          { ...rawDetail, context },
+          location.pathname,
+        );
+        const libraryId = normalizeId(context.library_id || context.libraryId);
+
+        if (!resolvedTenantId) {
+          console.warn(
+            "[NotificationOverlayHost] tenant unresolved for library file notification",
+            {
+              fileId,
+              libraryId,
+              pathname: location.pathname,
+            },
+          );
+          updateOverlayState({
+            type: "tenant_unresolved",
+            ...getBlockedCopy("tenant_unresolved"),
+          });
+          return;
+        }
+
         try {
-          const document = await getLibraryDocumentByFileKey(fileId);
-          const fileUrl = getFileUrl(document);
-          const normalizedDocumentId = normalizeId(document?.id) || fileId;
+          let blobUrl;
+          let fileName = context.file_name || "Файл";
+          let normalizedDocumentId = fileId;
+          let fileType = context.file_type || "";
+
+          if (libraryId) {
+            const document = await getLibraryDocumentByFileKey(
+              resolvedTenantId,
+              libraryId,
+              fileId,
+            );
+            blobUrl = await fetchLibraryDocumentBlobUrl(
+              resolvedTenantId,
+              document.id,
+            );
+            normalizedDocumentId = normalizeId(document?.id) || fileId;
+            fileName = document.title || fileName;
+            fileType = document.document_type || fileType;
+          } else {
+            const documentId = Number(fileId);
+            if (!Number.isFinite(documentId) || documentId <= 0) {
+              throw new Error("Invalid library document id");
+            }
+
+            blobUrl = await fetchLibraryDocumentBlobUrl(
+              resolvedTenantId,
+              documentId,
+            );
+            normalizedDocumentId = String(documentId);
+          }
 
           lastTargetKeyRef.current = targetKey;
           updateOverlayState({
             type: "library_file",
             file: {
-              raw: document,
+              raw: { id: normalizedDocumentId },
               fileId: normalizedDocumentId,
-              fileUrl,
-              fileName: document.title,
-              fileType: document.document_type,
+              fileUrl: blobUrl,
+              revokeOnCleanup: true,
+              fileName,
+              fileType,
             },
             context: {
               ...context,
@@ -375,15 +455,32 @@ export default function NotificationOverlayHost() {
           return;
         }
 
-        const uploadedFileUrl =
-          context.file_url || buildUploadedFileUrl(fileId);
+        const uploadedFilePath =
+          context.file_url || buildUploadedFilePath(fileId);
 
-        if (!uploadedFileUrl) {
+        if (!uploadedFilePath) {
           updateOverlayState({
             type: "notification_unavailable",
             ...getBlockedCopy("notification_unavailable"),
           });
           return;
+        }
+
+        let resolvedFileUrl = uploadedFilePath;
+        let revokeOnCleanup = false;
+
+        if (isProtectedDocumentFilePath(uploadedFilePath)) {
+          try {
+            resolvedFileUrl = await fetchProtectedFileBlobUrl(uploadedFilePath);
+            revokeOnCleanup = true;
+          } catch (error) {
+            console.error("UPLOADED FILE LOAD ERROR:", error);
+            updateOverlayState({
+              type: "notification_unavailable",
+              ...getBlockedCopy("notification_unavailable"),
+            });
+            return;
+          }
         }
 
         lastTargetKeyRef.current = targetKey;
@@ -392,7 +489,8 @@ export default function NotificationOverlayHost() {
           file: {
             raw: { id: fileId },
             fileId,
-            fileUrl: uploadedFileUrl,
+            fileUrl: resolvedFileUrl,
+            revokeOnCleanup,
             fileName: context.file_name || "Файл",
             fileType: "",
           },
@@ -421,7 +519,7 @@ export default function NotificationOverlayHost() {
     return () => {
       unsubscribePendingTarget();
     };
-  }, []);
+  }, [location.pathname]);
 
   const workspaceLeftOffset = resolveWorkspaceLeftOffset({
     mode: LAYOUT_MODES.RUNTIME,
@@ -434,7 +532,7 @@ export default function NotificationOverlayHost() {
       {objectOverlaySession ? (
         <NotificationObjectEntityOverlay
           key={`${objectOverlaySession.overlayContext.objectTypeKey}:${objectOverlaySession.overlayContext.runtimeEntityId}`}
-          tenantId={tenantId}
+          tenantId={objectOverlaySession.tenantId}
           target={objectOverlaySession.target}
           overlayContext={objectOverlaySession.overlayContext}
           onClose={clearObjectOverlaySession}
@@ -445,6 +543,7 @@ export default function NotificationOverlayHost() {
         <>
           {overlayState.type === "notification_unavailable" ||
           overlayState.type === "runtime_context_missing" ||
+          overlayState.type === "tenant_unresolved" ||
           overlayState.type === "access_denied" ? (
             <NotificationBlockedOverlay
               title={overlayState.title}

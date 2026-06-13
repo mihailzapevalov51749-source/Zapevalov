@@ -1,15 +1,48 @@
-const API_BASE_URL = "http://127.0.0.1:8010";
+import {
+  fetchLibraryDocumentBlobUrl,
+  getLibraryDocumentDownloadPath,
+  moveLibraryDocument as moveLibraryDocumentApi,
+} from "../api/documentLibrariesApi";
+import { platformApiClient } from "../../designer/api/platformApiClient";
 
-export function getFileUrl(document) {
-  if (!document?.file_path) return "#";
-  return `${API_BASE_URL}${document.file_path}`;
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8010";
+
+export function getFileUrl(document, tenantId) {
+  const path = getLibraryDocumentDownloadPath(tenantId, document?.id);
+  if (!path) {
+    return "#";
+  }
+  return `${API_BASE_URL}${path}`;
 }
 
-export function buildWorkspacePreviewPayload(document) {
-  const fileUrl = getFileUrl(document);
-  if (!fileUrl || fileUrl === "#") {
+export async function downloadLibraryDocument(document, tenantId) {
+  const blobUrl = await fetchLibraryDocumentBlobUrl(tenantId, document.id);
+  const link = window.document.createElement("a");
+  link.href = blobUrl;
+  link.download =
+    document.original_filename ||
+    document.originalFilename ||
+    document.title ||
+    "document";
+  link.click();
+  URL.revokeObjectURL(blobUrl);
+}
+
+export async function buildWorkspacePreviewPayload(document, tenantId) {
+  if (!document?.id || document.is_folder) {
     return null;
   }
+
+  const normalizedTenantId = Number(tenantId);
+  if (!Number.isFinite(normalizedTenantId) || normalizedTenantId <= 0) {
+    return null;
+  }
+
+  const fileUrl = await fetchLibraryDocumentBlobUrl(
+    normalizedTenantId,
+    document.id,
+  );
 
   return {
     fileUrl,
@@ -20,6 +53,7 @@ export function buildWorkspacePreviewPayload(document) {
       "Файл",
     fileType: document.document_type,
     raw: document,
+    revokeOnCleanup: true,
   };
 }
 
@@ -144,54 +178,26 @@ export function filterDocuments(documents, searchQuery) {
   });
 }
 
-export async function getLibraryDocument(documentId) {
-  const response = await fetch(
-    `${API_BASE_URL}/document-libraries/documents/${documentId}`
+export async function getLibraryDocument(tenantId, libraryId, documentId) {
+  const { data } = await platformApiClient.get(
+    `/tenants/${tenantId}/document-libraries/${libraryId}/documents/${documentId}`,
   );
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => null);
-
-    throw new Error(error?.detail || "Не удалось загрузить документ");
-  }
-
-  return response.json();
+  return data;
 }
 
-export async function getLibraryDocumentByFileKey(fileKey) {
+export async function getLibraryDocumentByFileKey(tenantId, libraryId, fileKey) {
   const encodedFileKey = encodeURIComponent(String(fileKey || ""));
-
-  const response = await fetch(
-    `${API_BASE_URL}/document-libraries/documents/by-file/${encodedFileKey}`
+  const { data } = await platformApiClient.get(
+    `/tenants/${tenantId}/document-libraries/${libraryId}/documents/by-file/${encodedFileKey}`,
   );
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => null);
-
-    throw new Error(error?.detail || "Не удалось загрузить документ по ключу файла");
-  }
-
-  return response.json();
+  return data;
 }
 
-export async function moveLibraryDocument(documentId, parentId) {
-  const response = await fetch(
-    `${API_BASE_URL}/document-libraries/documents/${documentId}/move`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        parent_id: parentId,
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => null);
-    throw new Error(error?.detail || "Не удалось переместить документ");
-  }
-
-  return response.json();
+export async function moveLibraryDocument(
+  tenantId,
+  libraryId,
+  documentId,
+  parentId,
+) {
+  return moveLibraryDocumentApi(tenantId, libraryId, documentId, parentId);
 }

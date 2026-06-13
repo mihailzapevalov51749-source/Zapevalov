@@ -36,6 +36,13 @@
   width: 100%;
   text-decoration: none;
   display: block;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  text-align: inherit;
+  font: inherit;
+  color: inherit;
 }
 
 .file-value-renderer__card {

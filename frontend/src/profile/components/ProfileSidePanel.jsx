@@ -20,6 +20,7 @@ import "../../shared/appShell/pageToolbarActions.css";
 import ConfirmSavePopover from "./ConfirmSavePopover";
 import ChangePasswordModal from "./ChangePasswordModal";
 import { styles } from "../styles/profileSidePanelStyles";
+import { buildAvatarUrl } from "../../shared/files/api/filesApi";
 import "../styles/profileSidePanelHeaderActions.css";
 
 const DEFAULT_AVATAR_SETTINGS = {
@@ -531,7 +532,7 @@ export default function ProfileSidePanel({
                   {form.avatar_url ? (
                     <div style={styles.avatarViewport}>
                       <img
-                        src={form.avatar_url}
+                        src={buildAvatarUrl(form.avatar_url)}
                         alt="Аватар"
                         draggable={false}
                         style={{

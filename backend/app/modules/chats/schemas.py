@@ -91,6 +91,7 @@ class ChatCreate(BaseModel):
     avatar_settings: dict[str, Any] | None = None
 
     workspace_id: int | None = None
+    tenant_id: int | None = None
     participant_ids: list[int] = Field(default_factory=list)
 
 
@@ -113,6 +114,7 @@ class ChatOut(BaseModel):
     avatar_settings: dict[str, Any] | None = None
 
     workspace_id: int | None = None
+    tenant_id: int | None = None
 
     created_by_id: int
     created_at: datetime
@@ -136,6 +138,7 @@ class ChatListItemOut(BaseModel):
     avatar_settings: dict[str, Any] | None = None
 
     workspace_id: int | None = None
+    created_by_id: int
 
     created_at: datetime
     updated_at: datetime
@@ -206,6 +209,7 @@ class ChatParticipantUpdate(BaseModel):
 
 class DirectChatCreate(BaseModel):
     user_id: int
+    tenant_id: int | None = None
 
 
 ChatListItemOut.model_rebuild()

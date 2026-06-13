@@ -19,4 +19,6 @@ test("useNavigationTree clears navigation on portal switch and ignores stale res
     /previousPortalIdRef\.current !== portalId[\s\S]*setNavigation\(\[\]\)/,
   );
   assert.match(source, /if \(isStaleResponse\(\)\) \{[\s\S]*return;/);
+  assert.match(source, /const enabled = options\?\.enabled !== false;/);
+  assert.match(source, /if \(!enabled\) \{[\s\S]*return;/);
 });

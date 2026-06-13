@@ -1,5 +1,10 @@
 import { useState } from "react";
 
+import {
+  buildWorkspacePreviewPayload,
+  downloadLibraryDocument,
+} from "../services/documentLibrariesService";
+
 function getDocumentFileName(document) {
   return (
     document?.file_name ||
@@ -30,6 +35,7 @@ export default function LibraryCard({
 
   onDropMoveDocuments,
 
+  tenantId,
   getFileUrl,
   getTypeLabel,
   getIcon,
@@ -64,7 +70,7 @@ export default function LibraryCard({
     event.stopPropagation();
   };
 
-  const handleOpen = (event) => {
+  const handleOpen = async (event) => {
     event.stopPropagation();
 
     if (isFolder) {
@@ -72,27 +78,24 @@ export default function LibraryCard({
       return;
     }
 
-    onPreviewFile?.({
-      fileUrl: getFileUrl(document),
-      fileName,
-      fileType: document.document_type,
-      raw: document,
-    });
+    try {
+      const payload = await buildWorkspacePreviewPayload(document, tenantId);
+      if (payload) {
+        onPreviewFile?.(payload);
+      }
+    } catch (openError) {
+      console.error(openError);
+    }
   };
 
-  const handleDownload = (event) => {
+  const handleDownload = async (event) => {
     stopEvent(event);
 
-    const fileUrl = getFileUrl(document);
-
-    if (!fileUrl) return;
-
-    const link = window.document.createElement("a");
-    link.href = fileUrl;
-    link.download = fileName;
-    link.target = "_blank";
-    link.rel = "noreferrer";
-    link.click();
+    try {
+      await downloadLibraryDocument(document, tenantId);
+    } catch (downloadError) {
+      console.error(downloadError);
+    }
   };
 
   const handleToggleSelect = (event) => {

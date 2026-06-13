@@ -166,6 +166,21 @@ describe("AppShell integration", () => {
 
   });
 
+  it("hides bottom tabs shell when workspace tabs list is empty", () => {
+    const appShellSource = readFileSync(join(appShellDir, "AppShell.jsx"), "utf8");
+    const cssSource = readFileSync(join(appShellDir, "appShell.css"), "utf8");
+
+    assert.match(appShellSource, /useGlobalWorkspaceTabs/);
+    assert.match(appShellSource, /hasBottomTabs/);
+    assert.match(appShellSource, /data-has-bottom-tabs/);
+    assert.match(appShellSource, /hasBottomTabs \? \(/);
+    assert.match(cssSource, /\.app-shell\s*\{[^}]*--app-shell-bottom-tabs-height:\s*0px/s);
+    assert.match(
+      cssSource,
+      /\.app-shell\[data-has-bottom-tabs="true"\][^}]*--app-shell-bottom-tabs-height:\s*32px/s,
+    );
+  });
+
 });
 
 

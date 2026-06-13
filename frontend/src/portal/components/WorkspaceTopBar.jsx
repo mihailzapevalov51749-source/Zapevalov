@@ -15,6 +15,7 @@ import {
   resolveStudioToOfficePathAsync,
 } from "../../shared/appMode/appModeNavigation";
 import { showPlatformNotification } from "../../shared/platformNotification/PlatformNotification";
+import { buildAvatarUrl } from "../../shared/files/api/filesApi";
 import { TENANT_HOME_PAGE_NOT_FOUND_MESSAGE } from "../../shared/tenantContext/resolveTenantRuntimeEntryPath";
 import { emitRuntimeShadowSnapshot } from "../../shared/shell/shadow/runtime";
 
@@ -179,7 +180,7 @@ const effectiveShowBackButton = true;
           id: user?.id,
           name: user?.full_name,
           email: user?.email,
-          avatarUrl: user?.avatar_url,
+          avatarUrl: buildAvatarUrl(user?.avatar_url),
         },
         tenantId,
         showBackButton: effectiveShowBackButton,

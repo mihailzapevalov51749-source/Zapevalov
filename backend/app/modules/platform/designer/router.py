@@ -41,7 +41,7 @@ from app.modules.platform.action_engine.action_forms.router import (
 from app.modules.platform.action_engine.router import router as action_engine_router
 from app.modules.platform.shared.dependencies import (
     require_designer_user,
-    require_tenant,
+    require_tenant_membership,
 )
 from app.modules.tenant_users.router import router as tenant_administration_router
 
@@ -51,7 +51,7 @@ router = APIRouter(prefix="/designer")
 tenant_router = APIRouter(
     prefix="/tenants/{tenant_id}",
     dependencies=[
-        Depends(require_tenant),
+        Depends(require_tenant_membership),
         Depends(require_designer_user),
     ],
 )

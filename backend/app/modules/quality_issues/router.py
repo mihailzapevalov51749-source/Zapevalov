@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.quality_issues.access import require_quality_issues_access
 from app.modules.quality_issues.schemas import (
     QualityIssueCreate,
     QualityIssueRead,
@@ -31,7 +31,7 @@ router = APIRouter(
 @router.get("", response_model=list[QualityIssueRead])
 def get_quality_issues(
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_quality_issues_access),
 ):
     return list_quality_issues(db)
 
@@ -40,7 +40,7 @@ def get_quality_issues(
 def get_quality_issue_by_id(
     issue_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_quality_issues_access),
 ):
     issue = get_quality_issue(db, issue_id=issue_id)
 
@@ -60,7 +60,7 @@ def get_quality_issue_by_id(
 def get_quality_issue_status_history(
     issue_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_quality_issues_access),
 ):
     issue = get_quality_issue(db, issue_id=issue_id)
 
@@ -77,7 +77,7 @@ def get_quality_issue_status_history(
 def create_quality_issue_endpoint(
     payload: QualityIssueCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_quality_issues_access),
 ):
     return create_quality_issue(
         db,
@@ -91,7 +91,7 @@ def patch_quality_issue(
     issue_id: int,
     payload: QualityIssueUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_quality_issues_access),
 ):
     issue = get_quality_issue(db, issue_id=issue_id)
 
@@ -112,7 +112,7 @@ def patch_quality_issue(
 def prepare_quality_issue_fix_endpoint(
     issue_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_quality_issues_access),
 ):
     issue = get_quality_issue(db, issue_id=issue_id)
 
@@ -129,7 +129,7 @@ def prepare_quality_issue_fix_endpoint(
 def approve_quality_issue_fix_endpoint(
     issue_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_quality_issues_access),
 ):
     issue = get_quality_issue(db, issue_id=issue_id)
 
@@ -146,7 +146,7 @@ def approve_quality_issue_fix_endpoint(
 def remove_quality_issue(
     issue_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_quality_issues_access),
 ):
     issue = get_quality_issue(db, issue_id=issue_id)
 

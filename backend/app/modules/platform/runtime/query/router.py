@@ -11,7 +11,7 @@ from app.modules.platform.runtime.query.schemas import (
     MAX_QUERY_LIMIT,
     ViewProjectionResponse,
 )
-from app.modules.platform.shared.dependencies import require_tenant
+from app.modules.platform.shared.dependencies import require_tenant_membership
 
 TenantIdPath = Annotated[
     int,
@@ -54,7 +54,7 @@ def query_entities(
         description="Направление сортировки: asc или desc.",
     ),
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.query_entities(
         db,
@@ -82,7 +82,7 @@ def get_view_projection(
         ),
     ),
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.get_view_projection(
         db,

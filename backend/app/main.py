@@ -16,6 +16,10 @@ from app.modules.files.router import router as files_router
 from app.modules.document_libraries.router import (
     router as document_libraries_router,
 )
+from app.modules.document_libraries.bridge_router import (
+    document_download_bridge_router,
+    document_libraries_bridge_router,
+)
 
 from app.modules.auth.router import router as auth_router
 from app.modules.users.router import router as users_router
@@ -42,9 +46,6 @@ from app.modules.quality_issues.router import (
     router as quality_issues_router,
 )
 
-from app.modules.platform_dashboard.router import (
-    router as platform_dashboard_router,
-)
 from app.modules.platform_event_journal.router import (
     router as platform_event_journal_router,
 )
@@ -89,11 +90,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.mount(
-    "/uploads",
-    StaticFiles(directory=str(UPLOADS_DIR)),
-    name="uploads",
-)
+for _uploads_subdir in ("icons", "images", "avatars"):
+    _subdir_path = UPLOADS_DIR / _uploads_subdir
+    _subdir_path.mkdir(parents=True, exist_ok=True)
+    app.mount(
+        f"/uploads/{_uploads_subdir}",
+        StaticFiles(directory=str(_subdir_path)),
+        name=f"uploads-{_uploads_subdir}",
+    )
 
 # AUTH
 app.include_router(auth_router)
@@ -109,6 +113,8 @@ app.include_router(blocks_router)
 # FILES
 app.include_router(files_router)
 app.include_router(document_libraries_router)
+app.include_router(document_libraries_bridge_router)
+app.include_router(document_download_bridge_router)
 
 # COMMENTS
 app.include_router(comments_router)
@@ -130,9 +136,6 @@ app.include_router(user_activity_router)
 
 # QUALITY ISSUES
 app.include_router(quality_issues_router)
-
-# PLATFORM DASHBOARD
-app.include_router(platform_dashboard_router)
 
 # PLATFORM EVENT JOURNAL
 app.include_router(platform_event_journal_router)

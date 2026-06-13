@@ -1,21 +1,28 @@
 import { buildDesignerContextData } from "../designer/buildDesignerContextData.js";
 import { buildProcessContextData } from "../process/buildProcessContextData.js";
 import { resolvePlatformDashboardUserId } from "../hostContextBuilders.js";
+import { resolveCanonicalYasiiTenantId } from "../runtime/yasiiRuntimeSurfaceContext.js";
+import { resolveTenantIdFromPathname } from "../../shared/tenantContext/tenantContextResolver.js";
 import { EMBEDDED_SURFACE_IDS } from "./embeddedSurfaceTypes.js";
-
-function extractTenantIdFromPath(pathname) {
-  const match = String(pathname || "").match(/\/designer\/tenant\/([^/]+)/);
-  return match?.[1] ?? "0";
-}
 
 function extractObjectTypeRefFromPath(pathname) {
   const match = String(pathname || "").match(/\/object-types\/([^/?#]+)/);
   return match?.[1] ?? "";
 }
 
+function extractPageIdFromPath(pathname) {
+  const match = String(pathname || "").match(/\/portal\/\d+\/page\/(\d+)/);
+  return match?.[1] ?? "";
+}
+
+function extractWorkspaceSlugFromPath(pathname) {
+  const match = String(pathname || "").match(/\/portal\/\d+\/workspaces\/([^/?#]+)/);
+  return match?.[1] ?? "";
+}
+
 function buildGlobalContextData(pathname) {
   return {
-    tenantId: extractTenantIdFromPath(pathname),
+    tenantId: resolveCanonicalYasiiTenantId({ pathname }) ?? "",
     userId: resolvePlatformDashboardUserId(),
     widgetId: "global-entry",
     selectedScope: "global-entry",
@@ -24,7 +31,7 @@ function buildGlobalContextData(pathname) {
 
 function buildDashboardFallbackContextData(pathname) {
   return {
-    tenantId: extractTenantIdFromPath(pathname),
+    tenantId: resolveCanonicalYasiiTenantId({ pathname }) ?? "",
     userId: resolvePlatformDashboardUserId(),
     widgetId: "platform-dashboard",
     selectedScope: "platform-dashboard",
@@ -32,7 +39,10 @@ function buildDashboardFallbackContextData(pathname) {
   };
 }
 
-function buildRegistryRouteFallbackContext(pathname) {
+function buildRegistryRouteFallbackContext(pathname, {
+  viewId = "default_table",
+  viewName = "Таблица",
+} = {}) {
   const objectTypeRef = extractObjectTypeRefFromPath(pathname);
   const registryId = objectTypeRef || "registry";
 
@@ -40,14 +50,14 @@ function buildRegistryRouteFallbackContext(pathname) {
     ...buildGlobalContextData(pathname),
     registryId,
     registryName: objectTypeRef || "Реестр",
-    viewId: "default_table",
-    viewName: "Таблица",
+    viewId,
+    viewName,
     selectedCount: 0,
     activeFilters: "",
     activeSorts: "",
     searchQuery: "",
     widgetId: `registry-${registryId}`,
-    selectedScope: `registry:${registryId}:default_table`,
+    selectedScope: `registry:${registryId}:${viewId}`,
     metadata: {},
   };
 }
@@ -64,6 +74,14 @@ function isObjectRegistryTableRoute(path) {
   return false;
 }
 
+function isPlanViewRoute(path) {
+  return /\/object-types\/[^/]+\/plan(?:\/|$|\?|#)/.test(path);
+}
+
+function isQuickFormRoute(path) {
+  return /\/object-types\/[^/]+\/quick_form(?:\/|$|\?|#)/.test(path);
+}
+
 /**
  * Resolve embedded surface from current route when no page-level override is set.
  */
@@ -71,10 +89,15 @@ export function resolveSurfaceFromRoute(pathname) {
   const path = String(pathname || "");
 
   if (path === "/yasii" || path.startsWith("/yasii/")) {
+    const tenantId =
+      resolveCanonicalYasiiTenantId({ pathname: path })
+      ?? (resolveTenantIdFromPathname(path) ? String(resolveTenantIdFromPathname(path)) : "");
+
     return {
       surfaceId: EMBEDDED_SURFACE_IDS.GLOBAL,
       contextData: {
-        ...buildGlobalContextData(path),
+        tenantId,
+        userId: resolvePlatformDashboardUserId(),
         widgetId: "yasii-workspace",
         selectedScope: "yasii-workspace",
         metadata: {
@@ -85,11 +108,77 @@ export function resolveSurfaceFromRoute(pathname) {
     };
   }
 
+  if (/\/portal\/\d+\/page\/\d+/.test(path)) {
+    const pageId = extractPageIdFromPath(path);
+    return {
+      surfaceId: EMBEDDED_SURFACE_IDS.GLOBAL,
+      contextData: {
+        ...buildGlobalContextData(path),
+        widgetId: `portal-page-${pageId || "unknown"}`,
+        selectedScope: `portal-page:${pageId || "unknown"}`,
+        metadata: {
+          pageId,
+          surfaceType: "portal_page",
+        },
+      },
+      inputPlaceholder: "Спросите ЯСИИ о текущей странице...",
+    };
+  }
+
+  if (/\/portal\/\d+\/workspaces\/[^/]+/.test(path)) {
+    const workspaceSlug = extractWorkspaceSlugFromPath(path);
+    return {
+      surfaceId: EMBEDDED_SURFACE_IDS.GLOBAL,
+      contextData: {
+        ...buildGlobalContextData(path),
+        widgetId: `workspace-${workspaceSlug || "unknown"}`,
+        selectedScope: `workspace:${workspaceSlug || "unknown"}`,
+        metadata: {
+          workspaceSlug,
+          surfaceType: "workspace",
+        },
+      },
+      inputPlaceholder: "Спросите ЯСИИ о текущем рабочем пространстве...",
+    };
+  }
+
   if (/\/designer\/[^/]+\/platform(?:\/|$)/.test(path) || /\/platform(?:\/|$)/.test(path)) {
     return {
       surfaceId: EMBEDDED_SURFACE_IDS.DASHBOARD,
       contextData: buildDashboardFallbackContextData(path),
       inputPlaceholder: "Спросите ЯСИИ о roadmap или текущем этапе...",
+    };
+  }
+
+  if (isPlanViewRoute(path)) {
+    return {
+      surfaceId: EMBEDDED_SURFACE_IDS.REGISTRY,
+      contextData: buildRegistryRouteFallbackContext(path, {
+        viewId: "plan",
+        viewName: "План",
+      }),
+      inputPlaceholder: "Спросите ЯСИИ о текущем плане...",
+    };
+  }
+
+  if (isQuickFormRoute(path)) {
+    const objectTypeRef = extractObjectTypeRefFromPath(path);
+    return {
+      surfaceId: EMBEDDED_SURFACE_IDS.OBJECT_CARD,
+      contextData: {
+        ...buildGlobalContextData(path),
+        objectTypeId: objectTypeRef,
+        objectTypeName: objectTypeRef || "Объект",
+        objectId: "new",
+        objectTitle: "Новая запись",
+        activeTab: "quick_form",
+        widgetId: `quick-form-${objectTypeRef || "object"}`,
+        selectedScope: `quick-form:${objectTypeRef || "object"}:new`,
+        metadata: {
+          surfaceType: "quick_form",
+        },
+      },
+      inputPlaceholder: "Спросите ЯСИИ о быстром создании...",
     };
   }
 
@@ -122,7 +211,7 @@ export function resolveSurfaceFromRoute(pathname) {
   }
 
   if (/\/designer(?:\/|$)/.test(path)) {
-    const tenantId = extractTenantIdFromPath(path);
+    const tenantId = resolveCanonicalYasiiTenantId({ pathname: path }) ?? "";
     const contextData =
       buildDesignerContextData({
         pathname: path,
@@ -156,7 +245,7 @@ export function resolveSurfaceFromRoute(pathname) {
     return {
       surfaceId: EMBEDDED_SURFACE_IDS.PROCESS,
       contextData: buildProcessContextData({
-        tenantId: extractTenantIdFromPath(path),
+        tenantId: resolveCanonicalYasiiTenantId({ pathname: path }) ?? "",
         userId: resolvePlatformDashboardUserId(),
         metadata: {
           integrationReady: "true",

@@ -37,10 +37,38 @@ test("CloneCompanyModal uses PlatformModal with drag, resize and persist", () =>
   assert.doesNotMatch(source, /modalOverlay/);
 });
 
+test("ChangeCompanyAdministratorModal uses PlatformModal and dual modes", () => {
+  const source = readSource("ChangeCompanyAdministratorModal.jsx");
+
+  assert.match(source, /import PlatformModal from/);
+  assert.match(source, /CONTROL_PLANE_CHANGE_ADMIN_MODAL_KEY/);
+  assert.match(source, /getCompanyUsers/);
+  assert.match(source, /changeCompanyAdministrator/);
+  assert.match(source, /inviteCompanyAdministrator/);
+  assert.match(source, /В компании пока нет пользователей/);
+  assert.match(source, /назначен суперадминистратором компании/);
+  assert.doesNotMatch(source, /position:\s*fixed/);
+});
+
+test("companyAdministratorApi uses platformApiClient", () => {
+  const source = readFileSync(
+    join(__dirname, "../api/companyAdministratorApi.js"),
+    "utf8",
+  );
+
+  assert.match(source, /platformApiClient/);
+  assert.match(source, /administrator\/change/);
+  assert.match(source, /administrator\/invite/);
+  assert.doesNotMatch(source, /apiClient/);
+  assert.doesNotMatch(source, /axios/);
+  assert.doesNotMatch(source, /fetch\(/);
+});
+
 test("controlPlaneModalKeys exports stable persist keys", () => {
   const source = readSource("controlPlaneModalKeys.js");
 
   assert.match(source, /control_plane_create_company_modal/);
   assert.match(source, /control_plane_clone_company_modal/);
+  assert.match(source, /control_plane_change_company_admin_modal/);
   assert.match(source, /admin_tenant_delete_modal/);
 });

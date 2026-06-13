@@ -1,6 +1,7 @@
 import BlockRenderer from "./BlockRenderer";
 
 export default function BlocksList({
+  portalId,
   sectionId,
   blocks = [],
   isEditMode,
@@ -67,6 +68,7 @@ export default function BlocksList({
         return (
           <BlockRenderer
             key={block.id}
+            portalId={portalId}
             block={block}
             isEditMode={isEditMode}
             onEdit={onEditBlock}

@@ -113,6 +113,33 @@ export function normalizeNotificationContext(detail = {}) {
               rawRef?.runtime_route || rawRef?.runtimeRoute || null,
           }
         : null,
+
+    tenant_id:
+      detail?.tenantId ||
+      detail?.tenant_id ||
+      detail?.context?.tenant_id ||
+      detail?.context?.tenantId ||
+      detail?.detail?.context?.tenant_id ||
+      detail?.detail?.context?.tenantId ||
+      null,
+
+    portal_id:
+      detail?.portalId ||
+      detail?.portal_id ||
+      detail?.context?.portal_id ||
+      detail?.context?.portalId ||
+      detail?.detail?.context?.portal_id ||
+      detail?.detail?.context?.portalId ||
+      null,
+
+    library_id:
+      detail?.libraryId ||
+      detail?.library_id ||
+      detail?.context?.library_id ||
+      detail?.context?.libraryId ||
+      detail?.detail?.context?.library_id ||
+      detail?.detail?.context?.libraryId ||
+      null,
   };
 }
 

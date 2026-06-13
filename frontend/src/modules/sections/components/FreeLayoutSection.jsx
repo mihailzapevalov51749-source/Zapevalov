@@ -16,6 +16,7 @@ const DEFAULT_BLOCK_HEIGHT = 1;
 const BLOCK_MARGIN_ROWS = 1;
 
 export default function FreeLayoutSection({
+  portalId,
   section,
   sectionId,
   blocks = [],
@@ -80,7 +81,7 @@ export default function FreeLayoutSection({
   const saveBlockPosition = async (block, position) => {
     const finalPosition = normalizePosition(position);
 
-    const savedBlock = await updateBlock(block.id, {
+    const savedBlock = await updateBlock(portalId, block.id, {
       settings: {
         ...(normalizeSettings(block.settings) || {}),
         position: finalPosition,
@@ -334,7 +335,7 @@ export default function FreeLayoutSection({
       resizeHandle.removeEventListener("pointercancel", handlePointerUp);
 
       try {
-        const savedSection = await updateSection(sectionId, {
+        const savedSection = await updateSection(portalId, sectionId, {
           settings: {
             ...(section?.settings || {}),
             freeHeight: finalHeight,
@@ -464,6 +465,7 @@ export default function FreeLayoutSection({
               }}
             >
               <BlockRenderer
+                portalId={portalId}
                 block={block}
                 isEditMode={isEditMode}
                 isSelected={

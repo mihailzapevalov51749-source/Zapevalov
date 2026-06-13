@@ -4,6 +4,7 @@ import { uploadAvatar } from "../../api/authApi.js";
 import deleteIcon from "../../assets/icons/delet.png";
 import updateIcon from "../../assets/icons/update.png";
 import { showPlatformNotification } from "../platformNotification/PlatformNotification.js";
+import { buildAvatarUrl } from "../files/api/filesApi.js";
 import { getInitials } from "../fieldTypes/user/userUtils.js";
 import {
   buildAvatarTransform,
@@ -145,7 +146,12 @@ export default function PlatformAvatarEditor({
       setIsUploading(true);
       const result = await uploadAvatar(file);
       onChange?.({
-        avatar_url: result?.absolute_url || result?.avatar_url || result?.url || "",
+        avatar_url:
+          result?.file_url ||
+          result?.fileUrl ||
+          result?.avatar_url ||
+          result?.url ||
+          "",
         avatar_settings: { x: 0, y: 0, scale: 1 },
       });
     } catch {
@@ -194,7 +200,7 @@ export default function PlatformAvatarEditor({
         {avatarUrl ? (
           <div className="platform-avatar-editor__viewport">
             <img
-              src={avatarUrl}
+              src={buildAvatarUrl(avatarUrl)}
               alt=""
               draggable={false}
               style={{

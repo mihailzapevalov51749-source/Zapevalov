@@ -7,6 +7,7 @@ from app.modules.comments import service
 from app.modules.comments.constants import (
     ALLOWED_COMMENT_REACTIONS,
 )
+from app.modules.comments.tenant_access import assert_comment_entity_access, assert_comment_row_access
 from app.modules.comments.schemas import (
     CommentCreate,
     CommentOut,
@@ -30,6 +31,13 @@ def list_comments(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    assert_comment_entity_access(
+        db,
+        current_user,
+        entity_type=entity_type,
+        entity_id=entity_id,
+    )
+
     comments = service.get_comments(
         db=db,
         entity_type=entity_type,
@@ -48,6 +56,33 @@ def create_comment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    assert_comment_entity_access(
+        db,
+        current_user,
+        entity_type=payload.entity_type,
+        entity_id=payload.entity_id,
+        file_id=payload.file_id,
+    )
+
+    if payload.parent_comment_id:
+        parent_comment = service.get_comment_by_id(
+            db=db,
+            comment_id=payload.parent_comment_id,
+        )
+        if not parent_comment:
+            raise HTTPException(
+                status_code=404,
+                detail="Родительский комментарий не найден",
+            )
+        if (
+            parent_comment.entity_type != payload.entity_type
+            or parent_comment.entity_id != payload.entity_id
+        ):
+            raise HTTPException(
+                status_code=403,
+                detail="Родительский комментарий относится к другой сущности",
+            )
+
     return service.create_comment(
         db=db,
         payload=payload,
@@ -61,6 +96,14 @@ def create_system_comment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    assert_comment_entity_access(
+        db,
+        current_user,
+        entity_type=payload.entity_type,
+        entity_id=payload.entity_id,
+        file_id=payload.file_id,
+    )
+
     return service.create_system_comment(
         db=db,
         payload=payload,
@@ -74,6 +117,18 @@ def update_comment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    existing_comment = service.get_comment_by_id(
+        db=db,
+        comment_id=comment_id,
+    )
+    if not existing_comment:
+        raise HTTPException(
+            status_code=404,
+            detail="Комментарий не найден",
+        )
+
+    assert_comment_row_access(db, current_user, existing_comment)
+
     comment = service.update_comment(
         db=db,
         comment_id=comment_id,
@@ -96,6 +151,18 @@ def delete_comment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    existing_comment = service.get_comment_by_id(
+        db=db,
+        comment_id=comment_id,
+    )
+    if not existing_comment:
+        raise HTTPException(
+            status_code=404,
+            detail="Комментарий не найден",
+        )
+
+    assert_comment_row_access(db, current_user, existing_comment)
+
     result = service.delete_comment(
         db=db,
         comment_id=comment_id,
@@ -137,6 +204,8 @@ def toggle_comment_reaction(
             detail="Комментарий не найден",
         )
 
+    assert_comment_row_access(db, current_user, comment)
+
     return service.toggle_reaction(
         db=db,
         comment_id=comment_id,
@@ -160,6 +229,18 @@ def attach_uploaded_file_to_comment(
             status_code=400,
             detail="file_url и file_name обязательны",
         )
+
+    existing_comment = service.get_comment_by_id(
+        db=db,
+        comment_id=comment_id,
+    )
+    if not existing_comment:
+        raise HTTPException(
+            status_code=404,
+            detail="Комментарий не найден",
+        )
+
+    assert_comment_row_access(db, current_user, existing_comment)
 
     comment = service.add_attachment(
         db=db,

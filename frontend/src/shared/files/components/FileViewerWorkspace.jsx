@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import FileViewer from "./FileViewer";
+import { useResolvedProtectedFileUrl } from "../useResolvedProtectedFileUrl";
 import CommentsPanel from "../../../modules/comments/components/CommentsPanel";
 import { setEntityLocationRegistryEntry } from "../../../modules/navigation/entityLocationRegistry";
 import { getFileDiscussionEntity } from "../services/fileDiscussionContext";
@@ -112,6 +113,11 @@ export default function FileViewerWorkspace({
   }, [discussionFileId, fileUrl]);
 
   const effectiveInitialContext = notificationContext || initialContext;
+  const {
+    resolvedUrl: resolvedFileUrl,
+    loading: protectedFileLoading,
+    error: protectedFileError,
+  } = useResolvedProtectedFileUrl(fileUrl);
 
   return (
     <div
@@ -128,14 +134,24 @@ export default function FileViewerWorkspace({
       />
 
       <div className="file-viewer-workspace__viewer">
-        <FileViewer
-          fileUrl={fileUrl}
-          fileName={fileName}
-          fileType={fileType}
-          userId={userId}
-          userName={userName}
-          mode={mode}
-        />
+        {protectedFileLoading ? (
+          <div className="file-viewer-workspace__comments-unavailable">
+            Загрузка файла…
+          </div>
+        ) : protectedFileError ? (
+          <div className="file-viewer-workspace__comments-unavailable">
+            {protectedFileError?.message || "Не удалось загрузить файл"}
+          </div>
+        ) : (
+          <FileViewer
+            fileUrl={resolvedFileUrl}
+            fileName={fileName}
+            fileType={fileType}
+            userId={userId}
+            userName={userName}
+            mode={mode}
+          />
+        )}
       </div>
 
       {isCommentsOpen ? (

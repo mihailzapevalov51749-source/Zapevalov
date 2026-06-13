@@ -1,9 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 
 from app.modules.auth.dependencies import get_current_user
+from app.modules.checklists.models import ChecklistItem
+from app.modules.checklists.tenant_access import (
+    assert_checklist_entity_access,
+    assert_checklist_reorder_access,
+    assert_checklist_row_access,
+)
+from app.modules.users.models import User
 
 from app.modules.checklists.schemas import (
     ChecklistItemCreate,
@@ -37,8 +45,15 @@ def get_items(
     entity_type: str,
     entity_id: str,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
+    assert_checklist_entity_access(
+        db,
+        current_user,
+        entity_type=entity_type,
+        entity_id=entity_id,
+    )
+
     items = get_checklist_items(
         db,
         entity_type=entity_type,
@@ -60,8 +75,15 @@ def get_items(
 def create_item(
     payload: ChecklistItemCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
+    assert_checklist_entity_access(
+        db,
+        current_user,
+        entity_type=payload.entity.type,
+        entity_id=payload.entity.id,
+    )
+
     item = create_checklist_item(
         db,
         entity_type=payload.entity.type,
@@ -82,7 +104,7 @@ def patch_item(
     item_id: int,
     payload: ChecklistItemUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     item = get_checklist_item_by_id(
         db,
@@ -94,6 +116,8 @@ def patch_item(
             status_code=404,
             detail="Checklist item not found",
         )
+
+    assert_checklist_row_access(db, current_user, item)
 
     item = update_checklist_item(
         db,
@@ -113,8 +137,14 @@ def patch_item(
 def reorder_items(
     payload: ChecklistItemsReorder,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
+    if payload.ordered_ids:
+        items = db.scalars(
+            select(ChecklistItem).where(ChecklistItem.id.in_(payload.ordered_ids))
+        ).all()
+        assert_checklist_reorder_access(db, current_user, list(items))
+
     reorder_checklist_items(
         db,
         ordered_ids=payload.ordered_ids,
@@ -131,7 +161,7 @@ def reorder_items(
 def remove_item(
     item_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     item = get_checklist_item_by_id(
         db,
@@ -143,6 +173,8 @@ def remove_item(
             status_code=404,
             detail="Checklist item not found",
         )
+
+    assert_checklist_row_access(db, current_user, item)
 
     delete_checklist_item(
         db,

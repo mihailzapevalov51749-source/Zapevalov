@@ -18,6 +18,7 @@ from .enrichment import (
 from .models import NavigationItem
 from .permissions import assert_can_delete_navigation_item
 from .removed_system_menu_items import filter_removed_navigation_items
+from .tenant_access import get_navigation_item_for_portal
 from app.modules.navigation.system_registry.constants import DESIGNER_SYSTEM_NAV_ITEMS
 
 
@@ -106,8 +107,23 @@ def _guard_object_type_create(data) -> None:
         )
 
 
-def create_item(db: Session, data):
+def create_item(db: Session, portal_id: int, data):
     _guard_object_type_create(data)
+
+    if int(data.portal_id) != int(portal_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="portal_id в теле запроса не совпадает с portal в маршруте",
+        )
+
+    if data.parent_id is not None:
+        parent = get_navigation_item_for_portal(db, data.parent_id, portal_id)
+        if parent is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Родительский пункт меню не найден",
+            )
+
     if data.type == OBJECT_TYPE_NAV_TYPE:
         data_dict = data.model_dump()
         for field in ("icon", "icon_type", "icon_file_url", "color"):
@@ -163,10 +179,10 @@ def get_navigation_list(db: Session, portal_id: int, menu_scope: Optional[str] =
     return enrich_navigation_list(db, items)
 
 
-def update_item(db: Session, item_id: int, data):
+def update_item(db: Session, portal_id: int, item_id: int, data):
     from app.modules.navigation.schemas import NavigationItemUpdate
 
-    item = repository.get_item(db, item_id)
+    item = get_navigation_item_for_portal(db, item_id, portal_id)
     if not item:
         return None
 
@@ -191,7 +207,7 @@ def update_item(db: Session, item_id: int, data):
         enriched = enrich_navigation_list(db, [item])
         return enriched[0] if enriched else item
 
-    updated = repository.update_item(db, item_id, NavigationItemUpdate(**update_data))
+    updated = repository.update_item(db, item_id, portal_id, NavigationItemUpdate(**update_data))
     if not updated:
         return None
 
@@ -205,12 +221,13 @@ def update_item(db: Session, item_id: int, data):
 
 def delete_item(
     db: Session,
+    portal_id: int,
     item_id: int,
     *,
     deleted_by: int | None = None,
     user=None,
 ):
-    item = repository.get_item(db, item_id)
+    item = get_navigation_item_for_portal(db, item_id, portal_id)
     if not item:
         return None
 
@@ -227,8 +244,27 @@ def delete_item(
             "Пункт меню нельзя удалить: сначала удалите дочерние пункты."
         )
 
-    return repository.delete_item(db, item_id, deleted_by=deleted_by)
+    return repository.delete_item(db, item_id, portal_id, deleted_by=deleted_by)
 
 
-def move_items(db: Session, items):
-    return repository.move_items(db, items)
+def move_items(db: Session, portal_id: int, items):
+    if not items:
+        return []
+
+    for item_data in items:
+        if get_navigation_item_for_portal(db, item_data.id, portal_id) is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Пункт меню не принадлежит указанному tenant",
+            )
+
+        if item_data.parent_id is not None:
+            parent = get_navigation_item_for_portal(db, item_data.parent_id, portal_id)
+            if parent is None:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Родительский пункт меню не принадлежит указанному tenant",
+                )
+
+    moved = repository.move_items(db, portal_id, items)
+    return enrich_navigation_list(db, moved)

@@ -31,6 +31,8 @@ class PlatformEventCode(str, Enum):
     COMPANY_OPENED = "company_opened"
 
     COMPANY_SUPERADMIN_CREATED = "company_superadmin_created"
+    COMPANY_SUPERADMIN_INVITED = "company_superadmin_invited"
+    COMPANY_ADMINISTRATOR_CHANGED = "company_administrator_changed"
     COMPANY_INVITATION_SENT = "company_invitation_sent"
 
     LICENSE_CREATED = "license_created"
@@ -100,6 +102,8 @@ PLATFORM_EVENT_CODE_LABELS: dict[str, str] = {
     PlatformEventCode.COMPANY_UPDATED.value: "Изменение компании",
     PlatformEventCode.COMPANY_OPENED.value: "Открытие компании",
     PlatformEventCode.COMPANY_SUPERADMIN_CREATED.value: "Создание Company Superadmin",
+    PlatformEventCode.COMPANY_SUPERADMIN_INVITED.value: "Приглашение Company Superadmin",
+    PlatformEventCode.COMPANY_ADMINISTRATOR_CHANGED.value: "Смена администратора компании",
     PlatformEventCode.COMPANY_INVITATION_SENT.value: "Отправка приглашения",
     PlatformEventCode.LICENSE_CREATED.value: "Создание лицензии",
     PlatformEventCode.LICENSE_EXTENDED.value: "Продление лицензии",

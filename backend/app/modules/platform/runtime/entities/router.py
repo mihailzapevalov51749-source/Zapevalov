@@ -16,7 +16,7 @@ from app.modules.platform.runtime.entities.schemas import (
     EntityRead,
     EntityUpdate,
 )
-from app.modules.platform.shared.dependencies import require_tenant
+from app.modules.platform.shared.dependencies import require_tenant_membership
 
 TenantIdPath = Annotated[
     int,
@@ -49,7 +49,7 @@ def create_entity(
     object_type_key: ObjectTypeKeyPath,
     payload: EntityCreate,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
     current_user: User = Depends(get_current_user),
 ):
     return service.create_entity(
@@ -69,7 +69,7 @@ def list_entities(
     tenant_id: TenantIdPath,
     object_type_key: ObjectTypeKeyPath,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.list_entities(db, tenant_id, object_type_key)
 
@@ -83,7 +83,7 @@ def get_entity(
     object_type_key: ObjectTypeKeyPath,
     entity_id: EntityIdPath,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.get_entity(db, tenant_id, object_type_key, entity_id)
 
@@ -98,7 +98,7 @@ def update_entity(
     entity_id: EntityIdPath,
     payload: EntityUpdate,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.update_entity(db, tenant_id, object_type_key, entity_id, payload)
 
@@ -112,7 +112,7 @@ def preview_entity_delete(
     object_type_key: ObjectTypeKeyPath,
     entity_id: EntityIdPath,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.preview_entity_delete(db, tenant_id, object_type_key, entity_id)
 
@@ -127,7 +127,7 @@ def delete_entity_with_scenario(
     entity_id: EntityIdPath,
     payload: EntityDeleteRequest,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
     current_user: User = Depends(get_current_user),
 ):
     return service.delete_entity_with_scenario(
@@ -149,7 +149,7 @@ def delete_entity(
     object_type_key: ObjectTypeKeyPath,
     entity_id: EntityIdPath,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
     current_user: User = Depends(get_current_user),
 ):
     return service.delete_entity(

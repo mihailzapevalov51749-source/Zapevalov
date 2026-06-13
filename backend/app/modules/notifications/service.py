@@ -10,9 +10,29 @@ from app.modules.notifications.models import (
     Notification,
     NotificationRecipient,
 )
+from app.modules.notifications.tenant_access import user_can_view_notification
+from app.modules.users.models import User
 
 
 class NotificationService:
+    @staticmethod
+    def _serialize_recipient_row(row: NotificationRecipient) -> dict[str, Any]:
+        notification = row.notification
+        return {
+            "id": notification.id,
+            "type": notification.type,
+            "category": notification.category,
+            "priority": notification.priority,
+            "title": notification.title,
+            "message": notification.message,
+            "entity_type": notification.entity_type,
+            "entity_id": notification.entity_id,
+            "context": notification.context,
+            "actor_snapshot": notification.actor_snapshot,
+            "is_read": row.is_read,
+            "created_at": notification.created_at,
+        }
+
     @staticmethod
     def build_actor_snapshot(user):
         if not user:
@@ -103,7 +123,7 @@ class NotificationService:
     def get_user_notifications(
         db: Session,
         *,
-        user_id: int,
+        current_user: User,
         limit: int = 30,
         category: str | None = None,
         only_unread: bool = False,
@@ -111,7 +131,7 @@ class NotificationService:
         query = (
             db.query(NotificationRecipient)
             .join(Notification)
-            .filter(NotificationRecipient.user_id == user_id)
+            .filter(NotificationRecipient.user_id == current_user.id)
         )
 
         if category:
@@ -125,26 +145,19 @@ class NotificationService:
                 NotificationRecipient.is_read.asc(),
                 Notification.created_at.desc(),
             )
-            .limit(limit)
+            .limit(max(limit * 3, limit))
             .all()
         )
 
-        return [
-            {
-                "id": row.notification.id,
-                "type": row.notification.type,
-                "category": row.notification.category,
-                "priority": row.notification.priority,
-                "title": row.notification.title,
-                "message": row.notification.message,
-                "entity_type": row.notification.entity_type,
-                "entity_id": row.notification.entity_id,
-                "context": row.notification.context,
-                "actor_snapshot": row.notification.actor_snapshot,
-                "is_read": row.is_read,
-                "created_at": row.notification.created_at,
-            }
+        visible_rows = [
+            row
             for row in rows
+            if user_can_view_notification(db, current_user, row.notification)
+        ]
+
+        return [
+            NotificationService._serialize_recipient_row(row)
+            for row in visible_rows[:limit]
         ]
 
     @staticmethod
@@ -152,18 +165,21 @@ class NotificationService:
         db: Session,
         *,
         notification_id: int,
-        user_id: int,
+        current_user: User,
     ):
         recipient = (
             db.query(NotificationRecipient)
             .filter(
                 NotificationRecipient.notification_id == notification_id,
-                NotificationRecipient.user_id == user_id,
+                NotificationRecipient.user_id == current_user.id,
             )
             .first()
         )
 
         if not recipient:
+            return None
+
+        if not user_can_view_notification(db, current_user, recipient.notification):
             return None
 
         if recipient.is_read:
@@ -181,38 +197,50 @@ class NotificationService:
     def mark_all_as_read(
         db: Session,
         *,
-        user_id: int,
+        current_user: User,
     ):
         now = datetime.utcnow()
 
         recipients = (
             db.query(NotificationRecipient)
+            .join(Notification)
             .filter(
-                NotificationRecipient.user_id == user_id,
+                NotificationRecipient.user_id == current_user.id,
                 NotificationRecipient.is_read.is_(False),
             )
             .all()
         )
 
+        marked_count = 0
+
         for recipient in recipients:
+            if not user_can_view_notification(db, current_user, recipient.notification):
+                continue
             recipient.is_read = True
             recipient.read_at = now
+            marked_count += 1
 
         db.commit()
 
-        return len(recipients)
+        return marked_count
 
     @staticmethod
     def get_unread_count(
         db: Session,
         *,
-        user_id: int,
+        current_user: User,
     ):
-        return (
+        rows = (
             db.query(NotificationRecipient)
+            .join(Notification)
             .filter(
-                NotificationRecipient.user_id == user_id,
+                NotificationRecipient.user_id == current_user.id,
                 NotificationRecipient.is_read.is_(False),
             )
-            .count()
+            .all()
+        )
+        return sum(
+            1
+            for row in rows
+            if user_can_view_notification(db, current_user, row.notification)
         )

@@ -52,7 +52,7 @@ export function resolveYasiiTenantId(pathname = "", tenantId) {
     return fromSession;
   }
 
-  return 1;
+  return null;
 }
 
 export function readYasiiPinned(tenantId, pathname = "") {

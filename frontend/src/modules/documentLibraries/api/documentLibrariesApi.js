@@ -1,140 +1,153 @@
-const API_BASE_URL = "http://127.0.0.1:8010";
+import { platformApiClient } from "../../designer/api/platformApiClient";
 
-export async function getLibraryDocuments(libraryId, parentId = null) {
-  const query = parentId ? `?parent_id=${parentId}` : "";
-
-  const response = await fetch(
-    `${API_BASE_URL}/document-libraries/${libraryId}/documents${query}`
-  );
-
-  if (!response.ok) {
-    throw new Error("Не удалось загрузить документы библиотеки");
+function tenantLibrariesBase(tenantId) {
+  const normalizedTenantId = Number(tenantId);
+  if (!Number.isFinite(normalizedTenantId) || normalizedTenantId <= 0) {
+    throw new Error("tenantId обязателен для Document Libraries API");
   }
-
-  return await response.json();
+  return `/tenants/${normalizedTenantId}/document-libraries`;
 }
 
-export async function getLibraryDocumentById(documentId) {
-  const response = await fetch(
-    `${API_BASE_URL}/document-libraries/documents/${documentId}`
-  );
-
-  if (!response.ok) {
-    throw new Error("Не удалось загрузить документ библиотеки");
+export function getLibraryDocumentDownloadPath(tenantId, documentId) {
+  const normalizedTenantId = Number(tenantId);
+  const normalizedDocumentId = Number(documentId);
+  if (
+    !Number.isFinite(normalizedTenantId) ||
+    normalizedTenantId <= 0 ||
+    !Number.isFinite(normalizedDocumentId) ||
+    normalizedDocumentId <= 0
+  ) {
+    return null;
   }
-
-  return await response.json();
+  return `/tenants/${normalizedTenantId}/documents/${normalizedDocumentId}/download`;
 }
 
-/* 🔍 ГЛОБАЛЬНЫЙ ПОИСК */
-export async function searchLibraryDocuments(libraryId, searchQuery) {
-  const response = await fetch(
-    `${API_BASE_URL}/document-libraries/${libraryId}/documents/search?query=${encodeURIComponent(
-      searchQuery
-    )}`
-  );
-
-  if (!response.ok) {
-    throw new Error("Не удалось выполнить поиск");
+export async function fetchLibraryDocumentBlobUrl(tenantId, documentId) {
+  const path = getLibraryDocumentDownloadPath(tenantId, documentId);
+  if (!path) {
+    throw new Error("Не удалось построить URL загрузки документа");
   }
 
-  return await response.json();
+  const response = await platformApiClient.get(path, {
+    responseType: "blob",
+  });
+
+  return URL.createObjectURL(response.data);
 }
 
-export async function createLibraryDocument(libraryId, data) {
-  const response = await fetch(
-    `${API_BASE_URL}/document-libraries/${libraryId}/documents`,
+export async function getLibraryDocuments(tenantId, libraryId, parentId = null) {
+  const params = {};
+  if (parentId != null) {
+    params.parent_id = parentId;
+  }
+
+  const { data } = await platformApiClient.get(
+    `${tenantLibrariesBase(tenantId)}/${libraryId}/documents`,
+    { params },
+  );
+  return data;
+}
+
+export async function getLibraryDocumentById(tenantId, libraryId, documentId) {
+  const { data } = await platformApiClient.get(
+    `${tenantLibrariesBase(tenantId)}/${libraryId}/documents/${documentId}`,
+  );
+  return data;
+}
+
+export async function searchLibraryDocuments(tenantId, libraryId, searchQuery) {
+  const { data } = await platformApiClient.get(
+    `${tenantLibrariesBase(tenantId)}/${libraryId}/documents/search`,
     {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    }
+      params: { query: searchQuery },
+    },
   );
-
-  if (!response.ok) {
-    throw new Error("Не удалось создать документ");
-  }
-
-  return await response.json();
+  return data;
 }
 
-export async function createLibraryFolder(libraryId, data) {
-  const response = await fetch(
-    `${API_BASE_URL}/document-libraries/${libraryId}/folders`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    }
+export async function createLibraryDocument(tenantId, libraryId, payload) {
+  const { data } = await platformApiClient.post(
+    `${tenantLibrariesBase(tenantId)}/${libraryId}/documents`,
+    payload,
   );
-
-  if (!response.ok) {
-    throw new Error("Не удалось создать папку");
-  }
-
-  return await response.json();
+  return data;
 }
 
-export async function uploadLibraryDocument(libraryId, file, parentId = null) {
+export async function createLibraryFolder(tenantId, libraryId, payload) {
+  const { data } = await platformApiClient.post(
+    `${tenantLibrariesBase(tenantId)}/${libraryId}/folders`,
+    payload,
+  );
+  return data;
+}
+
+export async function uploadLibraryDocument(tenantId, libraryId, file, parentId = null) {
   const formData = new FormData();
   formData.append("file", file);
-
-  if (parentId) {
+  if (parentId != null) {
     formData.append("parent_id", parentId);
   }
 
-  const response = await fetch(
-    `${API_BASE_URL}/document-libraries/${libraryId}/upload`,
+  const { data } = await platformApiClient.post(
+    `${tenantLibrariesBase(tenantId)}/${libraryId}/upload`,
+    formData,
     {
-      method: "POST",
-      body: formData,
-    }
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    },
   );
-
-  if (!response.ok) {
-    throw new Error("Не удалось загрузить файл");
-  }
-
-  return await response.json();
+  return data;
 }
 
-export async function renameLibraryDocument(documentId, title) {
-  const response = await fetch(
-    `${API_BASE_URL}/document-libraries/documents/${documentId}`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ title }),
-    }
+export async function renameLibraryDocument(tenantId, libraryId, documentId, title) {
+  const { data } = await platformApiClient.patch(
+    `${tenantLibrariesBase(tenantId)}/${libraryId}/documents/${documentId}`,
+    { title },
   );
-
-  if (!response.ok) {
-    throw new Error("Не удалось переименовать документ");
-  }
-
-  return await response.json();
+  return data;
 }
 
 export async function deleteLibraryDocument(
+  tenantId,
+  libraryId,
   documentId,
-  mode = "folder_only"
+  mode = "folder_only",
 ) {
-  const response = await fetch(
-    `${API_BASE_URL}/document-libraries/documents/${documentId}?mode=${mode}`,
+  const { data } = await platformApiClient.delete(
+    `${tenantLibrariesBase(tenantId)}/${libraryId}/documents/${documentId}`,
     {
-      method: "DELETE",
-    }
+      params: { mode },
+    },
   );
+  return data;
+}
 
-  if (!response.ok) {
-    throw new Error("Не удалось удалить документ");
-  }
+export async function moveLibraryDocument(tenantId, libraryId, documentId, parentId) {
+  const { data } = await platformApiClient.patch(
+    `${tenantLibrariesBase(tenantId)}/${libraryId}/documents/${documentId}/move`,
+    { parent_id: parentId },
+  );
+  return data;
+}
 
-  return await response.json();
+export async function getLibraryDocumentByFileKey(tenantId, libraryId, fileKey) {
+  const encodedFileKey = encodeURIComponent(String(fileKey || ""));
+  const { data } = await platformApiClient.get(
+    `${tenantLibrariesBase(tenantId)}/${libraryId}/documents/by-file/${encodedFileKey}`,
+  );
+  return data;
+}
+
+export async function listDocumentLibraries(tenantId) {
+  const { data } = await platformApiClient.get(tenantLibrariesBase(tenantId));
+  return Array.isArray(data) ? data : [];
+}
+
+export async function createDocumentLibrary(tenantId, payload) {
+  const { data } = await platformApiClient.post(tenantLibrariesBase(tenantId), {
+    ...payload,
+    portal_id: Number(tenantId),
+  });
+  return data;
 }

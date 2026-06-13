@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-"""Record a completed platform task in Platform Event Journal."""
+"""Record a completed platform task in Platform Event Journal (DEV development journal)."""
 
 from __future__ import annotations
 
@@ -15,7 +14,7 @@ from app.modules.platform_event_journal.constants import (
     PlatformEventJournalStatus,
     PlatformEventJournalType,
 )
-from app.modules.platform_event_journal.service import record_platform_event_journal_entry
+from app.modules.platform_event_journal.cursor_dev_journal import record_cursor_dev_event
 
 
 def parse_args() -> argparse.Namespace:
@@ -43,7 +42,7 @@ def main() -> None:
     args = parse_args()
     db = SessionLocal()
     try:
-        entry = record_platform_event_journal_entry(
+        entry = record_cursor_dev_event(
             db,
             title=args.title,
             description=args.description,
@@ -51,7 +50,6 @@ def main() -> None:
             status=args.status,
             author=args.author,
             slug=args.slug,
-            commit=True,
         )
     finally:
         db.close()

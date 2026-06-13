@@ -1,17 +1,17 @@
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
+from sqlalchemy.orm import Session
+
+from app.db.session import get_db
+from app.modules.auth.dependencies import get_current_user
+from app.modules.files.document_access import assert_document_file_access
+from app.modules.users.models import User
 
 router = APIRouter(prefix="/files", tags=["Files"])
 
-# backend/app/modules/files/router.py
-# parents:
-# 0 = backend/app/modules/files
-# 1 = backend/app/modules
-# 2 = backend/app
-# 3 = backend
 BACKEND_DIR = Path(__file__).resolve().parents[3]
 UPLOADS_DIR = BACKEND_DIR / "uploads"
 
@@ -31,7 +31,10 @@ ALLOWED_FILE_EXTENSIONS = ALLOWED_IMAGE_EXTENSIONS | ALLOWED_DOCUMENT_EXTENSIONS
 
 
 @router.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
     return await save_file(
         file=file,
         target_dir=DOCUMENTS_DIR,
@@ -42,40 +45,52 @@ async def upload_file(file: UploadFile = File(...)):
 
 
 @router.post("/upload-icon")
-async def upload_icon(file: UploadFile = File(...)):
+async def upload_icon(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
     return await save_file(
         file=file,
         target_dir=ICONS_DIR,
         allowed_extensions=ALLOWED_IMAGE_EXTENSIONS,
-        url_prefix="/files/icons",
+        url_prefix="/uploads/icons",
         error_text="Недопустимый формат иконки",
     )
 
 
 @router.post("/upload-image")
-async def upload_image(file: UploadFile = File(...)):
+async def upload_image(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
     return await save_file(
         file=file,
         target_dir=IMAGES_DIR,
         allowed_extensions=ALLOWED_IMAGE_EXTENSIONS,
-        url_prefix="/files/images",
+        url_prefix="/uploads/images",
         error_text="Недопустимый формат изображения",
     )
 
 
 @router.post("/upload-avatar")
-async def upload_avatar(file: UploadFile = File(...)):
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
     return await save_file(
         file=file,
         target_dir=AVATARS_DIR,
         allowed_extensions=ALLOWED_IMAGE_EXTENSIONS,
-        url_prefix="/files/avatars",
+        url_prefix="/uploads/avatars",
         error_text="Недопустимый формат аватара",
     )
 
 
 @router.post("/upload-document")
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
     return await save_file(
         file=file,
         target_dir=DOCUMENTS_DIR,
@@ -86,22 +101,36 @@ async def upload_document(file: UploadFile = File(...)):
 
 
 @router.get("/icons/{file_name}")
-def get_icon(file_name: str):
+def get_icon(
+    file_name: str,
+    current_user: User = Depends(get_current_user),
+):
     return get_file(ICONS_DIR, file_name)
 
 
 @router.get("/images/{file_name}")
-def get_image(file_name: str):
+def get_image(
+    file_name: str,
+    current_user: User = Depends(get_current_user),
+):
     return get_file(IMAGES_DIR, file_name)
 
 
 @router.get("/avatars/{file_name}")
-def get_avatar(file_name: str):
+def get_avatar(
+    file_name: str,
+    current_user: User = Depends(get_current_user),
+):
     return get_file(AVATARS_DIR, file_name)
 
 
 @router.get("/documents/{file_name}")
-def get_document(file_name: str):
+def get_document(
+    file_name: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    assert_document_file_access(db, current_user, file_name)
     return get_file(DOCUMENTS_DIR, file_name)
 
 

@@ -2,6 +2,7 @@ import { isPlatformOwner } from "../../../shared/platformAccess/platformOwnerAcc
 import { resolveTenantEnvironmentRoleCode } from "../../../shared/tenantEnvironment/tenantEnvironment.js";
 import {
   canAccessTenantAdministration as canAccessTenantAdministrationByRole,
+  isTenantScopedUser,
   resolveTenantRoleName,
 } from "../../../shared/tenantRoles/tenantRoleModel.js";
 
@@ -12,8 +13,16 @@ export function resolveRoleName(user) {
 }
 
 export function canAccessControlPlane(user) {
+  if (!user) {
+    return false;
+  }
+
   if (isPlatformOwner(user)) {
     return true;
+  }
+
+  if (isTenantScopedUser(user)) {
+    return false;
   }
 
   return PLATFORM_CONTROL_PLANE_ROLES.has(resolveRoleName(user));

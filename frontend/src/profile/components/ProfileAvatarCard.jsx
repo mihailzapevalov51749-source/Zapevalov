@@ -1,4 +1,5 @@
 import { styles } from "../styles/profileSidePanelStyles";
+import { buildAvatarUrl } from "../../shared/files/api/filesApi";
 
 function normalizeAvatarSettings(settings) {
   const defaultSettings = {
@@ -39,7 +40,7 @@ export default function ProfileAvatarCard({ user, initials, isEdit }) {
         {user?.avatar_url ? (
           <div style={styles.avatarViewport}>
             <img
-              src={user.avatar_url}
+              src={buildAvatarUrl(user.avatar_url)}
               alt="Аватар"
               draggable={false}
               style={{

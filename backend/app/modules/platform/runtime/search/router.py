@@ -7,7 +7,7 @@ from app.db.session import get_db
 from app.modules.auth.dependencies import get_current_user
 from app.modules.platform.runtime.search import service
 from app.modules.platform.runtime.search.schemas import RuntimeSearchRequest, RuntimeSearchResponse
-from app.modules.platform.shared.dependencies import require_tenant
+from app.modules.platform.shared.dependencies import require_tenant_membership
 from app.modules.users.models import User
 
 TenantIdPath = Annotated[
@@ -29,7 +29,7 @@ def runtime_search(
     tenant_id: TenantIdPath,
     payload: RuntimeSearchRequest,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
     _user: User = Depends(get_current_user),
 ):
     return service.execute_runtime_search(

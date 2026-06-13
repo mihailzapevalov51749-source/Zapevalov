@@ -1,3 +1,5 @@
+import { buildAvatarUrl } from "../../../shared/files/api/filesApi.js";
+
 export function isActiveUser(user) {
   const value = String(user?.status || "").toLowerCase();
 
@@ -27,7 +29,8 @@ function getUserSubtitle(user) {
 }
 
 function getUserAvatarUrl(user) {
-  return user?.avatar_url || user?.avatarUrl || null;
+  const rawUrl = user?.avatar_url || user?.avatarUrl || null;
+  return rawUrl ? buildAvatarUrl(rawUrl) : null;
 }
 
 function getUserAvatarSettings(user) {

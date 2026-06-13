@@ -14,8 +14,22 @@ class HostContextValidationError(ValueError):
     """Mandatory HostContext fields are missing."""
 
 
-def build_handoff_from_host_context(host: HostContext) -> ACEHandoff:
+def build_handoff_from_host_context(
+    host: HostContext,
+    *,
+    tenant_id: int | None = None,
+    user_id: int | None = None,
+) -> ACEHandoff:
     """Run minimal ACE pipeline: identity → permission → boundary → snapshot → handoff."""
+    if tenant_id is not None and user_id is not None:
+        from app.modules.yasii.tenant_context import apply_server_identity_to_host_context
+
+        host = apply_server_identity_to_host_context(
+            host,
+            tenant_id=tenant_id,
+            user_id=user_id,
+        )
+
     warnings = validate_host_context(host)
     if warnings:
         raise HostContextValidationError("; ".join(warnings))

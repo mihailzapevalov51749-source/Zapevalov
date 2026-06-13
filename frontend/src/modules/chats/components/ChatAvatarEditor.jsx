@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { uploadAvatar } from "../../../api/authApi";
+import { buildAvatarUrl } from "../../../shared/files/api/filesApi";
 
 import deleteIcon from "../../../assets/icons/delet.png";
 import updateIcon from "../../../assets/icons/update.png";
@@ -53,7 +54,6 @@ function getAvatarTransform(settings) {
 export default function ChatAvatarEditor({
   avatarUrl,
   avatarSettings,
-  title,
   onChange,
 }) {
   const fileInputRef = useRef(null);
@@ -64,9 +64,6 @@ export default function ChatAvatarEditor({
   const [isUploading, setIsUploading] = useState(false);
 
   const settings = normalizeAvatarSettings(avatarSettings);
-
-  const initials =
-    String(title || "Ч").trim().charAt(0).toUpperCase() || "Ч";
 
   useEffect(() => {
     function handleMouseMove(event) {
@@ -155,6 +152,12 @@ export default function ChatAvatarEditor({
     };
   }
 
+  function getAvatarCircleCursor() {
+    if (!avatarUrl) return "pointer";
+    if (dragStateRef.current) return "grabbing";
+    return "grab";
+  }
+
   function handleAvatarClick() {
     if (suppressClickRef.current) {
       suppressClickRef.current = false;
@@ -176,7 +179,8 @@ export default function ChatAvatarEditor({
 
       onChange?.({
         avatar_url:
-          result?.absolute_url ||
+          result?.file_url ||
+          result?.fileUrl ||
           result?.avatar_url ||
           result?.url ||
           "",
@@ -210,15 +214,22 @@ export default function ChatAvatarEditor({
     <div style={chatModalStyles.avatarEditor}>
       <div
         ref={avatarCircleRef}
-        style={chatModalStyles.avatarCircle}
+        style={{
+          ...chatModalStyles.avatarCircle,
+          cursor: getAvatarCircleCursor(),
+        }}
         onMouseDown={handleMouseDown}
         onClick={handleAvatarClick}
-        title="Клик — заменить фото. Зажать и двигать — положение. Колесо — масштаб."
+        title={
+          avatarUrl
+            ? "Клик — заменить фото. Зажать и двигать — положение. Колесо — масштаб."
+            : "Добавить фото чата"
+        }
       >
         {avatarUrl ? (
           <div style={chatModalStyles.avatarViewport}>
             <img
-              src={avatarUrl}
+              src={buildAvatarUrl(avatarUrl)}
               alt=""
               draggable={false}
               style={{
@@ -231,7 +242,11 @@ export default function ChatAvatarEditor({
             />
           </div>
         ) : (
-          <span style={chatModalStyles.avatarLetter}>{initials}</span>
+          <span style={chatModalStyles.avatarPlaceholder}>
+            Добавь
+            <br />
+            фото
+          </span>
         )}
       </div>
 

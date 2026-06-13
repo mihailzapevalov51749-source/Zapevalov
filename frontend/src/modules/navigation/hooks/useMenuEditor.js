@@ -70,8 +70,7 @@ export default function useMenuEditor({ portalId, reload, navigationItems = [] }
       let pageId = null;
 
       if (type === "page") {
-        const page = await navigationService.createPage({
-          portal_id: portalId,
+        const page = await navigationService.createPage(portalId, {
           title,
           description: "",
           status: "published",
@@ -83,8 +82,7 @@ export default function useMenuEditor({ portalId, reload, navigationItems = [] }
         pageId = page.id;
       }
 
-      await navigationService.createItem({
-        portal_id: portalId,
+      await navigationService.createItem(portalId, {
         parent_id,
         type,
         title,
@@ -113,7 +111,7 @@ export default function useMenuEditor({ portalId, reload, navigationItems = [] }
     setIsSaving(true);
 
     try {
-      await navigationService.updateItem(id, data);
+      await navigationService.updateItem(portalId, id, data);
       await reload();
     } finally {
       setIsSaving(false);
@@ -160,7 +158,7 @@ export default function useMenuEditor({ portalId, reload, navigationItems = [] }
     setDeleteError(null);
 
     try {
-      await navigationService.deleteItem(pendingDeleteId);
+      await navigationService.deleteItem(portalId, pendingDeleteId);
       setPendingDeleteId(null);
       await reload();
       return { ok: true };

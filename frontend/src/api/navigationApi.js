@@ -44,31 +44,43 @@ export async function getNavigationList(portalId) {
   return res.data;
 }
 
-export async function createNavigationItem(data) {
-  const res = await platformApiClient.post("/navigation/", data);
+export async function createNavigationItem(portalId, data) {
+  const res = await platformApiClient.post(`/navigation/portal/${portalId}/`, {
+    ...data,
+    portal_id: portalId,
+  });
   return res.data;
 }
 
-export async function updateNavigationItem(itemId, data) {
-  const res = await platformApiClient.put(`/navigation/${itemId}`, data);
+export async function updateNavigationItem(portalId, itemId, data) {
+  const res = await platformApiClient.put(
+    `/navigation/portal/${portalId}/${itemId}`,
+    data,
+  );
   return res.data;
 }
 
-export async function deleteNavigationItem(itemId) {
+export async function deleteNavigationItem(portalId, itemId) {
   const token = getToken();
 
   if (!token) {
     throw new Error("Требуется авторизация. Войдите в систему и повторите удаление.");
   }
 
-  const res = await platformApiClient.delete(`/navigation/${itemId}`, {
-    headers: buildAuthHeaders(),
-  });
+  const res = await platformApiClient.delete(
+    `/navigation/portal/${portalId}/${itemId}`,
+    {
+      headers: buildAuthHeaders(),
+    },
+  );
   return res.data;
 }
 
-export async function moveNavigationItems(items) {
-  const res = await platformApiClient.post("/navigation/move", items);
+export async function moveNavigationItems(portalId, items) {
+  const res = await platformApiClient.post(
+    `/navigation/portal/${portalId}/move`,
+    items,
+  );
   return res.data;
 }
 

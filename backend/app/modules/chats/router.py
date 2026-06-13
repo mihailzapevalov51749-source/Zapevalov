@@ -20,8 +20,18 @@ from app.modules.chats.schemas import (
     ChatReactionOut,
     ChatReadStateUpdate,
     ChatUpdate,
+    ChatUserOut,
     DirectChatCreate,
 )
+from app.modules.chats.tenant_access import (
+    assert_current_user_can_access_chat_tenant,
+    assert_participant_ids_belong_to_tenant,
+    assert_user_has_chat_tenant_access,
+    get_user_for_chat_tenant,
+    resolve_chat_tenant_id,
+    search_tenant_chat_users,
+)
+from app.modules.users.models import User
 
 router = APIRouter(
     prefix="/chats",
@@ -44,8 +54,10 @@ def get_current_user_id(current_user) -> int:
 def ensure_chat_access(
     db: Session,
     chat_id: int,
-    user_id: int,
+    current_user,
 ):
+    user_id = get_current_user_id(current_user)
+
     chat = crud.get_chat_by_id(db, chat_id)
 
     if not chat:
@@ -59,6 +71,12 @@ def ensure_chat_access(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Нет доступа к чату",
         )
+
+    assert_current_user_can_access_chat_tenant(
+        db,
+        current_user,
+        chat.tenant_id,
+    )
 
     return chat
 
@@ -130,6 +148,7 @@ def list_chats(
                 avatar_url=display_avatar_url,
                 avatar_settings=display_avatar_settings,
                 workspace_id=chat.workspace_id,
+                created_by_id=chat.created_by_id,
                 created_at=chat.created_at,
                 updated_at=chat.updated_at,
                 unread_count=crud.get_unread_count(
@@ -153,6 +172,36 @@ def list_chats(
     return result
 
 
+@router.get("/users/search", response_model=list[ChatUserOut])
+def search_chat_users(
+    tenant_id: int = Query(..., ge=1),
+    search: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    resolved_tenant_id = assert_user_has_chat_tenant_access(
+        db,
+        current_user,
+        tenant_id,
+    )
+    users = search_tenant_chat_users(
+        db,
+        tenant_id=resolved_tenant_id,
+        search=search,
+    )
+
+    return [
+        ChatUserOut(
+            id=user.id,
+            full_name=user.full_name,
+            email=user.email,
+            avatar_url=user.avatar_url,
+            avatar_settings=user.avatar_settings,
+        )
+        for user in users
+    ]
+
+
 @router.post(
     "",
     response_model=ChatOut,
@@ -164,6 +213,13 @@ def create_chat(
     current_user=Depends(get_current_user),
 ):
     user_id = get_current_user_id(current_user)
+    tenant_id = resolve_chat_tenant_id(db, current_user, payload.tenant_id)
+
+    assert_participant_ids_belong_to_tenant(
+        db,
+        tenant_id=tenant_id,
+        participant_ids=payload.participant_ids,
+    )
 
     return crud.create_chat(
         db,
@@ -172,6 +228,7 @@ def create_chat(
         type=payload.type,
         avatar_url=payload.avatar_url,
         workspace_id=payload.workspace_id,
+        tenant_id=tenant_id,
         created_by_id=user_id,
         participant_ids=payload.participant_ids,
         avatar_settings=payload.avatar_settings,
@@ -189,7 +246,7 @@ def get_chat(
     return ensure_chat_access(
         db=db,
         chat_id=chat_id,
-        user_id=user_id,
+        current_user=current_user,
     )
 
 
@@ -204,6 +261,12 @@ def update_chat(
 
     chat = ensure_chat_access(
         db=db,
+        chat_id=chat_id,
+        current_user=current_user,
+    )
+
+    ensure_chat_admin(
+        db,
         chat_id=chat_id,
         user_id=user_id,
     )
@@ -253,7 +316,7 @@ def list_messages(
     ensure_chat_access(
         db=db,
         chat_id=chat_id,
-        user_id=user_id,
+        current_user=current_user,
     )
 
     items, total = crud.get_chat_messages(
@@ -287,7 +350,7 @@ def create_message(
     ensure_chat_access(
         db=db,
         chat_id=chat_id,
-        user_id=user_id,
+        current_user=current_user,
     )
 
     if not payload.content and not payload.attachments:
@@ -354,7 +417,7 @@ def update_message(
     ensure_chat_access(
         db=db,
         chat_id=message.chat_id,
-        user_id=user_id,
+        current_user=current_user,
     )
 
     if message.created_by_id != user_id:
@@ -397,7 +460,7 @@ def delete_message(
     ensure_chat_access(
         db=db,
         chat_id=message.chat_id,
-        user_id=user_id,
+        current_user=current_user,
     )
 
     if message.created_by_id != user_id:
@@ -435,7 +498,7 @@ def add_reaction(
     ensure_chat_access(
         db=db,
         chat_id=message.chat_id,
-        user_id=user_id,
+        current_user=current_user,
     )
 
     return crud.add_reaction(
@@ -466,7 +529,7 @@ def remove_reaction(
     ensure_chat_access(
         db=db,
         chat_id=message.chat_id,
-        user_id=user_id,
+        current_user=current_user,
     )
 
     crud.remove_reaction(
@@ -493,7 +556,7 @@ def list_participants(
     ensure_chat_access(
         db=db,
         chat_id=chat_id,
-        user_id=user_id,
+        current_user=current_user,
     )
 
     return crud.get_chat_participants(db, chat_id)
@@ -512,10 +575,28 @@ def add_participant(
 ):
     user_id = get_current_user_id(current_user)
 
+    chat = ensure_chat_access(
+        db=db,
+        chat_id=chat_id,
+        current_user=current_user,
+    )
+
     ensure_chat_admin(
         db,
         chat_id=chat_id,
         user_id=user_id,
+    )
+
+    if chat.tenant_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Чат не привязан к компании",
+        )
+
+    get_user_for_chat_tenant(
+        db,
+        user_id=payload.user_id,
+        tenant_id=int(chat.tenant_id),
     )
 
     return crud.add_participant(
@@ -542,7 +623,7 @@ def update_participant(
     ensure_chat_access(
         db=db,
         chat_id=chat_id,
-        user_id=user_id,
+        current_user=current_user,
     )
 
     participant = crud.get_participant(
@@ -604,7 +685,7 @@ def remove_participant(
         ensure_chat_access(
             db=db,
             chat_id=chat_id,
-            user_id=user_id,
+            current_user=current_user,
         )
 
     crud.remove_participant(
@@ -631,7 +712,7 @@ def update_read_state(
     ensure_chat_access(
         db=db,
         chat_id=chat_id,
-        user_id=user_id,
+        current_user=current_user,
     )
 
     participant = crud.update_read_state(
@@ -667,8 +748,17 @@ def get_or_create_direct_chat(
             detail="Нельзя создать чат с самим собой",
         )
 
+    tenant_id = resolve_chat_tenant_id(db, current_user, payload.tenant_id)
+
+    get_user_for_chat_tenant(
+        db,
+        user_id=payload.user_id,
+        tenant_id=tenant_id,
+    )
+
     return crud.get_or_create_direct_chat(
         db,
         current_user_id=current_user_id,
         target_user_id=payload.user_id,
+        tenant_id=tenant_id,
     )

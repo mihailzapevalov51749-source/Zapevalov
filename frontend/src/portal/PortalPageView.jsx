@@ -55,6 +55,8 @@ import PageSettingsPopover from "./components/PageSettingsPopover";
 import PageCanvasToast from "./components/PageCanvasToast";
 import SystemMessage from "../system/SystemMessage";
 import { usePlatformConfirm } from "../shared/platformModal";
+import { YasiiSurfaceContextProvider } from "../yasii/context/YasiiSurfaceContext.jsx";
+import { buildPortalPageSurfaceValue } from "../yasii/runtime/yasiiRuntimeSurfaceContext.js";
 
 import { findBlockInPageData, mergeBlockUpdate } from "./utils/blockEditUtils";
 
@@ -111,10 +113,10 @@ import {
 import { useResolvedPageLayoutContract } from "../shared/appShell/pageLayoutContract";
 import EmbeddedPageContent from "../shared/shell/EmbeddedPageContent";
 import {
-  CORPORATE_CHAT_PAGE_ID,
   isDesignerShellEmbeddedPortalRoute,
   resolvePortalPageViewLayoutContractOverrides,
 } from "./resolvePortalPageViewLayoutContract";
+import { resolveIsCorporateChatPage } from "./resolveCorporateChatPage";
 
 const EMPTY_SECTIONS = [];
 
@@ -609,9 +611,14 @@ export default function PortalPageView() {
   const location = useLocation();
   const { portalId: portalIdParam, pageId: pageIdParam } = useParams();
 
+  const studioTenantId = resolveStudioTenantIdFromPath(location.pathname);
+  const isDesignerShellEmbeddedRoute = isDesignerShellEmbeddedPortalRoute(
+    location.pathname,
+  );
+
   const portalId = resolvePortalIdFromPath(
     location.pathname,
-    portalIdParam || 1,
+    portalIdParam || studioTenantId || 1,
   );
   const pageId = pageIdParam ? Number(pageIdParam) : null;
 
@@ -621,17 +628,8 @@ export default function PortalPageView() {
   const isAdminRootPage =
     location.pathname === "/admin" ||
     /^\/designer\/tenant\/\d+\/administration\/?$/.test(location.pathname);
-  const isCorporateChatPage = Number(pageId) === CORPORATE_CHAT_PAGE_ID;
-
-  const isPortalCmsPage =
-    /^\/portal\/\d+\/page\/\d+/.test(location.pathname) &&
-    !isAdminPage &&
-    !isCorporateChatPage;
 
   const isDesignerCustomPageRoute = /^\/designer\/tenant\/\d+\/page\/\d+/.test(
-    location.pathname,
-  );
-  const isDesignerShellEmbeddedRoute = isDesignerShellEmbeddedPortalRoute(
     location.pathname,
   );
 
@@ -672,7 +670,10 @@ export default function PortalPageView() {
   const [navigationEditMode, setNavigationEditMode] = useState(false);
   const { navigation, navigationError, reloadNavigation } = useNavigationTree(
     portalId,
-    { forEditMode: navigationEditMode },
+    {
+      forEditMode: navigationEditMode,
+      enabled: !isDesignerShellEmbeddedRoute,
+    },
   );
 
   useEffect(() => {
@@ -713,6 +714,20 @@ export default function PortalPageView() {
     navigationContext.currentNavigationItem ||
     (pageId ? findNavigationItemByPageId(navigation, pageId) : null);
 
+  const isCorporateChatPage = useMemo(
+    () =>
+      resolveIsCorporateChatPage({
+        pageId,
+        activeNavigationItem,
+      }),
+    [pageId, activeNavigationItem],
+  );
+
+  const isPortalCmsPage =
+    /^\/portal\/\d+\/page\/\d+/.test(location.pathname) &&
+    !isAdminPage &&
+    !isCorporateChatPage;
+
   const isDocumentLibraryPage =
     !isAdminPage &&
     !isCorporateChatPage &&
@@ -726,6 +741,23 @@ export default function PortalPageView() {
     activeNavigationItem,
     pageData,
   });
+
+  const yasiiPageSurfaceValue = useMemo(
+    () =>
+      buildPortalPageSurfaceValue({
+        tenantId: portalId,
+        pathname: location.pathname,
+        pageId,
+        pageTitle: pageData?.page?.title ?? topBarMeta.title,
+      }),
+    [
+      location.pathname,
+      pageData?.page?.title,
+      pageId,
+      portalId,
+      topBarMeta.title,
+    ],
+  );
 
   const designerSectionTitle = resolveDesignerSectionTitle(location.pathname);
   const workspaceRuntimeContext = useMemo(() => {
@@ -760,6 +792,7 @@ export default function PortalPageView() {
         portalId,
         page: pageData?.page,
         navigationItemTitle: activeNavigationItem?.title,
+        activeNavigationItem,
         pageTitleDraft,
         headerTitle: topBarMeta.title,
         workspaceRuntimeContext,
@@ -771,6 +804,7 @@ export default function PortalPageView() {
       portalId,
       pageData?.page,
       activeNavigationItem?.title,
+      activeNavigationItem,
       pageTitleDraft,
       topBarMeta.title,
       workspaceRuntimeContext,
@@ -1291,7 +1325,7 @@ export default function PortalPageView() {
     try {
       setError("");
 
-      const savedBlock = await updateBlock(mergedBlock.id, {
+      const savedBlock = await updateBlock(portalId, mergedBlock.id, {
         title: mergedBlock.title,
         content: mergedBlock.content,
         settings: mergedBlock.settings,
@@ -1311,7 +1345,7 @@ export default function PortalPageView() {
 
     try {
       setError("");
-      await createSection(pageId);
+      await createSection(portalId, pageId);
       await preserveScrollAndReload();
     } catch (e) {
       console.error(e);
@@ -1329,7 +1363,7 @@ export default function PortalPageView() {
 
     try {
       setError("");
-      const savedSection = await updateSection(selectedSection.id, data);
+      const savedSection = await updateSection(portalId, selectedSection.id, data);
       handleSectionUpdated(savedSection);
       setSelectedSection(null);
     } catch (e) {
@@ -1360,7 +1394,7 @@ export default function PortalPageView() {
       setError("");
       setIsDeletingSection(true);
 
-      await deleteSection(deleteSectionState.section.id);
+      await deleteSection(portalId, deleteSectionState.section.id);
 
       if (String(selectedSection?.id) === String(deleteSectionState.section.id)) {
         setSelectedSection(null);
@@ -1387,11 +1421,11 @@ export default function PortalPageView() {
 
       for (const block of deleteSectionState.blocks || []) {
         if (block?.id) {
-          await deleteBlock(block.id);
+          await deleteBlock(portalId, block.id);
         }
       }
 
-      await deleteSection(deleteSectionState.section.id);
+      await deleteSection(portalId, deleteSectionState.section.id);
 
       if (String(selectedSection?.id) === String(deleteSectionState.section.id)) {
         setSelectedSection(null);
@@ -1412,7 +1446,7 @@ export default function PortalPageView() {
   const handleMoveSection = async ({ sectionId, targetOrderIndex }) => {
     try {
       setError("");
-      await moveSection(sectionId, targetOrderIndex);
+      await moveSection(portalId, sectionId, targetOrderIndex);
       await preserveScrollAndReload();
     } catch (e) {
       console.error(e);
@@ -1439,7 +1473,7 @@ export default function PortalPageView() {
         blocks: sectionItem?.blocks || [],
       });
 
-      await createBlock(sectionId, blockType, position);
+      await createBlock(portalId, sectionId, blockType, position);
       await preserveScrollAndReload();
     } catch (e) {
       console.error(e);
@@ -1477,7 +1511,7 @@ export default function PortalPageView() {
         ...data,
       });
 
-      const savedBlock = await updateBlock(mergedBlock.id, {
+      const savedBlock = await updateBlock(portalId, mergedBlock.id, {
         title: mergedBlock.title,
         content: mergedBlock.content,
         settings: mergedBlock.settings,
@@ -1513,7 +1547,7 @@ export default function PortalPageView() {
         },
       });
 
-      const savedBlock = await updateBlock(mergedBlock.id, {
+      const savedBlock = await updateBlock(portalId, mergedBlock.id, {
         title: mergedBlock.title,
         content: mergedBlock.content,
         settings: mergedBlock.settings,
@@ -1543,7 +1577,7 @@ export default function PortalPageView() {
 
     try {
       setError("");
-      await deleteBlock(block.id);
+      await deleteBlock(portalId, block.id);
 
       if (String(selectedBlock?.id) === String(block.id)) {
         setSelectedBlock(null);
@@ -1567,7 +1601,7 @@ export default function PortalPageView() {
   }) => {
     try {
       setError("");
-      await moveBlock(blockId, targetSectionId, targetOrderIndex);
+      await moveBlock(portalId, blockId, targetSectionId, targetOrderIndex);
       await preserveScrollAndReload();
     } catch (e) {
       console.error(e);
@@ -1661,7 +1695,7 @@ export default function PortalPageView() {
         return;
       }
 
-      const savedPage = await updatePage(pageId, {
+      const savedPage = await updatePage(portalId, pageId, {
         ...pageData.page,
         title: nextTitle,
       });
@@ -1679,7 +1713,7 @@ export default function PortalPageView() {
       );
 
       if (activeNavigationItem?.id) {
-        await updateNavigationItem(activeNavigationItem.id, {
+        await updateNavigationItem(portalId, activeNavigationItem.id, {
           title: nextTitle,
         });
         await reloadNavigation();
@@ -1696,7 +1730,7 @@ export default function PortalPageView() {
     try {
       setError("");
 
-      const savedPage = await updatePage(pageId, {
+      const savedPage = await updatePage(portalId, pageId, {
         ...pageData.page,
         title,
         description,
@@ -1717,7 +1751,7 @@ export default function PortalPageView() {
       setPageTitleDraft(title);
 
       if (activeNavigationItem?.id) {
-        await updateNavigationItem(activeNavigationItem.id, {
+        await updateNavigationItem(portalId, activeNavigationItem.id, {
           title,
           is_visible,
         });
@@ -1863,10 +1897,12 @@ export default function PortalPageView() {
       boxSizing: "border-box",
     }}
   >
-    {navigationError && <SystemMessage>{navigationError}</SystemMessage>}
+    {navigationError && !isDesignerShellEmbeddedRoute && (
+      <SystemMessage>{navigationError}</SystemMessage>
+    )}
     {error && <SystemMessage>{error}</SystemMessage>}
 
-    {isCorporateChatPage && <CorporateChatPage />}
+    {isCorporateChatPage && <CorporateChatPage tenantId={portalId} />}
 
     {!isCorporateChatPage && isAdminPage && adminPageContent}
 
@@ -1880,6 +1916,7 @@ export default function PortalPageView() {
       activeNavigationItem &&
       (activeNavigationItem.library_id ? (
         <LibraryPageView
+          tenantId={portalId}
           libraryId={activeNavigationItem.library_id}
           title={activeNavigationItem.title}
           onContextPathChange={handleLibraryContextPathChange}
@@ -1934,6 +1971,7 @@ export default function PortalPageView() {
               }}
             >
               <ContentSection
+                portalId={portalId}
                 section={section}
                 blocks={blocks}
                 sections={sections}
@@ -2000,10 +2038,12 @@ export default function PortalPageView() {
 </div>
   ) : (
     <EmbeddedPageContent data-page-canvas>
-      {navigationError && <SystemMessage>{navigationError}</SystemMessage>}
+      {navigationError && !isDesignerShellEmbeddedRoute && (
+      <SystemMessage>{navigationError}</SystemMessage>
+    )}
       {error && <SystemMessage>{error}</SystemMessage>}
 
-      {isCorporateChatPage && <CorporateChatPage />}
+      {isCorporateChatPage && <CorporateChatPage tenantId={portalId} />}
 
       {!isCorporateChatPage && isAdminPage && adminPageContent}
 
@@ -2040,6 +2080,7 @@ export default function PortalPageView() {
             {sections.map(({ section, blocks }) => (
               <div key={section.id} data-section-host-id={section.id}>
                 <ContentSection
+                  portalId={portalId}
                   section={section}
                   blocks={blocks}
                   sections={sections}
@@ -2120,33 +2161,35 @@ export default function PortalPageView() {
   }
 
   return (
-    <PortalLayout
-      portalId={portalId}
-      navigation={navigation}
-      activePageId={pageId}
-      activeSidebarItemId={navigationContext.currentNavigationItemId}
-      activeSidebarParentIds={navigationContext.activeParentIds}
-      onSelectPage={handleSelectPage}
-      onNavigateToPath={(path) => navigate(path)}
-      onSidebarItemAction={handleSidebarItemAction}
-      reloadNavigation={reloadNavigation}
-      onNavigationEditModeChange={setNavigationEditMode}
-      menuScale={menuScale}
-      onChangeMenuScale={changeMenuScale}
-      headerContract={runtimeHeaderModel?.contract}
-      onHeaderAction={runtimeHeaderModel?.onAction}
-      searchOverlay={
-        <SearchResultsOverlay
-          isVisible={headerSearch.isOverlayVisible}
-          isLoading={headerSearch.isLoading}
-          error={headerSearch.error}
-          results={headerSearch.results}
-          scopeLabel={searchContext.label}
-          onClose={headerSearch.closeResults}
-        />
-      }
-    >
-      {pageShellInner}
-    </PortalLayout>
+    <YasiiSurfaceContextProvider value={yasiiPageSurfaceValue}>
+      <PortalLayout
+        portalId={portalId}
+        navigation={navigation}
+        activePageId={pageId}
+        activeSidebarItemId={navigationContext.currentNavigationItemId}
+        activeSidebarParentIds={navigationContext.activeParentIds}
+        onSelectPage={handleSelectPage}
+        onNavigateToPath={(path) => navigate(path)}
+        onSidebarItemAction={handleSidebarItemAction}
+        reloadNavigation={reloadNavigation}
+        onNavigationEditModeChange={setNavigationEditMode}
+        menuScale={menuScale}
+        onChangeMenuScale={changeMenuScale}
+        headerContract={runtimeHeaderModel?.contract}
+        onHeaderAction={runtimeHeaderModel?.onAction}
+        searchOverlay={
+          <SearchResultsOverlay
+            isVisible={headerSearch.isOverlayVisible}
+            isLoading={headerSearch.isLoading}
+            error={headerSearch.error}
+            results={headerSearch.results}
+            scopeLabel={searchContext.label}
+            onClose={headerSearch.closeResults}
+          />
+        }
+      >
+        {pageShellInner}
+      </PortalLayout>
+    </YasiiSurfaceContextProvider>
   );
 }

@@ -1491,16 +1491,18 @@ def _check_p7_w04_dashboard_embedded_query(ctx: ScanContext) -> bool:
         api_text,
         "createAceHandoff",
         "sendEmbeddedQuery",
-        "/ai-context/handoff",
-        "/yasii/embedded/query",
+        "YASII_EMBEDDED_ENDPOINTS",
+        "/ai-context/tenants/",
+        "/yasii/tenants/",
     ) and _file_defines_symbols(hook_text, "sendEmbeddedQuery") and "sendYasiiQuery" not in hook_text
 
 
 def _check_p7_w04_dashboard_integration_complete(ctx: ScanContext) -> bool:
-    page_text = _frontend_file_text(
+    workspace_text = _frontend_file_text(
         ctx,
-        "modules/platformDashboard/pages/PlatformDevelopmentPage.jsx",
+        "yasii/pages/YasiiWorkspacePage.jsx",
     )
+    host_context_text = _frontend_file_text(ctx, "yasii/hostContextBuilders.js")
     floating_text = _frontend_file_text(ctx, "yasii/components/YasiiFloatingButton.jsx")
     panel_text = _frontend_file_text(ctx, "yasii/components/YasiiEmbeddedPanel.jsx")
     adapters_text = _frontend_file_text(ctx, "yasii/embedded/surfaceAdapters.js")
@@ -1508,8 +1510,11 @@ def _check_p7_w04_dashboard_integration_complete(ctx: ScanContext) -> bool:
         _check_p7_w04_dashboard_host_context_bridge(ctx)
         and _check_p7_w04_dashboard_embedded_query(ctx)
         and _file_defines_symbols(
-            page_text,
+            workspace_text,
             "YasiiSurfaceContextProvider",
+        )
+        and _file_defines_symbols(
+            host_context_text,
             "buildPlatformDashboardMetadata",
         )
         and _file_defines_symbols(
@@ -1528,11 +1533,11 @@ def _check_p7_w04_dashboard_integration_complete(ctx: ScanContext) -> bool:
             "buildDashboardContext",
             "buildPlatformDashboardHostContext",
         )
-        and "PlatformDashboardYasiiEntry" not in page_text
+        and "PlatformDashboardYasiiEntry" not in workspace_text
         and "hideOnPlatformDashboard" not in floating_text
         and "sendYasiiQuery" not in floating_text
         and "sendYasiiQuery" not in panel_text
-        and "/yasii/query" not in page_text
+        and "/yasii/query" not in workspace_text
     )
 
 
@@ -1563,19 +1568,26 @@ def _check_p7_w08_surface_adapter_layer(ctx: ScanContext) -> bool:
 
 
 def _check_p7_w08_dashboard_migrated(ctx: ScanContext) -> bool:
-    page_text = _frontend_file_text(
+    workspace_text = _frontend_file_text(
         ctx,
-        "modules/platformDashboard/pages/PlatformDevelopmentPage.jsx",
+        "yasii/pages/YasiiWorkspacePage.jsx",
+    )
+    route_text = _frontend_file_text(
+        ctx,
+        "yasii/embedded/resolveSurfaceFromRoute.js",
     )
     floating_text = _frontend_file_text(ctx, "yasii/components/YasiiFloatingButton.jsx")
     panel_text = _frontend_file_text(ctx, "yasii/components/YasiiEmbeddedPanel.jsx")
     return (
         _file_defines_symbols(
-            page_text,
+            workspace_text,
             "YasiiSurfaceContextProvider",
+        )
+        and _file_defines_symbols(
+            route_text,
             "EMBEDDED_SURFACE_IDS.DASHBOARD",
         )
-        and "PlatformDashboardYasiiEntry" not in page_text
+        and "PlatformDashboardYasiiEntry" not in workspace_text
         and _file_defines_symbols(
             floating_text,
             "YasiiLauncher",
@@ -1591,7 +1603,7 @@ def _check_p7_w08_dashboard_migrated(ctx: ScanContext) -> bool:
         and "hideOnPlatformDashboard" not in floating_text
         and "placement=\"inline\"" not in floating_text
         and "sendYasiiQuery" not in floating_text
-        and "/yasii/query" not in page_text
+        and "/yasii/query" not in workspace_text
     )
 
 
@@ -2394,7 +2406,6 @@ def _check_p13_w02_platform_governance_model(ctx: ScanContext) -> bool:
     sync_text = _backend_file_text(ctx, "modules/platform_dashboard/yasii_sync.py")
     service_text = _backend_file_text(ctx, "modules/platform_dashboard/service.py")
     schemas_text = _backend_file_text(ctx, "modules/platform_dashboard/schemas.py")
-    router_text = _backend_file_text(ctx, "modules/platform_dashboard/router.py")
     awareness_path = "modules/yasii/project_awareness.py"
 
     if not (
@@ -2420,8 +2431,8 @@ def _check_p13_w02_platform_governance_model(ctx: ScanContext) -> bool:
         )
         and "compute_resolved_done_keys" in sync_text
         and "serialize_governance_model" in service_text
+        and "get_governance_model" in service_text
         and "PlatformGovernanceRead" in schemas_text
-        and "/governance" in router_text
         and "PLATFORM_LAYER_ENGINES" in _backend_file_text(ctx, platform_gov_path)
         and _file_defines_symbols(
             runtime_text,

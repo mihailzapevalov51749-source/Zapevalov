@@ -31,6 +31,8 @@ import {
   stopUserActivityTracking,
 } from "./shared/userActivity/userActivityTracker";
 
+import OfficeRuntimeTenantGuard from "./shared/officeRuntime/OfficeRuntimeTenantGuard.jsx";
+import YasiiTenantGuard from "./shared/yasiiRuntime/YasiiTenantGuard.jsx";
 import DesignerAccessGate from "./modules/designer/pages/DesignerAccessGate";
 import DesignerTenantLayout from "./modules/designer/pages/DesignerTenantLayout";
 import ObjectTypesPage from "./modules/designer/pages/ObjectTypesPage";
@@ -56,6 +58,7 @@ import LegacyControlPlaneRedirect from "./modules/controlPlane/layout/LegacyCont
 import TenantAdministrationRouter from "./modules/admin/routes/TenantAdministrationRouter.jsx";
 import PlatformSetupGate from "./modules/platformSetup/PlatformSetupGate.jsx";
 import { PlatformConfirmProvider } from "./shared/platformModal";
+import { ChatUnreadProvider } from "./modules/chats/context/ChatUnreadProvider.jsx";
 
 function isSuperadmin(user) {
   if (!user) return false;
@@ -146,6 +149,7 @@ export default function App() {
       <GlobalWorkspaceTabsProvider>
         <ProfileSidePanelProvider>
         <PlatformConfirmProvider>
+        <ChatUnreadProvider>
         <AppShell>
           <ModePathTracker />
           <PlatformZoneTracker />
@@ -156,7 +160,9 @@ export default function App() {
       <Route path="/" element={<RootEntryRedirect user={user} />} />
       <Route path="/login" element={<LoginEntryRedirect user={user} />} />
 
-      <Route path="/yasii" element={<YasiiWorkspacePage />} />
+      <Route path="/yasii" element={<YasiiTenantGuard user={user} />}>
+        <Route index element={<YasiiWorkspacePage />} />
+      </Route>
 
       <Route path="/control-plane/*" element={<ControlPlaneLayout />} />
 
@@ -183,45 +189,47 @@ export default function App() {
         />
       ) : null}
 
-      <Route path="/tasks" element={<PortalPageView />} />
+      <Route element={<OfficeRuntimeTenantGuard user={user} />}>
+        <Route path="/tasks" element={<PortalPageView />} />
 
-      <Route
-        path="/portal/:portalId/page/:pageId"
-        element={<PortalPageView />}
-      />
+        <Route
+          path="/portal/:portalId/page/:pageId"
+          element={<PortalPageView />}
+        />
 
-      <Route
-        path="/portal/:portalId/object-types/:objectTypeRef/data"
-        element={<PortalObjectRuntimePage />}
-      />
+        <Route
+          path="/portal/:portalId/object-types/:objectTypeRef/data"
+          element={<PortalObjectRuntimePage />}
+        />
 
-      <Route
-        path="/portal/:portalId/object-types/:objectTypeRef/:viewKey"
-        element={<PortalObjectRuntimePage />}
-      />
+        <Route
+          path="/portal/:portalId/object-types/:objectTypeRef/:viewKey"
+          element={<PortalObjectRuntimePage />}
+        />
 
-      <Route
-        path="/portal/:portalId/object-types/:objectTypeRef"
-        element={<PortalObjectRuntimePage />}
-      />
+        <Route
+          path="/portal/:portalId/object-types/:objectTypeRef"
+          element={<PortalObjectRuntimePage />}
+        />
 
-      <Route
-        path="/portal/:portalId/library/:libraryId"
-        element={<PortalLibraryRuntimePage />}
-      />
+        <Route
+          path="/portal/:portalId/library/:libraryId"
+          element={<PortalLibraryRuntimePage />}
+        />
 
-      <Route
-        path="/portal/:portalId/workspaces/:workspaceSlug"
-        element={<PortalWorkspaceRuntimePage />}
-      />
-      <Route
-        path="/portal/:portalId/workspaces/:workspaceSlug/:tabSlug"
-        element={<PortalWorkspaceRuntimePage />}
-      />
-      <Route
-        path="/portal/:portalId/workspaces/:workspaceSlug/tabs/:tabSlug"
-        element={<PortalWorkspaceRuntimePage />}
-      />
+        <Route
+          path="/portal/:portalId/workspaces/:workspaceSlug"
+          element={<PortalWorkspaceRuntimePage />}
+        />
+        <Route
+          path="/portal/:portalId/workspaces/:workspaceSlug/:tabSlug"
+          element={<PortalWorkspaceRuntimePage />}
+        />
+        <Route
+          path="/portal/:portalId/workspaces/:workspaceSlug/tabs/:tabSlug"
+          element={<PortalWorkspaceRuntimePage />}
+        />
+      </Route>
 
       <Route path="/designer" element={<DesignerAccessGate user={user} />}>
         <Route path="tenant/:tenantId" element={<DesignerTenantLayout />}>
@@ -290,6 +298,7 @@ export default function App() {
       <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AppShell>
+        </ChatUnreadProvider>
         </PlatformConfirmProvider>
         </ProfileSidePanelProvider>
       </GlobalWorkspaceTabsProvider>

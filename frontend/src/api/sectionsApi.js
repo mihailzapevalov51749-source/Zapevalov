@@ -1,9 +1,16 @@
-import axios from "axios";
+import { platformApiClient } from "./authenticatedApiClient";
 
-const API = "http://127.0.0.1:8010";
+function requirePortalId(portalId) {
+  const normalized = Number(portalId);
+  if (!Number.isFinite(normalized) || normalized <= 0) {
+    throw new Error("Требуется portal_id для операции с разделом");
+  }
+  return normalized;
+}
 
-export async function createSection(pageId) {
-  const response = await axios.post(`${API}/sections`, {
+export async function createSection(portalId, pageId) {
+  const normalizedPortalId = requirePortalId(portalId);
+  const response = await platformApiClient.post(`/sections/portal/${normalizedPortalId}/`, {
     page_id: pageId,
     title: "Новый раздел",
     description: "",

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { getUsers } from "../../../api/authApi";
+import { buildAvatarUrl } from "../../../shared/files/api/filesApi";
 
 import {
   normalizeUser,
@@ -31,7 +32,7 @@ function normalizeUserOption(user) {
 
     email: user.email || "",
 
-    avatarUrl:
+    avatarUrl: buildAvatarUrl(
       user.avatar_url ||
       user.avatarUrl ||
       user.photo_url ||
@@ -39,6 +40,7 @@ function normalizeUserOption(user) {
       user.image_url ||
       user.imageUrl ||
       "",
+    ),
 
     avatarSettings:
       user.avatar_settings ||
@@ -116,9 +118,9 @@ function mergeWithActualUser(snapshotUser, actualUsers = []) {
       actualUser.email ||
       snapshotUser.email,
 
-    avatarUrl:
-      actualUser.avatarUrl ||
-      snapshotUser.avatarUrl,
+    avatarUrl: buildAvatarUrl(
+      actualUser.avatarUrl || snapshotUser.avatarUrl,
+    ),
 
     avatarSettings:
       actualUser.avatarSettings ||

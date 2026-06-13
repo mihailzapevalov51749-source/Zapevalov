@@ -4,6 +4,7 @@ import {
   getUserDisplayName,
   normalizeUserValue,
 } from "./entityValueUtils";
+import { buildAvatarUrl } from "../files/api/filesApi.js";
 
 const DEFAULT_AVATAR_SETTINGS = {
   x: 0,
@@ -48,15 +49,16 @@ export default function EntityValueRenderer({
 function getUserAvatarUrl(value) {
   if (!value || typeof value !== "object") return "";
 
-  return (
+  const rawUrl =
     value.avatarUrl ||
     value.avatar_url ||
     value.photoUrl ||
     value.photo_url ||
     value.imageUrl ||
     value.image_url ||
-    ""
-  );
+    "";
+
+  return rawUrl ? buildAvatarUrl(rawUrl) : "";
 }
 
 function getUserAvatarSettings(value) {

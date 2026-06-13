@@ -5,6 +5,7 @@ from app.db.session import get_db
 from app.modules.auth.dependencies import get_current_user
 from app.modules.users.models import User
 
+from .tenant_access import assert_note_entity_access
 from .models import Note
 from .schemas import NoteOut, NotePublish, NoteUpsert
 from .service import publish_note_with_mentions
@@ -22,6 +23,13 @@ def get_note(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    assert_note_entity_access(
+        db,
+        current_user,
+        entity_type=entity_type,
+        entity_id=entity_id,
+    )
+
     return (
         db.query(Note)
         .filter(
@@ -38,6 +46,13 @@ def upsert_note(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    assert_note_entity_access(
+        db,
+        current_user,
+        entity_type=payload.entity_type,
+        entity_id=payload.entity_id,
+    )
+
     note = (
         db.query(Note)
         .filter(
@@ -72,6 +87,13 @@ def publish_note(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    assert_note_entity_access(
+        db,
+        current_user,
+        entity_type=payload.entity_type,
+        entity_id=payload.entity_id,
+    )
+
     return publish_note_with_mentions(
         db=db,
         payload=payload,
@@ -86,6 +108,13 @@ def delete_note(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    assert_note_entity_access(
+        db,
+        current_user,
+        entity_type=entity_type,
+        entity_id=entity_id,
+    )
+
     note = (
         db.query(Note)
         .filter(

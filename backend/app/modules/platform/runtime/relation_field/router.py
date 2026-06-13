@@ -12,7 +12,7 @@ from app.modules.platform.runtime.relation_field.schemas import (
     RelationFieldMetadataRead,
     RelationFieldStateRead,
 )
-from app.modules.platform.shared.dependencies import require_tenant
+from app.modules.platform.shared.dependencies import require_tenant_membership
 
 TenantIdPath = Annotated[
     int,
@@ -44,7 +44,7 @@ def get_relation_field_state(
     entity_id: EntityIdPath,
     field_key: FieldKeyPath,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.get_relation_field_state(db, tenant_id, entity_id, field_key)
 
@@ -58,7 +58,7 @@ def get_relation_field_metadata(
     entity_id: EntityIdPath,
     field_key: FieldKeyPath,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.get_relation_field_metadata(db, tenant_id, entity_id, field_key)
 
@@ -74,7 +74,7 @@ def create_relation_field_link(
     field_key: FieldKeyPath,
     payload: RelationFieldLinkMutation,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.create_relation_field_link(
         db,
@@ -95,7 +95,7 @@ def delete_relation_field_link(
     field_key: FieldKeyPath,
     payload: RelationFieldLinkMutation,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.delete_relation_field_link(
         db,

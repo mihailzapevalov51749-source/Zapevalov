@@ -26,6 +26,7 @@ import { defaultCapabilitiesForMode } from "../../../../shared/shell/provider/ap
 import { emitDesignerShadowSnapshot } from "../../../../shared/shell/shadow/designer";
 import { resolveStudioToOfficePathAsync } from "../../../../shared/appMode/appModeNavigation";
 import { showPlatformNotification } from "../../../../shared/platformNotification/PlatformNotification";
+import { buildAvatarUrl } from "../../../../shared/files/api/filesApi";
 import { TENANT_HOME_PAGE_NOT_FOUND_MESSAGE } from "../../../../shared/tenantContext/resolveTenantRuntimeEntryPath";
 import {
   readLeftMenuScale,
@@ -714,7 +715,7 @@ export default function DesignerShell() {
         id: headerUser?.id ?? user?.id,
         name: headerUser?.full_name ?? user?.full_name,
         email: headerUser?.email ?? user?.email,
-        avatarUrl: headerUser?.avatar_url ?? user?.avatar_url,
+        avatarUrl: buildAvatarUrl(headerUser?.avatar_url ?? user?.avatar_url),
       },
       pathname: location.pathname,
       searchQuery: headerSearch.searchQuery,

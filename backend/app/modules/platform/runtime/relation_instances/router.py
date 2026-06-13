@@ -11,7 +11,7 @@ from app.modules.platform.runtime.relation_instances.schemas import (
     RelationInstanceListItem,
     RelationInstanceRead,
 )
-from app.modules.platform.shared.dependencies import require_tenant
+from app.modules.platform.shared.dependencies import require_tenant_membership
 
 TenantIdPath = Annotated[
     int,
@@ -47,7 +47,7 @@ def list_outgoing_relations(
     tenant_id: TenantIdPath,
     entity_id: EntityIdPath,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.list_outgoing(db, tenant_id, entity_id)
 
@@ -60,7 +60,7 @@ def list_incoming_relations(
     tenant_id: TenantIdPath,
     entity_id: EntityIdPath,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.list_incoming(db, tenant_id, entity_id)
 
@@ -73,7 +73,7 @@ def list_entity_relations(
     tenant_id: TenantIdPath,
     entity_id: EntityIdPath,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.list_for_entity(db, tenant_id, entity_id)
 
@@ -88,7 +88,7 @@ def create_relation_instance(
     relation_key: RelationKeyPath,
     payload: RelationInstanceCreate,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.create_relation_instance(db, tenant_id, relation_key, payload)
 
@@ -101,7 +101,7 @@ def list_relation_instances(
     tenant_id: TenantIdPath,
     relation_key: RelationKeyPath,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.list_by_relation_key(db, tenant_id, relation_key)
 
@@ -114,6 +114,6 @@ def delete_relation_instance(
     tenant_id: TenantIdPath,
     relation_instance_id: RelationInstanceIdPath,
     db: Session = Depends(get_db),
-    _tenant: int = Depends(require_tenant),
+    _tenant: int = Depends(require_tenant_membership),
 ):
     return service.delete_relation_instance(db, tenant_id, relation_instance_id)

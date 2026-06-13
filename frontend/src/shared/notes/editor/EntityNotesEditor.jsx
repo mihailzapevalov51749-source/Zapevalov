@@ -19,6 +19,7 @@ import {
   scrollToHighlight,
 } from "../utils/notePublishState";
 import { loadSystemUsers } from "../utils/noteUsersApi";
+import { buildAvatarUrl } from "../../files/api/filesApi.js";
 import {
   DEFAULT_WORKSPACE_LEFT_OFFSET,
   editorBoxStyle,
@@ -503,7 +504,7 @@ export default function EntityNotesEditor({
                   <div style={mentionAvatarStyle}>
                     {user.avatar_url ? (
                       <img
-                        src={user.avatar_url}
+                        src={buildAvatarUrl(user.avatar_url)}
                         alt=""
                         draggable={false}
                         style={{

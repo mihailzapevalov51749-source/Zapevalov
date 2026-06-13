@@ -4,8 +4,12 @@ import {
   STUDIO_SECTION_TITLES,
   resolveStudioSectionTitleFromPathname,
 } from "./studioSectionTitles.js";
+import {
+  CORPORATE_CHAT_PAGE_ID,
+  resolveIsCorporateChatPage,
+} from "../../portal/resolveCorporateChatPage.js";
 
-export const CORPORATE_CHAT_PAGE_ID = 35;
+export { CORPORATE_CHAT_PAGE_ID };
 
 const WORKSPACE_PREFIX = {
   office: "Офис",
@@ -161,13 +165,16 @@ function formatDisplayTitle(prefix, pageName) {
 function isCorporateChatRoute(route, context) {
   const pathname = extractPathname(route);
   const pageMatch = pathname.match(/^\/portal\/\d+\/page\/(\d+)/);
+  const pageId = pageMatch ? Number(pageMatch[1]) : Number(context.pageId);
 
-  if (pageMatch && Number(pageMatch[1]) === CORPORATE_CHAT_PAGE_ID) {
-    return true;
-  }
-
-  const pageId = Number(context.pageId);
-  return pageId === CORPORATE_CHAT_PAGE_ID;
+  return resolveIsCorporateChatPage({
+    pageId: Number.isFinite(pageId) ? pageId : null,
+    activeNavigationItem: {
+      system_key: context.systemKey || context.system_key,
+      menu_scope: context.menuScope || context.menu_scope,
+      title: context.navigationItemTitle || context.pageTitle,
+    },
+  });
 }
 
 function resolveWorkspaceKey({ route, moduleKey }) {
@@ -350,7 +357,16 @@ function resolveRoutePageName(pathname, context, pageType) {
   if (pageMatch) {
     const pageId = Number(pageMatch[1]);
 
-    if (pageId === CORPORATE_CHAT_PAGE_ID) {
+    if (
+      resolveIsCorporateChatPage({
+        pageId,
+        activeNavigationItem: {
+          system_key: context.systemKey || context.system_key,
+          menu_scope: context.menuScope || context.menu_scope,
+          title: context.navigationItemTitle || context.pageTitle,
+        },
+      })
+    ) {
       return PAGE_TYPE_PAGE_NAMES[PAGE_LAYOUT_PAGE_TYPE.CHAT_ROOM];
     }
 

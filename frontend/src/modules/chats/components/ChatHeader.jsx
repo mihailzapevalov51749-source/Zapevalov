@@ -3,6 +3,13 @@ import { useRef } from "react";
 import { chatLayoutStyles } from "../styles/corporateChatStyles";
 
 import { normalizeAvatarSettings } from "../../../shared/avatar/avatarUtils";
+import { buildAvatarUrl } from "../../../shared/files/api/filesApi";
+import {
+  resolveChatDisplayAvatar,
+  resolveChatDisplayInitials,
+  resolveChatDisplayTitle,
+} from "../utils/resolveChatDisplayTitle";
+import { isChatCreator, isGroupChat } from "../utils/chatAccessUtils";
 
 import callIcon from "../../../assets/icons/call.png";
 import videoIcon from "../../../assets/icons/video.png";
@@ -13,18 +20,8 @@ import settingsIcon from "../../../assets/icons/settings.gif";
 const HEADER_AVATAR_SIZE = 30;
 const PROFILE_AVATAR_SIZE = 132;
 
-function getChatInitials(chat) {
-  const title = String(chat?.title || "Ч").trim();
-
-  if (!title) return "Ч";
-
-  return title
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase();
+function getChatInitials(chat, currentUser) {
+  return resolveChatDisplayInitials(chat, currentUser);
 }
 
 function renderAvatarImage({ avatarUrl, avatarSettings }) {
@@ -48,13 +45,14 @@ function renderAvatarImage({ avatarUrl, avatarSettings }) {
   );
 }
 
-function renderChatAvatar(chat) {
-  const avatarUrl = chat?.avatar_url || chat?.avatarUrl || "";
-  const avatarSettings = chat?.avatar_settings || chat?.avatarSettings || null;
+function renderChatAvatar(chat, currentUser) {
+  const displayAvatar = resolveChatDisplayAvatar(chat, currentUser);
+  const avatarUrl = buildAvatarUrl(displayAvatar.avatar_url || "");
+  const avatarSettings = displayAvatar.avatar_settings || null;
 
   if (avatarUrl) return renderAvatarImage({ avatarUrl, avatarSettings });
 
-  return getChatInitials(chat);
+  return getChatInitials(chat, currentUser);
 }
 
 function getParticipantsCount(chat) {
@@ -87,18 +85,15 @@ export default function ChatHeader({
 }) {
   const settingsButtonRef = useRef(null);
 
-  const isGroupChat = activeChat?.type === "group";
-  const isChatCreator = currentUser?.id === activeChat?.created_by_id;
+  const showGroupActions = isGroupChat(activeChat);
+  const showSettingsButton = showGroupActions && isChatCreator(activeChat, currentUser);
   const isVideoEnabled = Boolean(activeChat?.video_enabled);
   const participantsCount = getParticipantsCount(activeChat);
 
-  function handleOpenSettings() {
-    if (!settingsButtonRef.current) {
-      onOpenSettings?.(null);
-      return;
-    }
-
-    onOpenSettings?.(settingsButtonRef.current.getBoundingClientRect());
+  function handleOpenSettings(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    onOpenSettings?.();
   }
 
   function handleOpenParticipants(event) {
@@ -113,11 +108,11 @@ export default function ChatHeader({
       <div style={chatLayoutStyles.chatHeaderTop}>
         <div style={chatLayoutStyles.chatHeaderInfo}>
           <div style={chatLayoutStyles.chatHeaderAvatar}>
-            {renderChatAvatar(activeChat)}
+            {renderChatAvatar(activeChat, currentUser)}
           </div>
 
           <div style={chatLayoutStyles.chatHeaderTitle}>
-            {activeChat?.title || "Чат"}
+            {resolveChatDisplayTitle(activeChat, currentUser)}
           </div>
         </div>
 
@@ -143,78 +138,77 @@ export default function ChatHeader({
 
         <div className="chat-header__actions" style={chatLayoutStyles.chatHeaderActions}>
           <div className="chat-header__context-actions">
-          <button
-            type="button"
-            style={chatLayoutStyles.chatHeaderActionButton}
-            title="Звонок"
-          >
-            <img
-              src={callIcon}
-              alt="call"
-              style={chatLayoutStyles.chatHeaderActionIcon}
-            />
-          </button>
-
-          <button
-            type="button"
-            style={chatLayoutStyles.chatHeaderActionButton}
-            title="Видео"
-          >
-            <img
-              src={isVideoEnabled ? videoIcon : videoOffIcon}
-              alt="video"
-              style={chatLayoutStyles.chatHeaderActionIcon}
-            />
-          </button>
-
-          {isGroupChat && (
             <button
               type="button"
-              style={{
-                ...chatLayoutStyles.chatHeaderActionButton,
-                position: "relative",
-              }}
-              title={`Участники: ${participantsCount}`}
-              onMouseDown={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-              }}
-              onClick={handleOpenParticipants}
+              style={chatLayoutStyles.chatHeaderActionButton}
+              title="Звонок"
             >
               <img
-                src={usersIcon}
-                alt="users"
+                src={callIcon}
+                alt="call"
                 style={chatLayoutStyles.chatHeaderActionIcon}
               />
-
-              {participantsCount > 0 && (
-                <span style={participantBadgeStyle}>
-                  {formatParticipantsCount(participantsCount)}
-                </span>
-              )}
             </button>
-          )}
 
-          {isGroupChat && isChatCreator && (
-           <button
-  ref={settingsButtonRef}
-  type="button"
-  style={chatLayoutStyles.chatHeaderActionButton}
-  title="Настройки"
-  onMouseDown={(event) => {
-    event.preventDefault();
-    event.stopPropagation();
-  }}
-  onClick={handleOpenSettings}
->
-              
+            <button
+              type="button"
+              style={chatLayoutStyles.chatHeaderActionButton}
+              title="Видео"
+            >
               <img
-                src={settingsIcon}
-                alt="settings"
+                src={isVideoEnabled ? videoIcon : videoOffIcon}
+                alt="video"
                 style={chatLayoutStyles.chatHeaderActionIcon}
               />
             </button>
-          )}
+
+            {showGroupActions ? (
+              <button
+                type="button"
+                style={{
+                  ...chatLayoutStyles.chatHeaderActionButton,
+                  position: "relative",
+                }}
+                title={`Участники: ${participantsCount}`}
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
+                onClick={handleOpenParticipants}
+              >
+                <img
+                  src={usersIcon}
+                  alt="users"
+                  style={chatLayoutStyles.chatHeaderActionIcon}
+                />
+
+                {participantsCount > 0 ? (
+                  <span style={participantBadgeStyle}>
+                    {formatParticipantsCount(participantsCount)}
+                  </span>
+                ) : null}
+              </button>
+            ) : null}
+
+            {showSettingsButton ? (
+              <button
+                ref={settingsButtonRef}
+                type="button"
+                style={chatLayoutStyles.chatHeaderActionButton}
+                title="Настройки"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
+                onClick={handleOpenSettings}
+              >
+                <img
+                  src={settingsIcon}
+                  alt="settings"
+                  style={chatLayoutStyles.chatHeaderActionIcon}
+                />
+              </button>
+            ) : null}
           </div>
         </div>
       </div>

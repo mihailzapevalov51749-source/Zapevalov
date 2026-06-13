@@ -1,7 +1,6 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import BlockStyleToolbar from "../../blocks/components/BlockStyleToolbar";
-
-const API_BASE_URL = "http://127.0.0.1:8010";
+import { buildFileUrl } from "../../../shared/files/api/filesApi";
 const IMAGE_STYLE_EDITOR_EVENT = "image-style-editor-opened";
 
 export default function ImageBlockView({
@@ -319,7 +318,5 @@ function getIconValue(block) {
 function getFileSrc(src) {
   if (!src) return "";
   if (src.startsWith("blob:")) return src;
-  if (src.startsWith("http")) return src;
-
-  return `${API_BASE_URL}${src}`;
+  return buildFileUrl(src);
 }

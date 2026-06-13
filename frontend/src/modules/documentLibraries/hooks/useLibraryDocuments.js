@@ -22,6 +22,7 @@ import {
 import { resolveFolderPath } from "../utils/libraryFolderPath";
 
 export default function useLibraryDocuments({
+  tenantId,
   libraryId,
   enableDeepLinkUrl = false,
 }) {
@@ -80,13 +81,13 @@ export default function useLibraryDocuments({
   );
 
   const loadDocuments = async (parentId = currentFolderId) => {
-    if (!libraryId) return;
+    if (!libraryId || !tenantId) return;
 
     setIsLoading(true);
     setError("");
 
     try {
-      const data = await getLibraryDocuments(libraryId, parentId);
+      const data = await getLibraryDocuments(tenantId, libraryId, parentId);
 
       setDocuments(data.items || []);
 
@@ -103,13 +104,13 @@ export default function useLibraryDocuments({
   };
 
   const handleGlobalSearch = async () => {
-    if (!libraryId || !searchQuery.trim()) return;
+    if (!libraryId || !tenantId || !searchQuery.trim()) return;
 
     setIsLoading(true);
     setError("");
 
     try {
-      const data = await searchLibraryDocuments(libraryId, searchQuery);
+      const data = await searchLibraryDocuments(tenantId, libraryId, searchQuery);
 
       setDocuments(data.items || []);
 
@@ -146,7 +147,7 @@ export default function useLibraryDocuments({
     setIsDeepLinkReady(
       !enableDeepLinkUrl || !parseLibraryDeepLink(searchParams).hasDeepLink,
     );
-  }, [libraryId, enableDeepLinkUrl]);
+  }, [libraryId, tenantId, enableDeepLinkUrl]);
 
   useEffect(() => {
     if (!enableDeepLinkUrl || !libraryId) {
@@ -183,7 +184,11 @@ export default function useLibraryDocuments({
         let documentRecord = null;
 
         if (deepLink.documentId) {
-          documentRecord = await getLibraryDocumentById(deepLink.documentId);
+          documentRecord = await getLibraryDocumentById(
+            tenantId,
+            libraryId,
+            deepLink.documentId,
+          );
           if (Number(documentRecord.library_id) !== Number(libraryId)) {
             throw new Error("Документ не принадлежит этой библиотеке");
           }
@@ -209,7 +214,8 @@ export default function useLibraryDocuments({
           const resolved = await resolveFolderPath({
             libraryId,
             targetFolderId,
-            getDocumentById: getLibraryDocumentById,
+            getDocumentById: (documentId) =>
+              getLibraryDocumentById(tenantId, libraryId, documentId),
           });
 
           if (cancelled) {
@@ -354,7 +360,7 @@ export default function useLibraryDocuments({
     setError("");
 
     try {
-      await createLibraryDocument(libraryId, {
+      await createLibraryDocument(tenantId, libraryId, {
         title: documentTitle.trim(),
         document_type: documentType,
         parent_id: currentFolderId,
@@ -381,7 +387,7 @@ export default function useLibraryDocuments({
     setError("");
 
     try {
-      await createLibraryFolder(libraryId, {
+      await createLibraryFolder(tenantId, libraryId, {
         title: folderTitle.trim(),
         parent_id: currentFolderId,
       });
@@ -402,7 +408,7 @@ export default function useLibraryDocuments({
     setError("");
 
     try {
-      await uploadLibraryDocument(libraryId, file, currentFolderId);
+      await uploadLibraryDocument(tenantId, libraryId, file, currentFolderId);
 
       if (fileInputRef?.current) {
         fileInputRef.current.value = "";
@@ -425,7 +431,7 @@ export default function useLibraryDocuments({
     setError("");
 
     try {
-      await renameLibraryDocument(document.id, nextTitle.trim());
+      await renameLibraryDocument(tenantId, libraryId, document.id, nextTitle.trim());
 
       setOpenedMenuId(null);
 
@@ -453,7 +459,7 @@ export default function useLibraryDocuments({
     setError("");
 
     try {
-      await deleteLibraryDocument(document.id);
+      await deleteLibraryDocument(tenantId, libraryId, document.id);
       setOpenedMenuId(null);
 
       await loadDocuments(currentFolderId);
@@ -484,7 +490,7 @@ export default function useLibraryDocuments({
     setError("");
 
     try {
-      await deleteLibraryDocument(deleteTarget.id, mode);
+      await deleteLibraryDocument(tenantId, libraryId, deleteTarget.id, mode);
 
       setDeleteTarget(null);
       setOpenedMenuId(null);
@@ -508,12 +514,12 @@ export default function useLibraryDocuments({
   }, []);
 
   const openWorkspaceDocument = useCallback(
-    (document, { syncUrl = true } = {}) => {
+    async (document, { syncUrl = true } = {}) => {
       if (!document || document.is_folder) {
-        return buildWorkspacePreviewPayload(document);
+        return null;
       }
 
-      const payload = buildWorkspacePreviewPayload(document);
+      const payload = await buildWorkspacePreviewPayload(document, tenantId);
       if (!payload) {
         setHighlightDocumentId(document.id);
         return null;
@@ -533,7 +539,7 @@ export default function useLibraryDocuments({
       setPendingWorkspaceDocument(document);
       return payload;
     },
-    [currentFolderId, enableDeepLinkUrl, syncDeepLinkUrl],
+    [currentFolderId, enableDeepLinkUrl, syncDeepLinkUrl, tenantId],
   );
 
   const closeWorkspaceDocumentUrl = useCallback(() => {

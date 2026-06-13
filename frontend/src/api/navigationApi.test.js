@@ -7,7 +7,7 @@ describe("navigationApi delete auth", () => {
   it("deleteNavigationItem rejects when token is missing", async () => {
     logout();
 
-    await expect(deleteNavigationItem(86)).rejects.toThrow(/авторизац/i);
+    await expect(deleteNavigationItem(1, 86)).rejects.toThrow(/авторизац/i);
   });
 
   it("getToken reads legacy access_token key", () => {

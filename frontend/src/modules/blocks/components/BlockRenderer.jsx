@@ -6,6 +6,7 @@ import {
 import BlockWrapper from "./BlockWrapper";
 
 export default function BlockRenderer({
+  portalId,
   block,
   isEditMode,
   isSelected = false,
@@ -73,6 +74,7 @@ export default function BlockRenderer({
     >
       {BlockComponent ? (
         <BlockComponent
+          portalId={portalId}
           block={block}
           isEditMode={isEditMode}
           embeddedInCanvas={embeddedInCanvas}

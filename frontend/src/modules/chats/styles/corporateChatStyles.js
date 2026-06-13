@@ -2,6 +2,9 @@ import { chatHeaderStyles } from "./chatHeaderStyles";
 import { chatModalStyles } from "./chatModalStyles";
 import { chatSidebarStyles } from "./chatSidebarStyles";
 
+// YASII floating launcher: 24px inset + 54px button + 72px comfort gap.
+export const CHAT_COMPOSER_YASII_SAFE_INSET_RIGHT_PX = 150;
+
 export const chatLayoutStyles = {
   page: {
     width: "100%",

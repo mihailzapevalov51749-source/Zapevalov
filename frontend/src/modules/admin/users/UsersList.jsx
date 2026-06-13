@@ -2,6 +2,7 @@ import {
   isCompanyOwner,
   resolveTenantRoleDisplay,
 } from "../../../shared/tenantRoles/tenantRoleModel.js";
+import { buildAvatarUrl } from "../../../shared/files/api/filesApi";
 import { styles } from "./usersStyles";
 
 const DEFAULT_AVATAR_SETTINGS = {
@@ -191,7 +192,7 @@ function Avatar({ user, size = 40 }) {
     >
       {user?.avatar_url ? (
         <img
-          src={user.avatar_url}
+          src={buildAvatarUrl(user.avatar_url)}
           alt="Аватар"
           draggable={false}
           style={{

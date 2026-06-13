@@ -9,6 +9,8 @@ import { emojiFileMap } from "../../comments/emoji/emojiFileMap";
 import paperclipIcon from "../../../assets/icons/paperclip.svg";
 import sendHorizontalIcon from "../../../assets/icons/SendHorizonal.svg";
 
+import { CHAT_COMPOSER_YASII_SAFE_INSET_RIGHT_PX } from "../styles/corporateChatStyles";
+
 import {
   popoverOverlayStyle,
   popoverStyle,
@@ -360,54 +362,20 @@ export default function ChatComposer({
       )}
 
       <div style={styles.inputRow}>
-        <textarea
-          ref={textareaRef}
-          autoFocus={autoFocus}
-          value={body}
-          placeholder={placeholder}
-          disabled={disabled || isSubmitting}
-          rows={1}
-          style={styles.textarea}
-          onChange={(event) => {
-            setBody(event.target.value);
-          }}
-          onKeyDown={handleKeyDown}
-        />
-      </div>
-
-      <div style={styles.toolbar}>
-        <div style={styles.toolbarLeft}>
-          <button
-            type="button"
-            title="Прикрепить файл"
-            style={styles.toolbarButton}
+        <div style={styles.messageInputShell}>
+          <textarea
+            ref={textareaRef}
+            autoFocus={autoFocus}
+            value={body}
+            placeholder={placeholder}
             disabled={disabled || isSubmitting}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <img src={paperclipIcon} alt="" style={styles.toolbarIcon} />
-          </button>
-
-          <button
-            ref={mentionButtonRef}
-            type="button"
-            title="Упомянуть пользователя"
-            style={styles.toolbarButton}
-            disabled={disabled || isSubmitting}
-            onClick={handleToggleMention}
-          >
-            @
-          </button>
-
-          <button
-            ref={emojiButtonRef}
-            type="button"
-            title="Добавить emoji"
-            style={styles.toolbarButton}
-            disabled={disabled || isSubmitting}
-            onClick={handleToggleEmoji}
-          >
-            <EmojiIcon emojiKey="smile" size={18} opacity={1} />
-          </button>
+            rows={1}
+            style={styles.textarea}
+            onChange={(event) => {
+              setBody(event.target.value);
+            }}
+            onKeyDown={handleKeyDown}
+          />
         </div>
 
         <button
@@ -418,6 +386,50 @@ export default function ChatComposer({
           onClick={handleSubmit}
         >
           <img src={sendHorizontalIcon} alt="" style={styles.sendIcon} />
+        </button>
+
+        <div
+          style={{
+            ...styles.yasiiSafeArea,
+            width: CHAT_COMPOSER_YASII_SAFE_INSET_RIGHT_PX,
+            minWidth: CHAT_COMPOSER_YASII_SAFE_INSET_RIGHT_PX,
+            flexBasis: CHAT_COMPOSER_YASII_SAFE_INSET_RIGHT_PX,
+          }}
+          aria-hidden="true"
+        />
+      </div>
+
+      <div style={styles.toolbarRow}>
+        <button
+          type="button"
+          title="Прикрепить файл"
+          style={styles.toolbarButton}
+          disabled={disabled || isSubmitting}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <img src={paperclipIcon} alt="" style={styles.toolbarIcon} />
+        </button>
+
+        <button
+          ref={mentionButtonRef}
+          type="button"
+          title="Упомянуть пользователя"
+          style={styles.toolbarButton}
+          disabled={disabled || isSubmitting}
+          onClick={handleToggleMention}
+        >
+          @
+        </button>
+
+        <button
+          ref={emojiButtonRef}
+          type="button"
+          title="Добавить emoji"
+          style={styles.toolbarButton}
+          disabled={disabled || isSubmitting}
+          onClick={handleToggleEmoji}
+        >
+          <EmojiIcon emojiKey="smile" size={18} opacity={1} />
         </button>
       </div>
 
@@ -510,18 +522,27 @@ const styles = {
   composer: {
     width: "100%",
     minHeight: 44,
-    padding: "8px 14px 8px",
+    padding: "8px 0 8px",
     boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
     justifyContent: "flex-end",
-    gap: 4,
+    gap: 8,
     background: "#FFFFFF",
   },
 
   inputRow: {
     width: "100%",
-    minHeight: 26,
+    display: "flex",
+    alignItems: "flex-end",
+    gap: 8,
+    minWidth: 0,
+  },
+
+  messageInputShell: {
+    flex: "1 1 auto",
+    minWidth: 0,
+    minHeight: 34,
     padding: "4px 8px",
     boxSizing: "border-box",
     background: "#FFFFFF",
@@ -529,6 +550,20 @@ const styles = {
     borderRadius: 4,
     display: "flex",
     alignItems: "center",
+  },
+
+  yasiiSafeArea: {
+    flex: "0 0 auto",
+    alignSelf: "stretch",
+    pointerEvents: "none",
+  },
+
+  toolbarRow: {
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    minWidth: 0,
   },
 
   textarea: {
@@ -548,21 +583,8 @@ const styles = {
     boxSizing: "border-box",
     padding: 0,
     overflowY: "auto",
-  },
-
-  toolbar: {
-    width: "100%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-    marginTop: -1,
-  },
-
-  toolbarLeft: {
-    display: "flex",
-    alignItems: "center",
-    gap: 4,
+    flex: "1 1 auto",
+    minWidth: 0,
   },
 
   toolbarButton: {
@@ -588,9 +610,10 @@ const styles = {
   },
 
   sendButton: {
-    width: 30,
-    height: 30,
-    minWidth: 30,
+    width: 34,
+    height: 34,
+    minWidth: 34,
+    flex: "0 0 auto",
     border: "none",
     borderRadius: 9,
     background: "#8EA8FF",
@@ -605,6 +628,7 @@ const styles = {
     width: 34,
     height: 34,
     minWidth: 34,
+    flex: "0 0 auto",
     border: "none",
     borderRadius: 9,
     background: "#C7D2FE",

@@ -6,6 +6,7 @@ import {
   getFileExtension,
   getFileIcon,
 } from "./fileUtils";
+import { openFileViewer } from "../../files/openFileViewer";
 
 import "./fileValueRenderer.css";
 
@@ -112,7 +113,7 @@ function CompactFileValue({ files }) {
   );
 }
 
-function FileCard({ file, variant = "card" }) {
+function FileCard({ file, variant = "card", onOpenFile }) {
   const fileName = getFileName(file);
   const fileSize = getFileSize(file);
   const fileUrl = getFileUrl(file);
@@ -122,6 +123,30 @@ function FileCard({ file, variant = "card" }) {
   const isChat = variant === "chat";
   const isAttachmentList = variant === "attachmentList";
   const isPlain = isChat || isAttachmentList;
+
+  const handleOpen = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!fileUrl) {
+      return;
+    }
+
+    if (onOpenFile) {
+      onOpenFile(file);
+      return;
+    }
+
+    openFileViewer({
+      fileUrl,
+      fileName,
+      sourceType: "file_field",
+      context: {
+        source: "file_field",
+        file_id: file?.id || file?.file_id || null,
+      },
+    });
+  };
 
   const content = (
     <div
@@ -152,15 +177,16 @@ function FileCard({ file, variant = "card" }) {
   if (!fileUrl) return content;
 
   return (
-    <a
-      href={fileUrl}
-      target="_blank"
-      rel="noreferrer"
+    <button
+      type="button"
+      onClick={handleOpen}
       title={fileName}
       className="file-value-renderer__card-link"
+      data-table-action="true"
+      data-row-card-ignore="true"
     >
       {content}
-    </a>
+    </button>
   );
 }
 
@@ -200,6 +226,7 @@ export default function FileValueRenderer({
           key={file?.id || file?.file_id || file?.url || index}
           file={file}
           variant={variant}
+          onOpenFile={onOpenFile}
         />
       ))}
     </div>

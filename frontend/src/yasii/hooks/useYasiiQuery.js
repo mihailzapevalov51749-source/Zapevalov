@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
+import { useLocation } from "react-router-dom";
 
+import { resolveYasiiTenantId } from "../workspace/yasiiWorkspaceModeStorage.js";
 import { sendYasiiQuery } from "../yasiiApi";
 
 const WELCOME_MESSAGE = {
@@ -26,6 +28,8 @@ function resolveAssistantText(payload) {
 }
 
 export default function useYasiiQuery() {
+  const location = useLocation();
+  const tenantId = resolveYasiiTenantId(location.pathname);
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -47,7 +51,7 @@ export default function useYasiiQuery() {
     setError(null);
 
     try {
-      const response = await sendYasiiQuery(text);
+      const response = await sendYasiiQuery(text, tenantId);
       const payload = response?.payload ?? {};
       const trace = Array.isArray(payload.trace) ? payload.trace : undefined;
 
@@ -67,7 +71,7 @@ export default function useYasiiQuery() {
     } finally {
       setLoading(false);
     }
-  }, [loading]);
+  }, [loading, tenantId]);
 
   return {
     messages,

@@ -1,4 +1,9 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from app.modules.auth.dependencies import get_current_user
+from app.modules.platform.shared.dependencies import require_tenant_membership
+from app.modules.users.models import User
+from app.modules.yasii.tenant_context import apply_server_identity_to_host_context
 
 from .handoff_service import HostContextValidationError, build_handoff_from_host_context
 from .host_context import HostContext
@@ -16,10 +21,23 @@ def ai_context_health():
     return AiContextHealthResponse(**get_ai_context_health())
 
 
-@router.post("/handoff", response_model=ACEHandoffResponse)
-def ai_context_handoff(host: HostContext) -> ACEHandoffResponse:
+@router.post("/tenants/{tenant_id}/handoff", response_model=ACEHandoffResponse)
+def ai_context_handoff(
+    host: HostContext,
+    tenant_id: int = Depends(require_tenant_membership),
+    current_user: User = Depends(get_current_user),
+) -> ACEHandoffResponse:
     try:
-        handoff = build_handoff_from_host_context(host)
+        trusted_host = apply_server_identity_to_host_context(
+            host,
+            tenant_id=tenant_id,
+            user_id=current_user.id,
+        )
+        handoff = build_handoff_from_host_context(
+            trusted_host,
+            tenant_id=tenant_id,
+            user_id=current_user.id,
+        )
     except HostContextValidationError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

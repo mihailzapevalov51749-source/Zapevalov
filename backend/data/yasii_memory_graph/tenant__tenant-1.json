@@ -1,0 +1,153 @@
+{
+  "schemaVersion": "0.1.0",
+  "tenantId": "tenant-1",
+  "nodes": [
+    {
+      "nodeId": "tenant:tenant-1",
+      "nodeType": "tenant",
+      "sourceType": "tenant_memory",
+      "sourceId": "tenant-1"
+    },
+    {
+      "nodeId": "decision:dec-28c64ad24c85",
+      "nodeType": "decision",
+      "sourceType": "decision_memory",
+      "sourceId": "dec-28c64ad24c85"
+    },
+    {
+      "nodeId": "decision:dec-181e6c8096b5",
+      "nodeType": "decision",
+      "sourceType": "decision_memory",
+      "sourceId": "dec-181e6c8096b5"
+    },
+    {
+      "nodeId": "user:user-1",
+      "nodeType": "user",
+      "sourceType": "user_memory",
+      "sourceId": "user-1"
+    },
+    {
+      "nodeId": "session:user-1::session-1",
+      "nodeType": "session",
+      "sourceType": "session_memory",
+      "sourceId": "user-1::session-1"
+    },
+    {
+      "nodeId": "decision:dec-08f07f09a187",
+      "nodeType": "decision",
+      "sourceType": "decision_memory",
+      "sourceId": "dec-08f07f09a187"
+    },
+    {
+      "nodeId": "decision:dec-b1f4e226dd36",
+      "nodeType": "decision",
+      "sourceType": "decision_memory",
+      "sourceId": "dec-b1f4e226dd36"
+    },
+    {
+      "nodeId": "decision:dec-67d3b9192cbd",
+      "nodeType": "decision",
+      "sourceType": "decision_memory",
+      "sourceId": "dec-67d3b9192cbd"
+    },
+    {
+      "nodeId": "decision:dec-c4c66449ee0c",
+      "nodeType": "decision",
+      "sourceType": "decision_memory",
+      "sourceId": "dec-c4c66449ee0c"
+    },
+    {
+      "nodeId": "decision:dec-da2015822413",
+      "nodeType": "decision",
+      "sourceType": "decision_memory",
+      "sourceId": "dec-da2015822413"
+    }
+  ],
+  "links": [
+    {
+      "linkId": "link-ac6d6b5fe2ff",
+      "sourceNodeId": "decision:dec-28c64ad24c85",
+      "targetNodeId": "tenant:tenant-1",
+      "relationType": "belongs_to"
+    },
+    {
+      "linkId": "link-6d2f257dcc1b",
+      "sourceNodeId": "decision:dec-181e6c8096b5",
+      "targetNodeId": "tenant:tenant-1",
+      "relationType": "belongs_to"
+    },
+    {
+      "linkId": "link-2eedf44b9390",
+      "sourceNodeId": "user:user-1",
+      "targetNodeId": "decision:dec-181e6c8096b5",
+      "relationType": "initiated"
+    },
+    {
+      "linkId": "link-3cb9ea641cf7",
+      "sourceNodeId": "user:user-1",
+      "targetNodeId": "session:user-1::session-1",
+      "relationType": "belongs_to"
+    },
+    {
+      "linkId": "link-3effb8139244",
+      "sourceNodeId": "session:user-1::session-1",
+      "targetNodeId": "decision:dec-181e6c8096b5",
+      "relationType": "discussed_in"
+    },
+    {
+      "linkId": "link-fba2b12f5cb5",
+      "sourceNodeId": "decision:dec-08f07f09a187",
+      "targetNodeId": "tenant:tenant-1",
+      "relationType": "belongs_to"
+    },
+    {
+      "linkId": "link-a6ee9bf1d3c4",
+      "sourceNodeId": "user:user-1",
+      "targetNodeId": "decision:dec-08f07f09a187",
+      "relationType": "initiated"
+    },
+    {
+      "linkId": "link-a6f75f634071",
+      "sourceNodeId": "session:user-1::session-1",
+      "targetNodeId": "decision:dec-08f07f09a187",
+      "relationType": "discussed_in"
+    },
+    {
+      "linkId": "link-c82781b653c3",
+      "sourceNodeId": "decision:dec-b1f4e226dd36",
+      "targetNodeId": "tenant:tenant-1",
+      "relationType": "belongs_to"
+    },
+    {
+      "linkId": "link-1efe14d8625f",
+      "sourceNodeId": "user:user-1",
+      "targetNodeId": "decision:dec-b1f4e226dd36",
+      "relationType": "initiated"
+    },
+    {
+      "linkId": "link-45255d9500e8",
+      "sourceNodeId": "session:user-1::session-1",
+      "targetNodeId": "decision:dec-b1f4e226dd36",
+      "relationType": "discussed_in"
+    },
+    {
+      "linkId": "link-2c0ad09e2e3d",
+      "sourceNodeId": "decision:dec-67d3b9192cbd",
+      "targetNodeId": "tenant:tenant-1",
+      "relationType": "belongs_to"
+    },
+    {
+      "linkId": "link-234677aa82d3",
+      "sourceNodeId": "decision:dec-c4c66449ee0c",
+      "targetNodeId": "tenant:tenant-1",
+      "relationType": "belongs_to"
+    },
+    {
+      "linkId": "link-1c9f17f99e44",
+      "sourceNodeId": "decision:dec-da2015822413",
+      "targetNodeId": "tenant:tenant-1",
+      "relationType": "belongs_to"
+    }
+  ],
+  "updatedAt": "2026-06-13T07:41:38+00:00"
+}

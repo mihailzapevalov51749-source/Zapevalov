@@ -5,6 +5,7 @@ import AdminTenantDeleteModal from "../../admin/tenants/AdminTenantDeleteModal";
 import { deletePortal, getPortal } from "../../admin/tenants/portalsApi";
 import { listTenantRegistry } from "../api/tenantRegistryApi";
 import { buildControlPlaneCompaniesPath } from "../config/controlPlanePaths";
+import ChangeCompanyAdministratorModal from "./ChangeCompanyAdministratorModal";
 import CloneCompanyModal from "./CloneCompanyModal";
 import CompaniesClientsToolbar from "./CompaniesClientsToolbar";
 import CompaniesList from "./CompaniesList";
@@ -30,6 +31,7 @@ export default function CompaniesClientsTab() {
   const [detailError, setDetailError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isChangeAdminOpen, setIsChangeAdminOpen] = useState(false);
   const [isCloneOpen, setIsCloneOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
@@ -131,6 +133,14 @@ export default function CompaniesClientsTab() {
     }
   };
 
+  const handleAdministratorChanged = async () => {
+    setIsChangeAdminOpen(false);
+    await loadCompanies();
+    if (selectedCompanyId) {
+      await loadSelectedCompany(selectedCompanyId);
+    }
+  };
+
   const handleCloned = async () => {
     setIsCloneOpen(false);
     await loadCompanies();
@@ -221,6 +231,7 @@ export default function CompaniesClientsTab() {
           isOpeningOffice={isOpeningOffice}
           onOpenOffice={openOffice}
           onClone={() => setIsCloneOpen(true)}
+          onChangeAdministrator={() => setIsChangeAdminOpen(true)}
           onDelete={openDeleteModal}
           onClose={selectedCompanyId ? handleCloseSelection : undefined}
         />
@@ -230,6 +241,13 @@ export default function CompaniesClientsTab() {
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
         onCreated={handleCreated}
+      />
+
+      <ChangeCompanyAdministratorModal
+        isOpen={isChangeAdminOpen}
+        company={selectedCompany}
+        onClose={() => setIsChangeAdminOpen(false)}
+        onChanged={handleAdministratorChanged}
       />
 
       <CloneCompanyModal

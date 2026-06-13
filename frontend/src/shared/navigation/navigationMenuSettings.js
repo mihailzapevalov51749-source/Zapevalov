@@ -139,14 +139,20 @@ export async function persistNavigationMenuBlockMove({
       sort_order,
     }));
 
-  if (customDbPayload.length > 0) {
+  if (customDbPayload.length > 0 && tenantId) {
     const { navigationService } = await import(
       "../../modules/navigation/services/navigationService.js"
     );
-    await navigationService.moveItems(customDbPayload);
-    if (typeof reloadNavigation === "function") {
-      await reloadNavigation();
-    }
+    await navigationService.moveItems(tenantId, customDbPayload);
+  }
+
+  const didPersist =
+    tenantEntries.length > 0 ||
+    designerEntries.length > 0 ||
+    customDbPayload.length > 0;
+
+  if (didPersist && typeof reloadNavigation === "function") {
+    await reloadNavigation();
   }
 
   return {
