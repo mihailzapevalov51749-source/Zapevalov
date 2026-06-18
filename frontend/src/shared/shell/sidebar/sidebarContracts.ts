@@ -19,6 +19,7 @@ export type SidebarSectionContract = {
 
 export type SidebarCapabilitiesContract = {
   canEditMenu?: boolean;
+  canPersonalizeMenu?: boolean;
   canCreateItem?: boolean;
   canOpenSettings?: boolean;
   canDragItems?: boolean;
@@ -37,6 +38,7 @@ export type AppSidebarContract = {
   footerActions: SidebarItemContract[];
   onToggleCollapse: () => void;
   editMode?: boolean;
+  personalizeMode?: boolean;
   menuScale?: number;
   activeItemId?: string;
   activeParentIds?: string[];

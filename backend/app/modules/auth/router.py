@@ -10,10 +10,12 @@ from .schemas import (
     AuthResponse,
     LoginRequest,
     RegisterRequest,
+    TenantEntryRead,
     TenantLoginBrandingRead,
     UserUpdate,
 )
 from .service import login_user, register_user
+from .tenant_entry_resolution import resolve_tenant_entry_by_public_slug
 from .tenant_login_branding import resolve_tenant_login_display_name
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -39,9 +41,32 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
 
 @router.get("/tenant-login-branding", response_model=TenantLoginBrandingRead)
 def get_tenant_login_branding(
-    tenant_id: int = Query(..., alias="tenantId", gt=0),
+    tenant_id: int | None = Query(None, alias="tenantId", gt=0),
+    tenant_key: str | None = Query(None, alias="tenantKey", min_length=1),
+    public_slug: str | None = Query(None, alias="publicSlug", min_length=1),
     db: Session = Depends(get_db),
 ):
+    normalized_slug = str(public_slug or tenant_key or "").strip()
+    if normalized_slug:
+        entry = resolve_tenant_entry_by_public_slug(db, normalized_slug)
+        if entry is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Компания не найдена",
+            )
+        return TenantLoginBrandingRead(
+            display_name=entry["display_name"],
+            tenant_id=entry["tenant_id"],
+            public_slug=entry["public_slug"],
+            tenant_key=entry["public_slug"],
+        )
+
+    if tenant_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Укажите publicSlug или tenantId",
+        )
+
     display_name = resolve_tenant_login_display_name(db, tenant_id)
     if display_name is None:
         raise HTTPException(
@@ -49,7 +74,27 @@ def get_tenant_login_branding(
             detail="Компания не найдена",
         )
 
-    return TenantLoginBrandingRead(display_name=display_name)
+    return TenantLoginBrandingRead(display_name=display_name, tenant_id=tenant_id)
+
+
+@router.get("/tenant-entry/{public_slug}", response_model=TenantEntryRead)
+def get_tenant_entry_by_public_slug(
+    public_slug: str,
+    db: Session = Depends(get_db),
+):
+    entry = resolve_tenant_entry_by_public_slug(db, public_slug)
+    if entry is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Компания не найдена",
+        )
+
+    return TenantEntryRead(
+        tenant_id=entry["tenant_id"],
+        public_slug=entry["public_slug"],
+        display_name=entry["display_name"],
+        tenant_key=entry["public_slug"],
+    )
 
 
 @router.get("/platform-setup-state", response_model=PlatformSetupStateRead)

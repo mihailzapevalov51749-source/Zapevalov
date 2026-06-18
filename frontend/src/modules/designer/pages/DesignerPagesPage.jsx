@@ -62,6 +62,8 @@ export default function DesignerPagesPage() {
   const { tenantId } = useDesignerShell();
 
   const [items, setItems] = useState([]);
+  const [totalPages, setTotalPages] = useState(0);
+  const [hiddenSystemCount, setHiddenSystemCount] = useState(0);
   const [selectedPageId, setSelectedPageId] = useState(null);
   const [selectedDetail, setSelectedDetail] = useState(null);
   const [loadingList, setLoadingList] = useState(true);
@@ -95,10 +97,16 @@ export default function DesignerPagesPage() {
       const payload = await designerApi.listDesignerPagesRegistry(tenantId);
       const nextItems = Array.isArray(payload?.items) ? payload.items : [];
       setItems(nextItems);
+      setTotalPages(Number(payload?.total_pages) >= 0 ? Number(payload.total_pages) : nextItems.length);
+      setHiddenSystemCount(
+        Number(payload?.hidden_system_count) >= 0 ? Number(payload.hidden_system_count) : 0,
+      );
       return nextItems;
     } catch (error) {
       setListError(getApiErrorMessage(error, "Не удалось загрузить реестр страниц"));
       setItems([]);
+      setTotalPages(0);
+      setHiddenSystemCount(0);
       return [];
     } finally {
       setLoadingList(false);
@@ -429,7 +437,13 @@ export default function DesignerPagesPage() {
         <div>
           <h1 className="designer-page-title">Страницы</h1>
           <p className="designer-page-subtitle">
-            Реестр страниц платформы: статус, использование и состав
+            Показаны только главная и пользовательские страницы.
+          </p>
+          <p className="designer-page-subtitle">
+            Страницы: {totalPages}
+            {hiddenSystemCount > 0
+              ? ` · Скрыто системных элементов: ${hiddenSystemCount}`
+              : ""}
           </p>
         </div>
         <button

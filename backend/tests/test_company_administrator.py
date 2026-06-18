@@ -17,7 +17,7 @@ from app.modules.platform_event_journal.models import PlatformEventJournalEntry
 from app.modules.portals.models import Portal
 from app.modules.tenant_environment.constants import TenantStatus
 from app.modules.tenant_roles.constants import TENANT_SUPERADMIN
-from app.modules.tenant_users.models import TenantUserMembership
+from app.modules.tenant_users.models import TenantUserMembership, TenantUserProfile
 from app.modules.users.models import Role, User
 
 
@@ -59,7 +59,7 @@ def _create_user(
 ) -> User:
     role = _ensure_role(db, role_name)
     user = User(
-        email=f"{email_prefix}_{role_name}_{_suffix()}@test.local",
+        email=f"{email_prefix}_{role_name}_{_suffix()}@example.com",
         full_name=f"Company Admin {role_name}",
         hashed_password="hash",
         is_active=True,
@@ -156,7 +156,7 @@ class TestCompanyAdministratorAccess:
             tenant_id=company.id,
             is_company_owner=True,
         )
-        candidate = _create_user(db, role_name="admin", tenant_id=company.id)
+        candidate = _create_user(db, role_name="admin", tenant_id=None)
         _add_membership(db, tenant_id=company.id, user_id=old_owner.id, role_key="superadmin")
         _add_membership(db, tenant_id=company.id, user_id=candidate.id, role_key="admin")
         platform_admin = _create_user(db, role_name="admin", tenant_id=None)
@@ -175,8 +175,16 @@ class TestCompanyAdministratorAccess:
         db.refresh(old_owner)
         db.refresh(candidate)
         assert old_owner.is_company_owner is False
-        assert candidate.is_company_owner is True
-        assert candidate.role.name == TENANT_SUPERADMIN
+        assert candidate.is_company_owner is False
+        assert candidate.tenant_id is None
+        membership = (
+            db.query(TenantUserMembership)
+            .filter_by(tenant_id=company.id, user_id=candidate.id)
+            .one()
+        )
+        assert membership.role_key == TENANT_SUPERADMIN
+        assert membership.is_active is True
+        assert membership.membership_status == "active"
 
     def test_platform_owner_allowed_invite(
         self,
@@ -301,3 +309,435 @@ class TestCompanyAdministratorAccess:
         )
 
         assert response.status_code == 409
+
+    def test_invite_existing_global_user_creates_membership_without_new_user(
+        self,
+        client: TestClient,
+        db: Session,
+    ) -> None:
+        company = _create_company(db)
+        existing_user = _create_user(
+            db,
+            role_name="admin",
+            tenant_id=None,
+            email_prefix="existing_global_admin",
+        )
+        users_before = (
+            db.query(User)
+            .filter(User.email == existing_user.email)
+            .count()
+        )
+        memberships_before = (
+            db.query(TenantUserMembership)
+            .filter_by(tenant_id=company.id, user_id=existing_user.id)
+            .count()
+        )
+        platform_admin = _create_user(db, role_name="admin", tenant_id=None)
+        db.commit()
+
+        response = client.post(
+            f"/control-plane/tenants/{company.id}/administrator/invite",
+            headers=_auth_headers(platform_admin),
+            json={
+                "full_name": existing_user.full_name,
+                "email": existing_user.email,
+                "phone": "+79990001122",
+            },
+        )
+
+        assert response.status_code == 201
+        body = response.json()
+        assert body["company_superadmin"]["user_id"] == existing_user.id
+        assert body["company_superadmin"]["email"] == existing_user.email
+        assert body["invitation_sent"] is False
+
+        db.refresh(existing_user)
+        assert (
+            db.query(User)
+            .filter(User.email == existing_user.email)
+            .count()
+            == users_before
+        )
+        assert (
+            db.query(TenantUserMembership)
+            .filter_by(tenant_id=company.id, user_id=existing_user.id)
+            .count()
+            == memberships_before + 1
+        )
+        assert existing_user.tenant_id is None
+        assert existing_user.is_company_owner is False
+
+        membership = (
+            db.query(TenantUserMembership)
+            .filter_by(tenant_id=company.id, user_id=existing_user.id)
+            .one()
+        )
+        assert membership.role_key == TENANT_SUPERADMIN
+        assert membership.is_active is True
+
+        profile = (
+            db.query(TenantUserProfile)
+            .filter_by(tenant_id=company.id, user_id=existing_user.id)
+            .one_or_none()
+        )
+        assert profile is not None
+
+    def test_invite_existing_platform_owner_as_company_admin(
+        self,
+        client: TestClient,
+        db: Session,
+    ) -> None:
+        owner = _resolve_platform_owner(db)
+        if owner is None:
+            pytest.skip("platform owner is not configured in platform_settings")
+
+        company = _create_company(db)
+        users_before = (
+            db.query(User)
+            .filter(User.email == owner.email)
+            .count()
+        )
+        db.commit()
+
+        try:
+            response = client.post(
+                f"/control-plane/tenants/{company.id}/administrator/invite",
+                headers=_auth_headers(owner),
+                json={
+                    "full_name": owner.full_name or "Platform Owner",
+                    "email": owner.email,
+                },
+            )
+
+            assert response.status_code == 201
+            body = response.json()
+            assert body["company_superadmin"]["user_id"] == owner.id
+            assert (
+                db.query(User)
+                .filter(User.email == owner.email)
+                .count()
+                == users_before
+            )
+
+            db.refresh(owner)
+            assert owner.tenant_id is None
+            assert owner.is_company_owner is False
+            membership = (
+                db.query(TenantUserMembership)
+                .filter_by(tenant_id=company.id, user_id=owner.id)
+                .one_or_none()
+            )
+            assert membership is not None
+            assert membership.role_key == TENANT_SUPERADMIN
+        finally:
+            guard = SessionLocal()
+            try:
+                from app.modules.tenant_management.demo_tenant_inventory import (
+                    cleanup_test_tenant_leaks,
+                )
+
+                cleanup_test_tenant_leaks(guard)
+            finally:
+                guard.close()
+
+    def test_invite_existing_member_rejected(
+        self,
+        client: TestClient,
+        db: Session,
+    ) -> None:
+        company = _create_company(db)
+        member = _create_user(db, role_name="user", tenant_id=company.id)
+        _add_membership(db, tenant_id=company.id, user_id=member.id, role_key="user")
+        platform_admin = _create_user(db, role_name="admin", tenant_id=None)
+        db.commit()
+
+        response = client.post(
+            f"/control-plane/tenants/{company.id}/administrator/invite",
+            headers=_auth_headers(platform_admin),
+            json={
+                "full_name": member.full_name,
+                "email": member.email,
+            },
+        )
+
+        assert response.status_code == 409
+        assert response.json()["detail"] == "В компании уже есть пользователи. Выберите существующего пользователя."
+
+    def test_invite_existing_global_user_already_admin_rejected(
+        self,
+        client: TestClient,
+        db: Session,
+    ) -> None:
+        company = _create_company(db)
+        owner = _create_user(
+            db,
+            role_name="superadmin",
+            tenant_id=company.id,
+            is_company_owner=True,
+        )
+        _add_membership(db, tenant_id=company.id, user_id=owner.id, role_key="superadmin")
+        platform_admin = _create_user(db, role_name="admin", tenant_id=None)
+        db.commit()
+
+        response = client.post(
+            f"/control-plane/tenants/{company.id}/administrator/invite",
+            headers=_auth_headers(platform_admin),
+            json={
+                "full_name": owner.full_name,
+                "email": owner.email,
+            },
+        )
+
+        assert response.status_code == 409
+        assert "уже" in str(response.json()["detail"]).lower()
+
+    def test_invite_new_email_creates_user_membership_and_profile(
+        self,
+        client: TestClient,
+        db: Session,
+    ) -> None:
+        company = _create_company(db)
+        platform_admin = _create_user(db, role_name="admin", tenant_id=None)
+        invite_email = f"new_admin_{_suffix()}@example.com"
+        db.commit()
+
+        response = client.post(
+            f"/control-plane/tenants/{company.id}/administrator/invite",
+            headers=_auth_headers(platform_admin),
+            json={
+                "full_name": "Новый Администратор",
+                "email": invite_email,
+            },
+        )
+
+        assert response.status_code == 201
+
+        created_user = db.query(User).filter(User.email == invite_email).one()
+        assert created_user.tenant_id is None
+        assert created_user.is_company_owner is False
+        membership = (
+            db.query(TenantUserMembership)
+            .filter_by(tenant_id=company.id, user_id=created_user.id)
+            .one_or_none()
+        )
+        assert membership is not None
+        assert membership.role_key == TENANT_SUPERADMIN
+        assert (
+            db.query(TenantUserProfile)
+            .filter_by(tenant_id=company.id, user_id=created_user.id)
+            .one_or_none()
+            is not None
+        )
+
+    def test_invite_existing_user_does_not_change_other_tenant_memberships(
+        self,
+        client: TestClient,
+        db: Session,
+    ) -> None:
+        dev_company = _create_company(db)
+        target_company = _create_company(db)
+        existing_user = _create_user(
+            db,
+            role_name="user",
+            tenant_id=dev_company.id,
+            email_prefix="dev_member",
+        )
+        _add_membership(
+            db,
+            tenant_id=dev_company.id,
+            user_id=existing_user.id,
+            role_key="user",
+        )
+        dev_memberships_before = (
+            db.query(TenantUserMembership)
+            .filter_by(tenant_id=dev_company.id, user_id=existing_user.id)
+            .count()
+        )
+        platform_admin = _create_user(db, role_name="admin", tenant_id=None)
+        db.commit()
+
+        response = client.post(
+            f"/control-plane/tenants/{target_company.id}/administrator/invite",
+            headers=_auth_headers(platform_admin),
+            json={
+                "full_name": existing_user.full_name,
+                "email": existing_user.email,
+            },
+        )
+
+        assert response.status_code == 201
+        dev_memberships_after = (
+            db.query(TenantUserMembership)
+            .filter_by(tenant_id=dev_company.id, user_id=existing_user.id)
+            .count()
+        )
+        assert dev_memberships_after == dev_memberships_before == 1
+
+
+class TestTenantScopedSuperadminAccess:
+    def test_platform_owner_assigns_superadmin_membership_and_profile(
+        self,
+        client: TestClient,
+        db: Session,
+    ) -> None:
+        company = _create_company(db)
+        global_user = _create_user(
+            db,
+            role_name="user",
+            tenant_id=None,
+            email_prefix="tenant_superadmin",
+        )
+        platform_admin = _create_user(db, role_name="admin", tenant_id=None)
+        db.commit()
+
+        response = client.post(
+            f"/control-plane/tenants/{company.id}/administrator/invite",
+            headers=_auth_headers(platform_admin),
+            json={
+                "full_name": global_user.full_name,
+                "email": global_user.email,
+            },
+        )
+
+        assert response.status_code == 201
+        body = response.json()
+        assert body["company_superadmin"]["role"] == TENANT_SUPERADMIN
+        assert body["company_superadmin"]["role_label"] == "Superadmin"
+
+        membership = (
+            db.query(TenantUserMembership)
+            .filter_by(tenant_id=company.id, user_id=global_user.id)
+            .one()
+        )
+        assert membership.role_key == TENANT_SUPERADMIN
+        assert membership.membership_status == "active"
+        assert membership.is_active is True
+        assert (
+            db.query(TenantUserProfile)
+            .filter_by(tenant_id=company.id, user_id=global_user.id)
+            .one_or_none()
+            is not None
+        )
+
+    def test_assigned_superadmin_can_open_assigned_client_tenant(
+        self,
+        client: TestClient,
+        db: Session,
+    ) -> None:
+        company = _create_company(db)
+        global_user = _create_user(
+            db,
+            role_name="user",
+            tenant_id=None,
+            email_prefix="assigned_superadmin",
+        )
+        platform_admin = _create_user(db, role_name="admin", tenant_id=None)
+        db.commit()
+
+        invite_response = client.post(
+            f"/control-plane/tenants/{company.id}/administrator/invite",
+            headers=_auth_headers(platform_admin),
+            json={
+                "full_name": global_user.full_name,
+                "email": global_user.email,
+            },
+        )
+        assert invite_response.status_code == 201
+
+        access_response = client.get(
+            f"/portals/{company.id}",
+            headers=_auth_headers(global_user),
+        )
+        assert access_response.status_code == 200
+
+    def test_assigned_superadmin_cannot_open_other_client_tenant_without_membership(
+        self,
+        client: TestClient,
+        db: Session,
+    ) -> None:
+        assigned_company = _create_company(db)
+        other_company = _create_company(db)
+        global_user = _create_user(
+            db,
+            role_name="user",
+            tenant_id=None,
+            email_prefix="scoped_superadmin",
+        )
+        platform_admin = _create_user(db, role_name="admin", tenant_id=None)
+        db.commit()
+
+        invite_response = client.post(
+            f"/control-plane/tenants/{assigned_company.id}/administrator/invite",
+            headers=_auth_headers(platform_admin),
+            json={
+                "full_name": global_user.full_name,
+                "email": global_user.email,
+            },
+        )
+        assert invite_response.status_code == 201
+
+        denied_response = client.get(
+            f"/portals/{other_company.id}",
+            headers=_auth_headers(global_user),
+        )
+        assert denied_response.status_code == 403
+
+    def test_company_superadmin_read_uses_membership_not_company_owner_flag(
+        self,
+        client: TestClient,
+        db: Session,
+    ) -> None:
+        company = _create_company(db)
+        global_user = _create_user(
+            db,
+            role_name="user",
+            tenant_id=None,
+            email_prefix="membership_superadmin",
+            is_company_owner=False,
+        )
+        _add_membership(
+            db,
+            tenant_id=company.id,
+            user_id=global_user.id,
+            role_key=TENANT_SUPERADMIN,
+        )
+        platform_admin = _create_user(db, role_name="admin", tenant_id=None)
+        db.commit()
+
+        response = client.get(
+            f"/portals/{company.id}",
+            headers=_auth_headers(platform_admin),
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["company_superadmin"]["user_id"] == global_user.id
+        assert body["company_superadmin"]["role_label"] == "Superadmin"
+        assert body["company_superadmin"]["is_owner"] is False
+
+    def test_assign_superadmin_does_not_overwrite_global_user_tenant_id(
+        self,
+        client: TestClient,
+        db: Session,
+    ) -> None:
+        company = _create_company(db)
+        global_user = _create_user(
+            db,
+            role_name="user",
+            tenant_id=None,
+            email_prefix="global_scope_preserved",
+        )
+        platform_admin = _create_user(db, role_name="admin", tenant_id=None)
+        db.commit()
+
+        response = client.post(
+            f"/control-plane/tenants/{company.id}/administrator/invite",
+            headers=_auth_headers(platform_admin),
+            json={
+                "full_name": global_user.full_name,
+                "email": global_user.email,
+            },
+        )
+        assert response.status_code == 201
+
+        db.refresh(global_user)
+        assert global_user.tenant_id is None

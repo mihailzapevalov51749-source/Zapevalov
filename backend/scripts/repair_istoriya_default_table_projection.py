@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from app.db.session import SessionLocal
 from app.modules.platform.designer.publish.draft_loader import load_tenant_draft_catalog
 from app.modules.platform.designer.publish.validators import validate_tenant_draft_catalog
+from structure_write_script_guard import guard_script_structure_write
 
 TENANT_ID = 1
 OBJECT_TYPE_KEY = "istoriya"
@@ -208,6 +209,8 @@ def main() -> int:
 
         backup_path = _save_backup(view["settings_json"] or {})
         print("backup:", backup_path)
+
+        guard_script_structure_write(db, TENANT_ID, "repair_istoriya_default_table_projection")
 
         projection["fieldKeys"] = after_field_keys
         projection["fieldOrder"] = after_field_order

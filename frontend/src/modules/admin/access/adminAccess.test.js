@@ -4,7 +4,10 @@ import { describe, it } from "node:test";
 import {
   canAccessControlPlane,
   canShowControlPlaneStudioMenuEntry,
+  canShowPlatformArchitectureInStudio,
   filterControlPlaneStudioMenuItems,
+  filterPlatformStudioMenuItems,
+  isPlatformArchitectureStudioMenuItem,
 } from "./adminAccess.js";
 
 function userWithRole(roleName, { tenantId = null, isPlatformOwner = false } = {}) {
@@ -92,6 +95,41 @@ describe("canShowControlPlaneStudioMenuEntry", () => {
   });
 });
 
+describe("canShowPlatformArchitectureInStudio", () => {
+  it("shows entry for DEV tenant", () => {
+    assert.equal(canShowPlatformArchitectureInStudio({ tenantId: 1, tenantType: "DEV" }), true);
+  });
+
+  it("hides entry for CLIENT tenant", () => {
+    assert.equal(canShowPlatformArchitectureInStudio({ tenantId: 14, tenantType: "CLIENT" }), false);
+  });
+});
+
+describe("filterPlatformStudioMenuItems", () => {
+  it("removes platform architecture menu item from tree", () => {
+    const filtered = filterPlatformStudioMenuItems([
+      { id: "objects", title: "Объекты" },
+      {
+        id: "system-designer-platform-architecture",
+        title: "Архитектура платформы",
+        route: "/designer/tenant/1/platform-architecture",
+      },
+    ]);
+
+    assert.equal(filtered.length, 1);
+    assert.equal(filtered[0].id, "objects");
+  });
+
+  it("detects architecture menu item by route", () => {
+    assert.equal(
+      isPlatformArchitectureStudioMenuItem({
+        route: "/designer/tenant/1/platform-architecture",
+      }),
+      true,
+    );
+  });
+});
+
 describe("filterControlPlaneStudioMenuItems", () => {
   it("removes control plane menu item from tree", () => {
     const filtered = filterControlPlaneStudioMenuItems([
@@ -105,5 +143,23 @@ describe("filterControlPlaneStudioMenuItems", () => {
 
     assert.equal(filtered.length, 1);
     assert.equal(filtered[0].id, "objects");
+  });
+
+  it("keeps platform releases while removing control plane root entry", () => {
+    const filtered = filterControlPlaneStudioMenuItems([
+      {
+        id: "system-designer-platform-releases",
+        title: "Релизы платформы",
+        route: "/designer/tenant/1/platform-releases",
+      },
+      {
+        id: "system-designer-control-plane",
+        title: "Управление платформой",
+        route: "/control-plane",
+      },
+    ]);
+
+    assert.equal(filtered.length, 1);
+    assert.equal(filtered[0].id, "system-designer-platform-releases");
   });
 });

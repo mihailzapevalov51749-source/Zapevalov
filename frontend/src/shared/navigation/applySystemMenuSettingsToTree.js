@@ -1,3 +1,12 @@
+import {
+  resolveMenuItemVisibility,
+} from "./mergeRuntimeMenuLayers.js";
+import {
+  sanitizeNavigationMenuSettingRecord,
+  stripNavigationMenuSystemIconsFromItem,
+  isObjectTypeNavigationItem,
+} from "./navigationMenuIconPolicy.js";
+
 const PROTECTED_MENU_TITLES = ["главная страница", "мои задачи"];
 
 export function isProtectedMenuItem(item) {
@@ -51,18 +60,51 @@ export function isSystemMenuItem(itemId, data = null, item = null) {
 }
 
 export function applySystemSettingsToItem(item, settings) {
-  const itemSettings = settings[item.id] || {};
+  const itemId = String(item.id ?? "");
+  const itemSettings = settings[itemId] || settings[item.id] || {};
+  const sanitized = sanitizeNavigationMenuSettingRecord(itemSettings) || {};
 
-  const nextItem = {
+  const nextItem = stripNavigationMenuSystemIconsFromItem({
     ...item,
-    ...itemSettings,
     isSystem: true,
-    block_id: itemSettings.block_id ?? item.block_id,
-    is_visible:
-      itemSettings.is_visible === undefined
-        ? item.is_visible
-        : itemSettings.is_visible,
-  };
+    block_id:
+      sanitized.block_id !== undefined ? sanitized.block_id : item.block_id,
+    is_visible: resolveMenuItemVisibility(
+      item.is_visible,
+      sanitized.is_visible,
+      undefined,
+    ),
+  });
+
+  if (sanitized.title !== undefined) {
+    nextItem.title = sanitized.title;
+  }
+  if (
+    !isObjectTypeNavigationItem(item) &&
+    sanitized.icon_file_url !== undefined
+  ) {
+    if (sanitized.icon_file_url) {
+      nextItem.icon_file_url = sanitized.icon_file_url;
+    } else {
+      delete nextItem.icon_file_url;
+      delete nextItem.display_icon_file_url;
+    }
+  }
+  if (sanitized.color !== undefined) {
+    nextItem.color = sanitized.color;
+  }
+  if (sanitized.is_bold !== undefined) {
+    nextItem.is_bold = sanitized.is_bold;
+  }
+  if (sanitized.is_italic !== undefined) {
+    nextItem.is_italic = sanitized.is_italic;
+  }
+  if (sanitized.is_expanded !== undefined) {
+    nextItem.is_expanded = sanitized.is_expanded;
+  }
+  if (sanitized.sort_order !== undefined) {
+    nextItem.sort_order = sanitized.sort_order;
+  }
 
   if (Array.isArray(item.children)) {
     nextItem.children = item.children.map((child) =>

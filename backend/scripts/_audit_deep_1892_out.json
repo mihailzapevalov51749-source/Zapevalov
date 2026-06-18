@@ -1,0 +1,792 @@
+﻿{
+  "yasnopro_dev_t1": {
+    "portal_id": 1,
+    "object_types": [
+      {
+        "key": "idei",
+        "name": "╚фхш",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "istoriya",
+        "name": "╚ёЄюЁш ",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "klienty",
+        "name": "╩ышхэЄ√",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "litsenzii",
+        "name": "╦шЎхэчшш",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "napravleniya",
+        "name": "╧ырэ ЁрчтшЄш ",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "new_object",
+        "name": "═ют√щ юс·хъЄ",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "problemy",
+        "name": "╧Ёюсыхь√",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "prodazhi",
+        "name": "╧Ёюфрцш",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "task",
+        "name": "╟рфрўр",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "test",
+        "name": "╥хёЄют√щ юс·хъЄ",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "zadachnik",
+        "name": "╠юш чрфрўш",
+        "is_system": false,
+        "status": "active"
+      }
+    ],
+    "pages": [
+      {
+        "id": 1,
+        "title": "├ыртэр ",
+        "status": "published",
+        "is_home": true,
+        "is_visible": true
+      },
+      {
+        "id": 7,
+        "title": "┴шсыш",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 8,
+        "title": "трш",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 34,
+        "title": "╬ЁуёЄЁєъЄєЁр ъюьярэшш",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 35,
+        "title": "╫рЄ",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 36,
+        "title": "╙тхфюьыхэш ",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 38,
+        "title": "╬ЄўхЄ√",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 39,
+        "title": "╩рыхэфрЁ№",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 40,
+        "title": "└фьшэшёЄЁшЁютрэшх",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 41,
+        "title": "═рёЄЁющър ёшёЄхь√",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 45,
+        "title": "╟ряхтрыют",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 49,
+        "title": "╥хёЄютр ",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 50,
+        "title": "яхЁтр ",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 51,
+        "title": "╤ЄЁрэшЎр",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 52,
+        "title": "┬ЄюЁр ",
+        "status": "hidden",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 54,
+        "title": "╨рчЁрсюЄър яЁюфєъЄр",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 55,
+        "title": "╨рчЁрсюЄър",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 56,
+        "title": "╩рЁЄр яырЄЇюЁь√",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 57,
+        "title": "╩рЁЄр яырЄЇюЁь√ ▀ёэю╧Ёю",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 58,
+        "title": "╥хї. яюффхЁцър",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 59,
+        "title": "╧Ёюфрцш",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 60,
+        "title": "╬Єфхы ърфЁют",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 61,
+        "title": "╙яЁртыхэшх яырЄЇюЁьющ",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 62,
+        "title": "╬Єфхы ърфЁют",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 346,
+        "title": "╨рчЁрсюЄърр",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 459,
+        "title": "└ЁїшЄхъЄєЁр ▀ёэю╧Ёю",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 561,
+        "title": "├ыртэр ",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 574,
+        "title": "├ыртэр ",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 597,
+        "title": "├ыртэр ",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 608,
+        "title": "╫рЄ",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 622,
+        "title": "├ыртэр ",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 713,
+        "title": "╥хёЄютр  сшсышюЄхър",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 739,
+        "title": "├ыртэр ",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 786,
+        "title": "├ыртэр ",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 790,
+        "title": "╩рыхэфрЁ№",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      }
+    ],
+    "workspaces": [
+      {
+        "id": 34,
+        "title": "╨рчЁрсюЄър",
+        "slug": "razrabotka",
+        "status": "active"
+      },
+      {
+        "id": 35,
+        "title": "╥хї. яюффхЁцър",
+        "slug": "teh-podderzhka",
+        "status": "active"
+      },
+      {
+        "id": 36,
+        "title": "╙яЁртыхэшх яырЄЇюЁьющ",
+        "slug": "upravlenie-platformoy",
+        "status": "active"
+      },
+      {
+        "id": 37,
+        "title": "╬Єфхы ърфЁют",
+        "slug": "otdel-kadrov-2",
+        "status": "active"
+      },
+      {
+        "id": 46,
+        "title": "WS d4280f4f",
+        "slug": "ws-d4280f4f",
+        "status": "active"
+      },
+      {
+        "id": 47,
+        "title": "WS tab 7128eb55",
+        "slug": "ws-tab-7128eb55",
+        "status": "active"
+      },
+      {
+        "id": 49,
+        "title": "WS 846d6673",
+        "slug": "ws-846d6673",
+        "status": "active"
+      },
+      {
+        "id": 50,
+        "title": "WS tab 23822289",
+        "slug": "ws-tab-23822289",
+        "status": "active"
+      },
+      {
+        "id": 52,
+        "title": "WS 5bab13b8",
+        "slug": "ws-5bab13b8",
+        "status": "active"
+      },
+      {
+        "id": 53,
+        "title": "WS tab 8786f3ee",
+        "slug": "ws-tab-8786f3ee",
+        "status": "active"
+      },
+      {
+        "id": 55,
+        "title": "WS 0f64ee6c",
+        "slug": "ws-0f64ee6c",
+        "status": "active"
+      },
+      {
+        "id": 56,
+        "title": "WS tab 1e4a9d73",
+        "slug": "ws-tab-1e4a9d73",
+        "status": "active"
+      },
+      {
+        "id": 58,
+        "title": "WS 71ed4df9",
+        "slug": "ws-71ed4df9",
+        "status": "active"
+      },
+      {
+        "id": 59,
+        "title": "WS tab 73ad6399",
+        "slug": "ws-tab-73ad6399",
+        "status": "active"
+      },
+      {
+        "id": 61,
+        "title": "WS b5924292",
+        "slug": "ws-b5924292",
+        "status": "active"
+      },
+      {
+        "id": 62,
+        "title": "WS tab 72c84688",
+        "slug": "ws-tab-72c84688",
+        "status": "active"
+      },
+      {
+        "id": 64,
+        "title": "WS 4e19ac9b",
+        "slug": "ws-4e19ac9b",
+        "status": "active"
+      },
+      {
+        "id": 65,
+        "title": "WS tab b1dcbaaa",
+        "slug": "ws-tab-b1dcbaaa",
+        "status": "active"
+      },
+      {
+        "id": 67,
+        "title": "WS 0d9d5e4d",
+        "slug": "ws-0d9d5e4d",
+        "status": "active"
+      },
+      {
+        "id": 68,
+        "title": "WS tab 113960ea",
+        "slug": "ws-tab-113960ea",
+        "status": "active"
+      },
+      {
+        "id": 70,
+        "title": "WS c09bd3a6",
+        "slug": "ws-c09bd3a6",
+        "status": "active"
+      },
+      {
+        "id": 71,
+        "title": "WS tab 2edb2386",
+        "slug": "ws-tab-2edb2386",
+        "status": "active"
+      }
+    ],
+    "views": [
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "is_system": true,
+        "object_type_key": "cascade_delete_9_0_3"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "is_system": true,
+        "object_type_key": "delete_mvp_9_0_3"
+      },
+      {
+        "key": "default_quick_form",
+        "name": "┴√ёЄЁр  ЇюЁьр",
+        "is_system": true,
+        "object_type_key": "idei"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "is_system": true,
+        "object_type_key": "idei"
+      },
+      {
+        "key": "idei_razvitiya",
+        "name": "╚фхш ЁрчтшЄш ",
+        "is_system": false,
+        "object_type_key": "idei"
+      },
+      {
+        "key": "default_quick_form",
+        "name": "┴√ёЄЁр  ЇюЁьр",
+        "is_system": true,
+        "object_type_key": "istoriya"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "is_system": true,
+        "object_type_key": "istoriya"
+      },
+      {
+        "key": "default_quick_form",
+        "name": "┴√ёЄЁр  ЇюЁьр",
+        "is_system": true,
+        "object_type_key": "klienty"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "is_system": true,
+        "object_type_key": "klienty"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "is_system": true,
+        "object_type_key": "litsenzii"
+      },
+      {
+        "key": "arhitektura",
+        "name": "╧ырэ ЁрчтшЄш ",
+        "is_system": false,
+        "object_type_key": "napravleniya"
+      },
+      {
+        "key": "default_quick_form",
+        "name": "┴√ёЄЁр  ЇюЁьр",
+        "is_system": true,
+        "object_type_key": "napravleniya"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "is_system": true,
+        "object_type_key": "napravleniya"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "is_system": true,
+        "object_type_key": "new_object"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "is_system": true,
+        "object_type_key": "new_object"
+      },
+      {
+        "key": "default_quick_form",
+        "name": "┴√ёЄЁр  ЇюЁьр",
+        "is_system": true,
+        "object_type_key": "problemy"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "is_system": true,
+        "object_type_key": "problemy"
+      },
+      {
+        "key": "problemy",
+        "name": "╧Ёюсыхь√",
+        "is_system": false,
+        "object_type_key": "problemy"
+      },
+      {
+        "key": "default_quick_form",
+        "name": "┴√ёЄЁр  ЇюЁьр",
+        "is_system": true,
+        "object_type_key": "prodazhi"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "is_system": true,
+        "object_type_key": "prodazhi"
+      },
+      {
+        "key": "tasks_table",
+        "name": "╥рсышЎр чрфрў",
+        "is_system": false,
+        "object_type_key": "task"
+      },
+      {
+        "key": "default_quick_form",
+        "name": "┴√ёЄЁр  ЇюЁьр",
+        "is_system": true,
+        "object_type_key": "test"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "is_system": true,
+        "object_type_key": "test"
+      },
+      {
+        "key": "default_quick_form",
+        "name": "┴√ёЄЁр  ЇюЁьр",
+        "is_system": true,
+        "object_type_key": "zadachnik"
+      },
+      {
+        "key": "default_table",
+        "name": "┬ёх чрфрўш",
+        "is_system": true,
+        "object_type_key": "zadachnik"
+      }
+    ],
+    "runtime": [
+      {
+        "key": "napravleniya",
+        "entities": 158
+      },
+      {
+        "key": "problemy",
+        "entities": 10
+      },
+      {
+        "key": "idei",
+        "entities": 4
+      },
+      {
+        "key": "zadachnik",
+        "entities": 3
+      },
+      {
+        "key": "litsenzii",
+        "entities": 0
+      },
+      {
+        "key": "new_object",
+        "entities": 0
+      },
+      {
+        "key": "klienty",
+        "entities": 0
+      },
+      {
+        "key": "prodazhi",
+        "entities": 0
+      },
+      {
+        "key": "task",
+        "entities": 0
+      },
+      {
+        "key": "test",
+        "entities": 0
+      },
+      {
+        "key": "istoriya",
+        "entities": 0
+      }
+    ],
+    "level2": {
+      "runtime_entities": 175,
+      "runtime_entity_values": 1014,
+      "runtime_relation_instances": 358,
+      "comments": 18,
+      "notes": 1,
+      "notifications": 18,
+      "document_libraries": 2,
+      "library_documents": 16,
+      "calendar_events": 0,
+      "chat_messages": 0
+    },
+    "modules": [
+      {
+        "module_key": "runtime.chat",
+        "enabled": true,
+        "installed_version": "1.0.0",
+        "source": "backfill"
+      },
+      {
+        "module_key": "runtime.notifications",
+        "enabled": true,
+        "installed_version": "1.0.0",
+        "source": "backfill"
+      },
+      {
+        "module_key": "runtime.calendar",
+        "enabled": true,
+        "installed_version": "1.0.0",
+        "source": "backfill"
+      }
+    ]
+  },
+  "legacy_template_t2": {
+    "portal_id": 2,
+    "object_types": [
+      {
+        "key": "zadachnik",
+        "name": "╟рфрўэшъ",
+        "is_system": false,
+        "status": "active"
+      }
+    ],
+    "pages": [
+      {
+        "id": 347,
+        "title": "├ыртэр ",
+        "status": "published",
+        "is_home": true,
+        "is_visible": true
+      },
+      {
+        "id": 376,
+        "title": "╫рЄ",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 377,
+        "title": "╙тхфюьыхэш ",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 381,
+        "title": "└фьшэшёЄЁшЁютрэшх",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 382,
+        "title": "═рёЄЁющър ёшёЄхь√",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 791,
+        "title": "╩рыхэфрЁ№",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      }
+    ],
+    "workspaces": [],
+    "views": [
+      {
+        "key": "default_quick_form",
+        "name": "┴√ёЄЁр  ЇюЁьр",
+        "is_system": true,
+        "object_type_key": "zadachnik"
+      },
+      {
+        "key": "default_table",
+        "name": "┬ёх чрфрўш",
+        "is_system": true,
+        "object_type_key": "zadachnik"
+      }
+    ],
+    "runtime": [
+      {
+        "key": "zadachnik",
+        "entities": 1
+      }
+    ],
+    "level2": {
+      "runtime_entities": 1,
+      "runtime_entity_values": 1017,
+      "runtime_relation_instances": 0,
+      "comments": 48,
+      "notes": 13,
+      "notifications": 100,
+      "document_libraries": 11,
+      "library_documents": 18,
+      "calendar_events": 0,
+      "chat_messages": 0
+    },
+    "modules": [
+      {
+        "module_key": "runtime.chat",
+        "enabled": true,
+        "installed_version": "1.0.0",
+        "source": "backfill"
+      },
+      {
+        "module_key": "runtime.notifications",
+        "enabled": true,
+        "installed_version": "1.0.0",
+        "source": "backfill"
+      },
+      {
+        "module_key": "runtime.calendar",
+        "enabled": true,
+        "installed_version": "1.0.0",
+        "source": "backfill"
+      }
+    ]
+  }
+}

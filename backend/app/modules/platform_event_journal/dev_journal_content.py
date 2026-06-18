@@ -6,6 +6,13 @@ import re
 from typing import TypedDict
 
 from app.modules.platform_event_journal.constants import PlatformEventJournalType
+from app.modules.platform_event_journal.journal_user_format import (
+    build_user_facing_description,
+    contains_forbidden_journal_content,
+    format_user_facing_title,
+    sanitize_journal_description_for_display,
+    uses_legacy_journal_format,
+)
 from app.modules.platform_event_journal.tenant_audit_constants import TenantEventCategory
 
 _CYRILLIC_RE = re.compile(r"[\u0400-\u04FF]")
@@ -26,11 +33,12 @@ DEV_JOURNAL_SLUG_CONTENT: dict[str, DevJournalContentSpec] = {
         "category_ru": "Компании",
         "event_type": PlatformEventJournalType.DEVELOPMENT.value,
         "description": (
-            "Категория: Компании.\n"
-            "Что изменено: в Control Plane активирован сценарий смены администратора компании "
-            "из существующих пользователей или через приглашение.\n"
-            "Зачем: безопасное назначение суперадминистратора компании без ручных операций в БД.\n"
-            "Результат: platform admin может сменить владельца компании из карточки «Компании»."
+            "Что сделано:\n"
+            "В Control Plane активирован сценарий смены администратора компании.\n\n"
+            "Результат:\n"
+            "Platform admin может назначить нового владельца компании из карточки «Компании».\n\n"
+            "Влияние на платформу:\n"
+            "Управление компаниями стало безопаснее и понятнее."
         ),
     },
     "frontend-platform-access-isolation-audit": {
@@ -108,6 +116,51 @@ DEV_JOURNAL_SLUG_CONTENT: dict[str, DevJournalContentSpec] = {
         "title": "Исправление изоляции ролей реестра проблем качества",
         "category_ru": "Безопасность",
         "event_type": PlatformEventJournalType.FIX.value,
+    },
+    "calendar-context-menu-create-event-actions": {
+        "title": "Контекстное меню календаря: создание события",
+        "category_ru": "Календарь",
+        "event_type": PlatformEventJournalType.DEVELOPMENT.value,
+    },
+    "fix-calendar-context-menu-ui-not-working": {
+        "title": "Исправление: контекстное меню календаря",
+        "category_ru": "Календарь",
+        "event_type": PlatformEventJournalType.FIX.value,
+    },
+    "calendar-week-sticky-day-header": {
+        "title": "Sticky day header в календаре",
+        "category_ru": "Календарь",
+        "event_type": PlatformEventJournalType.DEVELOPMENT.value,
+    },
+    "runtime-menu-settings-inheritance": {
+        "title": "Наследование runtime menu settings",
+        "category_ru": "Навигация",
+        "event_type": PlatformEventJournalType.ARCHITECTURE.value,
+    },
+    "fix-left-sidebar-missing-menu-items": {
+        "title": "Исправление: пропадающие пункты левого меню",
+        "category_ru": "Навигация",
+        "event_type": PlatformEventJournalType.FIX.value,
+    },
+    "user-personal-menu-settings-access": {
+        "title": "Доступ user к настройкам меню",
+        "category_ru": "Навигация",
+        "event_type": PlatformEventJournalType.DEVELOPMENT.value,
+    },
+    "user-menu-dnd-fix": {
+        "title": "Исправление DnD user menu",
+        "category_ru": "Навигация",
+        "event_type": PlatformEventJournalType.FIX.value,
+    },
+    "disable-user-personal-left-menu-editing": {
+        "title": "Отключено пользовательское редактирование левого меню",
+        "category_ru": "Навигация",
+        "event_type": PlatformEventJournalType.ARCHITECTURE.value,
+    },
+    "notification-object-opening-audit": {
+        "title": "Аудит открытия объектов из уведомлений",
+        "category_ru": "Уведомления",
+        "event_type": PlatformEventJournalType.AUDIT.value,
     },
 }
 
@@ -257,22 +310,28 @@ def build_corporate_description(
     category_ru: str,
     title_ru: str,
     source_description: str | None,
+    event_type: str | None = None,
 ) -> str:
-    if source_description and contains_cyrillic(source_description) and not is_mostly_english(source_description):
-        if "Категория:" in source_description:
+    _ = category_ru
+    if source_description and source_description.strip().lower().startswith("что сделано:"):
+        if not contains_forbidden_journal_content(source_description):
             return source_description.strip()
-        return f"Категория: {category_ru}.\n{source_description.strip()}"
 
-    detail = str(source_description or "").strip()
-    if is_mostly_english(detail):
-        detail = "Выполнена техническая доработка платформы по задаче разработки."
+    if source_description and not uses_legacy_journal_format(source_description):
+        if contains_cyrillic(source_description) and not is_mostly_english(source_description):
+            if not contains_forbidden_journal_content(source_description):
+                return build_user_facing_description(
+                    summary=source_description.strip(),
+                    work_item_type=event_type,
+                )
 
-    return (
-        f"Категория: {category_ru}.\n"
-        f"Что изменено: {title_ru[0].lower() + title_ru[1:] if len(title_ru) > 1 else title_ru}.\n"
-        f"Зачем: повысить безопасность, предсказуемость и готовность платформы к эксплуатации.\n"
-        f"Результат: изменение зафиксировано в журнале развития платформы."
-        + (f"\n\nПримечание: {detail}" if detail and contains_cyrillic(detail) else "")
+    summary = title_ru
+    if ":" in summary:
+        summary = summary.split(":", 1)[1].strip() or summary
+
+    return build_user_facing_description(
+        summary=summary,
+        work_item_type=event_type,
     )
 
 
@@ -312,6 +371,11 @@ def normalize_dev_journal_content(
     else:
         normalized_title = str(title or "").strip() or slug_to_russian_title(normalized_slug)
 
+    normalized_title = format_user_facing_title(
+        normalized_title,
+        event_type=resolved_event_type,
+    )
+
     if spec.get("description"):
         normalized_description = str(spec["description"])
     else:
@@ -319,7 +383,16 @@ def normalize_dev_journal_content(
             category_ru=category_ru,
             title_ru=normalized_title,
             source_description=description,
+            event_type=resolved_event_type,
         )
+
+    normalized_description = sanitize_journal_description_for_display(
+        description=normalized_description,
+        title=normalized_title,
+        metadata=None,
+        event_type=resolved_event_type,
+        slug=normalized_slug,
+    )
 
     resolved_category = resolve_dev_journal_category(
         resolved_event_type,

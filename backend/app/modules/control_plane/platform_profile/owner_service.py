@@ -18,6 +18,9 @@ from app.modules.platform_event_journal.audit_constants import (
 )
 from app.modules.platform_event_journal.constants import PlatformEventJournalSource
 from app.modules.platform_event_journal.service import record_platform_event
+from app.modules.control_plane.platform_users.registry_service import (
+    sync_platform_owner_to_registry,
+)
 from app.modules.users.bootstrap_owner_constants import USER_ACCOUNT_STATUS_ACTIVE
 from app.modules.users.bootstrap_owner_service import (
     disable_bootstrap_owner,
@@ -263,6 +266,7 @@ def upsert_platform_owner(
         commit=False,
     )
 
+    sync_platform_owner_to_registry(db, row)
     db.flush()
     return _serialize_owner(db, row)
 

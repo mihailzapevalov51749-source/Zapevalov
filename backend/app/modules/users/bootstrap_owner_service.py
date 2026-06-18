@@ -118,8 +118,11 @@ def user_is_platform_owner(db: Session, user: User | None) -> bool:
     if user is None:
         return False
 
-    owner = get_real_platform_owner_user(db)
-    return owner is not None and owner.id == user.id
+    from app.modules.control_plane.platform_identity.platform_auth_resolver import (
+        is_platform_owner_dual_read,
+    )
+
+    return is_platform_owner_dual_read(db, user)
 
 
 def attach_platform_owner_flag(db: Session, user: User) -> User:

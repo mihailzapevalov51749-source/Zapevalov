@@ -1,0 +1,144 @@
+﻿{
+  "dev_portal": [
+    {
+      "id": 1,
+      "name": "╨рчЁрсюЄър",
+      "description": "╧юЁЄры ёшёЄхь√ єяЁртыхэш  ъюьярэшхщ",
+      "logo_url": null,
+      "is_active": true,
+      "created_at": "2026-04-25 11:11:05.684156+00:00",
+      "tenant_type": "DEV",
+      "template_version": "1.0.0",
+      "tenant_status": "ACTIVE",
+      "source_tenant_id": null,
+      "notes": null,
+      "code": "ъюЁяюЁрЄштэ√щ_яюЁЄры",
+      "timezone": "(UTC+03:00) ╠юёътр",
+      "date_format": "DD.MM.YYYY",
+      "time_format": "24h",
+      "week_start_day": "╧юэхфхы№эшъ",
+      "default_language": "ru",
+      "short_name": "╨рчЁрсюЄър",
+      "is_protected": true,
+      "environment_role": "DEV",
+      "public_slug": "razrabotka",
+      "public_slug_locked": false,
+      "original_name": "╨рчЁрсюЄър"
+    }
+  ],
+  "dev_journal": [
+    {
+      "journal_kind": "dev_development",
+      "scope": "tenant",
+      "cnt": 633
+    }
+  ],
+  "runtime_by_object": [
+    {
+      "key": "napravleniya",
+      "name": "╧ырэ ЁрчтшЄш ",
+      "entities": 158
+    },
+    {
+      "key": "problemy",
+      "name": "╧Ёюсыхь√",
+      "entities": 10
+    },
+    {
+      "key": "idei",
+      "name": "╚фхш",
+      "entities": 4
+    },
+    {
+      "key": "zadachnik",
+      "name": "╠юш чрфрўш",
+      "entities": 3
+    },
+    {
+      "key": "istoriya",
+      "name": "╚ёЄюЁш ",
+      "entities": 0
+    },
+    {
+      "key": "klienty",
+      "name": "╩ышхэЄ√",
+      "entities": 0
+    },
+    {
+      "key": "litsenzii",
+      "name": "╦шЎхэчшш",
+      "entities": 0
+    },
+    {
+      "key": "new_object",
+      "name": "═ют√щ юс·хъЄ",
+      "entities": 0
+    },
+    {
+      "key": "prodazhi",
+      "name": "╧Ёюфрцш",
+      "entities": 0
+    },
+    {
+      "key": "task",
+      "name": "╟рфрўр",
+      "entities": 0
+    },
+    {
+      "key": "test",
+      "name": "╥хёЄют√щ юс·хъЄ",
+      "entities": 0
+    }
+  ],
+  "structure_counts_t1": {
+    "pages": 35,
+    "navigation": 38,
+    "object_types": 11,
+    "fields": 51,
+    "views": 25,
+    "workspaces": 22,
+    "runtime_entities": 175,
+    "comments": 18,
+    "notifications": 18,
+    "library_documents": 16,
+    "document_libraries": 2,
+    "designer_publish_records": 165,
+    "designer_metadata_snapshots": 150
+  },
+  "users": [
+    {
+      "id": 1235,
+      "email": "zmn8@ya.ru",
+      "full_name": "╠шїршы ╟ряхтрыют",
+      "is_active": true
+    },
+    {
+      "id": 1840,
+      "email": "yasno.pro@yandex.ru",
+      "full_name": "▀ёэю ╧Ёютютшў",
+      "is_active": true
+    }
+  ],
+  "memberships": [
+    {
+      "id": 105,
+      "tenant_id": 1,
+      "user_id": 1235,
+      "role_key": "superadmin",
+      "is_active": true,
+      "created_at": "2026-06-15 12:17:36.491202+00:00",
+      "membership_status": "active"
+    },
+    {
+      "id": 232,
+      "tenant_id": 1,
+      "user_id": 1840,
+      "role_key": "user",
+      "is_active": true,
+      "created_at": "2026-06-16 10:41:09.614050+00:00",
+      "membership_status": "active"
+    }
+  ],
+  "yasnopro_template_tables": 0,
+  "yasnopro_client_tables": 0
+}

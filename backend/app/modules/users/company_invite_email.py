@@ -7,11 +7,15 @@ import os
 import smtplib
 import socket
 from email.mime.text import MIMEText
-from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
+
+from sqlalchemy.orm import Session
+
+from app.modules.portals.public_tenant_url import (
+    resolve_company_portal_url_for_tenant,
+    resolve_portal_public_base_url,
+)
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_PORTAL_LOGIN_URL = "http://localhost:5173/login"
 
 SMTP_HOST = os.getenv("SMTP_HOST")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
@@ -61,22 +65,12 @@ def build_company_welcome_email_message(
 
 
 def resolve_portal_login_base_url() -> str:
-    return str(os.getenv("PORTAL_LOGIN_URL", DEFAULT_PORTAL_LOGIN_URL) or "").strip()
+    """Legacy login URL without company key (global users, password reset)."""
+    return f"{resolve_portal_public_base_url()}/login"
 
 
-def resolve_company_portal_url(*, tenant_id: int) -> str:
-    """Login URL scoped to the provisioned tenant (MVP: tenantId query param)."""
-    base = resolve_portal_login_base_url().rstrip("/")
-    if not base:
-        return f"/login?tenantId={tenant_id}"
-
-    if "{tenant_id}" in base:
-        base = base.replace("{tenant_id}", str(tenant_id))
-
-    parsed = urlparse(base)
-    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
-    query["tenantId"] = str(tenant_id)
-    return urlunparse(parsed._replace(query=urlencode(query)))
+def resolve_company_portal_url_for_tenant_id(db: Session, *, tenant_id: int) -> str:
+    return resolve_company_portal_url_for_tenant(db, tenant_id)
 
 
 def build_company_superadmin_appointment_email_message(
@@ -118,6 +112,7 @@ def build_company_superadmin_appointment_email_message(
 
 
 def send_company_superadmin_appointment_email(
+    db: Session,
     *,
     to_email: str,
     company_name: str,
@@ -132,7 +127,7 @@ def send_company_superadmin_appointment_email(
         )
         return False
 
-    portal_url = resolve_company_portal_url(tenant_id=tenant_id)
+    portal_url = resolve_company_portal_url_for_tenant(db, tenant_id)
     message = build_company_superadmin_appointment_email_message(
         to_email=to_email,
         company_name=company_name,
@@ -165,6 +160,7 @@ def send_company_superadmin_appointment_email(
 
 
 def send_company_welcome_email(
+    db: Session,
     *,
     to_email: str,
     company_name: str,
@@ -179,7 +175,7 @@ def send_company_welcome_email(
         )
         return False
 
-    portal_url = resolve_company_portal_url(tenant_id=tenant_id)
+    portal_url = resolve_company_portal_url_for_tenant(db, tenant_id)
     message = build_company_welcome_email_message(
         to_email=to_email,
         company_name=company_name,

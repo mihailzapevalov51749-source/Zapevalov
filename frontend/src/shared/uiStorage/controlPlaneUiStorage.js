@@ -1,4 +1,6 @@
 import { patchNavigationMenuSettings } from "../navigation/navigationMenuBlocks.js";
+import { mergeNavigationMenuSettingRecord } from "../navigation/navigationMenuIconPolicy.js";
+import { migrateControlPlaneSystemMenuSettings } from "./controlPlaneNavMenuSettingsMigration.js";
 import {
   PLATFORM_UI_PREF_KEYS,
   PLATFORM_UI_SCOPES,
@@ -117,6 +119,18 @@ export function writeControlPlaneMenuState(state) {
   );
 }
 
+function normalizeControlPlaneSystemMenuSettings(settings = {}) {
+  return migrateControlPlaneSystemMenuSettings(settings).settings;
+}
+
+function serializeControlPlaneSystemMenuSettings(settings = {}) {
+  return JSON.stringify(
+    normalizeControlPlaneSystemMenuSettings(
+      settings && typeof settings === "object" ? settings : {},
+    ),
+  );
+}
+
 export function readControlPlaneSystemMenuSettings(defaultValue = {}) {
   const raw = readRaw(PLATFORM_UI_PREF_KEYS.SYSTEM_MENU_SETTINGS);
   if (!raw) {
@@ -125,17 +139,22 @@ export function readControlPlaneSystemMenuSettings(defaultValue = {}) {
 
   try {
     const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : defaultValue;
+    const settings = parsed && typeof parsed === "object" ? parsed : defaultValue;
+    return normalizeControlPlaneSystemMenuSettings(settings);
   } catch {
     return defaultValue;
   }
 }
 
 export function writeControlPlaneSystemMenuSettings(settings) {
-  writeRaw(
-    PLATFORM_UI_PREF_KEYS.SYSTEM_MENU_SETTINGS,
-    JSON.stringify(settings && typeof settings === "object" ? settings : {}),
-  );
+  const serialized = serializeControlPlaneSystemMenuSettings(settings);
+  const currentRaw = readRaw(PLATFORM_UI_PREF_KEYS.SYSTEM_MENU_SETTINGS);
+
+  if (currentRaw === serialized) {
+    return;
+  }
+
+  writeRaw(PLATFORM_UI_PREF_KEYS.SYSTEM_MENU_SETTINGS, serialized);
 
   if (typeof window === "undefined") {
     return;
@@ -144,6 +163,27 @@ export function writeControlPlaneSystemMenuSettings(settings) {
   window.dispatchEvent(
     new CustomEvent(CONTROL_PLANE_SYSTEM_MENU_SETTINGS_CHANGED_EVENT),
   );
+}
+
+export function patchControlPlaneSystemMenuItemSetting(itemId, partialSettings = {}) {
+  const normalizedId = String(itemId || "").trim();
+  if (!normalizedId) {
+    return readControlPlaneSystemMenuSettings();
+  }
+
+  const current = readControlPlaneSystemMenuSettings();
+  const previous =
+    current[normalizedId] && typeof current[normalizedId] === "object"
+      ? current[normalizedId]
+      : {};
+
+  const next = {
+    ...current,
+    [normalizedId]: mergeNavigationMenuSettingRecord(previous, partialSettings),
+  };
+
+  writeControlPlaneSystemMenuSettings(next);
+  return next;
 }
 
 export function patchControlPlaneSystemMenuOrder(items = []) {

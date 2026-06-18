@@ -12,9 +12,23 @@ import {
   saveDesignerSystemMenuSettings,
 } from "../shell/sidebar/designerSystemMenuSettings.js";
 import {
+  applySystemMenuSettingsToTree,
+} from "./applySystemMenuSettingsToTree.js";
+import {
+  patchControlPlaneSystemMenuItemSetting,
+  readControlPlaneSystemMenuSettings,
+} from "../uiStorage/controlPlaneUiStorage.js";
+import {
   readSystemMenuSettings,
   writeSystemMenuSettings,
 } from "../uiStorage/systemMenuSettingsStorage.js";
+import {
+  PLATFORM_UI_PREF_KEYS,
+  PLATFORM_UI_SCOPES,
+  buildPlatformUiStorageKey,
+  buildTenantUiStorageKey,
+  UI_PREF_KEYS,
+} from "../uiStorage/uiStorageKeys.js";
 
 const TENANT_ID = 9911;
 
@@ -121,4 +135,69 @@ test("persistNavigationMenuBlockMove passes tenantId to navigationService.moveIt
     source,
     /didPersist[\s\S]*await reloadNavigation\(\);/,
   );
+});
+
+test("readNavigationMenuBlockSettings uses control-plane storage key", () => {
+  withMockLocalStorage(() => {
+    patchControlPlaneSystemMenuItemSetting("cp-audit-log", {
+      color: "#111827",
+    });
+
+    const settings = readNavigationMenuBlockSettings({
+      menuProfile: "control-plane",
+      rootItems: [{ id: "cp-audit-log", title: "Журнал событий" }],
+    });
+
+    assert.equal(settings["cp-audit-log"].color, "#111827");
+
+    const tenantKey = buildTenantUiStorageKey(TENANT_ID, UI_PREF_KEYS.SYSTEM_MENU_SETTINGS);
+    const controlPlaneKey = buildPlatformUiStorageKey(
+      PLATFORM_UI_SCOPES.CONTROL_PLANE,
+      PLATFORM_UI_PREF_KEYS.SYSTEM_MENU_SETTINGS,
+    );
+    assert.equal(controlPlaneKey, "ui:platform:controlPlane:systemMenuSettings");
+    assert.notEqual(tenantKey, controlPlaneKey);
+    assert.equal(readSystemMenuSettings(TENANT_ID)["cp-audit-log"], undefined);
+  });
+});
+
+test("saved control-plane settings apply after tree rebuild and keep badge_count", () => {
+  withMockLocalStorage(() => {
+    patchControlPlaneSystemMenuItemSetting("cp-group-releases", {
+      color: "#7c3aed",
+      icon_file_url: "/uploads/icons/releases.svg",
+    });
+
+    const stored = readControlPlaneSystemMenuSettings();
+    const tree = [
+      {
+        id: "cp-group-releases",
+        title: "Релизы",
+        type: "system_page",
+        is_system: true,
+        badge_count: 2,
+      },
+    ];
+    const applied = applySystemMenuSettingsToTree(tree, stored);
+    const releasesItem = applied.find((item) => item.id === "cp-group-releases");
+
+    assert.ok(releasesItem);
+    assert.equal(releasesItem.color, "#7c3aed");
+    assert.equal(releasesItem.icon_file_url, "/uploads/icons/releases.svg");
+    assert.equal(releasesItem.icon_type, undefined);
+    assert.equal(releasesItem.badge_count, 2);
+  });
+});
+
+test("AppSidebarRenderer persists control-plane menu item settings via patch helper", () => {
+  const source = readFileSync(
+    new URL(
+      "../shell/sidebar/components/AppSidebarRenderer.jsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  assert.match(source, /patchControlPlaneSystemMenuItemSetting/);
+  assert.doesNotMatch(source, /writeControlPlaneSystemMenuSettings\(nextSettings\)/);
 });

@@ -14,6 +14,7 @@ from app.modules.tenant_bootstrap.exceptions import (
     TargetTenantAlreadyHasStructureError,
     TargetTenantNotFoundError,
     TenantBootstrapError,
+    TenantRuntimeModuleInvariantError,
 )
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "TargetTenantAlreadyHasStructureError",
     "TargetTenantNotFoundError",
     "TenantBootstrapError",
+    "TenantRuntimeModuleInvariantError",
 ]

@@ -11,7 +11,11 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
+SCRIPTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BACKEND_DIR))
+sys.path.insert(0, str(SCRIPTS_DIR))
+
+from structure_write_script_guard import guard_script_structure_write  # noqa: E402
 
 from sqlalchemy import text  # noqa: E402
 
@@ -291,6 +295,7 @@ def print_dry_check(check: dict) -> None:
 
 
 def apply_phase2(db) -> dict:
+    guard_script_structure_write(db, TARGET, "apply_phase2_restore_relation_view")
     check = dry_check(db)
     runtime_before = runtime_counts(db)
 

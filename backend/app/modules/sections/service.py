@@ -7,9 +7,11 @@ from app.modules.pages.tenant_access import (
 )
 
 from . import repository
+from app.modules.publication_guard.structure_write_service_guard import guard_direct_structure_write
 
 
 def create_section(db: Session, data, *, portal_id: int):
+    guard_direct_structure_write(db, portal_id, "create_section")
     assert_page_id_belongs_to_portal(db, data.page_id, portal_id)
     return repository.create_section(db, data)
 
@@ -24,6 +26,7 @@ def get_section(db: Session, section_id: int, *, portal_id: int):
 
 
 def update_section(db: Session, section_id: int, data, *, portal_id: int):
+    guard_direct_structure_write(db, portal_id, "update_section")
     section = get_section_for_portal(db, section_id, portal_id)
     if not section:
         return None
@@ -31,6 +34,7 @@ def update_section(db: Session, section_id: int, data, *, portal_id: int):
 
 
 def delete_section(db: Session, section_id: int, *, portal_id: int):
+    guard_direct_structure_write(db, portal_id, "delete_section")
     section = get_section_for_portal(db, section_id, portal_id)
     if not section:
         return None
@@ -38,6 +42,7 @@ def delete_section(db: Session, section_id: int, *, portal_id: int):
 
 
 def move_sections(db: Session, items, *, portal_id: int):
+    guard_direct_structure_write(db, portal_id, "move_sections")
     if not items:
         return []
 

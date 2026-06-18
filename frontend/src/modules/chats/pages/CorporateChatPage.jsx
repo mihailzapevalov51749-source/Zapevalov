@@ -38,6 +38,7 @@ import {
   useResolvedPageLayoutContract,
 } from "../../../shared/appShell/pageLayoutContract";
 import { chatLayoutStyles } from "../styles/corporateChatStyles";
+import useRuntimeModuleConfiguration from "../../../shared/runtimeModuleConfiguration/useRuntimeModuleConfiguration";
 
 function getParentMessageId(message) {
   return message?.parent_message_id || message?.parentMessageId || null;
@@ -87,6 +88,14 @@ export default function CorporateChatPage({ tenantId }) {
     toolbarZoneId: PAGE_LAYOUT_TOOLBAR_ZONE.APP_HEADER,
     canMinimize: true,
   });
+
+  const { settings: chatRuntimeSettings } = useRuntimeModuleConfiguration(
+    tenantId,
+    "runtime.chat",
+  );
+  const attachmentsEnabled = chatRuntimeSettings.attachments_enabled !== false;
+  const mentionsEnabled = chatRuntimeSettings.mentions_enabled !== false;
+  const reactionsEnabled = chatRuntimeSettings.reactions_enabled !== false;
 
   const messagesRef = useRef(null);
   const lastMarkedReadRef = useRef({ key: "" });
@@ -575,6 +584,9 @@ export default function CorporateChatPage({ tenantId }) {
         }}
         onOpenParticipants={() => setIsParticipantsOpen((prev) => !prev)}
         onOpenFile={handleOpenFile}
+        attachmentsEnabled={attachmentsEnabled}
+        mentionsEnabled={mentionsEnabled}
+        reactionsEnabled={reactionsEnabled}
       />
 
       <ChatCreateModal

@@ -20,6 +20,7 @@ from app.modules.platform.action_engine.action_placements.schemas import (
 )
 from app.modules.platform.designer.object_types import repository as object_type_repository
 from app.modules.users.models import User
+from app.modules.publication_guard.structure_write_service_guard import guard_direct_structure_write
 
 
 def _to_read(entity: DesignerActionPlacement) -> ActionPlacementRead:
@@ -139,6 +140,7 @@ def create_action_placement(
     payload: ActionPlacementCreate,
     current_user: User | None = None,
 ) -> ActionPlacementRead:
+    guard_direct_structure_write(db, tenant_id, "create_action_placement")
     action_definition = _get_scoped_action_definition(
         db,
         tenant_id,
@@ -196,6 +198,7 @@ def update_action_placement(
     payload: ActionPlacementUpdate,
     current_user: User | None = None,
 ) -> ActionPlacementRead:
+    guard_direct_structure_write(db, tenant_id, "update_action_placement")
     action_definition = _get_scoped_action_definition(
         db,
         tenant_id,
@@ -246,6 +249,7 @@ def delete_action_placement(
     placement_id: UUID,
     current_user: User | None = None,
 ) -> None:
+    guard_direct_structure_write(db, tenant_id, "delete_action_placement")
     action_definition = _get_scoped_action_definition(
         db,
         tenant_id,

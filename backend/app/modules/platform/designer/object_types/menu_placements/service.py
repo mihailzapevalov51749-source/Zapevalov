@@ -17,6 +17,7 @@ from app.modules.platform.designer.object_types.menu_placements.schemas import (
 from app.modules.platform.designer.object_types.models import DesignerObjectType
 from app.modules.platform.shared.object_type_settings import resolve_show_in_navigation
 from app.modules.navigation.enrichment import load_object_types_map
+from app.modules.publication_guard.structure_write_service_guard import guard_direct_structure_write
 
 DISALLOWED_PARENT_TYPES = frozenset({OBJECT_TYPE_NAV_TYPE, "system_page"})
 
@@ -99,6 +100,7 @@ def upsert_menu_placement(
     object_type_id: UUID,
     placement: MenuPlacementInput,
 ) -> MenuPlacementResult:
+    guard_direct_structure_write(db, tenant_id, "upsert_menu_placement")
     object_type = object_type_repository.get_object_type(db, tenant_id, object_type_id)
     if not object_type:
         raise HTTPException(
@@ -173,6 +175,7 @@ def publish_menu_placements(
     object_type_id: UUID,
     placements: list[MenuPlacementInput],
 ) -> MenuPlacementsResponse:
+    guard_direct_structure_write(db, tenant_id, "publish_menu_placements")
     results = [
         upsert_menu_placement(db, tenant_id, object_type_id, placement)
         for placement in placements

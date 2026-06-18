@@ -4,6 +4,7 @@ import { findNavigationItemById } from "../../../portal/utils/portalPageUtils";
 import useMenuEditor from "../../../modules/navigation/hooks/useMenuEditor";
 import { dispatchPageStatusNavigationRefresh } from "../../navigation/navigationReload";
 import { persistNavigationMenuBlockMove } from "../../navigation/navigationMenuSettings.js";
+import { resetUserMenuPreferences } from "../../../modules/navigation/api/runtimeMenuSettingsApi.js";
 import {
   patchDesignerSystemMenuSettings,
   resolveDesignerSystemItemKey,
@@ -16,6 +17,7 @@ export function usePlatformSidebarControls({
   menuScale = 1,
   onChangeMenuScale,
   canEditMenu = true,
+  canPersonalizeMenu = false,
   canCreateItem = true,
   canDragItems = true,
   createPayloadDefaults = {
@@ -25,8 +27,10 @@ export function usePlatformSidebarControls({
   },
   mode = "runtime",
   onEditModeChange,
+  onPersonalizeModeChange,
 }) {
   const [isCreateMenuOpen, setIsCreateMenuOpen] = useState(false);
+  const [isPersonalizeMode, setIsPersonalizeMode] = useState(false);
   const menuEditor = useMenuEditor({
     portalId,
     reload: typeof reloadNavigation === "function" ? reloadNavigation : async () => {},
@@ -79,6 +83,10 @@ export function usePlatformSidebarControls({
         if (!canEditMenu) {
           return;
         }
+        if (isPersonalizeMode) {
+          setIsPersonalizeMode(false);
+          onPersonalizeModeChange?.(false);
+        }
         if (menuEditor.isEditMode) {
           menuEditor.exitEditMode?.();
           onEditModeChange?.(false);
@@ -89,6 +97,38 @@ export function usePlatformSidebarControls({
         if (typeof reloadNavigation === "function") {
           void reloadNavigation();
         }
+        return;
+      case "toggle-personalize-mode":
+        if (!canPersonalizeMenu) {
+          return;
+        }
+        if (menuEditor.isEditMode) {
+          menuEditor.exitEditMode?.();
+          onEditModeChange?.(false);
+        }
+        setIsPersonalizeMode((current) => {
+          const next = !current;
+          onPersonalizeModeChange?.(next);
+          return next;
+        });
+        if (typeof reloadNavigation === "function") {
+          void reloadNavigation();
+        }
+        return;
+      case "reset-menu-preferences":
+        if (!canPersonalizeMenu) {
+          return;
+        }
+        void resetUserMenuPreferences(portalId)
+          .then(() => {
+            if (typeof reloadNavigation === "function") {
+              return reloadNavigation();
+            }
+            return undefined;
+          })
+          .catch((resetError) => {
+            console.error("Failed to reset user menu preferences:", resetError);
+          });
         return;
       case "menu-scale": {
         if (typeof onChangeMenuScale === "function") {
@@ -125,9 +165,10 @@ export function usePlatformSidebarControls({
           void patchDesignerSystemMenuSettings(portalId, itemKey, {
             title:
               typeof payload.data.title === "string" ? payload.data.title : undefined,
-            icon: payload.data.icon,
-            icon_type: payload.data.icon_type,
-            icon_file_url: payload.data.icon_file_url,
+            icon_file_url:
+              "icon_file_url" in (payload.data || {})
+                ? payload.data.icon_file_url || null
+                : undefined,
             color:
               typeof payload.data.color === "string" ? payload.data.color : undefined,
             is_bold:
@@ -167,7 +208,8 @@ export function usePlatformSidebarControls({
         menuEditor.requestDeleteItem?.(payload.id);
         return;
       case "move-menu-items":
-        if (!canDragItems) return;
+        if (!canDragItems && !isPersonalizeMode) return;
+        if (!canEditMenu && !isPersonalizeMode) return;
         if (!Array.isArray(payload?.items) || !payload.items.length) return;
         void persistNavigationMenuBlockMove({
           menuProfile: mode === "designer" ? "designer" : "platform",
@@ -177,21 +219,50 @@ export function usePlatformSidebarControls({
             ? payload.navigationItems
             : navigationItems,
           reloadNavigation,
+          preferenceScope: isPersonalizeMode ? "user" : "tenant",
         }).catch((moveError) => {
           console.error("Failed to move menu items:", moveError);
         });
         return;
       case "open-menu-settings":
-        if (!canEditMenu) {
+        if (canEditMenu) {
+          if (isPersonalizeMode) {
+            setIsPersonalizeMode(false);
+            onPersonalizeModeChange?.(false);
+          }
+          if (menuEditor.isEditMode) {
+            menuEditor.exitEditMode?.();
+            onEditModeChange?.(false);
+          } else {
+            menuEditor.enterEditMode?.();
+            onEditModeChange?.(true);
+          }
+          if (typeof reloadNavigation === "function") {
+            void reloadNavigation();
+          }
           return;
         }
-        if (menuEditor.isEditMode) {
-          menuEditor.exitEditMode?.();
-          onEditModeChange?.(false);
-        } else {
-          menuEditor.enterEditMode?.();
-          onEditModeChange?.(true);
+        if (canPersonalizeMenu) {
+          if (menuEditor.isEditMode) {
+            menuEditor.exitEditMode?.();
+            onEditModeChange?.(false);
+          }
+          setIsPersonalizeMode((current) => {
+            const next = !current;
+            onPersonalizeModeChange?.(next);
+            return next;
+          });
+          if (typeof reloadNavigation === "function") {
+            void reloadNavigation();
+          }
         }
+        return;
+      case "cancel-personalize-mode":
+        if (!canPersonalizeMenu) {
+          return;
+        }
+        setIsPersonalizeMode(false);
+        onPersonalizeModeChange?.(false);
         if (typeof reloadNavigation === "function") {
           void reloadNavigation();
         }
@@ -203,6 +274,7 @@ export function usePlatformSidebarControls({
 
   return {
     isEditMode: menuEditor.isEditMode,
+    isPersonalizeMode,
     isSaving: menuEditor.isSaving,
     isCreateMenuOpen,
     setIsCreateMenuOpen,

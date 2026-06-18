@@ -13,6 +13,7 @@ from app.modules.control_plane.platform_profile.owner_service import (
 )
 from app.modules.control_plane.platform_profile.schemas import PlatformOwnerUpsert
 from app.modules.control_plane.platform_profile.service import get_or_create_platform_settings
+from app.modules.control_plane.platform_users.models import PlatformUser
 from app.modules.platform_event_journal.models import PlatformEventJournalEntry
 from app.modules.users.models import Role, User
 
@@ -24,6 +25,7 @@ def db_session():
         bind=engine,
         tables=[
             PlatformSettings.__table__,
+            PlatformUser.__table__,
             PlatformEventJournalEntry.__table__,
             User.__table__,
             Role.__table__,

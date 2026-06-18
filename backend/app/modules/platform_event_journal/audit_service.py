@@ -279,6 +279,7 @@ def record_dev_development_event(
     source: str = PlatformEventJournalSource.CURSOR.value,
     author_user_id: int | None = None,
     occurred_at: datetime | None = None,
+    metadata: dict[str, Any] | None = None,
     commit: bool = False,
 ) -> PlatformEventJournalEntryRead | None:
     """Record platform product development history in DEV tenant journal."""
@@ -291,6 +292,9 @@ def record_dev_development_event(
         )
     )
     dev_tenant_id = resolve_dev_tenant_portal_id(db)
+    merged_metadata: dict[str, Any] = {"legacy_event_type": resolved_event_type}
+    if metadata:
+        merged_metadata.update(metadata)
     return _persist_journal_entry(
         db,
         scope=PlatformEventJournalScope.TENANT.value,
@@ -306,7 +310,7 @@ def record_dev_development_event(
         source=source,
         tenant_id=dev_tenant_id,
         occurred_at=occurred_at,
-        metadata={"legacy_event_type": resolved_event_type},
+        metadata=merged_metadata,
         commit=commit,
     )
 

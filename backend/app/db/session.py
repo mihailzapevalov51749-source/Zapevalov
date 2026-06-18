@@ -25,8 +25,11 @@ SessionLocal = sessionmaker(
 )
 
 
+from app.db.runtime_session import open_runtime_db_session
+
+
 def get_db():
-    db = SessionLocal()
+    db = open_runtime_db_session()
     try:
         yield db
     finally:

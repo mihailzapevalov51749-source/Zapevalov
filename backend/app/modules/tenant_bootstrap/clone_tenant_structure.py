@@ -26,6 +26,9 @@ from app.modules.platform.designer.object_types.models import DesignerObjectType
 from app.modules.platform.designer.system_menu_settings.service import (
     clone_designer_system_menu_settings,
 )
+from app.modules.platform.runtime.menu_settings.service import (
+    clone_tenant_runtime_menu_settings,
+)
 from app.modules.platform.designer.publish.service import publish_tenant_catalog
 from app.modules.platform.designer.relation_definitions.models import (
     DesignerRelationDefinition,
@@ -56,6 +59,7 @@ class CloneTenantStructureResult:
     workspaces_cloned: int
     designer_system_menu_settings_cloned: int
     catalog_version: int | None
+    tenant_runtime_menu_settings_cloned: int = 0
 
 
 def _assert_portals_exist(db: Session, source_tenant_id: int, target_tenant_id: int) -> None:
@@ -718,12 +722,18 @@ def clone_tenant_structure(
     *,
     auto_publish: bool = True,
     commit: bool = True,
+    bypass_write_policy: bool = True,
+    audit_reason: str = "tenant_structure_clone",
+    actor_user_id: int | None = None,
 ) -> CloneTenantStructureResult:
     """
     Copy tenant structure from source portal to an existing target portal.
 
     Does not copy runtime data, user content, or publish history.
     Optionally publishes target catalog after clone (required for runtime).
+
+    ``bypass_write_policy=True`` is explicit and required for Template/Client targets.
+    Every successful clone records an audit trail entry.
     """
     _assert_portals_exist(db, source_tenant_id, target_tenant_id)
     _assert_target_has_no_structure(db, target_tenant_id)
@@ -752,10 +762,32 @@ def clone_tenant_structure(
             db,
             source_tenant_id=ctx.source_tenant_id,
             target_tenant_id=ctx.target_tenant_id,
+            bypass_write_policy=bypass_write_policy,
+        )
+        tenant_runtime_menu_settings_cloned = clone_tenant_runtime_menu_settings(
+            db,
+            source_tenant_id=ctx.source_tenant_id,
+            target_tenant_id=ctx.target_tenant_id,
+            bypass_write_policy=bypass_write_policy,
         )
         backfill_runtime_protected_navigation(db, portal_id=ctx.target_tenant_id)
+        from app.modules.calendar.navigation_seed import backfill_runtime_calendar_navigation
+
+        backfill_runtime_calendar_navigation(db, portal_id=ctx.target_tenant_id)
         workspaces_cloned = _clone_workspaces(db, ctx)
         _clone_workspace_tabs(db, ctx)
+
+        from app.modules.tenant_bootstrap.runtime_module_provisioning import (
+            provision_tenant_runtime_modules,
+        )
+
+        provision_tenant_runtime_modules(
+            db,
+            ctx.target_tenant_id,
+            commit=False,
+            enforce_invariant=True,
+            bypass_module_config_write_policy=True,
+        )
 
         if commit:
             db.commit()
@@ -767,10 +799,15 @@ def clone_tenant_structure(
 
     catalog_version: int | None = None
     if auto_publish and commit:
-        publish_result = publish_tenant_catalog(db, target_tenant_id, None)
+        publish_result = publish_tenant_catalog(
+            db,
+            target_tenant_id,
+            None,
+            bypass_write_policy=bypass_write_policy,
+        )
         catalog_version = publish_result.catalog_version
 
-    return CloneTenantStructureResult(
+    result = CloneTenantStructureResult(
         source_tenant_id=source_tenant_id,
         target_tenant_id=target_tenant_id,
         pages_cloned=pages_cloned,
@@ -778,5 +815,22 @@ def clone_tenant_structure(
         object_types_cloned=object_types_cloned,
         workspaces_cloned=workspaces_cloned,
         designer_system_menu_settings_cloned=designer_system_menu_settings_cloned,
+        tenant_runtime_menu_settings_cloned=tenant_runtime_menu_settings_cloned,
         catalog_version=catalog_version,
     )
+    from app.modules.tenant_bootstrap.clone_audit_trail import (
+        record_tenant_structure_clone_bypass,
+    )
+
+    record_tenant_structure_clone_bypass(
+        db,
+        result=result,
+        reason=audit_reason,
+        actor_user_id=actor_user_id,
+        commit=False,
+    )
+    if commit:
+        db.commit()
+    else:
+        db.flush()
+    return result

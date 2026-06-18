@@ -7,6 +7,8 @@ import { LAYOUT_MODES } from "../../layout/layoutModes";
 import { resolveWorkspaceLeftOffset } from "../../layout/shellGeometry";
 import { readShellSidebarCollapsedForCurrentUrl } from "../../shell/useShellSidebarState";
 
+import { joinApiUrl } from "../../../config/apiConfig.js";
+
 import EmojiIcon from "../../../modules/comments/components/EmojiIcon";
 import MessageAvatar from "./MessageAvatar";
 import MessageComposer from "./MessageComposer";
@@ -358,7 +360,7 @@ export default function MessageItem({
 
     const normalizedFileUrl = rawFileUrl.startsWith("http")
       ? rawFileUrl
-      : `http://127.0.0.1:8010${rawFileUrl}`;
+      : joinApiUrl(rawFileUrl);
 
     const fileId =
       file?.stored_file_name ||

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.modules.control_plane.platform_profile.constants import (
@@ -17,6 +18,12 @@ from app.modules.control_plane.platform_profile.constants import (
     PLATFORM_TIME_FORMAT_LABELS,
 )
 from app.modules.control_plane.platform_profile.models import PlatformSettings
+from app.modules.portals.public_slug_service import (
+    PublicSlugConflictError,
+    assert_platform_public_slug_available,
+    resolve_platform_public_slug_for_update,
+)
+from app.modules.portals.public_tenant_url import resolve_company_portal_url
 from app.modules.control_plane.platform_profile.owner_service import (
     bootstrap_platform_owner_from_legacy,
     get_platform_owner,
@@ -45,9 +52,16 @@ def _language_label(code: str) -> str:
 
 
 def _serialize_general(row: PlatformSettings) -> PlatformSettingsGeneralRead:
+    public_slug = str(row.public_slug or "").strip() or None
+    public_url = (
+        resolve_company_portal_url(public_slug=public_slug) if public_slug else None
+    )
     return PlatformSettingsGeneralRead(
         platform_name=row.platform_name,
         platform_short_name=row.platform_short_name,
+        public_slug=public_slug,
+        public_slug_locked=bool(getattr(row, "public_slug_locked", False)),
+        public_url=public_url,
         description=row.description,
         timezone=row.timezone,
         date_format=PLATFORM_DATE_FORMAT_LABELS.get(row.date_format, row.date_format),
@@ -64,6 +78,8 @@ def _default_settings_row() -> PlatformSettings:
         id=PLATFORM_SETTINGS_SINGLETON_ID,
         platform_name=DEFAULT_PLATFORM_NAME,
         platform_short_name=DEFAULT_PLATFORM_SHORT_NAME,
+        public_slug="yasnopro",
+        public_slug_locked=False,
         description=DEFAULT_PLATFORM_DESCRIPTION,
         timezone=DEFAULT_PLATFORM_TIMEZONE,
         date_format=DEFAULT_PLATFORM_DATE_FORMAT,
@@ -103,8 +119,30 @@ def update_platform_settings_general(
 ) -> PlatformSettingsRead:
     row = get_or_create_platform_settings(db)
 
+    resolved_slug, slug_locked = resolve_platform_public_slug_for_update(
+        row,
+        short_name=payload.platform_short_name,
+        requested_public_slug=payload.public_slug,
+        requested_public_slug_locked=payload.public_slug_locked,
+    )
+
+    try:
+        public_slug = assert_platform_public_slug_available(db, resolved_slug)
+    except PublicSlugConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
     row.platform_name = payload.platform_name.strip()
     row.platform_short_name = payload.platform_short_name.strip()
+    row.public_slug = public_slug
+    row.public_slug_locked = slug_locked
     row.description = str(payload.description or "").strip() or None
     row.timezone = payload.timezone
     row.date_format = payload.date_format

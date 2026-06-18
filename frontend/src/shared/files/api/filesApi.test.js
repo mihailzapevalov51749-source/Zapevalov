@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { API_BASE_URL } from "../../../config/apiConfig.js";
 import { buildAvatarUrl, buildFileUrl, resolvePublicStaticUploadPath } from "./filesApi.js";
 
 describe("filesApi public static upload bridge", () => {
@@ -11,7 +12,7 @@ describe("filesApi public static upload bridge", () => {
     );
     assert.equal(
       buildFileUrl("/files/images/abc.jpg"),
-      "http://127.0.0.1:8010/uploads/images/abc.jpg",
+      `${API_BASE_URL}/uploads/images/abc.jpg`,
     );
   });
 
@@ -22,7 +23,7 @@ describe("filesApi public static upload bridge", () => {
     );
     assert.equal(
       buildFileUrl("/files/documents/abc.pdf"),
-      "http://127.0.0.1:8010/files/documents/abc.pdf",
+      `${API_BASE_URL}/files/documents/abc.pdf`,
     );
   });
 
@@ -48,15 +49,15 @@ describe("filesApi public static upload bridge", () => {
     );
     assert.equal(
       buildAvatarUrl("/files/avatars/user.png"),
-      "http://127.0.0.1:8010/uploads/avatars/user.png",
+      `${API_BASE_URL}/uploads/avatars/user.png`,
     );
     assert.equal(
       buildAvatarUrl("/uploads/avatars/user.png"),
-      "http://127.0.0.1:8010/uploads/avatars/user.png",
+      `${API_BASE_URL}/uploads/avatars/user.png`,
     );
     assert.equal(
-      buildAvatarUrl("http://127.0.0.1:8010/files/avatars/user.png"),
-      "http://127.0.0.1:8010/uploads/avatars/user.png",
+      buildAvatarUrl(`${API_BASE_URL}/files/avatars/user.png`),
+      `${API_BASE_URL}/uploads/avatars/user.png`,
     );
   });
 });

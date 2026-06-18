@@ -5,7 +5,11 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.modules.portals.models import Portal
-from app.modules.tenant_bootstrap.constants import PLATFORM_TEMPLATE_TENANT_ID
+from app.modules.tenant_bootstrap.constants import (
+    DEFAULT_BOOTSTRAP_FROM_TENANT_ID,
+    PLATFORM_TEMPLATE_TENANT_ID,
+)
+from app.modules.tenant_bootstrap.exceptions import SourceTenantNotFoundError
 from app.modules.tenant_environment.constants import (
     DEFAULT_TEMPLATE_VERSION,
     LEGACY_TENANT_TYPE_BY_ID,
@@ -41,6 +45,9 @@ def build_tenant_environment_read(portal: Portal) -> dict[str, object]:
     return {
         "tenant_id": portal.id,
         "tenant_type": tenant_type.value,
+        "name": portal.name,
+        "short_name": portal.short_name,
+        "code": portal.code,
         "template_version": portal.template_version or DEFAULT_TEMPLATE_VERSION,
         "tenant_status": portal.tenant_status or TenantStatus.ACTIVE.value,
         "source_tenant_id": portal.source_tenant_id,
@@ -64,3 +71,24 @@ def resolve_template_tenant_id(db: Session) -> int | None:
 
     legacy = db.query(Portal).filter(Portal.id == PLATFORM_TEMPLATE_TENANT_ID).one_or_none()
     return legacy.id if legacy is not None else None
+
+
+def resolve_bootstrap_source_tenant_id(db: Session, requested: int | None) -> int | None:
+    """
+  Resolve clone source for tenant provisioning.
+
+  Legacy schemas default bootstrap_from_tenant_id to PLATFORM_TEMPLATE_TENANT_ID (2).
+  After per-environment DB isolation that id may not exist in the current database.
+  In that case fall back to resolve_template_tenant_id() instead of failing FK on portals.
+  """
+    if requested is None:
+        return resolve_template_tenant_id(db)
+
+    source = db.query(Portal).filter(Portal.id == requested).one_or_none()
+    if source is not None:
+        return requested
+
+    if requested in {DEFAULT_BOOTSTRAP_FROM_TENANT_ID, PLATFORM_TEMPLATE_TENANT_ID}:
+        return resolve_template_tenant_id(db)
+
+    raise SourceTenantNotFoundError(f"Source tenant portal {requested} not found")

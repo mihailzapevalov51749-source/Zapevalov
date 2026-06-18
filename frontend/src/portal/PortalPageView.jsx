@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { getPageFull, updatePage } from "../api/pagesApi";
+import { resolveBridgePortalId } from "../api/sessionBridgeApi";
 import {
   resolveOfficePageLoadError,
   shouldRequestOfficePageAccess,
@@ -39,8 +40,7 @@ import PortalLayout from "../layouts/PortalLayout";
 import {
   resolvePortalHomePageId,
 } from "./utils/resolvePortalHomePage.js";
-import {
-  resolvePortalIdFromPath,
+import { resolvePortalIdFromPath,
   resolvePortalNavigationClickTarget,
 } from "./utils/portalObjectRoutes";
 import { PORTAL_NAVIGATION_RELOAD_EVENT } from "../shared/navigation/navigationReload";
@@ -85,6 +85,7 @@ import {
 } from "../modules/controlPlane/config/controlPlanePaths";
 
 import CorporateChatPage from "../modules/chats/pages/CorporateChatPage";
+import CorporateCalendarPage from "../modules/calendar/pages/CorporateCalendarPage";
 
 import {
   findNavigationItemByPageId,
@@ -110,6 +111,7 @@ import {
   buildBreadcrumbsFromNavigationChain,
   resolveNavigationContext,
 } from "../shared/navigation/navigationContextResolver";
+import { publishTenantBrowserPageTitle } from "../shared/browserTitle/tenantBrowserTitleBridge.js";
 import { useResolvedPageLayoutContract } from "../shared/appShell/pageLayoutContract";
 import EmbeddedPageContent from "../shared/shell/EmbeddedPageContent";
 import {
@@ -117,6 +119,7 @@ import {
   resolvePortalPageViewLayoutContractOverrides,
 } from "./resolvePortalPageViewLayoutContract";
 import { resolveIsCorporateChatPage } from "./resolveCorporateChatPage";
+import { resolveIsCorporateCalendarPage } from "./resolveCorporateCalendarPage";
 
 const EMPTY_SECTIONS = [];
 
@@ -319,7 +322,7 @@ function getAdminPageByPath(pathname) {
       }
     }
 
-    const tenantPage = resolveTenantAdminPage(tenantSuffix);
+    const tenantPage = resolveTenantAdminPage(tenantSuffix, studioTenantId);
     if (tenantPage) {
       return tenantPage;
     }
@@ -416,6 +419,7 @@ function getSystemPageMeta({
   pathname,
   isAdminPage,
   isCorporateChatPage,
+  isCorporateCalendarPage,
   isDocumentLibraryPage,
   activeNavigationItem,
   pageData,
@@ -432,6 +436,12 @@ function getSystemPageMeta({
     return {
       title: "Корпоративный чат",
           };
+  }
+
+  if (isCorporateCalendarPage) {
+    return {
+      title: "Календарь",
+    };
   }
 
   const isTenantAdminContext = Boolean(studioAdminPrefixMatch);
@@ -618,7 +628,7 @@ export default function PortalPageView() {
 
   const portalId = resolvePortalIdFromPath(
     location.pathname,
-    portalIdParam || studioTenantId || 1,
+    portalIdParam || studioTenantId || resolveBridgePortalId() || 1,
   );
   const pageId = pageIdParam ? Number(pageIdParam) : null;
 
@@ -723,20 +733,33 @@ export default function PortalPageView() {
     [pageId, activeNavigationItem],
   );
 
+  const isCorporateCalendarPage = useMemo(
+    () =>
+      resolveIsCorporateCalendarPage({
+        pageId,
+        activeNavigationItem,
+      }),
+    [pageId, activeNavigationItem],
+  );
+
+  const isRuntimeOfficeBuiltinPage =
+    isCorporateChatPage || isCorporateCalendarPage;
+
   const isPortalCmsPage =
     /^\/portal\/\d+\/page\/\d+/.test(location.pathname) &&
     !isAdminPage &&
-    !isCorporateChatPage;
+    !isRuntimeOfficeBuiltinPage;
 
   const isDocumentLibraryPage =
     !isAdminPage &&
-    !isCorporateChatPage &&
+    !isRuntimeOfficeBuiltinPage &&
     activeNavigationItem?.type === "document_library";
 
   const topBarMeta = getSystemPageMeta({
     pathname: location.pathname,
     isAdminPage,
     isCorporateChatPage,
+    isCorporateCalendarPage,
     isDocumentLibraryPage,
     activeNavigationItem,
     pageData,
@@ -822,6 +845,16 @@ export default function PortalPageView() {
     : workspaceRuntimeContext?.title
       ? workspaceRuntimeContext.title
       : designerSectionTitle || activeNavigationItem?.title || topBarMeta.title;
+  const browserPageTitle =
+    portalLayoutContractOverrides?.title || headerSectionTitle || topBarMeta.title;
+
+  useEffect(() => {
+    const normalizedTitle = String(browserPageTitle || "").trim();
+    if (normalizedTitle) {
+      publishTenantBrowserPageTitle(normalizedTitle);
+    }
+  }, [browserPageTitle]);
+
   const headerBreadcrumbItems = useMemo(() => {
     if (workspaceRuntimeContext) {
       return [
@@ -964,7 +997,7 @@ export default function PortalPageView() {
 
   const isCanvasEditPage =
     !isAdminPage &&
-    !isCorporateChatPage &&
+    !isRuntimeOfficeBuiltinPage &&
     !isDocumentLibraryPage &&
     Boolean(pageId);
   useEffect(() => {
@@ -1066,7 +1099,7 @@ export default function PortalPageView() {
   const loadCurrentPage = async ({ keepPrevious = false } = {}) => {
     if (
       isAdminPage ||
-      isCorporateChatPage ||
+      isRuntimeOfficeBuiltinPage ||
       !pageId ||
       isDocumentLibraryPage
     ) {
@@ -1203,10 +1236,10 @@ export default function PortalPageView() {
   useEffect(() => {
     if (!pageId) return;
     if (!Array.isArray(pageSections) || pageSections.length === 0) return;
-    if (isCorporateChatPage) return;
+    if (isRuntimeOfficeBuiltinPage) return;
 
     registerPageEntities(pageSections, pageId);
-  }, [pageSections, pageId, isCorporateChatPage]);
+  }, [pageSections, pageId, isRuntimeOfficeBuiltinPage]);
 
   const preserveScrollAndReload = async () => {
     const scrollElement = document.querySelector("[data-page-canvas]");
@@ -1339,7 +1372,7 @@ export default function PortalPageView() {
   };
 
   const handleAddSection = async () => {
-    if (isAdminPage || isCorporateChatPage || !pageId) {
+    if (isAdminPage || isRuntimeOfficeBuiltinPage || !pageId) {
       return;
     }
 
@@ -1455,7 +1488,7 @@ export default function PortalPageView() {
   };
 
   const handleAddBlockToSection = async (sectionId, blockType, dropPoint) => {
-    if (isAdminPage || isCorporateChatPage) return;
+    if (isAdminPage || isRuntimeOfficeBuiltinPage) return;
 
     if (isLegacyTableBlockType(blockType)) {
       showCanvasError(LEGACY_TABLE_BLOCK_CREATION_MESSAGE, dropPoint);
@@ -1868,7 +1901,7 @@ export default function PortalPageView() {
       isEditMode &&
       !isDocumentLibraryPage &&
       !isAdminPage &&
-      !isCorporateChatPage
+      !isRuntimeOfficeBuiltinPage
         ? widgetDnD.handlePageDragOver
         : undefined
     }
@@ -1876,7 +1909,7 @@ export default function PortalPageView() {
       isEditMode &&
       !isDocumentLibraryPage &&
       !isAdminPage &&
-      !isCorporateChatPage
+      !isRuntimeOfficeBuiltinPage
         ? widgetDnD.handlePageDrop
         : undefined
     }
@@ -1887,10 +1920,10 @@ export default function PortalPageView() {
       width: "100%",
       display: "flex",
       flexDirection: "column",
-      overflow: isCorporateChatPage ? "hidden" : "auto",
+      overflow: isRuntimeOfficeBuiltinPage ? "hidden" : "auto",
       padding:
         isDocumentLibraryPage ||
-        isCorporateChatPage ||
+        isRuntimeOfficeBuiltinPage ||
         Boolean(workspaceRuntimeContext)
           ? 0
           : "10px 16px 16px",
@@ -1904,14 +1937,16 @@ export default function PortalPageView() {
 
     {isCorporateChatPage && <CorporateChatPage tenantId={portalId} />}
 
-    {!isCorporateChatPage && isAdminPage && adminPageContent}
+    {isCorporateCalendarPage && <CorporateCalendarPage tenantId={portalId} />}
 
-    {!isCorporateChatPage && isAdminPage && !adminPageContent && (
+    {!isRuntimeOfficeBuiltinPage && isAdminPage && adminPageContent}
+
+    {!isRuntimeOfficeBuiltinPage && isAdminPage && !adminPageContent && (
       <SystemMessage>Раздел администрирования не найден</SystemMessage>
     )}
 
     {!isAdminPage &&
-      !isCorporateChatPage &&
+      !isRuntimeOfficeBuiltinPage &&
       isDocumentLibraryPage &&
       activeNavigationItem &&
       (activeNavigationItem.library_id ? (
@@ -1929,20 +1964,20 @@ export default function PortalPageView() {
       ))}
 
     {    !isAdminPage &&
-    !isCorporateChatPage &&
+    !isRuntimeOfficeBuiltinPage &&
       !isDocumentLibraryPage &&
       !pageData &&
       pageId && <SystemMessage>Загрузка...</SystemMessage>}
 
     {    !isAdminPage &&
-    !isCorporateChatPage &&
+    !isRuntimeOfficeBuiltinPage &&
       !isDocumentLibraryPage &&
       pageData &&
       sections.length === 0 &&
       isEditMode && <EmptyDropZone />}
 
     {    !isAdminPage &&
-    !isCorporateChatPage &&
+    !isRuntimeOfficeBuiltinPage &&
       !isDocumentLibraryPage &&
       pageData &&
       sections.length > 0 && (
@@ -2045,27 +2080,29 @@ export default function PortalPageView() {
 
       {isCorporateChatPage && <CorporateChatPage tenantId={portalId} />}
 
-      {!isCorporateChatPage && isAdminPage && adminPageContent}
+    {isCorporateCalendarPage && <CorporateCalendarPage tenantId={portalId} />}
 
-      {!isCorporateChatPage && isAdminPage && !adminPageContent && (
+      {!isRuntimeOfficeBuiltinPage && isAdminPage && adminPageContent}
+
+      {!isRuntimeOfficeBuiltinPage && isAdminPage && !adminPageContent && (
         <SystemMessage>Раздел администрирования не найден</SystemMessage>
       )}
 
       {!isAdminPage &&
-        !isCorporateChatPage &&
+        !isRuntimeOfficeBuiltinPage &&
         !isDocumentLibraryPage &&
         !pageData &&
         pageId && <SystemMessage>Загрузка...</SystemMessage>}
 
       {!isAdminPage &&
-        !isCorporateChatPage &&
+        !isRuntimeOfficeBuiltinPage &&
         !isDocumentLibraryPage &&
         pageData &&
         sections.length === 0 &&
         isEditMode && <EmptyDropZone />}
 
       {!isAdminPage &&
-        !isCorporateChatPage &&
+        !isRuntimeOfficeBuiltinPage &&
         !isDocumentLibraryPage &&
         pageData &&
         sections.length > 0 && (

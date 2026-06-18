@@ -1,0 +1,99 @@
+﻿entity_kind,system_key,current_model,target_model,risk,fix_complexity,note,tenant_id,entity_id,title,page_id,nav_id
+page,runtime.office_home,special_office_home,page,medium,medium,Representation mismatch; no data migration in architecture phase,1,page:1,Главная,1,1
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,1,page:7,Библи,7,12
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,1,page:8,ваи,8,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,1,page:34,Оргструктура компании,34,
+page,runtime.chat,runtime_module_entry,module,high,high,Representation mismatch; no data migration in architecture phase,1,page:35,Чат,35,43
+page,runtime.notifications,runtime_module_entry,module,high,high,Representation mismatch; no data migration in architecture phase,1,page:36,Уведомления,36,44
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,1,page:38,Отчеты,38,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,1,page:39,Календарь,39,
+page,,page,tenant_administration,medium,low,Representation mismatch; no data migration in architecture phase,1,page:40,Администрирование,40,48
+page,,page,tenant_administration,medium,low,Representation mismatch; no data migration in architecture phase,1,page:41,Настройка системы,41,49
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,1,page:45,Запевалов,45,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,1,page:49,Тестовая,49,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,1,page:50,первая,50,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,1,page:51,Страница,51,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,1,page:52,Вторая,52,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,1,page:54,Разработка продукта,54,
+page,,page,workspace,medium,medium,Representation mismatch; no data migration in architecture phase,1,page:55,Разработка,55,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,1,page:56,Карта платформы,56,
+page,,page,workspace,medium,medium,Representation mismatch; no data migration in architecture phase,1,page:57,Карта платформы ЯсноПро,57,
+page,,page,workspace,medium,medium,Representation mismatch; no data migration in architecture phase,1,page:58,Тех. поддержка,58,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,1,page:59,Продажи,59,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,1,page:60,Отдел кадров,60,
+page,,page,workspace,medium,medium,Representation mismatch; no data migration in architecture phase,1,page:61,Управление платформой,61,
+page,,page,workspace,medium,medium,Representation mismatch; no data migration in architecture phase,1,page:62,Отдел кадров,62,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,1,page:346,Разработкаа,346,
+page,,page,workspace,medium,medium,Representation mismatch; no data migration in architecture phase,1,page:459,Архитектура ЯсноПро,459,
+page,runtime.office_home,special_office_home,page,medium,medium,Representation mismatch; no data migration in architecture phase,1,page:561,Главная,561,329
+page,runtime.office_home,special_office_home,page,medium,medium,Representation mismatch; no data migration in architecture phase,1,page:574,Главная,574,340
+page,runtime.office_home,special_office_home,page,medium,medium,Representation mismatch; no data migration in architecture phase,1,page:597,Главная,597,354
+page,runtime.chat,runtime_module_entry,module,high,high,Representation mismatch; no data migration in architecture phase,1,page:608,Чат,608,357
+page,runtime.office_home,special_office_home,page,medium,medium,Representation mismatch; no data migration in architecture phase,1,page:622,Главная,622,370
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,1,page:713,Тестовая библиотека,713,
+page,runtime.office_home,special_office_home,page,medium,medium,Representation mismatch; no data migration in architecture phase,1,page:739,Главная,739,413
+page,runtime.office_home,special_office_home,page,medium,medium,Representation mismatch; no data migration in architecture phase,1,page:786,Главная,786,449
+page,runtime.calendar,runtime_module_entry,module,high,high,Representation mismatch; no data migration in architecture phase,1,page:790,Календарь,790,452
+page,runtime.office_home,special_office_home,page,medium,medium,Representation mismatch; no data migration in architecture phase,2,page:347,Главная,347,219
+page,runtime.chat,runtime_module_entry,module,high,high,Representation mismatch; no data migration in architecture phase,2,page:376,Чат,376,230
+page,runtime.notifications,runtime_module_entry,module,high,high,Representation mismatch; no data migration in architecture phase,2,page:377,Уведомления,377,233
+page,,page,tenant_administration,medium,low,Representation mismatch; no data migration in architecture phase,2,page:381,Администрирование,381,239
+page,,page,tenant_administration,medium,low,Representation mismatch; no data migration in architecture phase,2,page:382,Настройка системы,382,240
+page,runtime.calendar,runtime_module_entry,module,high,high,Representation mismatch; no data migration in architecture phase,2,page:791,Календарь,791,453
+page,runtime.office_home,special_office_home,page,medium,medium,Representation mismatch; no data migration in architecture phase,21,page:624,Главная,624,371
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,21,page:625,Библи,625,380
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,21,page:649,Оргструктура компании,649,
+page,runtime.chat,runtime_module_entry,module,high,high,Representation mismatch; no data migration in architecture phase,21,page:650,Чат,650,375
+page,runtime.notifications,runtime_module_entry,module,high,high,Representation mismatch; no data migration in architecture phase,21,page:651,Уведомления,651,379
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,21,page:653,Календарь,653,
+page,,page,tenant_administration,medium,low,Representation mismatch; no data migration in architecture phase,21,page:654,Администрирование,654,384
+page,,page,tenant_administration,medium,low,Representation mismatch; no data migration in architecture phase,21,page:655,Настройка системы,655,385
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,21,page:659,Запевалов,659,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,21,page:663,Тестовая,663,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,21,page:664,первая,664,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,21,page:665,Вторая,665,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,21,page:666,Разработка продукта,666,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,21,page:667,Разработка,667,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,21,page:668,Тех. поддержка,668,
+page,runtime.calendar,runtime_module_entry,module,high,high,Representation mismatch; no data migration in architecture phase,21,page:792,Календарь,792,454
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,901,page:718,Page 901 d7193620,718,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,903,page:719,Page 903 87e8de77,719,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,905,page:720,Page 905 16860069,720,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,907,page:721,Page 907 76605f52,721,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,909,page:722,Page 909 4826f7c6,722,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,911,page:723,Page 911 63ea1fdc,723,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,913,page:725,Page 913 2faa8c7e,725,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,915,page:724,Page 915 eed51511,724,
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9503,page:750,Library A 32ceaa47,750,416
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9503,page:757,Library A 18438484,757,423
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9503,page:768,Library A 0ccea9a8,768,432
+page,runtime.calendar,runtime_module_entry,module,high,high,Representation mismatch; no data migration in architecture phase,9503,page:793,Календарь,793,455
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9508,page:751,Library B 4f29c6ef,751,417
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9508,page:758,Library B d09714f7,758,424
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9508,page:769,Library B b5c2b608,769,433
+page,runtime.calendar,runtime_module_entry,module,high,high,Representation mismatch; no data migration in architecture phase,9508,page:794,Календарь,794,456
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9510,page:752,Library B upload 390b8a4b,752,418
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9510,page:759,Library B upload 4820df77,759,425
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9510,page:770,Library B upload c89a4ce3,770,434
+page,runtime.calendar,runtime_module_entry,module,high,high,Representation mismatch; no data migration in architecture phase,9510,page:795,Календарь,795,457
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9511,page:753,Library A doc b9842a15,753,419
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9511,page:760,Library A doc 50dd1f7d,760,426
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9511,page:771,Library A doc 855654a2,771,435
+page,runtime.calendar,runtime_module_entry,module,high,high,Representation mismatch; no data migration in architecture phase,9511,page:796,Календарь,796,458
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9512,page:754,Library B doc 2edfba0c,754,420
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9512,page:761,Library B doc d7c2bc99,761,427
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9512,page:772,Library B doc c96c1efb,772,436
+page,runtime.calendar,runtime_module_entry,module,high,high,Representation mismatch; no data migration in architecture phase,9512,page:797,Календарь,797,459
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9514,page:755,Library B download 869da078,755,421
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9514,page:762,Library B download 50e698b7,762,428
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9514,page:773,Library B download dc746f79,773,437
+page,runtime.calendar,runtime_module_entry,module,high,high,Representation mismatch; no data migration in architecture phase,9514,page:798,Календарь,798,460
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9516,page:756,Library B owner 740ffca0,756,422
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9516,page:763,Library B owner ab8fd320,763,429
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9516,page:774,Library B owner 3b5b25c9,774,438
+page,runtime.calendar,runtime_module_entry,module,high,high,Representation mismatch; no data migration in architecture phase,9516,page:799,Календарь,799,461
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9525,page:764,Docs dd3a3df2,764,430
+page,,document_library_entry,library,medium,medium,Representation mismatch; no data migration in architecture phase,9525,page:766,Docs c4a07e17,766,431
+page,runtime.calendar,runtime_module_entry,module,high,high,Representation mismatch; no data migration in architecture phase,9525,page:800,Календарь,800,462
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,9529,page:765,Page cda2e6d9,765,
+page,,page,legacy_orphan,low,low,Representation mismatch; no data migration in architecture phase,9529,page:767,Page d64869a3,767,

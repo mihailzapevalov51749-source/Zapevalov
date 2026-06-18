@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import { resolveTenantIdFromPathname } from "../tenantContext/tenantContextResolver";
-import { fetchTenantEnvironment, peekTenantEnvironmentRecord } from "./tenantEnvironmentApi";
+import {
+  fetchTenantEnvironment,
+  peekTenantEnvironmentRecord,
+  TENANT_ENVIRONMENT_UPDATED_EVENT,
+} from "./tenantEnvironmentApi";
 import { resolveTenantEnvironment } from "./tenantEnvironment";
 
 export function useTenantEnvironment() {
@@ -38,6 +42,29 @@ export function useTenantEnvironment() {
 
     return () => {
       cancelled = true;
+    };
+  }, [tenantId]);
+
+  useEffect(() => {
+    if (!tenantId) {
+      return undefined;
+    }
+
+    const handleUpdated = (event) => {
+      const eventTenantId = Number(event.detail?.tenantId);
+      if (eventTenantId !== tenantId) {
+        return;
+      }
+
+      const cached = peekTenantEnvironmentRecord(tenantId);
+      if (cached) {
+        setTenantEnvironment(cached);
+      }
+    };
+
+    window.addEventListener(TENANT_ENVIRONMENT_UPDATED_EVENT, handleUpdated);
+    return () => {
+      window.removeEventListener(TENANT_ENVIRONMENT_UPDATED_EVENT, handleUpdated);
     };
   }, [tenantId]);
 

@@ -14,8 +14,14 @@ from app.modules.tenant_roles.access import (
     can_access_tenant_administration,
     can_manage_tenant_users,
     is_company_owner,
+    user_can_access_designer,
+    user_can_access_tenant_administration,
+    user_can_manage_tenant_users,
+    user_can_manage_tenant_users_in_tenant,
 )
 from app.modules.tenant_roles.owner_service import transfer_company_ownership
+from app.modules.tenant_users.membership_service import upsert_active_membership
+from app.modules.tenant_users.models import TenantUserMembership
 from app.modules.users.models import Role, User
 
 
@@ -24,7 +30,12 @@ def db_session():
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(
         bind=engine,
-        tables=[Portal.__table__, User.__table__, Role.__table__],
+        tables=[
+            Portal.__table__,
+            User.__table__,
+            Role.__table__,
+            TenantUserMembership.__table__,
+        ],
     )
     session = sessionmaker(bind=engine)()
     session.add_all(
@@ -82,6 +93,85 @@ def test_tenant_user_has_no_designer_or_administration_access(db_session):
     assert can_access_designer(user) is False
     assert can_access_tenant_administration(user) is False
     assert can_manage_tenant_users(user) is False
+
+
+def test_global_user_with_superadmin_membership_has_designer_access(db_session):
+    user = User(
+        email="global-superadmin@example.com",
+        full_name="Global Superadmin",
+        hashed_password="hash",
+        is_active=True,
+        tenant_id=None,
+        role_id=3,
+        is_company_owner=False,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    upsert_active_membership(
+        db_session,
+        tenant_id=10,
+        user_id=user.id,
+        role_key="superadmin",
+    )
+    db_session.commit()
+
+    assert can_access_designer(user) is False
+    assert user_can_access_designer(db_session, user) is True
+    assert user_can_access_tenant_administration(db_session, user) is True
+    assert user_can_manage_tenant_users(db_session, user) is True
+    assert user_can_manage_tenant_users_in_tenant(db_session, user, 10) is True
+
+
+def test_global_superadmin_on_other_tenant_cannot_manage_users(db_session):
+    user = User(
+        email="global-superadmin-other@example.com",
+        full_name="Global Superadmin Other",
+        hashed_password="hash",
+        is_active=True,
+        tenant_id=None,
+        role_id=3,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    upsert_active_membership(
+        db_session,
+        tenant_id=10,
+        user_id=user.id,
+        role_key="superadmin",
+    )
+    db_session.commit()
+
+    assert user_can_manage_tenant_users_in_tenant(db_session, user, 10) is True
+    assert user_can_manage_tenant_users_in_tenant(db_session, user, 99) is False
+
+
+def test_global_user_with_user_membership_has_no_designer_access(db_session):
+    user = User(
+        email="global-user@example.com",
+        full_name="Global User",
+        hashed_password="hash",
+        is_active=True,
+        tenant_id=None,
+        role_id=3,
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    upsert_active_membership(
+        db_session,
+        tenant_id=10,
+        user_id=user.id,
+        role_key="user",
+    )
+    db_session.commit()
+
+    assert user_can_access_designer(db_session, user) is False
+    assert user_can_access_tenant_administration(db_session, user) is False
 
 
 def test_transfer_company_ownership_keeps_single_owner(db_session):

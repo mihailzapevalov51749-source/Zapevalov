@@ -17,6 +17,7 @@ from app.modules.platform.designer.relation_definitions.schemas import (
 )
 from app.modules.platform.shared.enums import RelationType
 from app.modules.users.models import User
+from app.modules.publication_guard.structure_write_service_guard import guard_direct_structure_write
 
 
 def _actor_user_id(current_user: User | None) -> int | None:
@@ -214,6 +215,7 @@ def create_relation(
     payload: RelationDefinitionCreate,
     current_user: User | None,
 ) -> RelationDefinitionRead:
+    guard_direct_structure_write(db, tenant_id, "create_relation")
     if repository.get_by_key(db, tenant_id, payload.key):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -283,6 +285,7 @@ def update_relation(
     payload: RelationDefinitionUpdate,
     current_user: User | None,
 ) -> RelationDefinitionRead:
+    guard_direct_structure_write(db, tenant_id, "update_relation")
     entity = repository.get_relation(db, tenant_id, relation_id)
 
     if not entity:
@@ -413,6 +416,7 @@ def delete_relation(
     relation_id: UUID,
     current_user: User | None,
 ) -> RelationDefinitionRead:
+    guard_direct_structure_write(db, tenant_id, "delete_relation")
     entity = repository.get_relation(db, tenant_id, relation_id)
 
     if not entity:

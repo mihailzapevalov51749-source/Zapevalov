@@ -21,12 +21,14 @@ import {
   writeControlPlaneActiveSection,
   writeControlPlaneLeftMenuScale,
 } from "../../../shared/uiStorage/controlPlaneUiStorage.js";
+import { buildBrowserTitle } from "../../../shared/browserTitle/buildBrowserTitle.js";
 import { resolveControlPlanePageMeta } from "../config/controlPlaneNavigation.js";
-import { resolveControlPlaneSectionKey, resolveControlPlaneReturnToStudioPath } from "../config/controlPlanePaths.js";
+import { resolveControlPlaneSectionKey } from "../config/controlPlanePaths.js";
 import { resolveUserAvatarUrl } from "../platformUsers/platformUserUtils.js";
 import { createControlPlaneSidebarContract } from "./createControlPlaneSidebarContract.js";
 import { useControlPlaneSidebarState } from "./useControlPlaneSidebarState.js";
 import { usePlatformSettings } from "../platformProfile/PlatformSettingsProvider.jsx";
+import { getPlatformReviewCount } from "../../platformReleases/api/platformReleasesApi.js";
 
 const DEFAULT_AVATAR_SETTINGS = {
   x: 0,
@@ -69,6 +71,7 @@ export default function ControlPlaneShell() {
   const [menuScale, setMenuScale] = useState(() => readControlPlaneLeftMenuScale(1));
   const [isMenuEditMode, setIsMenuEditMode] = useState(false);
   const [headerUser, setHeaderUser] = useState(null);
+  const [reviewCount, setReviewCount] = useState(0);
   const { notifications, unreadCount, markAsRead } = useNotifications();
 
   useNotificationNavigationOrchestrator({
@@ -89,8 +92,7 @@ export default function ControlPlaneShell() {
 
   useEffect(() => {
     const brand = platformName || "ЯсноПро";
-    const pageTitle = pageMeta.title ? `${pageMeta.title} — ${brand}` : brand;
-    document.title = pageTitle;
+    document.title = buildBrowserTitle(pageMeta.title, brand);
   }, [pageMeta.title, platformName]);
 
   const handleMenuScaleChange = useCallback((value) => {
@@ -139,6 +141,29 @@ export default function ControlPlaneShell() {
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadReviewCount() {
+      try {
+        const count = await getPlatformReviewCount();
+        if (isMounted) {
+          setReviewCount(count);
+        }
+      } catch {
+        if (isMounted) {
+          setReviewCount(0);
+        }
+      }
+    }
+
+    void loadReviewCount();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [location.pathname]);
+
   const avatarSettings = useMemo(
     () => normalizeAvatarSettings(headerUser?.avatar_settings),
     [headerUser?.avatar_settings],
@@ -152,8 +177,9 @@ export default function ControlPlaneShell() {
         isEditMode: isMenuEditMode,
         onChangeMenuScale: handleMenuScaleChange,
         platformName,
+        reviewCount,
       }),
-    [handleMenuScaleChange, isMenuEditMode, location.pathname, menuScale, platformName],
+    [handleMenuScaleChange, isMenuEditMode, location.pathname, menuScale, platformName, reviewCount],
   );
 
   const headerContract = useMemo(() => {
@@ -284,11 +310,6 @@ export default function ControlPlaneShell() {
 
   const handleSidebarAction = useCallback(
     (actionKey, payload) => {
-      if (actionKey === "return-to-studio") {
-        navigate(resolveControlPlaneReturnToStudioPath());
-        return;
-      }
-
       if (actionKey === "toggle-edit-mode" || actionKey === "open-menu-settings") {
         setIsMenuEditMode((previous) => !previous);
         return;
@@ -298,7 +319,7 @@ export default function ControlPlaneShell() {
         handleMenuScaleChange(menuScale + Number(payload.step));
       }
     },
-    [handleMenuScaleChange, menuScale, navigate],
+    [handleMenuScaleChange, menuScale],
   );
 
   return (

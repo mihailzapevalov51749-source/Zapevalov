@@ -60,6 +60,10 @@ class PlatformEventCode(str, Enum):
     TEMPLATE_PUBLISHED = "template_published"
     TEMPLATE_UPDATE_SENT = "template_update_sent"
 
+    RELEASE_REVIEW_STARTED = "release_review_started"
+    RELEASE_APPROVED = "release_approved"
+    RELEASE_CHANGES_REQUESTED = "release_changes_requested"
+
     BOOTSTRAP_OWNER_CREATED = "bootstrap_owner_created"
     BOOTSTRAP_OWNER_USED = "bootstrap_owner_used"
     BOOTSTRAP_OWNER_DISABLED = "bootstrap_owner_disabled"
@@ -124,6 +128,9 @@ PLATFORM_EVENT_CODE_LABELS: dict[str, str] = {
     PlatformEventCode.TEMPLATE_VERSION_CREATED.value: "Создание версии шаблона",
     PlatformEventCode.TEMPLATE_PUBLISHED.value: "Публикация шаблона",
     PlatformEventCode.TEMPLATE_UPDATE_SENT.value: "Отправка обновления шаблона",
+    PlatformEventCode.RELEASE_REVIEW_STARTED.value: "Проверка релиза начата",
+    PlatformEventCode.RELEASE_APPROVED.value: "Релиз принят Platform",
+    PlatformEventCode.RELEASE_CHANGES_REQUESTED.value: "Релиз возвращён на доработку",
     PlatformEventCode.BOOTSTRAP_OWNER_CREATED.value: "Создание Bootstrap Owner",
     PlatformEventCode.BOOTSTRAP_OWNER_USED.value: "Вход Bootstrap Owner",
     PlatformEventCode.BOOTSTRAP_OWNER_DISABLED.value: "Отключение Bootstrap Owner",

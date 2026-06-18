@@ -4,14 +4,22 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { getMe, getTenantLoginBranding, login, logout } from "../../api/authApi";
 import {
   parseRequestedTenantId,
+  parseRequestedTenantKey,
   resolvePostLoginPath,
 } from "../../shared/auth/postLoginRedirect";
 import { buildLoginCompanySubtitle } from "./loginCompanySubtitle";
 
-export default function LoginPage({ onLogin }) {
+export default function LoginPage({
+  onLogin,
+  requestedTenantId: requestedTenantIdProp = null,
+  requestedTenantKey: requestedTenantKeyProp = null,
+}) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const requestedTenantId = parseRequestedTenantId(searchParams);
+  const requestedTenantId =
+    requestedTenantIdProp ?? parseRequestedTenantId(searchParams);
+  const requestedTenantKey =
+    requestedTenantKeyProp ?? parseRequestedTenantKey(searchParams);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +31,7 @@ export default function LoginPage({ onLogin }) {
   useEffect(() => {
     let cancelled = false;
 
-    if (!requestedTenantId) {
+    if (!requestedTenantId && !requestedTenantKey) {
       setCompanyDisplayName(null);
       setCompanyBrandingLoaded(true);
       return () => {
@@ -34,7 +42,7 @@ export default function LoginPage({ onLogin }) {
     setCompanyBrandingLoaded(false);
     setCompanyDisplayName(null);
 
-    getTenantLoginBranding(requestedTenantId)
+    getTenantLoginBranding(requestedTenantId, requestedTenantKey)
       .then((displayName) => {
         if (!cancelled) {
           setCompanyDisplayName(displayName);
@@ -54,7 +62,7 @@ export default function LoginPage({ onLogin }) {
     return () => {
       cancelled = true;
     };
-  }, [requestedTenantId]);
+  }, [requestedTenantId, requestedTenantKey]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -82,9 +90,10 @@ export default function LoginPage({ onLogin }) {
     }
   };
 
-  const companySubtitle = requestedTenantId
-    ? buildLoginCompanySubtitle(companyBrandingLoaded ? companyDisplayName : null)
-    : null;
+  const companySubtitle =
+    requestedTenantId || requestedTenantKey
+      ? buildLoginCompanySubtitle(companyBrandingLoaded ? companyDisplayName : null)
+      : null;
 
   return (
     <div

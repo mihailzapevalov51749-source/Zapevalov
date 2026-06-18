@@ -1,11 +1,20 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Path, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.modules.auth.dependencies import get_current_user
+from app.modules.control_plane.platform_identity.session_bridge.bridge_session_jwt import (
+    BridgeSessionJWTError,
+    decode_bridge_session_token,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    optional_runtime_bearer,
+    resolve_login_user,
+)
 from app.modules.platform.workspace_tabs import service
 from app.modules.platform.workspace_tabs.schemas import (
     WorkspaceTabCreate,
@@ -30,9 +39,26 @@ def list_workspace_tabs(
         description="Фильтр вкладок по tenant (portal id)",
     ),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    credentials: HTTPAuthorizationCredentials | None = Depends(optional_runtime_bearer),
 ):
-    return service.list_workspace_tabs(db, current_user, tenant_id=tenant_id)
+    if credentials is None or not str(credentials.credentials or "").strip():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Требуется авторизация",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    token = str(credentials.credentials).strip()
+    try:
+        bridge = decode_bridge_session_token(token)
+        if tenant_id is not None and int(bridge.portal_id) != int(tenant_id):
+            return []
+        return []
+    except BridgeSessionJWTError:
+        pass
+
+    user = resolve_login_user(db, token)
+    return service.list_workspace_tabs(db, user, tenant_id=tenant_id)
 
 
 @workspace_tabs_router.post(

@@ -9,6 +9,7 @@ import {
   resolveDefaultPlatformPermissions,
 } from "./platformUserConstants.js";
 import { getPlatformProfileSettings } from "../api/platformProfileSettingsApi.js";
+import { getPlatformUsers } from "../api/platformUsersApi.js";
 import {
   createEmptyPlatformUser,
   normalizePlatformUser,
@@ -18,7 +19,7 @@ import {
   matchesPlatformUserSearch,
 } from "./platformUserUtils.js";
 
-const API_BASE_URL = "http://127.0.0.1:8010";
+import { API_BASE_URL } from "../../../config/apiConfig.js";
 
 const ROLE_OPTIONS_FALLBACK = [
   { id: 1, name: "user", description: "Просмотр доступных страниц." },
@@ -57,7 +58,7 @@ async function fetchJson(url, options = {}) {
 }
 
 async function getUsers() {
-  return fetchJson(`${API_BASE_URL}/admin/users`);
+  return getPlatformUsers();
 }
 
 async function getRoles() {
@@ -222,7 +223,10 @@ export default function usePlatformUsersPage({ initialUserId = null } = {}) {
     });
   }, [users, searchQuery, roleFilter, statusFilter]);
 
-  const platformOwner = useMemo(() => resolvePlatformOwner(users), [users]);
+  const platformOwner = useMemo(
+    () => resolvePlatformOwner(users, { systemOwnerUserId }),
+    [users, systemOwnerUserId],
+  );
 
   const selectedUser = useMemo(
     () => users.find((user) => String(user.id) === String(selectedUserId)) ?? null,

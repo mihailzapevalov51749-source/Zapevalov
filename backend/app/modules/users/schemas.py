@@ -62,6 +62,7 @@ class TenantMembershipRead(BaseModel):
     tenant_id: int
     role_key: str
     is_active: bool = True
+    membership_status: str = "active"
 
 
 class UserResponse(BaseModel):

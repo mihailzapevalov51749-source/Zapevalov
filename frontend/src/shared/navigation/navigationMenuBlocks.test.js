@@ -5,9 +5,11 @@ import {
   buildNavigationBlockMovePayload,
   canMoveNavigationItemToBlock,
   enforcePinnedHomeInFirstBlock,
+  formatPersonalBlockKey,
   isPinnedHomeNavigationItem,
   moveItemInNavigationBlocks,
   organizeRootNavigationIntoBlocks,
+  parsePersonalBlockKey,
   patchNavigationMenuSettings,
 } from "./navigationMenuBlocks.js";
 
@@ -15,6 +17,7 @@ const ROOT_ITEMS = [
   { id: "cp-overview", title: "Главная", sort_order: 10 },
   { id: "cp-group-companies", title: "Компании", sort_order: 20 },
   { id: "cp-group-templates", title: "Шаблоны", sort_order: 30 },
+  { id: "cp-releases", title: "Релизы", sort_order: 32 },
   { id: "cp-group-platform-profile", title: "Профиль платформы", sort_order: 35 },
   { id: "cp-audit-log", title: "Журнал событий", sort_order: 60 },
 ];
@@ -27,7 +30,7 @@ test("organizeRootNavigationIntoBlocks uses default control-plane layout", () =>
   assert.equal(blocks[0].map((item) => item.id).join(","), "cp-overview");
   assert.deepEqual(
     blocks[1].map((item) => item.id),
-    ["cp-group-companies", "cp-group-templates"],
+    ["cp-group-companies", "cp-group-templates", "cp-releases"],
   );
   assert.equal(blocks[2][0].id, "cp-group-platform-profile");
   assert.equal(blocks[3][0].id, "cp-audit-log");
@@ -86,7 +89,7 @@ test("moveItemInNavigationBlocks moves item between blocks and recalculates sort
   assert.ok(nextBlocks);
   assert.equal(
     nextBlocks[1].map((item) => item.id).join(","),
-    "cp-audit-log,cp-group-companies,cp-group-templates",
+    "cp-audit-log,cp-group-companies,cp-group-templates,cp-releases",
   );
   assert.equal(nextBlocks[1].find((item) => item.id === "cp-audit-log")?.block_id, 2);
   assert.equal(nextBlocks[1].find((item) => item.id === "cp-audit-log")?.sort_order, 0);
@@ -127,4 +130,32 @@ test("moveItemInNavigationBlocks rejects moving home out of first block", () => 
 
   assert.equal(nextBlocks, null);
   assert.equal(canMoveNavigationItemToBlock({ id: "cp-overview" }, 2), false);
+});
+
+test("formatPersonalBlockKey and parsePersonalBlockKey use stable block ids", () => {
+  assert.equal(formatPersonalBlockKey(3), "block:3");
+  assert.equal(parsePersonalBlockKey("block:3"), 3);
+  assert.equal(parsePersonalBlockKey("block:99"), null);
+  assert.equal(parsePersonalBlockKey("communications"), null);
+});
+
+test("organizeRootNavigationIntoBlocks prefers personal_block_id over tenant block_id", () => {
+  const items = [
+    { id: 1, title: "Home", system_key: "runtime.office_home", sort_order: 0 },
+    { id: 2, title: "Chat", system_key: "runtime.chat", sort_order: 1, block_id: 2 },
+    {
+      id: 3,
+      title: "Calendar",
+      system_key: "runtime.calendar",
+      sort_order: 2,
+      block_id: 2,
+      personal_block_id: 4,
+    },
+  ];
+
+  const blocks = organizeRootNavigationIntoBlocks(items, {}, { menuProfile: "platform" });
+
+  assert.equal(blocks[1].some((item) => item.system_key === "runtime.chat"), true);
+  assert.equal(blocks[3].some((item) => item.system_key === "runtime.calendar"), true);
+  assert.equal(blocks[1].some((item) => item.system_key === "runtime.calendar"), false);
 });

@@ -12,6 +12,8 @@ export const PAGE_LAYOUT_PAGE_TYPE = {
 
   CHAT_ROOM: "chat_room",
 
+  CALENDAR: "calendar",
+
   STUDIO_OBJECT: "studio_object",
 
   STUDIO_OBJECT_DATA: "studio_object_data",
@@ -56,6 +58,8 @@ export const PAGE_LAYOUT_MODULE_KEY = {
   DASHBOARD: "dashboard",
 
   CHAT: "chat",
+
+  CALENDAR: "calendar",
 
   PROFILE: "profile",
 

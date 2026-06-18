@@ -1,0 +1,84 @@
+{
+  "yasnopro_dev": {
+    "tables": {
+      "portals": true,
+      "customer_companies": true,
+      "platform_environment_versions": true,
+      "platform_deployments": true,
+      "platform_release_packages": true,
+      "platform_builds": false,
+      "tenant_modules": true
+    },
+    "queries": {
+      "portals": [
+        {
+          "id": 1,
+          "tenant_type": "DEV",
+          "environment_role": "DEV",
+          "code": "корпоративный_портал",
+          "tenant_status": "ACTIVE"
+        }
+      ],
+      "customer_companies": [],
+      "platform_environment_versions": [
+        {
+          "id": 1,
+          "tenant_id": 1,
+          "environment_key": "DEV",
+          "platform_version": "1.0.0-dev"
+        }
+      ],
+      "platform_deployments": []
+    }
+  },
+  "yasnopro_template": {
+    "tables": {
+      "portals": true,
+      "customer_companies": true,
+      "platform_environment_versions": true,
+      "platform_deployments": true,
+      "platform_release_packages": true,
+      "platform_builds": false,
+      "tenant_modules": true
+    },
+    "queries": {
+      "portals": [
+        {
+          "id": 2,
+          "tenant_type": "TEMPLATE",
+          "environment_role": "TEMPLATE",
+          "code": "platform_template",
+          "tenant_status": "ACTIVE"
+        }
+      ],
+      "customer_companies": [],
+      "platform_environment_versions": [],
+      "platform_deployments": []
+    }
+  },
+  "yasnopro_client": {
+    "tables": {
+      "portals": true,
+      "customer_companies": true,
+      "platform_environment_versions": true,
+      "platform_deployments": true,
+      "platform_release_packages": true,
+      "platform_builds": false,
+      "tenant_modules": true
+    },
+    "queries": {
+      "portals": [
+        {
+          "id": 21,
+          "tenant_type": "CLIENT",
+          "environment_role": "DEMO_CLIENT",
+          "code": "ooo_rozetka",
+          "tenant_status": "ACTIVE"
+        }
+      ],
+      "customer_companies": [],
+      "platform_environment_versions": [],
+      "platform_deployments": []
+    }
+  }
+}

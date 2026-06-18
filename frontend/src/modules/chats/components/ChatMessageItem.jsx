@@ -40,6 +40,7 @@ export default function ChatMessageItem({
   onDelete,
   onOpenFile,
   isReply = false,
+  reactionsEnabled = true,
 }) {
   const [isReplyOpen, setIsReplyOpen] = useState(false);
   const [isRepliesExpanded, setIsRepliesExpanded] = useState(false);
@@ -161,18 +162,21 @@ export default function ChatMessageItem({
                 ...(isOwn ? styles.actionsOwn : {}),
               }}
             >
-              {Object.entries(reactionGroups).map(([emojiKey, reactions]) => (
-                <button
-                  key={emojiKey}
-                  type="button"
-                  style={styles.reactionBadge}
-                  onClick={() => handleReactionSelect(emojiKey)}
-                >
-                  <EmojiIcon emojiKey={emojiKey} size={13} />
-                  <span>{reactions.length}</span>
-                </button>
-              ))}
+              {reactionsEnabled
+                ? Object.entries(reactionGroups).map(([emojiKey, reactions]) => (
+                  <button
+                    key={emojiKey}
+                    type="button"
+                    style={styles.reactionBadge}
+                    onClick={() => handleReactionSelect(emojiKey)}
+                  >
+                    <EmojiIcon emojiKey={emojiKey} size={13} />
+                    <span>{reactions.length}</span>
+                  </button>
+                ))
+                : null}
 
+              {reactionsEnabled ? (
               <div style={styles.reactionWrapper}>
                 <button
                   type="button"
@@ -197,6 +201,7 @@ export default function ChatMessageItem({
                   </div>
                 )}
               </div>
+              ) : null}
 
               <button
                 type="button"
@@ -268,6 +273,7 @@ export default function ChatMessageItem({
                   onEdit={onEdit}
                   onDelete={onDelete}
                   onOpenFile={onOpenFile}
+                  reactionsEnabled={reactionsEnabled}
                   isReply
                 />
               ))}

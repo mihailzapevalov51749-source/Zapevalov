@@ -193,6 +193,50 @@ def test_backfill_sets_system_key_and_flags_for_runtime_nav(db: Session) -> None
     assert nav.is_protected is True
 
 
+def test_backfill_hides_duplicate_runtime_protected_titles(db: Session) -> None:
+    suffix = _suffix()
+    portal = Portal(name=f"Protected dup {suffix}", code=f"prot-dup-{suffix}")
+    db.add(portal)
+    db.flush()
+    tenant_id = int(portal.id)
+
+    page_a = Page(portal_id=tenant_id, title="Чат")
+    page_b = Page(portal_id=tenant_id, title="Чат")
+    db.add_all([page_a, page_b])
+    db.flush()
+
+    canonical = NavigationItem(
+        portal_id=tenant_id,
+        type="page",
+        title="Чат",
+        page_id=page_a.id,
+        menu_scope="runtime",
+        system_key="runtime.chat",
+        is_visible=True,
+    )
+    duplicate = NavigationItem(
+        portal_id=tenant_id,
+        type="page",
+        title="Чат",
+        page_id=page_b.id,
+        menu_scope="runtime",
+        is_visible=True,
+        sort_order=1,
+    )
+    db.add_all([canonical, duplicate])
+    db.flush()
+
+    first = backfill_runtime_protected_navigation(db, portal_id=tenant_id)
+    second = backfill_runtime_protected_navigation(db, portal_id=tenant_id)
+    db.refresh(canonical)
+    db.refresh(duplicate)
+
+    assert first >= 0
+    assert second == 0
+    assert canonical.system_key == "runtime.chat"
+    assert duplicate.is_visible is False
+
+
 def test_protected_office_home_page_cannot_be_soft_deleted(db: Session) -> None:
     page = _create_runtime_nav_page(
         db,

@@ -7,6 +7,7 @@ import {
   getTenantRegistrySummary,
   listTenantRegistry,
 } from "../api/tenantRegistryApi";
+import { resolveTenantPlatformVersion } from "../companies/resolveTenantPlatformVersion.js";
 import ControlPlaneAccessGate from "../components/ControlPlaneAccessGate";
 import TenantRegistryStatusBadge from "../components/TenantRegistryStatusBadge";
 import TenantRegistryTypeBadge from "../components/TenantRegistryTypeBadge";
@@ -198,7 +199,7 @@ function ControlPlaneTenantRegistryView() {
                         tenantType={tenant.tenant_type}
                       />
                     </td>
-                    <td style={styles.td}>{tenant.template_version || "—"}</td>
+                    <td style={styles.td}>{resolveTenantPlatformVersion(tenant)}</td>
                     <td style={styles.td}>
                       {formatSourceTenantId(tenant.source_tenant_id)}
                     </td>

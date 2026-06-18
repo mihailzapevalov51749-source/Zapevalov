@@ -9,10 +9,12 @@ import {
 import { resolvePortalHomePagePath } from "../portal/utils/resolvePortalHomePage";
 
 import NotificationOverlayHost from "../modules/notifications/components/NotificationOverlayHost";
+import useRuntimeModuleConfiguration from "../shared/runtimeModuleConfiguration/useRuntimeModuleConfiguration";
 import FileViewerOverlayHost from "../shared/files/components/FileViewerOverlayHost";
 import CreateMenuItemModal from "../modules/navigation/components/CreateMenuItemModal";
 import NavigationDeleteDialogs from "../modules/navigation/components/NavigationDeleteDialogs";
 import { canManageNavigationMenu, getStoredCurrentUser } from "../modules/designer/constants/designerRoles";
+import { resolveBridgePortalId } from "../api/sessionBridgeApi";
 import useNotificationNavigationOrchestrator from "../modules/notifications/hooks/useNotificationNavigationOrchestrator";
 import { TRANSITION_TOKENS } from "../shared/layout/transitionTokens";
 import AppShellFrame from "../shared/shell/AppShellFrame";
@@ -28,10 +30,11 @@ import {
   shouldCreateTopLevelShell,
   SHELL_LAYOUT_MODE,
 } from "../shared/shell/shellLayoutMode.js";
+import { useTenantSidebarBrand } from "../shared/tenantEnvironment/useTenantSidebarBrand.js";
 
 export default function PortalLayout({
   layoutMode,
-  portalId: portalIdProp = 1,
+  portalId: portalIdProp,
   navigation,
   activePageId,
   activeSidebarItemId = null,
@@ -49,7 +52,15 @@ export default function PortalLayout({
   children,
 }) {
   const location = useLocation();
-  const portalId = resolvePortalIdFromPath(location.pathname, portalIdProp);
+  const portalId = resolvePortalIdFromPath(
+    location.pathname,
+    portalIdProp ?? resolveBridgePortalId() ?? 1,
+  );
+  const { settings: notificationsRuntimeSettings } = useRuntimeModuleConfiguration(
+    portalId,
+    "runtime.notifications",
+  );
+  const overlayEnabled = notificationsRuntimeSettings.overlay_enabled !== false;
 
   useEffect(() => {
     void resolvePortalHomePagePath(portalId, { strict: true });
@@ -72,6 +83,7 @@ export default function PortalLayout({
     onChangeMenuScale,
     onEditModeChange: onNavigationEditModeChange,
     canEditMenu: canEditNavigationMenu,
+    canPersonalizeMenu: false,
     canCreateItem: canEditNavigationMenu,
     canDragItems: canEditNavigationMenu,
   });
@@ -79,10 +91,14 @@ export default function PortalLayout({
   const pathname = window.location.pathname;
   const sidebarWidth = resolveAppSidebarWidth(sidebarCollapsed);
   const workspaceLeftOffset = resolveAppSidebarWidth(sidebarCollapsed);
+  const tenantSidebarBrand = useTenantSidebarBrand({
+    subtitle: "Система управления",
+  });
 
   useNotificationNavigationOrchestrator({
     activePageId,
     onSelectPage,
+    navigation,
   });
 
   const runtimeSidebarContract = useMemo(() => {
@@ -96,8 +112,13 @@ export default function PortalLayout({
       activeItemId: activeSidebarItemId ?? undefined,
       activeParentIds: Array.isArray(activeSidebarParentIds) ? activeSidebarParentIds : [],
       isEditMode: sidebarControls.isEditMode,
+      isPersonalizeMode: sidebarControls.isPersonalizeMode,
       menuScale,
       canScaleMenu: typeof onChangeMenuScale === "function",
+      canEditMenu: canEditNavigationMenu,
+      canPersonalizeMenu: false,
+      canDragItems: sidebarControls.isEditMode && canEditNavigationMenu,
+      brand: tenantSidebarBrand ?? undefined,
     });
   }, [
     sidebarCollapsed,
@@ -109,8 +130,11 @@ export default function PortalLayout({
     activeSidebarItemId,
     activeSidebarParentIds,
     sidebarControls.isEditMode,
+    sidebarControls.isPersonalizeMode,
+    canEditNavigationMenu,
     menuScale,
     onChangeMenuScale,
+    tenantSidebarBrand,
   ]);
 
   const isAdminRootPage = pathname === "/admin";
@@ -219,7 +243,7 @@ export default function PortalLayout({
       {searchOverlay
         ? cloneElement(searchOverlay, { workspaceLeftOffset })
         : null}
-      <NotificationOverlayHost />
+      {overlayEnabled ? <NotificationOverlayHost /> : null}
       <FileViewerOverlayHost workspaceLeftOffset={workspaceLeftOffset} />
       {sidebarControls.isEditMode && sidebarControls.isCreateMenuOpen ? (
         <div

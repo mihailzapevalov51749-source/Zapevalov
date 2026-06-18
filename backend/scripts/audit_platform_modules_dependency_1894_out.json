@@ -1,0 +1,258 @@
+{
+  "source_db": "portal_constructor_v2",
+  "tenant_id": 2,
+  "tenant_modules_fk_audit": [
+    {
+      "child_table": "tenant_module_configurations",
+      "child_column": "module_key",
+      "parent_table": "platform_modules",
+      "parent_column": "module_key",
+      "constraint_name": "tenant_module_configurations_module_key_fkey"
+    },
+    {
+      "child_table": "tenant_module_configurations",
+      "child_column": "tenant_id",
+      "parent_table": "portals",
+      "parent_column": "id",
+      "constraint_name": "tenant_module_configurations_tenant_id_fkey"
+    },
+    {
+      "child_table": "tenant_modules",
+      "child_column": "module_key",
+      "parent_table": "platform_modules",
+      "parent_column": "module_key",
+      "constraint_name": "tenant_modules_module_key_fkey"
+    },
+    {
+      "child_table": "tenant_modules",
+      "child_column": "portal_id",
+      "parent_table": "portals",
+      "parent_column": "id",
+      "constraint_name": "tenant_modules_portal_id_fkey"
+    },
+    {
+      "child_table": "tenant_modules",
+      "child_column": "tenant_id",
+      "parent_table": "portals",
+      "parent_column": "id",
+      "constraint_name": "tenant_modules_tenant_id_fkey"
+    }
+  ],
+  "source_tenant_modules": [
+    {
+      "id": 4,
+      "tenant_id": 2,
+      "portal_id": 2,
+      "module_key": "runtime.calendar",
+      "installed_version": "1.0.0",
+      "enabled": true,
+      "source": "backfill",
+      "installed_at": "2026-06-14 07:37:52.655687"
+    },
+    {
+      "id": 5,
+      "tenant_id": 2,
+      "portal_id": 2,
+      "module_key": "runtime.chat",
+      "installed_version": "1.0.0",
+      "enabled": true,
+      "source": "backfill",
+      "installed_at": "2026-06-14 07:37:52.655687"
+    },
+    {
+      "id": 6,
+      "tenant_id": 2,
+      "portal_id": 2,
+      "module_key": "runtime.notifications",
+      "installed_version": "1.0.0",
+      "enabled": true,
+      "source": "backfill",
+      "installed_at": "2026-06-14 07:37:52.655687"
+    }
+  ],
+  "platform_modules_rows": [
+    {
+      "module_key": "runtime.calendar",
+      "title": "Календарь",
+      "status": "active",
+      "created_at": "2026-06-14 07:20:49.986215",
+      "updated_at": "2026-06-14 07:20:49.986215",
+      "id": 2
+    },
+    {
+      "module_key": "runtime.chat",
+      "title": "Чат",
+      "status": "active",
+      "created_at": "2026-06-14 07:20:49.986215",
+      "updated_at": "2026-06-14 07:20:49.986215",
+      "id": 1
+    },
+    {
+      "module_key": "runtime.notifications",
+      "title": "Уведомления",
+      "status": "active",
+      "created_at": "2026-06-14 07:20:49.986215",
+      "updated_at": "2026-06-14 07:20:49.986215",
+      "id": 3
+    }
+  ],
+  "platform_catalog_tables_audit": [
+    {
+      "module_key": "runtime.calendar",
+      "table": "platform_modules",
+      "records": 1,
+      "needed_for_fk": true,
+      "needed_for_runtime": true,
+      "recommendation": "REQUIRED seed (FK parent)"
+    },
+    {
+      "module_key": "runtime.calendar",
+      "table": "platform_module_manifests",
+      "records": 1,
+      "needed_for_fk": false,
+      "needed_for_runtime": true,
+      "recommendation": "evaluate if runtime needs manifest/version"
+    },
+    {
+      "module_key": "runtime.calendar",
+      "table": "platform_module_versions",
+      "records": 266,
+      "needed_for_fk": false,
+      "needed_for_runtime": true,
+      "recommendation": "evaluate if runtime needs manifest/version"
+    },
+    {
+      "module_key": "runtime.calendar",
+      "table": "platform_module_publications",
+      "records": 3,
+      "needed_for_fk": false,
+      "needed_for_runtime": false,
+      "recommendation": "evaluate if runtime needs manifest/version"
+    },
+    {
+      "module_key": "runtime.chat",
+      "table": "platform_modules",
+      "records": 1,
+      "needed_for_fk": true,
+      "needed_for_runtime": true,
+      "recommendation": "REQUIRED seed (FK parent)"
+    },
+    {
+      "module_key": "runtime.chat",
+      "table": "platform_module_manifests",
+      "records": 1,
+      "needed_for_fk": false,
+      "needed_for_runtime": true,
+      "recommendation": "evaluate if runtime needs manifest/version"
+    },
+    {
+      "module_key": "runtime.chat",
+      "table": "platform_module_versions",
+      "records": 1,
+      "needed_for_fk": false,
+      "needed_for_runtime": true,
+      "recommendation": "evaluate if runtime needs manifest/version"
+    },
+    {
+      "module_key": "runtime.chat",
+      "table": "platform_module_publications",
+      "records": 0,
+      "needed_for_fk": false,
+      "needed_for_runtime": false,
+      "recommendation": "not present"
+    },
+    {
+      "module_key": "runtime.notifications",
+      "table": "platform_modules",
+      "records": 1,
+      "needed_for_fk": true,
+      "needed_for_runtime": true,
+      "recommendation": "REQUIRED seed (FK parent)"
+    },
+    {
+      "module_key": "runtime.notifications",
+      "table": "platform_module_manifests",
+      "records": 1,
+      "needed_for_fk": false,
+      "needed_for_runtime": true,
+      "recommendation": "evaluate if runtime needs manifest/version"
+    },
+    {
+      "module_key": "runtime.notifications",
+      "table": "platform_module_versions",
+      "records": 1,
+      "needed_for_fk": false,
+      "needed_for_runtime": true,
+      "recommendation": "evaluate if runtime needs manifest/version"
+    },
+    {
+      "module_key": "runtime.notifications",
+      "table": "platform_module_publications",
+      "records": 0,
+      "needed_for_fk": false,
+      "needed_for_runtime": false,
+      "recommendation": "not present"
+    }
+  ],
+  "platform_catalog_fk_graph": [
+    {
+      "child_table": "platform_module_manifests",
+      "child_column": "module_key",
+      "parent_table": "platform_modules",
+      "parent_column": "module_key",
+      "constraint_name": "platform_module_manifests_module_key_fkey"
+    },
+    {
+      "child_table": "platform_module_versions",
+      "child_column": "module_key",
+      "parent_table": "platform_modules",
+      "parent_column": "module_key",
+      "constraint_name": "platform_module_versions_module_key_fkey"
+    },
+    {
+      "child_table": "platform_module_versions",
+      "child_column": "release_id",
+      "parent_table": "platform_releases",
+      "parent_column": "id",
+      "constraint_name": "platform_module_versions_release_id_fkey"
+    }
+  ],
+  "tenant_module_configurations_sample": [
+    {
+      "id": 4,
+      "tenant_id": 2,
+      "module_key": "runtime.calendar",
+      "module_version": "9.86740478.68ec0dd1",
+      "config_version": "1.0.0",
+      "source": "manifest_defaults"
+    },
+    {
+      "id": 5,
+      "tenant_id": 2,
+      "module_key": "runtime.chat",
+      "module_version": "1.0.0",
+      "config_version": "1.0.0",
+      "source": "manifest_defaults"
+    },
+    {
+      "id": 6,
+      "tenant_id": 2,
+      "module_key": "runtime.notifications",
+      "module_version": "1.0.0",
+      "config_version": "1.0.0",
+      "source": "manifest_defaults"
+    }
+  ],
+  "global_catalog_totals": {
+    "platform_modules": 7,
+    "platform_module_manifests": 3,
+    "platform_module_versions": 268,
+    "platform_module_publications": 3,
+    "platform_releases": 1,
+    "tenant_update_offers": 0
+  },
+  "cleanup_source": {
+    "test_cleanup_runs": 0,
+    "test_cleanup_records": 0
+  }
+}

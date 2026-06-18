@@ -24,6 +24,9 @@ from app.modules.platform.designer.workspaces.models import DesignerWorkspace, D
 from app.modules.sections.models import Section
 
 
+from app.modules.portals.models import Portal
+
+
 @pytest.fixture
 def db() -> Session:
     session = SessionLocal()
@@ -59,8 +62,16 @@ def _create_page_tree(
     return page, section, block
 
 
+def _create_isolated_tenant(db: Session) -> int:
+    suffix = _suffix()
+    portal = Portal(name=f"Trash purge {suffix}", code=f"trash-{suffix}")
+    db.add(portal)
+    db.flush()
+    return int(portal.id)
+
+
 def test_clear_page_sections_deletes_blocks(db: Session) -> None:
-    tenant_id = 1
+    tenant_id = _create_isolated_tenant(db)
     suffix = _suffix()
     page, section, block = _create_page_tree(db, tenant_id=tenant_id, title_suffix=suffix)
 
@@ -73,7 +84,7 @@ def test_clear_page_sections_deletes_blocks(db: Session) -> None:
 
 
 def test_clear_page_sections_does_not_delete_unrelated_page_blocks(db: Session) -> None:
-    tenant_id = 1
+    tenant_id = _create_isolated_tenant(db)
     suffix = _suffix()
     page_a, _, block_a = _create_page_tree(db, tenant_id=tenant_id, title_suffix=f"a-{suffix}")
     page_b, _, block_b = _create_page_tree(db, tenant_id=tenant_id, title_suffix=f"b-{suffix}")
@@ -87,7 +98,7 @@ def test_clear_page_sections_does_not_delete_unrelated_page_blocks(db: Session) 
 
 
 def test_bulk_purge_page_hard_deletes_sections_and_blocks(db: Session) -> None:
-    tenant_id = 1
+    tenant_id = _create_isolated_tenant(db)
     suffix = _suffix()
     page, section, block = _create_page_tree(db, tenant_id=tenant_id, title_suffix=suffix)
     page_id = page.id
@@ -110,7 +121,7 @@ def test_bulk_purge_page_hard_deletes_sections_and_blocks(db: Session) -> None:
 
 
 def test_workspace_home_page_blocks_bulk_purge(db: Session) -> None:
-    tenant_id = 1
+    tenant_id = _create_isolated_tenant(db)
     suffix = _suffix()
     page, _, _ = _create_page_tree(db, tenant_id=tenant_id, title_suffix=suffix)
     workspace = DesignerWorkspace(
@@ -135,7 +146,7 @@ def test_workspace_home_page_blocks_bulk_purge(db: Session) -> None:
 
 
 def test_navigation_blocks_bulk_purge_page(db: Session) -> None:
-    tenant_id = 1
+    tenant_id = _create_isolated_tenant(db)
     suffix = _suffix()
     page, _, _ = _create_page_tree(db, tenant_id=tenant_id, title_suffix=suffix)
     nav = NavigationItem(
@@ -159,7 +170,7 @@ def test_navigation_blocks_bulk_purge_page(db: Session) -> None:
 
 
 def test_bulk_purge_page_and_navigation_together(db: Session) -> None:
-    tenant_id = 1
+    tenant_id = _create_isolated_tenant(db)
     suffix = _suffix()
     page, _, _ = _create_page_tree(db, tenant_id=tenant_id, title_suffix=suffix)
     nav = NavigationItem(
@@ -188,7 +199,7 @@ def test_bulk_purge_page_and_navigation_together(db: Session) -> None:
 
 
 def test_bulk_purge_page_and_workspace_tab_together(db: Session) -> None:
-    tenant_id = 1
+    tenant_id = _create_isolated_tenant(db)
     suffix = _suffix()
     page, _, _ = _create_page_tree(db, tenant_id=tenant_id, title_suffix=suffix)
     workspace = DesignerWorkspace(
@@ -227,7 +238,7 @@ def test_bulk_purge_page_and_workspace_tab_together(db: Session) -> None:
 
 
 def test_resolve_page_dependencies_includes_workspace_home(db: Session) -> None:
-    tenant_id = 1
+    tenant_id = _create_isolated_tenant(db)
     suffix = _suffix()
     page = Page(portal_id=tenant_id, title=f"Home dep {suffix}")
     db.add(page)

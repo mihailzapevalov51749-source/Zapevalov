@@ -44,6 +44,14 @@ from app.modules.control_plane.customer_companies.models import (  # noqa: F401
 from app.modules.control_plane.platform_profile.models import (  # noqa: F401
     PlatformSettings,
 )
+from app.modules.control_plane.platform_users.models import (  # noqa: F401
+    PlatformUser,
+)
+from app.modules.control_plane.platform_identity.models import (  # noqa: F401
+    PlatformCredential,
+    PlatformIdentity,
+    PlatformRoleBinding,
+)
 
 # IMPORT PLATFORM DASHBOARD MODELS
 from app.modules.platform_dashboard.models import (  # noqa: F401
@@ -59,6 +67,44 @@ from app.modules.platform_event_journal.models import (  # noqa: F401
 
 # IMPORT CHATS MODELS
 from app.modules.chats import models as chats_models  # noqa: F401
+
+# IMPORT CALENDAR MODELS
+from app.modules.calendar import models as calendar_models  # noqa: F401
+
+# IMPORT PLATFORM RELEASE MODELS
+from app.modules.platform_release import models as platform_release_models  # noqa: F401
+from app.modules.platform_release_package_registry.models import (  # noqa: F401
+    PlatformReleasePackage,
+)
+from app.modules.platform_build_registry.models import PlatformCodeBuild  # noqa: F401
+from app.modules.platform.architecture_navigator import models as architecture_navigator_models  # noqa: F401
+from app.modules.platform_deployment_registry.models import PlatformDeployment  # noqa: F401
+
+# IMPORT PLATFORM MODULES MODELS
+from app.modules.platform_modules import models as platform_modules_models  # noqa: F401
+from app.modules.platform_modules import manifest_models as platform_module_manifest_models  # noqa: F401
+from app.modules.platform_modules import version_models as platform_module_version_models  # noqa: F401
+
+# IMPORT TENANT MODULES MODELS
+from app.modules.tenant_modules import models as tenant_modules_models  # noqa: F401
+
+# IMPORT TENANT MODULE UPDATE OFFERS MODELS
+from app.modules.tenant_module_update_offers import models as tenant_module_update_offers_models  # noqa: F401
+from app.modules.tenant_module_update_previews import models as tenant_module_update_previews_models  # noqa: F401
+
+# IMPORT TENANT MODULE CONFIGURATIONS MODELS
+from app.modules.tenant_module_configurations import models as tenant_module_configurations_models  # noqa: F401
+
+# IMPORT TENANT MODULE CONFIGURATION DIFFS MODELS
+from app.modules.tenant_module_configuration_diffs import models as tenant_module_configuration_diffs_models  # noqa: F401
+
+# IMPORT TENANT MODULE CONFIGURATION APPLIES MODELS
+from app.modules.tenant_module_configuration_applies import models as tenant_module_configuration_applies_models  # noqa: F401
+from app.modules.tenant_module_configuration_rollbacks import models as tenant_module_configuration_rollbacks_models  # noqa: F401
+from app.modules.platform_module_publications import models as platform_module_publications_models  # noqa: F401
+
+# Test cleanup registry (pytest committed data tracking)
+from app.modules.test_cleanup_registry import models as test_cleanup_registry_models  # noqa: F401
 
 # Platform designer models are registered via app imports (routers / Alembic env).
 # They must NOT be created by create_all — use Alembic migrations instead.

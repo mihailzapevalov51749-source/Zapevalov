@@ -1,16 +1,10 @@
 import { createRuntimeSidebarContract } from "../../../shared/shell/sidebar";
 import {
   CONTROL_PLANE_NAV_ITEMS,
+  applyControlPlaneNavBadges,
   resolveControlPlaneActiveNavItemId,
   resolveControlPlaneActiveParentIds,
 } from "../config/controlPlaneNavigation.js";
-
-export const CONTROL_PLANE_RETURN_TO_STUDIO_ACTION = {
-  id: "control-plane-return-to-studio",
-  kind: "action",
-  label: "Вернуться в Студию",
-  actionKey: "return-to-studio",
-};
 
 export function createControlPlaneSidebarContract({
   activePath,
@@ -18,12 +12,17 @@ export function createControlPlaneSidebarContract({
   isEditMode = false,
   onChangeMenuScale,
   platformName,
+  reviewCount = 0,
 }) {
   const activeItemId = resolveControlPlaneActiveNavItemId(activePath);
   const activeParentIds = resolveControlPlaneActiveParentIds(activePath);
+  const normalizedReviewCount = Number(reviewCount) > 0 ? Number(reviewCount) : 0;
+  const navigationItems = applyControlPlaneNavBadges(CONTROL_PLANE_NAV_ITEMS, {
+    "cp-group-releases": normalizedReviewCount,
+  });
 
   const contract = createRuntimeSidebarContract({
-    navigationItems: CONTROL_PLANE_NAV_ITEMS,
+    navigationItems,
     activePath,
     activeItemId,
     activeParentIds,
@@ -43,6 +42,6 @@ export function createControlPlaneSidebarContract({
   return {
     ...contract,
     footerActions: [],
-    serviceNavigationActions: [CONTROL_PLANE_RETURN_TO_STUDIO_ACTION],
+    serviceNavigationActions: [],
   };
 }

@@ -1,4 +1,5 @@
 import { userHasTenantAccess } from "../auth/tenantMembershipAccess.js";
+import { isBridgeSessionUser } from "../../api/sessionBridgeApi.js";
 import { isPlatformOwner } from "../platformAccess/platformOwnerAccess.js";
 
 import { normalizeOfficeRuntimePortalId } from "./officeRuntimeTenantGuardRace.js";
@@ -45,6 +46,10 @@ export function userCanAccessOfficeRuntimeTenant(user, tenantId) {
   const normalizedTenantId = normalizeOfficeRuntimePortalId(tenantId);
   if (!user || normalizedTenantId == null) {
     return false;
+  }
+
+  if (isBridgeSessionUser(user)) {
+    return Number(user.portal_id) === normalizedTenantId;
   }
 
   if (isPlatformOwner(user)) {

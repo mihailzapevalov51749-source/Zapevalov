@@ -1,6 +1,8 @@
 import { useState } from "react";
 
-import { NAVIGATION_MENU_BLOCK_GAP_PX } from "../../../shared/navigation/navigationMenuBlocks.js";
+import { NAVIGATION_MENU_BLOCK_GAP_PX, resolveNavigationBlockTitle } from "../../../shared/navigation/navigationMenuBlocks.js";
+import { isNavigationDragDisabled } from "../../../shared/navigation/navigationItemDragPolicy.js";
+import { resolveAppliedLeftMenuScale } from "../../../shared/uiStorage/leftMenuScaleStorage.js";
 import MenuItem from "./MenuItem";
 import "./navigationMenuBlocks.css";
 
@@ -66,6 +68,7 @@ export default function MenuTree({
   onSelectPage,
   onItemAction,
   isEditMode,
+  personalizeOnly = false,
   onUpdateItem,
   onDeleteItem,
   dragAndDrop,
@@ -76,6 +79,7 @@ export default function MenuTree({
   tenantId = 1,
 }) {
   const [openedEditorItemId, setOpenedEditorItemId] = useState(null);
+  const appliedScale = resolveAppliedLeftMenuScale(scale);
 
   const isItemVisible = (item) => {
     if (item?.isSystem) return true;
@@ -89,16 +93,7 @@ export default function MenuTree({
       return null;
     }
 
-    const isSystemItem =
-      item?.isSystem === true
-      || item?.is_system === true
-      || item?.is_protected === true;
-
-    if (
-      isSystemItem
-      && sidebarMode !== "designer"
-      && sidebarMode !== "control-plane"
-    ) {
+    if (isNavigationDragDisabled(item, sidebarMode)) {
       return null;
     }
 
@@ -112,9 +107,10 @@ export default function MenuTree({
     onSelectPage,
     onItemAction,
     isEditMode,
+    personalizeOnly,
     onUpdateItem,
     onDeleteItem,
-    scale,
+    scale: appliedScale,
     sidebarCollapsed,
     sidebarMode,
     routeOwner,
@@ -127,7 +123,7 @@ export default function MenuTree({
     boxSizing: "border-box",
     display: "flex",
     flexDirection: "column",
-    gap: sidebarCollapsed ? 4 : 2 * scale,
+    gap: sidebarCollapsed ? 4 : 2 * appliedScale,
     padding: sidebarCollapsed ? "0 0 12px" : "0 0 80px",
     margin: 0,
   };
@@ -139,6 +135,15 @@ export default function MenuTree({
           const visibleBlockItems = isEditMode
             ? blockItems
             : blockItems.filter((item) => isItemVisible(item));
+
+          if (!isEditMode && visibleBlockItems.length === 0) {
+            return null;
+          }
+
+          const blockLabel =
+            isEditMode && !sidebarCollapsed
+              ? resolveNavigationBlockTitle(blockItems)
+              : null;
           const blockDragAndDrop = createBlockAwareDragAndDrop(
             blockedDragAndDrop,
             blockIndex,
@@ -168,7 +173,7 @@ export default function MenuTree({
               key={`navigation-block-${blockIndex + 1}`}
               className={zoneClassName}
               style={{
-                marginTop: blockIndex > 0 ? NAVIGATION_MENU_BLOCK_GAP_PX * scale : 0,
+                marginTop: blockIndex > 0 ? NAVIGATION_MENU_BLOCK_GAP_PX * appliedScale : 0,
               }}
               onDragOver={(event) => {
                 if (isEditMode) {
@@ -181,8 +186,21 @@ export default function MenuTree({
                 }
               }}
             >
+              {blockLabel ? (
+                <div
+                  className="navigation-menu-block-zone__header"
+                  style={{
+                    fontSize: 11 * appliedScale,
+                    paddingLeft: 8 * appliedScale,
+                    paddingRight: 8 * appliedScale,
+                  }}
+                >
+                  {blockLabel}
+                </div>
+              ) : null}
+
               {isBlockDropTarget && blockDropTarget.position === "start" ? (
-                <BlockDropLine scale={scale} />
+                <BlockDropLine scale={appliedScale} />
               ) : null}
 
               {visibleBlockItems.map((item) =>
@@ -196,7 +214,7 @@ export default function MenuTree({
               )}
 
               {isBlockDropTarget && blockDropTarget.position === "end" ? (
-                <BlockDropLine scale={scale} />
+                <BlockDropLine scale={appliedScale} />
               ) : null}
 
               {isEditMode && visibleBlockItems.length === 0 ? (

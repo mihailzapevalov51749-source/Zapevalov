@@ -13,9 +13,11 @@ from .legacy_guard import (
     get_legacy_storage_creation_error_message,
     is_legacy_storage_block_type,
 )
+from app.modules.publication_guard.structure_write_service_guard import guard_direct_structure_write
 
 
 def create_block(db: Session, data, *, portal_id: int):
+    guard_direct_structure_write(db, portal_id, "create_block")
     if is_legacy_storage_block_type(data.type):
         raise HTTPException(
             status_code=422,
@@ -44,6 +46,7 @@ def get_block(db: Session, block_id: int, *, portal_id: int):
 
 
 def update_block(db: Session, block_id: int, data, *, portal_id: int):
+    guard_direct_structure_write(db, portal_id, "update_block")
     block = get_block_for_portal(db, block_id, portal_id)
     if not block:
         return None
@@ -56,6 +59,7 @@ def update_block(db: Session, block_id: int, data, *, portal_id: int):
 
 
 def delete_block(db: Session, block_id: int, *, portal_id: int):
+    guard_direct_structure_write(db, portal_id, "delete_block")
     block = get_block_for_portal(db, block_id, portal_id)
     if not block:
         return None
@@ -63,6 +67,7 @@ def delete_block(db: Session, block_id: int, *, portal_id: int):
 
 
 def move_blocks(db: Session, items, *, portal_id: int):
+    guard_direct_structure_write(db, portal_id, "move_blocks")
     if not items:
         return []
 

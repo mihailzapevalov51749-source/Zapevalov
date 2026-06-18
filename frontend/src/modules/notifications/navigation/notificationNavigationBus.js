@@ -1,6 +1,7 @@
 const EVENT_NOTIFICATION_NAVIGATE = "yasnopro:notification:navigate";
 const EVENT_PENDING_TARGET = "yasnopro:notification:pending-target";
 const EVENT_CHAT_NAVIGATE = "chat:navigate";
+const EVENT_CALENDAR_NAVIGATE = "calendar:navigate";
 
 function emit(eventName, detail) {
   window.dispatchEvent(
@@ -30,6 +31,10 @@ export function emitChatNavigate(detail) {
   emit(EVENT_CHAT_NAVIGATE, detail);
 }
 
+export function emitCalendarNavigate(detail) {
+  emit(EVENT_CALENDAR_NAVIGATE, detail);
+}
+
 export function setPendingTargetCompat(target) {
   window.__YASNOPRO_PENDING_NOTIFICATION_TARGET__ = target;
 }
@@ -54,6 +59,16 @@ export function emitChatNavigateWithRetry(detail, delays = [300, 800, 1500]) {
   });
 }
 
+export function emitCalendarNavigateWithRetry(detail, delays = [300, 800, 1500]) {
+  if (!detail) return;
+
+  delays.forEach((delay) => {
+    window.setTimeout(() => {
+      emitCalendarNavigate(detail);
+    }, delay);
+  });
+}
+
 export function subscribeNotificationNavigate(handler) {
   return subscribe(EVENT_NOTIFICATION_NAVIGATE, handler);
 }
@@ -64,4 +79,8 @@ export function subscribePendingTarget(handler) {
 
 export function subscribeChatNavigate(handler) {
   return subscribe(EVENT_CHAT_NAVIGATE, handler);
+}
+
+export function subscribeCalendarNavigate(handler) {
+  return subscribe(EVENT_CALENDAR_NAVIGATE, handler);
 }

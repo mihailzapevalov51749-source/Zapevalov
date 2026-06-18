@@ -28,6 +28,55 @@
   flex-shrink: 0;
 }
 
+.app-sidebar-renderer__mode-switcher {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 8px 10px;
+}
+
+.app-sidebar-renderer__mode-switcher-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.app-sidebar-renderer__mode-switcher-separator {
+  color: #cbd5e1;
+  font-size: 12px;
+  line-height: 1;
+  user-select: none;
+}
+
+.app-sidebar-renderer__mode-switcher-button {
+  border: none;
+  background: transparent;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  border-radius: 6px;
+  line-height: 1.2;
+}
+
+.app-sidebar-renderer__mode-switcher-button:hover:not(:disabled) {
+  color: #1e293b;
+  background: #f1f5f9;
+}
+
+.app-sidebar-renderer__mode-switcher-button:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 2px;
+}
+
+.app-sidebar-renderer__mode-switcher-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
 .app-sidebar-renderer__service-actions {
   flex-shrink: 0;
   display: flex;
@@ -49,10 +98,44 @@
   font-weight: 500;
   color: #94a3b8;
   cursor: pointer;
-  text-align: center;
   width: 100%;
-  line-height: 1.3;
-  transition: color 140ms ease, opacity 140ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+}
+
+.app-sidebar-renderer__service-action-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-sidebar-renderer__service-action-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.app-sidebar-renderer__service-action--update {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-weight: 600;
 }
 
 .app-sidebar-renderer__service-action:hover {

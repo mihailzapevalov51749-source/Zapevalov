@@ -1,18 +1,19 @@
 import { getStoredRuntimePath } from "../appMode/appModeStorage.js";
 import {
+  formatTenantHomePageNotFoundMessage,
   resolveTenantRuntimeEntryPath,
-  TENANT_HOME_PAGE_NOT_FOUND_MESSAGE,
 } from "../tenantContext/resolveTenantRuntimeEntryPath.js";
-import { userHasTenantAccess } from "./tenantMembershipAccess.js";
+import { pathBelongsToTenant } from "../tenantContext/tenantContextResolver.js";
+import { isBridgeSessionUser } from "../../api/sessionBridgeApi.js";
+import { userHasTenantAccess, resolvePrimaryTenantId } from "./tenantMembershipAccess.js";
 
-export { userHasTenantAccess } from "./tenantMembershipAccess.js";
+export { userHasTenantAccess, resolvePrimaryTenantId } from "./tenantMembershipAccess.js";
 
 export const TENANT_ACCESS_DENIED_MESSAGE =
   "У пользователя нет доступа к выбранной компании";
 
 export function isCompanyUser(user) {
-  const parsed = Number(user?.tenant_id);
-  return Number.isFinite(parsed) && parsed > 0;
+  return resolvePrimaryTenantId(user) != null;
 }
 
 export function isPlatformUser(user) {
@@ -34,7 +35,7 @@ export async function resolvePlatformUserEntryPath() {
 }
 
 export async function resolveCompanyUserEntryPath(user) {
-  const tenantId = normalizeTenantId(user?.tenant_id);
+  const tenantId = resolvePrimaryTenantId(user);
   if (tenantId == null) {
     return resolvePlatformUserEntryPath();
   }
@@ -48,6 +49,38 @@ export async function resolveCompanyUserEntryPath(user) {
 export async function resolvePostLoginPath(user, { requestedTenantId } = {}) {
   const requested = normalizeTenantId(requestedTenantId);
 
+  if (isBridgeSessionUser(user)) {
+    const bridgePortalId = normalizeTenantId(user?.portal_id);
+    if (bridgePortalId == null) {
+      return {
+        path: null,
+        error: "Bridge session: portal_id не определён",
+      };
+    }
+
+    if (requested != null && requested !== bridgePortalId) {
+      return {
+        path: null,
+        error: TENANT_ACCESS_DENIED_MESSAGE,
+      };
+    }
+
+    const stored = getStoredRuntimePath(bridgePortalId);
+    if (stored && pathBelongsToTenant(stored, bridgePortalId)) {
+      return { path: stored };
+    }
+
+    const path = await resolveTenantRuntimeEntryPath(bridgePortalId);
+    if (!path) {
+      return {
+        path: null,
+        error: formatTenantHomePageNotFoundMessage(bridgePortalId),
+      };
+    }
+
+    return { path };
+  }
+
   if (requested != null) {
     if (!userHasTenantAccess(user, requested)) {
       return {
@@ -60,7 +93,7 @@ export async function resolvePostLoginPath(user, { requestedTenantId } = {}) {
     if (!path) {
       return {
         path: null,
-        error: TENANT_HOME_PAGE_NOT_FOUND_MESSAGE,
+        error: formatTenantHomePageNotFoundMessage(requested),
       };
     }
 
@@ -68,11 +101,12 @@ export async function resolvePostLoginPath(user, { requestedTenantId } = {}) {
   }
 
   if (isCompanyUser(user)) {
+    const tenantId = resolvePrimaryTenantId(user);
     const path = await resolveCompanyUserEntryPath(user);
     if (!path) {
       return {
         path: null,
-        error: TENANT_HOME_PAGE_NOT_FOUND_MESSAGE,
+        error: formatTenantHomePageNotFoundMessage(tenantId),
       };
     }
 
@@ -83,7 +117,7 @@ export async function resolvePostLoginPath(user, { requestedTenantId } = {}) {
   if (!path) {
     return {
       path: null,
-      error: TENANT_HOME_PAGE_NOT_FOUND_MESSAGE,
+      error: formatTenantHomePageNotFoundMessage(1),
     };
   }
 
@@ -106,5 +140,24 @@ export function parseRequestedTenantId(searchParams) {
 
   const raw = String(searchParams.tenantId || searchParams.tenant_id || "").trim();
   return normalizeTenantId(raw);
+}
+
+export function parseRequestedTenantKey(searchParams) {
+  if (!searchParams) {
+    return null;
+  }
+
+  const fromGetter =
+    typeof searchParams.get === "function"
+      ? searchParams.get("tenantKey")
+      : null;
+
+  if (fromGetter) {
+    const normalized = String(fromGetter).trim().toLowerCase();
+    return normalized || null;
+  }
+
+  const raw = String(searchParams.tenantKey || searchParams.tenant_key || "").trim();
+  return raw ? raw.toLowerCase() : null;
 }
 

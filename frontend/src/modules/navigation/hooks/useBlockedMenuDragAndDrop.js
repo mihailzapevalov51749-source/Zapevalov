@@ -14,6 +14,8 @@ export default function useBlockedMenuDragAndDrop({
   settings = {},
   menuProfile = "platform",
   isEnabled = false,
+  restrictSameBlockOnly = false,
+  skipBlocksSyncRef = null,
   onMove,
 }) {
   const organizedBlocks = organizeRootNavigationIntoBlocks(rootItems, settings, {
@@ -29,8 +31,12 @@ export default function useBlockedMenuDragAndDrop({
       return;
     }
 
+    if (skipBlocksSyncRef?.current) {
+      return;
+    }
+
     setBlocks(organizeRootNavigationIntoBlocks(rootItems, settings, { menuProfile }));
-  }, [rootItems, settings, menuProfile, draggedId]);
+  }, [rootItems, settings, menuProfile, draggedId, skipBlocksSyncRef]);
 
   const draggedBlockIndex = draggedId
     ? findNavigationItemBlockIndex(blocks, draggedId)
@@ -39,6 +45,14 @@ export default function useBlockedMenuDragAndDrop({
   const canDropAtBlock = (targetBlockIndex) => {
     const draggedItem = findNavigationItemInBlocks(blocks, draggedId);
     if (!draggedItem) {
+      return false;
+    }
+
+    if (
+      restrictSameBlockOnly &&
+      draggedBlockIndex >= 0 &&
+      targetBlockIndex !== draggedBlockIndex
+    ) {
       return false;
     }
 

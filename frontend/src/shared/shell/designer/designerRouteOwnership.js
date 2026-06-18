@@ -8,7 +8,7 @@ import {
   resolveDesignerSectionByPath,
   resolveDesignerTenantIdFromPath,
   resolveObjectTypeIdFromDesignerPath,
-} from "./designerNavigationResolver";
+} from "./designerNavigationResolver.js";
 
 export const DESIGNER_ROUTE_OWNER_KIND = {
   OBJECTS_SECTION: "objects_section",
@@ -221,11 +221,14 @@ export function resolveDesignerRouteOwner(pathname, navigationItems = [], tenant
   const normalizedPath = normalizeDesignerPath(pathname);
 
   if (isDesignerPlatformRoute(normalizedPath)) {
-    return {
-      kind: DESIGNER_ROUTE_OWNER_KIND.ROOT_SECTION,
-      sectionKey: "event-journal",
-      tenantId: resolvedTenantId,
-    };
+    const section = resolveDesignerSectionByPath(normalizedPath, resolvedTenantId);
+    if (section?.key) {
+      return {
+        kind: DESIGNER_ROUTE_OWNER_KIND.ROOT_SECTION,
+        sectionKey: section.key,
+        tenantId: resolvedTenantId,
+      };
+    }
   }
 
   const stored = readStoredRouteOwner();

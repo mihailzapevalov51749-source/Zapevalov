@@ -368,6 +368,7 @@ const API_PAGE_TYPE_MAP = {
   [PAGE_LAYOUT_PAGE_TYPE.PROFILE]: "settings",
   [PAGE_LAYOUT_PAGE_TYPE.YASII_WORKSPACE]: "chat_room",
   [PAGE_LAYOUT_PAGE_TYPE.CHAT_ROOM]: "chat_room",
+  [PAGE_LAYOUT_PAGE_TYPE.CALENDAR]: "calendar",
 };
 
 function mapWorkspaceTabPageTypeForApi(pageType) {

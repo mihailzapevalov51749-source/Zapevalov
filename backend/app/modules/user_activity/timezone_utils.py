@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 DEFAULT_TIMEZONE = "UTC"
 UTC = timezone.utc
+MOSCOW_FALLBACK = timezone(timedelta(hours=3))
 
 
 def resolve_timezone(name: str | None) -> ZoneInfo | timezone:
@@ -13,6 +14,8 @@ def resolve_timezone(name: str | None) -> ZoneInfo | timezone:
     try:
         return ZoneInfo(name)
     except ZoneInfoNotFoundError:
+        if name in {"Europe/Moscow", "W-SU"}:
+            return MOSCOW_FALLBACK
         return UTC
 
 

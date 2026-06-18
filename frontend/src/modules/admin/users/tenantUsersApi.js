@@ -19,6 +19,22 @@ export async function getTenantRoles(tenantId) {
   return response.data;
 }
 
+export async function lookupTenantUserEmail(tenantId, email) {
+  const response = await platformApiClient.post(
+    `${tenantAdministrationBase(tenantId)}/users/lookup-email`,
+    { email },
+  );
+  return response.data;
+}
+
+export async function restoreTenantUser(tenantId, userId, payload = {}) {
+  const response = await platformApiClient.post(
+    `${tenantAdministrationBase(tenantId)}/users/${userId}/restore`,
+    payload,
+  );
+  return response.data;
+}
+
 export async function createTenantUser(tenantId, payload) {
   const response = await platformApiClient.post(
     `${tenantAdministrationBase(tenantId)}/users`,

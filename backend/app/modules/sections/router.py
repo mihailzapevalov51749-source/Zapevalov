@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.modules.platform.shared.dependencies import require_portal_membership
+from app.modules.tenant_management.dependencies import require_dev_direct_structure_write_portal
 
 from .schemas import (
     SectionCreate,
@@ -19,7 +20,7 @@ router = APIRouter(prefix="/sections", tags=["Sections"])
 def create_section(
     data: SectionCreate,
     db: Session = Depends(get_db),
-    portal_id: int = Depends(require_portal_membership),
+    portal_id: int = Depends(require_dev_direct_structure_write_portal),
 ):
     return service.create_section(db, data, portal_id=portal_id)
 
@@ -52,7 +53,7 @@ def update_section(
     section_id: int,
     data: SectionUpdate,
     db: Session = Depends(get_db),
-    portal_id: int = Depends(require_portal_membership),
+    portal_id: int = Depends(require_dev_direct_structure_write_portal),
 ):
     section = service.update_section(db, section_id, data, portal_id=portal_id)
 
@@ -66,7 +67,7 @@ def update_section(
 def delete_section(
     section_id: int,
     db: Session = Depends(get_db),
-    portal_id: int = Depends(require_portal_membership),
+    portal_id: int = Depends(require_dev_direct_structure_write_portal),
 ):
     section = service.delete_section(db, section_id, portal_id=portal_id)
 
@@ -80,6 +81,6 @@ def delete_section(
 def move_sections(
     items: list[SectionMove],
     db: Session = Depends(get_db),
-    portal_id: int = Depends(require_portal_membership),
+    portal_id: int = Depends(require_dev_direct_structure_write_portal),
 ):
     return service.move_sections(db, items, portal_id=portal_id)

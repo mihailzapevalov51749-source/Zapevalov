@@ -1,66 +1,14 @@
+import { buildControlPlaneCompaniesPath } from "../config/controlPlanePaths.js";
 import { buildControlPlanePlatformProfilePath } from "../config/controlPlanePaths.js";
+import {
+  PLATFORM_PROFILE_WORKSPACE_TABS,
+  PROFILE_WORKSPACE_DEFAULT_TAB_SLUG,
+  resolveProfileWorkspaceTab,
+} from "../../profileWorkspace/profileWorkspaceConfig.js";
+import { PROFILE_MODE_PLATFORM } from "../../profileWorkspace/profileMode.js";
 
-export const PLATFORM_PROFILE_DEFAULT_TAB_SLUG = "general";
-
-export const PLATFORM_PROFILE_WORKSPACE_TABS = [
-  {
-    id: "general",
-    slug: "general",
-    label: "Общие настройки",
-    route: buildControlPlanePlatformProfilePath("general"),
-    enabled: true,
-  },
-  {
-    id: "branding",
-    slug: "branding",
-    label: "Брендинг",
-    route: buildControlPlanePlatformProfilePath("branding"),
-    enabled: true,
-  },
-  {
-    id: "platform-owner",
-    slug: "platform-owner",
-    label: "Владелец платформы",
-    route: buildControlPlanePlatformProfilePath("platform-owner"),
-    enabled: true,
-  },
-  {
-    id: "notifications",
-    slug: "notifications",
-    label: "Уведомления",
-    route: buildControlPlanePlatformProfilePath("notifications"),
-    enabled: true,
-  },
-  {
-    id: "limits",
-    slug: "limits",
-    label: "Лимиты и квоты",
-    route: buildControlPlanePlatformProfilePath("limits"),
-    enabled: true,
-  },
-  {
-    id: "backup",
-    slug: "backup",
-    label: "Резервное копирование",
-    route: buildControlPlanePlatformProfilePath("backup"),
-    enabled: true,
-  },
-  {
-    id: "security",
-    slug: "security",
-    label: "Безопасность",
-    route: buildControlPlanePlatformProfilePath("security"),
-    enabled: true,
-  },
-  {
-    id: "behavior",
-    slug: "behavior",
-    label: "Поведение системы",
-    route: buildControlPlanePlatformProfilePath("behavior"),
-    enabled: true,
-  },
-];
-
+export const PLATFORM_PROFILE_DEFAULT_TAB_SLUG = PROFILE_WORKSPACE_DEFAULT_TAB_SLUG;
+export { PLATFORM_PROFILE_WORKSPACE_TABS };
 export const PLATFORM_PROFILE_HOME_SECTIONS = [
   {
     id: "general",
@@ -120,12 +68,7 @@ export const PLATFORM_PROFILE_HOME_SECTIONS = [
 export function resolvePlatformProfileWorkspaceTab(
   slug = PLATFORM_PROFILE_DEFAULT_TAB_SLUG,
 ) {
-  const normalized = String(slug || "").trim() || PLATFORM_PROFILE_DEFAULT_TAB_SLUG;
-  return (
-    PLATFORM_PROFILE_WORKSPACE_TABS.find((tab) => tab.slug === normalized && tab.enabled)
-    ?? PLATFORM_PROFILE_WORKSPACE_TABS.find(
-      (tab) => tab.slug === PLATFORM_PROFILE_DEFAULT_TAB_SLUG && tab.enabled,
-    )
-    ?? PLATFORM_PROFILE_WORKSPACE_TABS[0]
-  );
+  return resolveProfileWorkspaceTab(PROFILE_MODE_PLATFORM, slug);
 }
+
+export { buildControlPlanePlatformProfilePath, buildControlPlaneCompaniesPath };

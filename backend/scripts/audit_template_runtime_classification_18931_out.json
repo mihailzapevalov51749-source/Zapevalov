@@ -1,0 +1,435 @@
+{
+  "tenant_id": 2,
+  "runtime_entities": [
+    {
+      "id": "43d1b758-db11-4d4b-abf6-88374b3ee4d6",
+      "object_type_id": "18525879-26ff-4a0f-a3ef-6c524cbcc840",
+      "object_type_key": "zadachnik",
+      "object_type_name": "Задачник",
+      "created_at": "2026-06-10 08:29:13.023184+00:00",
+      "updated_at": "2026-06-10 09:15:13.696315+00:00",
+      "created_by": null,
+      "updated_by": null,
+      "deleted_at": "2026-06-10 09:15:13.696315+00:00",
+      "status": "active",
+      "is_system": false,
+      "record_number": 1,
+      "values": [
+        {
+          "id": "7bc4fa0a-234a-46c8-9be1-7e80cc5100f3",
+          "field_key": "nazvanie",
+          "field_type": "text",
+          "value_json": "__plan_tree_root__#task_subtask",
+          "created_at": "2026-06-10 08:29:13.023184+00:00",
+          "updated_at": "2026-06-10 08:29:13.023184+00:00"
+        }
+      ],
+      "title": "__plan_tree_root__#task_subtask"
+    },
+    {
+      "id": "76d642a6-6a41-43f7-bde0-15ac76fcfbbc",
+      "object_type_id": "18525879-26ff-4a0f-a3ef-6c524cbcc840",
+      "object_type_key": "zadachnik",
+      "object_type_name": "Задачник",
+      "created_at": "2026-06-10 09:15:16.957281+00:00",
+      "updated_at": "2026-06-10 09:15:16.957281+00:00",
+      "created_by": null,
+      "updated_by": null,
+      "deleted_at": null,
+      "status": "active",
+      "is_system": true,
+      "record_number": 2,
+      "values": [
+        {
+          "id": "8a2fe3d7-cd4b-4f0e-bf31-a85d41d9e6b1",
+          "field_key": "nazvanie",
+          "field_type": "text",
+          "value_json": "__plan_tree_root__#task_subtask",
+          "created_at": "2026-06-10 09:15:16.957281+00:00",
+          "updated_at": "2026-06-10 09:15:16.957281+00:00"
+        }
+      ],
+      "title": "__plan_tree_root__#task_subtask"
+    }
+  ],
+  "document_libraries": [
+    {
+      "id": 1,
+      "title": "Библиотека документов",
+      "description": "Основная библиотека портала",
+      "created_at": "2026-04-27 15:18:12.803667+00:00",
+      "updated_at": "2026-04-27 15:18:12.803667+00:00",
+      "navigation_links": [],
+      "linked_portal_ids": [],
+      "linked_to_tenant_2": false
+    },
+    {
+      "id": 2,
+      "title": "Первая библиотека",
+      "description": "",
+      "created_at": "2026-04-27 15:24:39.102029+00:00",
+      "updated_at": "2026-04-27 15:24:39.102029+00:00",
+      "navigation_links": [],
+      "linked_portal_ids": [],
+      "linked_to_tenant_2": false
+    },
+    {
+      "id": 3,
+      "title": "Библиотека",
+      "description": "",
+      "created_at": "2026-04-27 15:24:56.201005+00:00",
+      "updated_at": "2026-04-27 15:24:56.201005+00:00",
+      "navigation_links": [],
+      "linked_portal_ids": [],
+      "linked_to_tenant_2": false
+    },
+    {
+      "id": 4,
+      "title": "Тестовая библиотека",
+      "description": "Проверка",
+      "created_at": "2026-04-27 15:26:56.040545+00:00",
+      "updated_at": "2026-04-27 15:26:56.040545+00:00",
+      "navigation_links": [],
+      "linked_portal_ids": [],
+      "linked_to_tenant_2": false
+    },
+    {
+      "id": 5,
+      "title": "Библитик",
+      "description": "",
+      "created_at": "2026-04-27 15:34:30.606179+00:00",
+      "updated_at": "2026-04-27 15:34:30.606179+00:00",
+      "navigation_links": [],
+      "linked_portal_ids": [],
+      "linked_to_tenant_2": false
+    },
+    {
+      "id": 6,
+      "title": "Папка денег",
+      "description": "",
+      "created_at": "2026-04-27 15:58:01.971817+00:00",
+      "updated_at": "2026-04-27 15:58:01.971817+00:00",
+      "navigation_links": [],
+      "linked_portal_ids": [],
+      "linked_to_tenant_2": false
+    },
+    {
+      "id": 7,
+      "title": "Библиотека файлов",
+      "description": "",
+      "created_at": "2026-04-27 16:09:33.891855+00:00",
+      "updated_at": "2026-04-27 16:09:33.891855+00:00",
+      "navigation_links": [],
+      "linked_portal_ids": [],
+      "linked_to_tenant_2": false
+    },
+    {
+      "id": 8,
+      "title": "Библи",
+      "description": "",
+      "created_at": "2026-04-27 16:12:26.322350+00:00",
+      "updated_at": "2026-04-27 16:12:26.322350+00:00",
+      "navigation_links": [
+        {
+          "navigation_item_id": 12,
+          "portal_id": 1,
+          "nav_title": "Документы",
+          "type": "document_library",
+          "is_visible": true
+        }
+      ],
+      "linked_portal_ids": [
+        1
+      ],
+      "linked_to_tenant_2": false
+    },
+    {
+      "id": 9,
+      "title": "ваи",
+      "description": "",
+      "created_at": "2026-04-29 12:52:30.058111+00:00",
+      "updated_at": "2026-04-29 12:52:30.058111+00:00",
+      "navigation_links": [],
+      "linked_portal_ids": [],
+      "linked_to_tenant_2": false
+    },
+    {
+      "id": 15,
+      "title": "Библи",
+      "description": "",
+      "created_at": "2026-06-10 08:17:17.165009+00:00",
+      "updated_at": "2026-06-10 08:17:17.165009+00:00",
+      "navigation_links": [],
+      "linked_portal_ids": [],
+      "linked_to_tenant_2": false
+    },
+    {
+      "id": 19,
+      "title": "Тестовая библиотека",
+      "description": "",
+      "created_at": "2026-06-13 06:48:14.449320+00:00",
+      "updated_at": "2026-06-13 06:48:14.449320+00:00",
+      "navigation_links": [],
+      "linked_portal_ids": [],
+      "linked_to_tenant_2": false
+    }
+  ],
+  "library_documents": [
+    {
+      "id": 1,
+      "library_id": 1,
+      "title": "Реестр документов",
+      "file_name": "27d3a17e-a515-4a30-a41f-bbb707773721.xlsx",
+      "original_filename": "27d3a17e-a515-4a30-a41f-bbb707773721.xlsx",
+      "file_path": "/uploads/documents/27d3a17e-a515-4a30-a41f-bbb707773721.xlsx",
+      "document_type": "excel",
+      "is_folder": false,
+      "created_at": "2026-04-27 15:18:32.804929+00:00",
+      "updated_at": "2026-04-27 15:18:32.804929+00:00",
+      "parent_id": null,
+      "created_by": null
+    },
+    {
+      "id": 2,
+      "library_id": 1,
+      "title": "Новый договор",
+      "file_name": "16253d21-5864-4183-85d8-2a282843f5af.docx",
+      "original_filename": "16253d21-5864-4183-85d8-2a282843f5af.docx",
+      "file_path": "/uploads/documents/16253d21-5864-4183-85d8-2a282843f5af.docx",
+      "document_type": "word",
+      "is_folder": false,
+      "created_at": "2026-04-27 15:19:10.191780+00:00",
+      "updated_at": "2026-04-27 15:19:10.191780+00:00",
+      "parent_id": null,
+      "created_by": null
+    },
+    {
+      "id": 9,
+      "library_id": 8,
+      "title": "Документ3",
+      "file_name": "9bda3c99-3375-462d-a55b-ef3ed33b5ff2.docx",
+      "original_filename": "9bda3c99-3375-462d-a55b-ef3ed33b5ff2.docx",
+      "file_path": "/uploads/documents/9bda3c99-3375-462d-a55b-ef3ed33b5ff2.docx",
+      "document_type": "word",
+      "is_folder": false,
+      "created_at": "2026-04-28 03:11:38.219420+00:00",
+      "updated_at": "2026-05-01 16:19:09.519419+00:00",
+      "parent_id": 17,
+      "created_by": null
+    },
+    {
+      "id": 14,
+      "library_id": 8,
+      "title": "Папка",
+      "file_name": null,
+      "original_filename": null,
+      "file_path": null,
+      "document_type": "folder",
+      "is_folder": true,
+      "created_at": "2026-04-28 04:26:03.941626+00:00",
+      "updated_at": "2026-05-28 05:21:32.940514+00:00",
+      "parent_id": null,
+      "created_by": null
+    },
+    {
+      "id": 15,
+      "library_id": 8,
+      "title": "тест",
+      "file_name": null,
+      "original_filename": null,
+      "file_path": null,
+      "document_type": "folder",
+      "is_folder": true,
+      "created_at": "2026-04-28 05:52:30.841682+00:00",
+      "updated_at": "2026-04-28 05:52:30.841682+00:00",
+      "parent_id": null,
+      "created_by": "Михаил"
+    },
+    {
+      "id": 16,
+      "library_id": 8,
+      "title": "Перемещение",
+      "file_name": "1665064e-fed5-4460-8da9-b0428225cdb2.docx",
+      "original_filename": "1665064e-fed5-4460-8da9-b0428225cdb2.docx",
+      "file_path": "/uploads/documents/1665064e-fed5-4460-8da9-b0428225cdb2.docx",
+      "document_type": "word",
+      "is_folder": false,
+      "created_at": "2026-04-28 06:27:30.858187+00:00",
+      "updated_at": "2026-04-28 09:17:50.208331+00:00",
+      "parent_id": 14,
+      "created_by": "Михаил"
+    },
+    {
+      "id": 17,
+      "library_id": 8,
+      "title": "паапка",
+      "file_name": null,
+      "original_filename": null,
+      "file_path": null,
+      "document_type": "folder",
+      "is_folder": true,
+      "created_at": "2026-04-28 06:35:48.261162+00:00",
+      "updated_at": "2026-04-28 09:02:29.530472+00:00",
+      "parent_id": null,
+      "created_by": "Михаил"
+    },
+    {
+      "id": 19,
+      "library_id": 8,
+      "title": "consultant-US.png",
+      "file_name": "consultant-US.png",
+      "original_filename": "consultant-US.png",
+      "file_path": "/uploads/documents/c0dc09f4-437b-4e74-9d4c-b17e1918a450_consultant-US.png",
+      "document_type": "png",
+      "is_folder": false,
+      "created_at": "2026-04-28 08:16:42.730122+00:00",
+      "updated_at": "2026-04-28 08:16:42.730122+00:00",
+      "parent_id": null,
+      "created_by": "Михаил"
+    },
+    {
+      "id": 20,
+      "library_id": 8,
+      "title": "схема",
+      "file_name": "556b9c99-7d7d-428e-b3d4-bbc0ebdeab81.docx",
+      "original_filename": "556b9c99-7d7d-428e-b3d4-bbc0ebdeab81.docx",
+      "file_path": "/uploads/documents/556b9c99-7d7d-428e-b3d4-bbc0ebdeab81.docx",
+      "document_type": "word",
+      "is_folder": false,
+      "created_at": "2026-04-28 08:42:13.073866+00:00",
+      "updated_at": "2026-04-28 08:42:13.073866+00:00",
+      "parent_id": 17,
+      "created_by": "Михаил"
+    },
+    {
+      "id": 21,
+      "library_id": 8,
+      "title": "Архитектура.docx",
+      "file_name": "Архитектура.docx",
+      "original_filename": "Архитектура.docx",
+      "file_path": "/uploads/documents/ca43c0ae-8c50-4ef6-81bd-4e1dd43c4f6d_Архитектура.docx",
+      "document_type": "docx",
+      "is_folder": false,
+      "created_at": "2026-05-11 03:45:11.818975+00:00",
+      "updated_at": "2026-05-11 03:45:11.818975+00:00",
+      "parent_id": null,
+      "created_by": "Михаил"
+    },
+    {
+      "id": 23,
+      "library_id": 8,
+      "title": "diagnostics-plan.pdf",
+      "file_name": "diagnostics-plan.pdf",
+      "original_filename": "diagnostics-plan.pdf",
+      "file_path": "/uploads/documents/6dde2c00-949c-488f-81f1-0aa7983e5b96_diagnostics-plan.pdf",
+      "document_type": "pdf",
+      "is_folder": false,
+      "created_at": "2026-05-11 09:50:33.916483+00:00",
+      "updated_at": "2026-05-11 09:50:33.916483+00:00",
+      "parent_id": null,
+      "created_by": "Михаил"
+    },
+    {
+      "id": 24,
+      "library_id": 8,
+      "title": "РАСЧЕТ - свод ремонтно строит работ на 29.06.2023 — копия.xlsx",
+      "file_name": "РАСЧЕТ - свод ремонтно строит работ на 29.06.2023 — копия.xlsx",
+      "original_filename": "РАСЧЕТ - свод ремонтно строит работ на 29.06.2023 — копия.xlsx",
+      "file_path": "/uploads/documents/2e437c3f-5fdb-44a4-bc74-226c8e772140_РАСЧЕТ - свод ремонтно строит работ на 29.06.2023 — копия.xlsx",
+      "document_type": "xlsx",
+      "is_folder": false,
+      "created_at": "2026-05-11 10:13:56.961941+00:00",
+      "updated_at": "2026-05-30 12:54:21.465589+00:00",
+      "parent_id": 30,
+      "created_by": "Михаил"
+    },
+    {
+      "id": 25,
+      "library_id": 8,
+      "title": "Папка 3",
+      "file_name": null,
+      "original_filename": null,
+      "file_path": null,
+      "document_type": "folder",
+      "is_folder": true,
+      "created_at": "2026-05-28 06:26:14.403616+00:00",
+      "updated_at": "2026-05-28 06:26:14.403616+00:00",
+      "parent_id": 14,
+      "created_by": "Михаил"
+    },
+    {
+      "id": 26,
+      "library_id": 8,
+      "title": "Папка 4",
+      "file_name": null,
+      "original_filename": null,
+      "file_path": null,
+      "document_type": "folder",
+      "is_folder": true,
+      "created_at": "2026-05-28 06:26:22.347818+00:00",
+      "updated_at": "2026-05-28 06:26:22.347818+00:00",
+      "parent_id": 25,
+      "created_by": "Михаил"
+    },
+    {
+      "id": 27,
+      "library_id": 8,
+      "title": "Папка 5",
+      "file_name": null,
+      "original_filename": null,
+      "file_path": null,
+      "document_type": "folder",
+      "is_folder": true,
+      "created_at": "2026-05-28 06:26:31.894176+00:00",
+      "updated_at": "2026-05-28 06:26:31.894176+00:00",
+      "parent_id": 26,
+      "created_by": "Михаил"
+    },
+    {
+      "id": 28,
+      "library_id": 8,
+      "title": "Папка 6",
+      "file_name": null,
+      "original_filename": null,
+      "file_path": null,
+      "document_type": "folder",
+      "is_folder": true,
+      "created_at": "2026-05-28 06:28:44.792080+00:00",
+      "updated_at": "2026-05-28 06:28:44.792080+00:00",
+      "parent_id": 27,
+      "created_by": "Михаил"
+    },
+    {
+      "id": 29,
+      "library_id": 8,
+      "title": "Папка 7",
+      "file_name": null,
+      "original_filename": null,
+      "file_path": null,
+      "document_type": "folder",
+      "is_folder": true,
+      "created_at": "2026-05-28 06:28:59.730815+00:00",
+      "updated_at": "2026-05-28 06:28:59.730815+00:00",
+      "parent_id": 28,
+      "created_by": "Михаил"
+    },
+    {
+      "id": 30,
+      "library_id": 8,
+      "title": "Папка 8",
+      "file_name": null,
+      "original_filename": null,
+      "file_path": null,
+      "document_type": "folder",
+      "is_folder": true,
+      "created_at": "2026-05-28 06:29:06.784387+00:00",
+      "updated_at": "2026-05-28 06:29:06.784387+00:00",
+      "parent_id": 29,
+      "created_by": "Михаил"
+    }
+  ],
+  "cleanup": {
+    "test_cleanup_runs": 0,
+    "test_cleanup_records": 0
+  }
+}

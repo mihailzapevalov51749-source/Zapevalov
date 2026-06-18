@@ -41,6 +41,67 @@ describe("applySystemMenuSettingsToTree", () => {
       true,
     );
   });
+
+  it("preserves object_type display icon for protected items with spurious tenant settings", () => {
+    const tree = [
+      {
+        id: 377,
+        title: "Мои задачи",
+        type: "object_type",
+        object_type_id: "b88e93ca-client",
+        display_icon_file_url: "/uploads/icons/462edaa34cbe49f08f42ce2999b26663.png",
+        is_protected: true,
+        is_visible: true,
+      },
+    ];
+
+    const next = applySystemMenuSettingsToTree(tree, {
+      377: {
+        icon_file_url: null,
+        icon_type: null,
+      },
+    });
+
+    assert.equal(
+      next[0].display_icon_file_url,
+      "/uploads/icons/462edaa34cbe49f08f42ce2999b26663.png",
+    );
+    assert.equal(next[0].icon_type, undefined);
+    assert.equal(next[0].icon, undefined);
+  });
+
+  it("DEV and CLIENT object_type items use the same icon mapping", () => {
+    const devItem = {
+      id: 85,
+      title: "Мои задачи",
+      type: "object_type",
+      object_type_id: "5621a2f9-dev",
+      display_icon_file_url: "/uploads/icons/7cb4c6b6b07a46999f2c2d72b969edf8.png",
+      is_protected: true,
+    };
+    const clientItem = {
+      id: 377,
+      title: "Мои задачи",
+      type: "object_type",
+      object_type_id: "b88e93ca-client",
+      display_icon_file_url: "/uploads/icons/462edaa34cbe49f08f42ce2999b26663.png",
+      is_protected: true,
+    };
+
+    const devNext = applySystemMenuSettingsToTree([devItem], {});
+    const clientNext = applySystemMenuSettingsToTree([clientItem], {
+      377: { icon_file_url: null },
+    });
+
+    assert.equal(
+      devNext[0].display_icon_file_url,
+      "/uploads/icons/7cb4c6b6b07a46999f2c2d72b969edf8.png",
+    );
+    assert.equal(
+      clientNext[0].display_icon_file_url,
+      "/uploads/icons/462edaa34cbe49f08f42ce2999b26663.png",
+    );
+  });
 });
 
 describe("sortNavigationTreeBySortOrder", () => {

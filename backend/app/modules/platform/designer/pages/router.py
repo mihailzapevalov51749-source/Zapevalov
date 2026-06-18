@@ -27,8 +27,16 @@ router = APIRouter(
 
 
 @router.get("/registry", response_model=PageRegistryListResponse)
-def get_pages_registry(tenant_id: int, db: Session = Depends(get_db)):
-    return service.list_page_registry(db, tenant_id)
+def get_pages_registry(
+    tenant_id: int,
+    include_system: bool = False,
+    db: Session = Depends(get_db),
+):
+    return service.list_page_registry(
+        db,
+        tenant_id,
+        include_system=include_system,
+    )
 
 
 @router.get("/{page_id}/registry", response_model=PageRegistryDetailRead)

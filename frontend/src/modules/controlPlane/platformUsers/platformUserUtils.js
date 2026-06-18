@@ -121,7 +121,17 @@ export function resolveRoleIdForPlatformKey(roleKey, roles = []) {
   return apiRole?.id ?? roles[0]?.id ?? null;
 }
 
-export function isHiddenPlatformUser(user = {}) {
+export function isHiddenPlatformUser(user = {}, options = {}) {
+  const systemOwnerUserId = options.systemOwnerUserId ?? null;
+  if (systemOwnerUserId != null && String(user.id) === String(systemOwnerUserId)) {
+    return false;
+  }
+  if (user.is_platform_registry_user || user.isPlatformRegistryUser) {
+    return false;
+  }
+  if (user.is_platform_owner || user.isPlatformOwner) {
+    return false;
+  }
   if (user.tenant_id != null || user.tenantId != null) {
     return true;
   }
@@ -129,7 +139,7 @@ export function isHiddenPlatformUser(user = {}) {
 }
 
 export function normalizePlatformUser(user = {}, roles = [], options = {}) {
-  if (isHiddenPlatformUser(user)) {
+  if (isHiddenPlatformUser(user, options)) {
     return null;
   }
 
@@ -142,9 +152,19 @@ export function normalizePlatformUser(user = {}, roles = [], options = {}) {
     user.roleName ||
     (typeof user.role === "string" ? user.role : user.role?.name) ||
     "user";
-  const platformRoleKey = isSystemPlatformOwner
-    ? "platform_owner"
-    : resolvePlatformRoleKeyFromLegacy(roleName);
+  const registryRoleKey = user.platform_role || user.platformRole || null;
+  const platformRoleKey = registryRoleKey
+    || (isSystemPlatformOwner ? "platform_owner" : resolvePlatformRoleKeyFromLegacy(roleName));
+
+  const registryStatus = user.platform_status || user.platformStatus || null;
+  const resolvedIsActive =
+    registryStatus === "inactive"
+      ? false
+      : registryStatus === "active"
+        ? true
+        : user.is_active === undefined || user.is_active === null
+          ? true
+          : Boolean(user.is_active);
 
   return {
     ...emptyPlatformUserForm,
@@ -158,10 +178,7 @@ export function normalizePlatformUser(user = {}, roles = [], options = {}) {
     platformRoleKey,
     avatar_url: resolveUserAvatarUrl(user),
     avatar_settings: resolveUserAvatarSettings(user),
-    is_active:
-      user.is_active === undefined || user.is_active === null
-        ? true
-        : Boolean(user.is_active),
+    is_active: resolvedIsActive,
     last_login_at: user.last_login_at || null,
     created_at: user.created_at || null,
     platformPermissions: resolveDefaultPlatformPermissions(platformRoleKey),
@@ -184,8 +201,18 @@ export function createEmptyPlatformUser(roles = []) {
   };
 }
 
-export function resolvePlatformOwner(users = []) {
-  const visibleUsers = (users || []).filter((user) => !isHiddenPlatformUser(user));
+export function resolvePlatformOwner(users = [], options = {}) {
+  const systemOwnerUserId = options.systemOwnerUserId ?? null;
+  if (systemOwnerUserId != null) {
+    const configuredOwner = (users || []).find(
+      (user) => String(user.id) === String(systemOwnerUserId),
+    );
+    if (configuredOwner) {
+      return configuredOwner;
+    }
+  }
+
+  const visibleUsers = (users || []).filter((user) => !isHiddenPlatformUser(user, options));
   if (visibleUsers.length === 0) {
     return null;
   }

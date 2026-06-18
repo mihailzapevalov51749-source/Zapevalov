@@ -1,0 +1,125 @@
+{
+  "yasnopro_dev": {
+    "current_database": "yasnopro_dev",
+    "alembic_version": "20260616_0076",
+    "portals": [
+      {
+        "id": 1,
+        "tenant_type": "DEV",
+        "environment_role": "DEV",
+        "code": "корпоративный_портал",
+        "is_protected": true
+      }
+    ],
+    "users_count": 3,
+    "users": [
+      {
+        "id": 1235,
+        "email": "zmn8@ya.ru",
+        "tenant_id": null,
+        "is_system_user": false,
+        "is_hidden_user": false
+      },
+      {
+        "id": 1840,
+        "email": "yasno.pro@yandex.ru",
+        "tenant_id": null,
+        "is_system_user": false,
+        "is_hidden_user": false
+      },
+      {
+        "id": 1841,
+        "email": "bootstrap@yasnopro.dev",
+        "tenant_id": null,
+        "is_system_user": true,
+        "is_hidden_user": true
+      }
+    ],
+    "memberships_count": 2,
+    "profiles_count": 2,
+    "bootstrap": [
+      {
+        "id": 1841,
+        "email": "bootstrap@yasnopro.dev",
+        "tenant_id": null,
+        "memberships": 0,
+        "profiles": 0
+      }
+    ]
+  },
+  "yasnopro_template": {
+    "current_database": "yasnopro_template",
+    "alembic_version": "20260616_0076",
+    "portals": [
+      {
+        "id": 2,
+        "tenant_type": "TEMPLATE",
+        "environment_role": "TEMPLATE",
+        "code": "platform_template",
+        "is_protected": true
+      }
+    ],
+    "users_count": 1,
+    "users": [
+      {
+        "id": 1,
+        "email": "bootstrap@yasnopro.dev",
+        "tenant_id": null,
+        "is_system_user": true,
+        "is_hidden_user": true
+      }
+    ],
+    "memberships_count": 0,
+    "profiles_count": 0,
+    "bootstrap": [
+      {
+        "id": 1,
+        "email": "bootstrap@yasnopro.dev",
+        "tenant_id": null,
+        "memberships": 0,
+        "profiles": 0
+      }
+    ]
+  },
+  "yasnopro_client": {
+    "current_database": "yasnopro_client",
+    "alembic_version": "20260616_0076",
+    "portals": [
+      {
+        "id": 21,
+        "tenant_type": "CLIENT",
+        "environment_role": "DEMO_CLIENT",
+        "code": "ooo_rozetka",
+        "is_protected": true
+      }
+    ],
+    "users_count": 2,
+    "users": [
+      {
+        "id": 1237,
+        "email": "mihailzapevalov51749@gmail.com",
+        "tenant_id": null,
+        "is_system_user": false,
+        "is_hidden_user": false
+      },
+      {
+        "id": 1238,
+        "email": "bootstrap@yasnopro.dev",
+        "tenant_id": null,
+        "is_system_user": true,
+        "is_hidden_user": true
+      }
+    ],
+    "memberships_count": 1,
+    "profiles_count": 1,
+    "bootstrap": [
+      {
+        "id": 1238,
+        "email": "bootstrap@yasnopro.dev",
+        "tenant_id": null,
+        "memberships": 0,
+        "profiles": 0
+      }
+    ]
+  }
+}

@@ -1,3 +1,6 @@
+import { buildBrowserTitle, BROWSER_TITLE_FALLBACK } from "../browserTitle/buildBrowserTitle.js";
+import { resolveTenantDisplayName } from "./tenantBranding.js";
+
 export const TENANT_ENVIRONMENT_ROLES = {
   DEV: {
     code: "DEV",
@@ -26,7 +29,7 @@ export const TENANT_ENVIRONMENT_ROLES = {
   },
 };
 
-const APP_TITLE_BASE = "YasnoPro";
+const APP_TITLE_BASE = BROWSER_TITLE_FALLBACK;
 
 /** Short browser-tab suffix; display badge labels stay full in sidebar. */
 const TENANT_ENVIRONMENT_TITLE_SUFFIX = {
@@ -114,7 +117,20 @@ export function resolveTenantEnvironmentTitleSuffix(environment) {
   return TENANT_ENVIRONMENT_TITLE_SUFFIX[key] ?? null;
 }
 
-export function buildTenantEnvironmentDocumentTitle(environment) {
+export function buildTenantBrowserDocumentTitle(pageTitle, branding = null) {
+  return buildBrowserTitle(pageTitle, resolveTenantDisplayName(branding));
+}
+
+/**
+ * @deprecated Use buildTenantBrowserDocumentTitle(pageTitle, branding).
+ * Kept for legacy environment-suffix fallback when no tenant branding exists.
+ */
+export function buildTenantEnvironmentDocumentTitle(environment, branding = null) {
+  const scopeName = resolveTenantDisplayName(branding, "");
+  if (scopeName) {
+    return buildTenantBrowserDocumentTitle(null, branding);
+  }
+
   const suffix = resolveTenantEnvironmentTitleSuffix(environment);
   if (!suffix) {
     return APP_TITLE_BASE;
@@ -122,9 +138,13 @@ export function buildTenantEnvironmentDocumentTitle(environment) {
   return `${APP_TITLE_BASE} (${suffix})`;
 }
 
-export function applyTenantEnvironmentDocumentTitle(environment) {
+export function applyTenantBrowserDocumentTitle(pageTitle, branding = null) {
   if (typeof document === "undefined") {
     return;
   }
-  document.title = buildTenantEnvironmentDocumentTitle(environment);
+  document.title = buildTenantBrowserDocumentTitle(pageTitle, branding);
+}
+
+export function applyTenantEnvironmentDocumentTitle(environment, branding = null) {
+  applyTenantBrowserDocumentTitle(null, branding);
 }

@@ -88,6 +88,23 @@ describe("resolvePortalPageViewLayoutContractOverrides", () => {
     assert.equal(contract.toolbarZoneId, null);
   });
 
+  it("detects corporate calendar by runtime navigation system_key", () => {
+    const contract = resolvePortalPageViewLayoutContractOverrides(
+      { pathname: "/portal/2/page/140" },
+      140,
+      {
+        activeNavigationItem: {
+          system_key: "runtime.calendar",
+          menu_scope: "runtime",
+          title: "Календарь",
+        },
+      },
+    );
+
+    assert.equal(contract.canMinimize, false);
+    assert.equal(contract.toolbarZoneId, null);
+  });
+
   it("does not treat unrelated CMS page as chat when system_key missing", () => {
     const contract = resolvePortalPageViewLayoutContractOverrides(
       { pathname: "/portal/2/page/128" },

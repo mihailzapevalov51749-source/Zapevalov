@@ -41,6 +41,24 @@ export function buildControlPlanePlatformProfilePath(segment = "") {
   );
 }
 
+export function buildControlPlanePlatformPath(segment = "") {
+  const normalizedSegment = String(segment || "").replace(/^\//, "");
+  return buildControlPlaneRoute(
+    normalizedSegment ? `platform/${normalizedSegment}` : "platform",
+  );
+}
+
+export function buildControlPlaneCompanyProfilePath(portalId, segment = "general") {
+  const normalizedPortalId = Number(portalId);
+  const normalizedSegment = String(segment || "").replace(/^\//, "") || "general";
+  if (!Number.isFinite(normalizedPortalId) || normalizedPortalId <= 0) {
+    return buildControlPlaneCompaniesPath("clients");
+  }
+  return buildControlPlaneCompaniesPath(
+    `clients/${normalizedPortalId}/profile/${normalizedSegment}`,
+  );
+}
+
 export function mapLegacyClientsPathToCompaniesWorkspace(pathname = "") {
   const normalized = String(pathname || "").replace(/\/+$/, "");
 
@@ -223,8 +241,14 @@ export function mapLegacyAdministrationPathToControlPlane(pathname = "") {
 export function resolveControlPlaneSectionKey(pathname = "") {
   const normalized = String(pathname || "").replace(/\/+$/, "");
 
+  if (/\/companies\/clients\/\d+\/profile/.test(normalized)) {
+    return "company-profile";
+  }
   if (/\/companies\/clients(?:\/|$)/.test(normalized)) {
     return "companies-clients";
+  }
+  if (/\/companies\/licenses(?:\/|$)/.test(normalized)) {
+    return "companies-licenses";
   }
   if (/\/companies(?:\/|$)/.test(normalized)) {
     return "companies";
@@ -254,7 +278,33 @@ export function resolveControlPlaneSectionKey(pathname = "") {
     return "templates-publish";
   }
   if (/\/platform\/licenses(?:\/|$)/.test(normalized)) {
-    return "platform-licenses";
+    return "companies-licenses";
+  }
+  if (/\/platform\/overview(?:\/|$)/.test(normalized)) {
+    return "platform-overview";
+  }
+  if (/\/platform\/modules(?:\/|$)/.test(normalized)) {
+    return "platform-modules";
+  }
+  if (/\/platform\/module-update-offers(?:\/|$)/.test(normalized)) {
+    return "platform-module-update-offers";
+  }
+  if (/\/platform\/module-update-previews(?:\/|$)/.test(normalized)) {
+    return "platform-module-update-previews";
+  }
+  if (/\/platform\/policies(?:\/|$)/.test(normalized)) {
+    return "platform-policies";
+  }
+  if (/\/platform\/monitoring(?:\/|$)/.test(normalized)) {
+    return "platform-monitoring";
+  }
+  if (
+    /\/platform\/tenant-module-configurations(?:\/|$)/.test(normalized)
+  ) {
+    return "platform-tenant-module-configurations";
+  }
+  if (/\/platform\/module-configuration-diffs(?:\/|$)/.test(normalized)) {
+    return "platform-module-configuration-diffs";
   }
   if (/\/platform\/policies(?:\/|$)/.test(normalized)) {
     return "platform-policies";
@@ -303,6 +353,9 @@ export function resolveControlPlaneSectionKey(pathname = "") {
   }
   if (/\/users-roles\/roles(?:\/|$)/.test(normalized)) {
     return "users-roles-roles";
+  }
+  if (/\/users-roles\/global-users(?:\/|$)/.test(normalized)) {
+    return "users-roles-global-users";
   }
   if (/\/users-roles(?:\/|$)/.test(normalized)) {
     return "users-roles-users";

@@ -1,0 +1,149 @@
+import CalendarEventCard from "./CalendarEventCard";
+import { buildGridSlotContextPayload } from "../utils/calendarContextMenu.js";
+import {
+  getEventDurationMinutes,
+  getEventMinutesFromMidnight,
+  getWeekDays,
+  groupEventsByDay,
+  isSameDay,
+} from "../utils/calendarDateUtils";
+import { calendarStyles as styles } from "../styles/calendarStyles";
+
+const HOURS = Array.from({ length: 24 }, (_, index) => index);
+const HOUR_HEIGHT = 48;
+const GRID_HEIGHT = HOURS.length * HOUR_HEIGHT;
+
+function layoutDayEvents(dayEvents) {
+  return dayEvents.map((event) => {
+    const top = (getEventMinutesFromMidnight(event.start_at) / (24 * 60)) * GRID_HEIGHT;
+    const height = Math.max(
+      (getEventDurationMinutes(event.start_at, event.end_at) / (24 * 60)) * GRID_HEIGHT,
+      22,
+    );
+
+    return { event, top, height };
+  });
+}
+
+function handleGridSlotContextMenu(event, day, onSlotContextMenu, view) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  onSlotContextMenu?.(
+    buildGridSlotContextPayload({
+      mouseEvent: event,
+      layerElement: event.currentTarget,
+      date: day,
+      view,
+      hourHeight: HOUR_HEIGHT,
+    }),
+  );
+}
+
+export default function CalendarWeekView({
+  events,
+  focusDate,
+  selectedEventId,
+  onSelectEvent,
+  onSlotContextMenu,
+  onEventContextMenu,
+}) {
+  const weekDays = getWeekDays(focusDate);
+  const eventsByDay = groupEventsByDay(events);
+  const today = new Date();
+
+  return (
+    <div style={styles.timeGridWrapper}>
+      <div style={styles.timeGridScroll}>
+        <div style={styles.timeGridHeader}>
+          <div style={styles.timeGridCorner} />
+          {weekDays.map((day) => {
+            const isToday = isSameDay(day, today);
+            const dayKey = `${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`;
+
+            return (
+              <div
+                key={dayKey}
+                style={{
+                  ...styles.timeGridDayHeader,
+                  ...(isToday ? styles.timeGridDayHeaderToday : null),
+                }}
+              >
+                <div style={styles.timeGridDayName}>
+                  {day.toLocaleDateString("ru-RU", { weekday: "short" })}
+                </div>
+                <div style={styles.timeGridDayNumber}>{day.getDate()}</div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={styles.timeGridBody}>
+        <div style={styles.timeAxis}>
+          {HOURS.map((hour) => (
+            <div key={hour} style={{ ...styles.timeAxisHour, height: HOUR_HEIGHT }}>
+              {String(hour).padStart(2, "0")}:00
+            </div>
+          ))}
+        </div>
+
+        <div style={styles.timeGridColumns}>
+          {weekDays.map((day) => {
+            const dayEvents = eventsByDay.get(day.toDateString()) || [];
+            const positionedEvents = layoutDayEvents(dayEvents);
+            const isToday = isSameDay(day, today);
+            const dayKey = `${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`;
+
+            return (
+              <div
+                key={dayKey}
+                style={{
+                  ...styles.timeGridColumn,
+                  ...(isToday ? styles.timeGridColumnToday : null),
+                }}
+              >
+                {HOURS.map((hour) => (
+                  <div
+                    key={`${dayKey}-${hour}`}
+                    style={{ ...styles.timeGridHourCell, height: HOUR_HEIGHT }}
+                  />
+                ))}
+
+                <div
+                  style={{ ...styles.timeGridEventsLayer, height: GRID_HEIGHT }}
+                  onContextMenu={(event) =>
+                    handleGridSlotContextMenu(event, day, onSlotContextMenu, "week")
+                  }
+                >
+                  {positionedEvents.map(({ event, top, height }) => (
+                    <CalendarEventCard
+                      key={event.id}
+                      event={event}
+                      compact
+                      showTime={false}
+                      selected={String(selectedEventId) === String(event.id)}
+                      onSelect={onSelectEvent}
+                      onContextMenu={onEventContextMenu}
+                      style={{
+                        position: "absolute",
+                        top,
+                        left: 2,
+                        right: 2,
+                        height,
+                        whiteSpace: "normal",
+                        display: "flex",
+                        alignItems: "flex-start",
+                        pointerEvents: "auto",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      </div>
+    </div>
+  );
+}

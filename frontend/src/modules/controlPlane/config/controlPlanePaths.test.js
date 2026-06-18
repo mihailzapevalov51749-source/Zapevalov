@@ -7,6 +7,8 @@ import { describe, it } from "node:test";
 import {
   buildControlPlaneClientsPath,
   buildControlPlaneCompaniesPath,
+  buildControlPlaneCompanyProfilePath,
+  buildControlPlanePlatformPath,
   buildControlPlaneRoute,
   buildControlPlaneUsersRolesPath,
   isPlatformAdminLegacyPath,
@@ -46,6 +48,22 @@ describe("controlPlanePaths", () => {
     assert.equal(
       buildControlPlaneUsersRolesPath("roles"),
       "/control-plane/users-roles/roles",
+    );
+    assert.equal(
+      buildControlPlaneUsersRolesPath("global-users"),
+      "/control-plane/users-roles/global-users",
+    );
+    assert.equal(
+      buildControlPlanePlatformPath("overview"),
+      "/control-plane/platform/overview",
+    );
+    assert.equal(
+      buildControlPlaneCompaniesPath("licenses"),
+      "/control-plane/companies/licenses",
+    );
+    assert.equal(
+      buildControlPlaneCompanyProfilePath(42, "general"),
+      "/control-plane/companies/clients/42/profile/general",
     );
   });
 

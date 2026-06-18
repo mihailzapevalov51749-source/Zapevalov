@@ -17,6 +17,7 @@ from app.modules.auth.dependencies import get_current_user
 from app.modules.auth.security import hash_password, verify_password
 from app.modules.control_plane.platform_profile.constants import PLATFORM_SETTINGS_SINGLETON_ID
 from app.modules.control_plane.platform_profile.models import PlatformSettings
+from app.modules.control_plane.platform_users.registry_service import can_manage_as_platform_user
 from app.modules.platform_event_journal.audit_constants import (
     PlatformAuditStatus,
     PlatformEventCategory,
@@ -34,9 +35,11 @@ from app.modules.users.bootstrap_owner_service import (
 from app.modules.users.models import Role, User
 from app.modules.users.schemas import ChangePasswordRequest, UserResponse, UserUpdate
 
+from app.modules.portals.public_tenant_url import resolve_portal_public_base_url
+
 router = APIRouter(tags=["Users"])
 
-PORTAL_LOGIN_URL = os.getenv("PORTAL_LOGIN_URL", "http://localhost:5173/login")
+PORTAL_LOGIN_URL = resolve_portal_public_base_url() + "/login"
 
 SMTP_HOST = os.getenv("SMTP_HOST")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
@@ -50,8 +53,16 @@ def generate_temp_password(length: int = 10) -> str:
     return "".join(secrets.choice(chars) for _ in range(length))
 
 
-def build_invite_email_message(to_email: str, login: str, password: str) -> MIMEText:
+def build_invite_email_message(
+    to_email: str,
+    login: str,
+    password: str,
+    *,
+    portal_url: str | None = None,
+) -> MIMEText:
     subject = "Приглашение в систему ЯсноПро"
+
+    entry_url = portal_url or PORTAL_LOGIN_URL
 
     body = f"""Здравствуйте!
 
@@ -62,7 +73,7 @@ def build_invite_email_message(to_email: str, login: str, password: str) -> MIME
 Для входа используйте следующие данные:
 
 Ссылка для входа:
-{PORTAL_LOGIN_URL}
+{entry_url}
 
 Логин:
 {login}
@@ -85,14 +96,25 @@ def build_invite_email_message(to_email: str, login: str, password: str) -> MIME
     return message
 
 
-def send_invite_email(to_email: str, login: str, password: str):
+def send_invite_email(
+    to_email: str,
+    login: str,
+    password: str,
+    *,
+    portal_url: str | None = None,
+):
     if not SMTP_HOST or not SMTP_USER or not SMTP_PASSWORD or not SMTP_FROM:
         raise HTTPException(
             status_code=500,
             detail="SMTP не настроен. Проверьте SMTP_HOST, SMTP_USER, SMTP_PASSWORD, SMTP_FROM.",
         )
 
-    message = build_invite_email_message(to_email, login, password)
+    message = build_invite_email_message(
+        to_email,
+        login,
+        password,
+        portal_url=portal_url,
+    )
 
     try:
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as server:
@@ -149,6 +171,7 @@ def serialize_user(user: User, db: Session | None = None) -> dict:
                 "tenant_id": membership.tenant_id,
                 "role_key": membership.role_key,
                 "is_active": bool(membership.is_active),
+                "membership_status": membership.membership_status,
             }
             for membership in list_active_tenant_memberships(db, user.id)
         ]
@@ -426,7 +449,7 @@ def admin_update_user(
 
     user = db.query(User).filter(User.id == user_id).first()
 
-    if not user or not is_visible_platform_user(user):
+    if not user or not can_manage_as_platform_user(db, user):
         raise HTTPException(status_code=404, detail="Пользователь не найден")
 
     allowed_fields = {
@@ -521,7 +544,7 @@ def admin_delete_user(
             detail="Пользователь не найден",
         )
 
-    if not is_visible_platform_user(user):
+    if not can_manage_as_platform_user(db, user):
         raise HTTPException(
             status_code=404,
             detail="Пользователь не найден",

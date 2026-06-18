@@ -1,0 +1,77 @@
+﻿problem,tenant_id,entity,reason,severity,recommendation
+legacy_duplicate,1,page_id=1 nav_id=1,multiple bindings for runtime.office_home,high,reconcile to single canonical nav/page
+legacy_duplicate,1,page_id=561 nav_id=329,multiple bindings for runtime.office_home,high,reconcile to single canonical nav/page
+legacy_duplicate,1,page_id=574 nav_id=340,multiple bindings for runtime.office_home,high,reconcile to single canonical nav/page
+legacy_duplicate,1,page_id=597 nav_id=354,multiple bindings for runtime.office_home,high,reconcile to single canonical nav/page
+legacy_duplicate,1,page_id=622 nav_id=370,multiple bindings for runtime.office_home,high,reconcile to single canonical nav/page
+legacy_duplicate,1,page_id=739 nav_id=413,multiple bindings for runtime.office_home,high,reconcile to single canonical nav/page
+legacy_duplicate,1,page_id=786 nav_id=449,multiple bindings for runtime.office_home,high,reconcile to single canonical nav/page
+legacy_duplicate,1,page_id=35 nav_id=43,multiple bindings for runtime.chat,high,reconcile to single canonical nav/page
+legacy_duplicate,1,page_id=608 nav_id=357,multiple bindings for runtime.chat,high,reconcile to single canonical nav/page
+missing_system_key,1,nav_id=43 page_id=35,derived runtime.chat from title only,medium,backfill system_key + is_system
+missing_system_key,1,nav_id=329 page_id=561,derived runtime.office_home from title only,medium,backfill system_key + is_system
+missing_system_key,1,nav_id=340 page_id=574,derived runtime.office_home from title only,medium,backfill system_key + is_system
+missing_system_key,1,nav_id=354 page_id=597,derived runtime.office_home from title only,medium,backfill system_key + is_system
+missing_system_key,1,nav_id=370 page_id=622,derived runtime.office_home from title only,medium,backfill system_key + is_system
+missing_system_key,1,nav_id=413 page_id=739,derived runtime.office_home from title only,medium,backfill system_key + is_system
+missing_system_key,1,nav_id=449 page_id=786,derived runtime.office_home from title only,medium,backfill system_key + is_system
+orphan_page,1,page_id=8 title='ваи',no navigation/workspace binding,low,review for purge or publish
+orphan_page,1,page_id=34 title='Оргструктура компании',no navigation/workspace binding,low,review for purge or publish
+orphan_page,1,page_id=38 title='Отчеты',no navigation/workspace binding,low,review for purge or publish
+orphan_page,1,page_id=39 title='Календарь',no navigation/workspace binding,low,review for purge or publish
+orphan_page,1,page_id=45 title='Запевалов',no navigation/workspace binding,low,review for purge or publish
+orphan_page,1,page_id=49 title='Тестовая',no navigation/workspace binding,low,review for purge or publish
+orphan_page,1,page_id=50 title='первая',no navigation/workspace binding,low,review for purge or publish
+orphan_page,1,page_id=51 title='Страница',no navigation/workspace binding,medium,review for purge or publish
+orphan_page,1,page_id=52 title='Вторая',no navigation/workspace binding,medium,review for purge or publish
+orphan_page,1,page_id=54 title='Разработка продукта',no navigation/workspace binding,low,review for purge or publish
+orphan_page,1,page_id=56 title='Карта платформы',no navigation/workspace binding,low,review for purge or publish
+orphan_page,1,page_id=59 title='Продажи',no navigation/workspace binding,low,review for purge or publish
+orphan_page,1,page_id=60 title='Отдел кадров',no navigation/workspace binding,low,review for purge or publish
+orphan_page,1,page_id=346 title='Разработкаа',no navigation/workspace binding,medium,review for purge or publish
+orphan_page,1,page_id=713 title='Тестовая библиотека',no navigation/workspace binding,medium,review for purge or publish
+orphan_page,21,page_id=649 title='Оргструктура компании',no navigation/workspace binding,low,review for purge or publish
+orphan_page,21,page_id=653 title='Календарь',no navigation/workspace binding,low,review for purge or publish
+orphan_page,21,page_id=659 title='Запевалов',no navigation/workspace binding,low,review for purge or publish
+orphan_page,21,page_id=663 title='Тестовая',no navigation/workspace binding,low,review for purge or publish
+orphan_page,21,page_id=664 title='первая',no navigation/workspace binding,low,review for purge or publish
+orphan_page,21,page_id=665 title='Вторая',no navigation/workspace binding,medium,review for purge or publish
+orphan_page,21,page_id=666 title='Разработка продукта',no navigation/workspace binding,low,review for purge or publish
+orphan_page,21,page_id=667 title='Разработка',no navigation/workspace binding,medium,review for purge or publish
+orphan_page,21,page_id=668 title='Тех. поддержка',no navigation/workspace binding,medium,review for purge or publish
+orphan_page,901,page_id=718 title='Page 901 d7193620',no navigation/workspace binding,medium,review for purge or publish
+orphan_page,903,page_id=719 title='Page 903 87e8de77',no navigation/workspace binding,medium,review for purge or publish
+orphan_page,905,page_id=720 title='Page 905 16860069',no navigation/workspace binding,medium,review for purge or publish
+orphan_page,907,page_id=721 title='Page 907 76605f52',no navigation/workspace binding,medium,review for purge or publish
+orphan_page,909,page_id=722 title='Page 909 4826f7c6',no navigation/workspace binding,medium,review for purge or publish
+orphan_page,911,page_id=723 title='Page 911 63ea1fdc',no navigation/workspace binding,medium,review for purge or publish
+orphan_page,913,page_id=725 title='Page 913 2faa8c7e',no navigation/workspace binding,medium,review for purge or publish
+orphan_page,915,page_id=724 title='Page 915 eed51511',no navigation/workspace binding,medium,review for purge or publish
+orphan_page,9529,page_id=765 title='Page cda2e6d9',no navigation/workspace binding,medium,review for purge or publish
+orphan_page,9529,page_id=767 title='Page d64869a3',no navigation/workspace binding,medium,review for purge or publish
+nav_without_page,1,nav_id=66 type=system_page,navigation item without page_id,needs_review,validate nav type
+nav_without_page,1,nav_id=67 type=system_page,navigation item without page_id,needs_review,validate nav type
+nav_without_page,1,nav_id=41 type=workspace,navigation item without page_id,needs_review,validate nav type
+nav_without_page,1,nav_id=63 type=system_page,navigation item without page_id,needs_review,validate nav type
+nav_without_page,1,nav_id=64 type=system_page,navigation item without page_id,needs_review,validate nav type
+nav_without_page,1,nav_id=65 type=system_page,navigation item without page_id,needs_review,validate nav type
+nav_without_page,1,nav_id=78 type=workspace,navigation item without page_id,needs_review,validate nav type
+nav_without_page,21,nav_id=372 type=system_page,navigation item without page_id,needs_review,validate nav type
+nav_without_page,21,nav_id=373 type=workspace,navigation item without page_id,needs_review,validate nav type
+nav_without_page,21,nav_id=374 type=workspace,navigation item without page_id,needs_review,validate nav type
+nav_without_page,21,nav_id=376 type=system_page,navigation item without page_id,needs_review,validate nav type
+nav_without_page,21,nav_id=378 type=system_page,navigation item without page_id,needs_review,validate nav type
+nav_without_page,21,nav_id=382 type=system_page,navigation item without page_id,needs_review,validate nav type
+nav_without_page,21,nav_id=383 type=system_page,navigation item without page_id,needs_review,validate nav type
+nav_without_page,1,nav_id=280 type=external_link,navigation item without page_id,needs_review,validate nav type
+nav_without_page,1,nav_id=279 type=workspace,navigation item without page_id,needs_review,validate nav type
+nav_without_page,2,nav_id=222 type=workspace,navigation item without page_id,needs_review,validate nav type
+nav_without_page,1,nav_id=269 type=workspace,navigation item without page_id,needs_review,validate nav type
+nav_without_page,2,nav_id=220 type=system_page,navigation item without page_id,needs_review,validate nav type
+nav_without_page,2,nav_id=221 type=workspace,navigation item without page_id,needs_review,validate nav type
+nav_without_page,2,nav_id=224 type=system_page,navigation item without page_id,needs_review,validate nav type
+nav_without_page,2,nav_id=228 type=system_page,navigation item without page_id,needs_review,validate nav type
+nav_without_page,2,nav_id=231 type=system_page,navigation item without page_id,needs_review,validate nav type
+nav_without_page,2,nav_id=234 type=system_page,navigation item without page_id,needs_review,validate nav type
+nav_without_page,1,nav_id=267 type=workspace,navigation item without page_id,needs_review,validate nav type
+nav_without_page,1,nav_id=270 type=workspace,navigation item without page_id,needs_review,validate nav type

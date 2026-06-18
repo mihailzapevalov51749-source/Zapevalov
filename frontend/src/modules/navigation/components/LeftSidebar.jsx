@@ -19,6 +19,7 @@ import { findNavigationItemById } from "../../../portal/utils/portalPageUtils";
 import useBlockedMenuDragAndDrop from "../hooks/useBlockedMenuDragAndDrop";
 import useMenuEditor from "../hooks/useMenuEditor";
 import { filterRemovedOfficeMenuItems } from "../../../shared/navigation/removedSystemMenuItems";
+import { buildNavigationMenuSavePayload } from "../../../shared/navigation/navigationMenuIconPolicy.js";
 import {
   applySystemMenuSettingsToTree,
   isSystemMenuItem,
@@ -27,6 +28,10 @@ import {
   persistNavigationMenuBlockMove,
   readNavigationMenuBlockSettings,
 } from "../../../shared/navigation/navigationMenuSettings.js";
+import {
+  formatLeftMenuScalePercent,
+  resolveAppliedLeftMenuScale,
+} from "../../../shared/uiStorage/leftMenuScaleStorage.js";
 import {
   readSystemMenuSettings,
   writeSystemMenuSettings,
@@ -141,16 +146,7 @@ export default function LeftSidebar({
     const isSystemItem = isSystemMenuItem(itemId, data, navigationItem);
 
     if (isSystemItem) {
-      const safeData = {
-        title: data.title,
-        icon: data.icon ?? null,
-        icon_type: data.icon_type ?? null,
-        icon_file_url: data.icon_file_url ?? null,
-        color: data.color,
-        is_bold: data.is_bold,
-        is_italic: data.is_italic,
-        is_visible: data.is_visible,
-      };
+      const safeData = buildNavigationMenuSavePayload(data);
 
       const nextSettings = {
         ...systemMenuSettings,
@@ -256,7 +252,7 @@ export default function LeftSidebar({
                 textAlign: "center",
               }}
             >
-              {Math.round(menuScale * 100)}%
+              {formatLeftMenuScalePercent(menuScale)}
             </span>
 
             <button
@@ -385,6 +381,7 @@ export default function LeftSidebar({
 
 function SidebarBrand({ menuScale, collapsed = false }) {
   const sidebarVisual = LAYOUT_TOKENS.sidebar;
+  const appliedMenuScale = resolveAppliedLeftMenuScale(menuScale);
   const logoSize = collapsed
     ? sidebarVisual.brandLogoCollapsedSize
     : sidebarVisual.brandLogoSize;
@@ -426,7 +423,7 @@ function SidebarBrand({ menuScale, collapsed = false }) {
           <div
             style={{
               color: "#0F172A",
-              fontSize: sidebarVisual.brandTitleFontSize * menuScale,
+              fontSize: sidebarVisual.brandTitleFontSize * appliedMenuScale,
               fontWeight: 800,
               letterSpacing: 0.2,
               whiteSpace: "nowrap",
@@ -440,7 +437,7 @@ function SidebarBrand({ menuScale, collapsed = false }) {
           <div
             style={{
               color: "#64748B",
-              fontSize: sidebarVisual.brandSubtitleFontSize * menuScale,
+              fontSize: sidebarVisual.brandSubtitleFontSize * appliedMenuScale,
               marginTop: 3,
               whiteSpace: "nowrap",
               overflow: "hidden",

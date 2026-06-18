@@ -1,0 +1,214 @@
+.platform-architecture {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px 20px;
+  min-height: 100%;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.platform-architecture__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.platform-architecture__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.platform-architecture__subtitle {
+  margin: 4px 0 0;
+  color: var(--color-text-secondary, #667085);
+  font-size: 12px;
+}
+
+.platform-architecture__scan-btn {
+  flex-shrink: 0;
+}
+
+.platform-architecture__status {
+  margin: 0;
+  color: var(--color-text-secondary, #667085);
+  font-size: 12px;
+}
+
+.platform-architecture__status--error {
+  color: var(--color-danger, #d92d20);
+}
+
+.platform-architecture__layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.4fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.platform-architecture__tree {
+  border: 1px solid var(--color-border, #e4e7ec);
+  border-radius: 8px;
+  background: var(--color-surface, #fff);
+  overflow: hidden;
+}
+
+.platform-architecture__category {
+  border-bottom: 1px solid var(--color-border, #e4e7ec);
+}
+
+.platform-architecture__category:last-child {
+  border-bottom: none;
+}
+
+.platform-architecture__category-title {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary, #667085);
+  background: var(--color-surface-muted, #f9fafb);
+}
+
+.platform-architecture__nodes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.platform-architecture__node-btn {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-bottom: 1px solid var(--color-border-subtle, #f2f4f7);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.platform-architecture__node-btn:hover {
+  background: var(--color-surface-muted, #f9fafb);
+}
+
+.platform-architecture__node-btn--active {
+  background: var(--color-primary-subtle, #eff8ff);
+}
+
+.platform-architecture__node-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary, #101828);
+}
+
+.platform-architecture__node-tech {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--color-text-secondary, #667085);
+}
+
+.platform-architecture__detail {
+  border: 1px solid var(--color-border, #e4e7ec);
+  border-radius: 8px;
+  background: var(--color-surface, #fff);
+  padding: 14px 16px;
+}
+
+.platform-architecture__detail-title {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.platform-architecture__detail-tech {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--color-text-secondary, #667085);
+}
+
+.platform-architecture__section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border-subtle, #f2f4f7);
+}
+
+.platform-architecture__section-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-text-secondary, #667085);
+}
+
+.platform-architecture__fields {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.platform-architecture__field dt {
+  margin: 0;
+  font-size: 11px;
+  color: var(--color-text-secondary, #667085);
+}
+
+.platform-architecture__field dd {
+  margin: 2px 0 0;
+  font-size: 13px;
+}
+
+.platform-architecture__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.platform-architecture__chip {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--color-surface-muted, #f9fafb);
+  border: 1px solid var(--color-border, #e4e7ec);
+  font-size: 12px;
+}
+
+.platform-architecture__findings {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.platform-architecture__finding {
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--color-surface-muted, #f9fafb);
+  border: 1px solid var(--color-border-subtle, #f2f4f7);
+}
+
+.platform-architecture__finding-label {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-secondary, #667085);
+}
+
+.platform-architecture__finding-value {
+  display: block;
+  margin-top: 2px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+@media (max-width: 960px) {
+  .platform-architecture__layout {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,40 +1,24 @@
-from app.modules.users.company_invite_email import resolve_company_portal_url
+from app.modules.users.company_invite_email import resolve_company_portal_url_for_tenant_id
 
 
-def test_resolve_company_portal_url_appends_tenant_id_query(monkeypatch):
-    monkeypatch.setenv("PORTAL_LOGIN_URL", "http://localhost:5173/login")
+def test_resolve_company_portal_url_for_tenant_id_uses_public_slug(db, monkeypatch):
+    monkeypatch.setenv("PORTAL_PUBLIC_BASE_URL", "http://localhost:5173")
+
+    from app.modules.portals.models import Portal
+    from app.modules.tenant_environment.constants import TenantStatus, TenantType
+
+    portal = Portal(
+        name="Tenant URL Test",
+        code="tenant_url_test_co",
+        public_slug="tenant-url-test",
+        tenant_type=TenantType.CLIENT.value,
+        tenant_status=TenantStatus.ACTIVE.value,
+        is_active=True,
+    )
+    db.add(portal)
+    db.flush()
 
     assert (
-        resolve_company_portal_url(tenant_id=15)
-        == "http://localhost:5173/login?tenantId=15"
-    )
-
-
-def test_resolve_company_portal_url_preserves_existing_query(monkeypatch):
-    monkeypatch.setenv("PORTAL_LOGIN_URL", "http://localhost:5173/login?source=email")
-
-    assert (
-        resolve_company_portal_url(tenant_id=15)
-        == "http://localhost:5173/login?source=email&tenantId=15"
-    )
-
-
-def test_resolve_company_portal_url_replaces_placeholder(monkeypatch):
-    monkeypatch.setenv(
-        "PORTAL_LOGIN_URL",
-        "http://localhost:5173/portal/{tenant_id}/page/1",
-    )
-
-    assert (
-        resolve_company_portal_url(tenant_id=15)
-        == "http://localhost:5173/portal/15/page/1?tenantId=15"
-    )
-
-
-def test_resolve_company_portal_url_overwrites_stale_tenant_id(monkeypatch):
-    monkeypatch.setenv("PORTAL_LOGIN_URL", "http://localhost:5173/login?tenantId=1")
-
-    assert (
-        resolve_company_portal_url(tenant_id=15)
-        == "http://localhost:5173/login?tenantId=15"
+        resolve_company_portal_url_for_tenant_id(db, tenant_id=portal.id)
+        == "http://localhost:5173/tenant-url-test"
     )

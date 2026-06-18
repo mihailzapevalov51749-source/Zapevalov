@@ -1,4 +1,4 @@
-"""Runtime office navigation items that must not be deleted (Главная, Чат, Уведомления)."""
+"""Runtime office navigation items that must not be deleted (Главная, Чат, Уведомления, Календарь)."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ RUNTIME_PROTECTED_TITLE_TO_SYSTEM_KEY: dict[str, str] = {
     "Главная": "runtime.office_home",
     "Чат": "runtime.chat",
     "Уведомления": "runtime.notifications",
+    "Календарь": "runtime.calendar",
 }
 
 RUNTIME_PROTECTED_SYSTEM_KEYS: frozenset[str] = frozenset(
@@ -130,6 +131,7 @@ def backfill_runtime_protected_navigation(
         grouped[(int(nav.portal_id), system_key)].append(nav)
 
     updated = 0
+    hidden = 0
     for (tenant_id, system_key), candidates in grouped.items():
         winner = _pick_backfill_winner(candidates)
         if _system_key_taken(
@@ -142,7 +144,14 @@ def backfill_runtime_protected_navigation(
         if apply_runtime_protected_nav_flags(winner):
             updated += 1
 
-    if updated:
+        for duplicate in candidates:
+            if int(duplicate.id) == int(winner.id):
+                continue
+            if duplicate.is_visible is True:
+                duplicate.is_visible = False
+                hidden += 1
+
+    if updated or hidden:
         db.flush()
 
     return updated

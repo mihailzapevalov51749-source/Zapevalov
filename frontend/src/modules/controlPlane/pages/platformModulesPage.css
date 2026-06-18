@@ -1,0 +1,333 @@
+.platform-modules-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px 28px;
+  min-height: 0;
+  flex: 1;
+}
+
+.platform-modules-page__intro {
+  margin: 0;
+  color: var(--color-text-secondary, #5f6b7a);
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 920px;
+}
+
+.platform-modules-page__status {
+  margin: 0;
+  color: var(--color-text-secondary, #5f6b7a);
+  font-size: 14px;
+}
+
+.platform-modules-page__error {
+  margin: 0;
+  color: #b42318;
+  font-size: 14px;
+}
+
+.platform-modules-page__table-wrap {
+  overflow: auto;
+  border: 1px solid var(--color-border, #d8dee8);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.platform-modules-page__table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1080px;
+  font-size: 13px;
+}
+
+.platform-modules-page__table th,
+.platform-modules-page__table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border, #e7ebf1);
+  text-align: left;
+  vertical-align: top;
+}
+
+.platform-modules-page__table th {
+  position: sticky;
+  top: 0;
+  background: #f7f9fc;
+  font-weight: 600;
+  color: #334155;
+  z-index: 1;
+}
+
+.platform-modules-page__table tr:last-child td {
+  border-bottom: none;
+}
+
+.platform-modules-page__title-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.platform-modules-page__title {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.platform-modules-page__description {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.platform-modules-page__mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: #334155;
+}
+
+.platform-modules-page__badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: lowercase;
+}
+
+.platform-modules-page__badge--active {
+  background: #e8f8ef;
+  color: #137a45;
+}
+
+.platform-modules-page__badge--planned {
+  background: #eef2ff;
+  color: #3f51b5;
+}
+
+.platform-modules-page__badge--disabled,
+.platform-modules-page__badge--deprecated {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.platform-modules-page__deps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.platform-modules-page__dep-chip {
+  display: inline-flex;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.platform-modules-page__bool {
+  color: #334155;
+}
+
+.platform-modules-page__muted {
+  color: #94a3b8;
+}
+
+.platform-modules-page__manifest-button {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #1d4ed8;
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.platform-modules-page__manifest-button:hover {
+  background: #eff6ff;
+}
+
+.platform-modules-page__row-selected td {
+  background: #f8fbff;
+}
+
+.platform-modules-page__manifest-panel {
+  border: 1px solid #d8dee8;
+  border-radius: 12px;
+  background: #fff;
+  padding: 18px 20px 22px;
+}
+
+.platform-modules-page__manifest-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.platform-modules-page__manifest-title {
+  margin: 0;
+  font-size: 18px;
+  color: #0f172a;
+}
+
+.platform-modules-page__manifest-subtitle {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.platform-modules-page__manifest-close {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.platform-modules-page__manifest-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
+}
+
+.platform-modules-page__manifest-meta {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.platform-modules-page__meta-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.platform-modules-page__manifest-section {
+  min-width: 0;
+}
+
+.platform-modules-page__manifest-section-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #334155;
+}
+
+.platform-modules-page__manifest-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.platform-modules-page__manifest-list-item {
+  margin-bottom: 4px;
+  color: #334155;
+  word-break: break-word;
+}
+
+.platform-modules-page__dependency-lead {
+  margin: 0 0 8px;
+  color: #334155;
+  font-size: 13px;
+}
+
+.platform-modules-page__dependency-list {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.platform-modules-page__dependency-list-item {
+  margin-bottom: 4px;
+  color: #334155;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.platform-modules-page__json-block {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12px;
+  overflow: auto;
+}
+
+.platform-modules-page__release-notes {
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.platform-modules-page__versions-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr);
+  gap: 16px;
+}
+
+.platform-modules-page__versions-table {
+  min-width: 720px;
+}
+
+.platform-modules-page__version-link {
+  border: none;
+  background: transparent;
+  color: #1d4ed8;
+  cursor: pointer;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.platform-modules-page__version-detail {
+  border: 1px solid var(--color-border, #d8dee8);
+  border-radius: 10px;
+  background: #fff;
+  padding: 14px 16px;
+}
+
+@media (max-width: 960px) {
+  .platform-modules-page__manifest-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.platform-modules-page__schema-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.platform-modules-page__schema-table th,
+.platform-modules-page__schema-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e7ebf1;
+  text-align: left;
+  vertical-align: top;
+}
+
+.platform-modules-page__schema-table th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #475569;
+}
+
+.platform-modules-page__schema-template-desc {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+}

@@ -46,6 +46,8 @@ from app.modules.platform_event_journal.constants import (
 
 )
 
+from app.modules.platform_event_journal.journal_user_format import sanitize_journal_description_for_display
+
 from app.modules.platform_event_journal.models import PlatformEventJournalEntry
 
 from app.modules.platform_event_journal.schemas import (
@@ -104,7 +106,18 @@ __all__ = [
 
 def _serialize_entry(entry: PlatformEventJournalEntry) -> PlatformEventJournalEntryRead:
 
-    return PlatformEventJournalEntryRead.model_validate(entry)
+    serialized = PlatformEventJournalEntryRead.model_validate(entry)
+
+    if serialized.journal_kind == PlatformEventJournalKind.DEV_DEVELOPMENT.value:
+        serialized.description = sanitize_journal_description_for_display(
+            description=serialized.description,
+            title=serialized.title,
+            metadata=serialized.metadata_json,
+            event_type=serialized.event_type,
+            slug=serialized.slug,
+        )
+
+    return serialized
 
 
 

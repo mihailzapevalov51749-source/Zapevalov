@@ -1,7 +1,7 @@
 import { platformApiClient } from "../designer/api/platformApiClient.js";
 import { setToken } from "../../api/authApi.js";
 
-const API_BASE_URL = "http://127.0.0.1:8010";
+import { API_BASE_URL } from "../../config/apiConfig.js";
 
 export async function getPlatformSetupState() {
   const response = await fetch(`${API_BASE_URL}/auth/platform-setup-state`, {

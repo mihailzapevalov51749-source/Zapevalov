@@ -4,6 +4,10 @@ import { useLocation } from "react-router-dom";
 import { subscribeNotificationNavigate } from "../navigation/notificationNavigationBus";
 import { orchestrateNotificationNavigation } from "../navigation/notificationNavigationOrchestrator";
 import {
+  resolveRuntimeCalendarPageId,
+  resolveRuntimeChatPageId,
+} from "../../../portal/resolveRuntimeNavigationPageId";
+import {
   handleReturnToPreviousLocation,
   pushNavigationState,
 } from "../navigation/notificationNavigationState";
@@ -11,6 +15,7 @@ import {
 export default function useNotificationNavigationOrchestrator({
   activePageId = null,
   onSelectPage = null,
+  navigation = null,
   user = null,
   enabled = true,
 }) {
@@ -27,6 +32,8 @@ export default function useNotificationNavigationOrchestrator({
         activePageId,
         onSelectPage,
         pushNavigationState,
+        chatPageId: resolveRuntimeChatPageId(navigation) ?? undefined,
+        calendarPageId: resolveRuntimeCalendarPageId(navigation),
         user,
         pathname: window.location.pathname,
       });
@@ -50,5 +57,5 @@ export default function useNotificationNavigationOrchestrator({
         onReturnToPreviousLocation,
       );
     };
-  }, [activePageId, enabled, location.pathname, onSelectPage, user]);
+  }, [activePageId, enabled, location.pathname, navigation, onSelectPage, user]);
 }

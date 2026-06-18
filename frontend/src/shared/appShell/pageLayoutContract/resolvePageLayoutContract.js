@@ -68,9 +68,11 @@ function mapDescriptorPageType(descriptor, location) {
 
 
   if (pathname.includes("/event-journal")) {
-
     return PAGE_LAYOUT_PAGE_TYPE.STUDIO_SECTION;
+  }
 
+  if (pathname.includes("/platform-architecture")) {
+    return PAGE_LAYOUT_PAGE_TYPE.STUDIO_SECTION;
   }
 
 
@@ -233,6 +235,14 @@ function mapDescriptorPageType(descriptor, location) {
 
 
 
+  if (descriptorPageType === "calendar") {
+
+    return PAGE_LAYOUT_PAGE_TYPE.CALENDAR;
+
+  }
+
+
+
   if (pathname.startsWith("/designer")) {
 
     return PAGE_LAYOUT_PAGE_TYPE.STUDIO_LIST;
@@ -268,6 +278,14 @@ function mapDescriptorModuleKey(descriptor, pageType) {
   if (pageType === PAGE_LAYOUT_PAGE_TYPE.CHAT_ROOM) {
 
     return PAGE_LAYOUT_MODULE_KEY.CHAT;
+
+  }
+
+
+
+  if (pageType === PAGE_LAYOUT_PAGE_TYPE.CALENDAR) {
+
+    return PAGE_LAYOUT_MODULE_KEY.CALENDAR;
 
   }
 

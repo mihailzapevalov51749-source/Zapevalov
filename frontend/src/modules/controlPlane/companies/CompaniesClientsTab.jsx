@@ -2,8 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import AdminTenantDeleteModal from "../../admin/tenants/AdminTenantDeleteModal";
-import { deletePortal, getPortal } from "../../admin/tenants/portalsApi";
-import { listTenantRegistry } from "../api/tenantRegistryApi";
+import { deletePortal } from "../../admin/tenants/portalsApi";
+import {
+  getCustomerCompanyCatalogItem,
+  listCustomerCompanyCatalog,
+} from "../api/customerCompaniesApi";
 import { buildControlPlaneCompaniesPath } from "../config/controlPlanePaths";
 import ChangeCompanyAdministratorModal from "./ChangeCompanyAdministratorModal";
 import CloneCompanyModal from "./CloneCompanyModal";
@@ -11,12 +14,9 @@ import CompaniesClientsToolbar from "./CompaniesClientsToolbar";
 import CompaniesList from "./CompaniesList";
 import CompanyDetailCard from "./CompanyDetailCard";
 import CreateCompanyModal from "./CreateCompanyModal";
-import { openCompanyInOffice } from "../../../portal/utils/openCompanyInOffice";
+import { openCompanyFromCatalog } from "../../../portal/utils/openCompanyFromCatalog";
+import { filterCompaniesBySearch } from "./companiesSearch.js";
 import { companiesWorkspaceStyles as styles } from "./companiesWorkspaceStyles.js";
-
-function normalizeSearchText(value) {
-  return String(value || "").trim().toLowerCase();
-}
 
 export default function CompaniesClientsTab() {
   const navigate = useNavigate();
@@ -43,7 +43,7 @@ export default function CompaniesClientsTab() {
     try {
       setIsListLoading(true);
       setListError("");
-      const data = await listTenantRegistry();
+      const data = await listCustomerCompanyCatalog();
       const items = Array.isArray(data) ? data : [];
       setCompanies(
         [...items].sort((left, right) => Number(left.id) - Number(right.id)),
@@ -70,7 +70,7 @@ export default function CompaniesClientsTab() {
     try {
       setIsDetailLoading(true);
       setDetailError("");
-      const data = await getPortal(companyId);
+      const data = await getCustomerCompanyCatalogItem(companyId);
       setSelectedCompany(data);
     } catch (requestError) {
       const detail =
@@ -92,27 +92,10 @@ export default function CompaniesClientsTab() {
     loadSelectedCompany(selectedCompanyId);
   }, [loadSelectedCompany, selectedCompanyId]);
 
-  const filteredCompanies = useMemo(() => {
-    const query = normalizeSearchText(searchQuery);
-    if (!query) {
-      return companies;
-    }
-
-    return companies.filter((company) => {
-      const haystack = [
-        company.id,
-        company.name,
-        company.description,
-        company.tenant_type,
-        company.tenant_status,
-        company.template_version,
-      ]
-        .map(normalizeSearchText)
-        .join(" ");
-
-      return haystack.includes(query);
-    });
-  }, [companies, searchQuery]);
+  const filteredCompanies = useMemo(
+    () => filterCompaniesBySearch(companies, searchQuery),
+    [companies, searchQuery],
+  );
 
   const handleSelectCompany = (company) => {
     if (!company?.id) {
@@ -193,13 +176,13 @@ export default function CompaniesClientsTab() {
   };
 
   const openOffice = async () => {
-    if (!selectedCompanyId || isOpeningOffice) {
+    if (!selectedCompany || isOpeningOffice) {
       return;
     }
 
     setIsOpeningOffice(true);
     try {
-      await openCompanyInOffice(selectedCompanyId);
+      await openCompanyFromCatalog(selectedCompany);
     } finally {
       setIsOpeningOffice(false);
     }

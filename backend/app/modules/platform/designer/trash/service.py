@@ -48,6 +48,7 @@ from app.modules.platform.designer.view_definitions.models import DesignerViewDe
 from app.modules.platform.designer.workspaces.models import DesignerWorkspace, DesignerWorkspaceTab
 from app.modules.sections.models import Section
 from app.modules.users.models import User
+from app.modules.publication_guard.structure_write_service_guard import guard_direct_structure_write
 
 KIND_LABELS: dict[TrashEntityKind, str] = {
     "workspace": "Рабочее пространство",
@@ -427,6 +428,7 @@ def _http_exception_error_message(exc: HTTPException) -> str:
 
 
 def restore_trash_item(db: Session, *, tenant_id: int, kind: TrashEntityKind, entity_id: str) -> None:
+    guard_direct_structure_write(db, tenant_id, "restore_trash_item")
     entity = _load_entity(db, tenant_id=tenant_id, kind=kind, entity_id=entity_id, require_deleted=True)
     if entity is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Элемент корзины не найден")
@@ -436,6 +438,7 @@ def restore_trash_item(db: Session, *, tenant_id: int, kind: TrashEntityKind, en
 
 
 def purge_trash_item(db: Session, *, tenant_id: int, kind: TrashEntityKind, entity_id: str) -> None:
+    guard_direct_structure_write(db, tenant_id, "purge_trash_item")
     entity = _load_entity(db, tenant_id=tenant_id, kind=kind, entity_id=entity_id, require_deleted=True)
     if entity is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Элемент корзины не найден")
@@ -472,6 +475,7 @@ def purge_trash_item(db: Session, *, tenant_id: int, kind: TrashEntityKind, enti
 
 
 def restore_trash_bulk(db: Session, *, tenant_id: int, items: list[TrashItemRef]) -> TrashBulkResponse:
+    guard_direct_structure_write(db, tenant_id, "restore_trash_bulk")
     results: list[TrashBulkResultItem] = []
     for item in items:
         try:
@@ -490,6 +494,7 @@ def restore_trash_bulk(db: Session, *, tenant_id: int, items: list[TrashItemRef]
 
 
 def purge_trash_bulk(db: Session, *, tenant_id: int, items: list[TrashItemRef]) -> TrashBulkPurgeResponse:
+    guard_direct_structure_write(db, tenant_id, "purge_trash_bulk")
     return execute_planned_bulk_purge(db, tenant_id=tenant_id, items=items)
 
 
@@ -579,6 +584,7 @@ def clear_purge_dependencies(
     entity_id: str,
     deleted_by: int | None = None,
 ) -> TrashDependencyActionResponse:
+    guard_direct_structure_write(db, tenant_id, "clear_purge_dependencies")
     entity = _load_entity(db, tenant_id=tenant_id, kind=kind, entity_id=entity_id, require_deleted=True)
     if entity is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Элемент корзины не найден")
@@ -611,6 +617,7 @@ def cascade_purge_with_dependencies(
     confirm: bool,
     deleted_by: int | None = None,
 ) -> TrashDependencyActionResponse:
+    guard_direct_structure_write(db, tenant_id, "cascade_purge_with_dependencies")
     entity = _load_entity(db, tenant_id=tenant_id, kind=kind, entity_id=entity_id, require_deleted=True)
     if entity is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Элемент корзины не найден")

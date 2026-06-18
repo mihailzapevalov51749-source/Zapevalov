@@ -1,0 +1,71 @@
+﻿python : Traceback (most recent call last):
+C:\Users\MSI\AppData\Local\Temp\ps-script-73e3ecdc-8b88-447e-a13c-6eb868f93158.ps1:77 знак:1
++ python scripts/audit_template_runtime_classification_18931.py 2>&1 |  ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, i
+n _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 952,
+ in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column rev.field_definition_id does not exist
+LINE 5: ...  JOIN designer_field_definitions dfd ON dfd.id = rev.field_...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\scripts\audit_template
+_runtime_classification_18931.py", line 53, in <module>
+    vals = qall(
+           ^^^^^
+  File "E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\scripts\audit_template
+_runtime_classification_18931.py", line 22, in qall
+    return [dict(r) for r in c.execute(text(sql), params).mappings().all()]
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, i
+n execute
+    return meth(
+           ^^^^^
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\sql\elements.py", line 527, i
+n _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, i
+n _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, i
+n _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, i
+n _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 2363, i
+n _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, i
+n _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 952,
+ in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column rev.field_definition_id does not exist
+LINE 5: ...  JOIN designer_field_definitions dfd ON dfd.id = rev.field_...
+                                                             ^
+
+[SQL: 
+        SELECT rev.id, rev.field_definition_id, dfd.key AS field_key, dfd.name AS field_name,
+               rev.value_text, rev.value_number, rev.value_bool, rev.value_json, rev.value_uuid
+        FROM runtime_entity_values rev
+        JOIN designer_field_definitions dfd ON dfd.id = rev.field_definition_id
+        WHERE rev.entity_id = %(eid)s
+        ORDER BY dfd.sort_order, dfd.key
+        ]
+[parameters: {'eid': UUID('43d1b758-db11-4d4b-abf6-88374b3ee4d6')}]
+(Background on this error at: https://sqlalche.me/e/20/f405)

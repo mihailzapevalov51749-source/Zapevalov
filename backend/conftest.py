@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import importlib
+import os
 import sys
+
+# Existing integration tests import app.main against legacy .env; guard is opt-in at runtime.
+os.environ.setdefault("YASNOPRO_SKIP_ENVIRONMENT_GUARD", "1")
 
 
 def _restore_stdlib_platform() -> None:
@@ -15,7 +19,6 @@ def _restore_stdlib_platform() -> None:
         if key == "platform" or key.startswith("platform."):
             del sys.modules[key]
 
-    importlib.import_module("platform")
-
-
 _restore_stdlib_platform()
+
+pytest_plugins = ["tests.tenant_test_discipline", "tests.user_test_discipline"]

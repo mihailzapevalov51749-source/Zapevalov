@@ -34,6 +34,21 @@ class CustomerCompany(Base):
         index=True,
     )
 
+    portal_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    database_name: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
+    code: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    tenant_type: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
+    environment_role: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    tenant_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    original_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    short_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    public_slug: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    template_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    platform_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    home_page_id: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
+    frontend_base_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    api_base_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
     users_limit: Mapped[int] = mapped_column(
         Integer,
         nullable=False,

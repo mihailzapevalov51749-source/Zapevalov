@@ -17,7 +17,7 @@ import {
   userButtonStyle,
 } from "../../comments/styles/commentPopoverStyles";
 
-const API_BASE_URL = "http://127.0.0.1:8010";
+import { API_BASE_URL } from "../../../config/apiConfig.js";
 
 const DEFAULT_AVATAR_SETTINGS = {
   x: 0,
@@ -145,6 +145,8 @@ export default function ChatComposer({
   disabled = false,
   autoFocus = false,
   submitErrorLabel = "Ошибка отправки сообщения",
+  attachmentsEnabled = true,
+  mentionsEnabled = true,
   onSubmit,
 }) {
   const textareaRef = useRef(null);
@@ -216,7 +218,7 @@ export default function ChatComposer({
   const normalizedBody = String(body || "");
   const hasText = normalizedBody.trim().length > 0;
   const hasFiles = Array.isArray(files) && files.length > 0;
-  const canSubmit = (hasText || hasFiles) && !disabled && !isSubmitting;
+  const canSubmit = (hasText || (attachmentsEnabled && hasFiles)) && !disabled && !isSubmitting;
 
   const closePopovers = () => {
     setIsEmojiOpen(false);
@@ -400,26 +402,30 @@ export default function ChatComposer({
       </div>
 
       <div style={styles.toolbarRow}>
-        <button
-          type="button"
-          title="Прикрепить файл"
-          style={styles.toolbarButton}
-          disabled={disabled || isSubmitting}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <img src={paperclipIcon} alt="" style={styles.toolbarIcon} />
-        </button>
+        {attachmentsEnabled ? (
+          <button
+            type="button"
+            title="Прикрепить файл"
+            style={styles.toolbarButton}
+            disabled={disabled || isSubmitting}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <img src={paperclipIcon} alt="" style={styles.toolbarIcon} />
+          </button>
+        ) : null}
 
-        <button
-          ref={mentionButtonRef}
-          type="button"
-          title="Упомянуть пользователя"
-          style={styles.toolbarButton}
-          disabled={disabled || isSubmitting}
-          onClick={handleToggleMention}
-        >
-          @
-        </button>
+        {mentionsEnabled ? (
+          <button
+            ref={mentionButtonRef}
+            type="button"
+            title="Упомянуть пользователя"
+            style={styles.toolbarButton}
+            disabled={disabled || isSubmitting}
+            onClick={handleToggleMention}
+          >
+            @
+          </button>
+        ) : null}
 
         <button
           ref={emojiButtonRef}
@@ -498,22 +504,24 @@ export default function ChatComposer({
           document.body
         )}
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        style={styles.hiddenInput}
-        onChange={(event) => {
-          const selectedFiles = Array.from(event.target.files || []);
+      {attachmentsEnabled ? (
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          style={styles.hiddenInput}
+          onChange={(event) => {
+            const selectedFiles = Array.from(event.target.files || []);
 
-          if (!selectedFiles.length) return;
+            if (!selectedFiles.length) return;
 
-          setFiles((prev) => [...prev, ...selectedFiles]);
+            setFiles((prev) => [...prev, ...selectedFiles]);
 
-          event.target.value = "";
-          focusTextarea();
-        }}
-      />
+            event.target.value = "";
+            focusTextarea();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

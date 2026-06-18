@@ -7,6 +7,7 @@ from app.modules.platform.designer.system_menu_settings.schemas import (
     DesignerSystemMenuSettingRead,
     DesignerSystemMenuSettingUpsert,
 )
+from app.modules.publication_guard.structure_write_service_guard import guard_direct_structure_write
 
 
 def _serialize_row(row: DesignerSystemMenuSetting) -> DesignerSystemMenuSettingRead:
@@ -53,6 +54,7 @@ def upsert_designer_system_menu_setting(
     item_key: str,
     payload: DesignerSystemMenuSettingUpsert,
 ) -> DesignerSystemMenuSettingRead:
+    guard_direct_structure_write(db, tenant_id, "upsert_designer_system_menu_setting")
     normalized_key = str(item_key or "").strip()
     if not normalized_key:
         raise ValueError("item_key is required")
@@ -85,6 +87,7 @@ def bulk_upsert_designer_system_menu_settings(
     tenant_id: int,
     settings: dict[str, DesignerSystemMenuSettingUpsert],
 ) -> dict[str, DesignerSystemMenuSettingRead]:
+    guard_direct_structure_write(db, tenant_id, "bulk_upsert_designer_system_menu_settings")
     result: dict[str, DesignerSystemMenuSettingRead] = {}
     for item_key, payload in settings.items():
         result[item_key] = upsert_designer_system_menu_setting(
@@ -101,7 +104,14 @@ def clone_designer_system_menu_settings(
     *,
     source_tenant_id: int,
     target_tenant_id: int,
+    bypass_write_policy: bool = False,
 ) -> int:
+    guard_direct_structure_write(
+        db,
+        target_tenant_id,
+        "clone_designer_system_menu_settings",
+        bypass_write_policy=bypass_write_policy,
+    )
     rows = (
         db.query(DesignerSystemMenuSetting)
         .filter(DesignerSystemMenuSetting.tenant_id == source_tenant_id)

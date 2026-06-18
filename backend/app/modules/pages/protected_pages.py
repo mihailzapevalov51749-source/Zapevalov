@@ -16,7 +16,7 @@ from app.modules.navigation.runtime_protected_pages import (
 )
 from app.modules.pages.models import Page
 
-ProtectedPageKey = Literal["office_home", "chat", "notifications"]
+ProtectedPageKey = Literal["office_home", "chat", "notifications", "calendar"]
 
 PROTECTED_PAGE_DELETE_MESSAGE = "Системную страницу нельзя удалить."
 PROTECTED_PAGE_HARD_DELETE_MESSAGE = "Системную страницу нельзя удалить окончательно"
@@ -27,6 +27,7 @@ PROTECTED_NAV_SYSTEM_KEYS: dict[str, ProtectedPageKey] = {
     "office.home": "office_home",
     "runtime.chat": "chat",
     "runtime.notifications": "notifications",
+    "runtime.calendar": "calendar",
 }
 
 

@@ -20,6 +20,7 @@ from app.modules.platform.designer.relation_definitions import (
     repository as relation_repository,
 )
 from app.modules.users.models import User
+from app.modules.publication_guard.structure_write_service_guard import guard_direct_structure_write
 
 CREATE_RECORD_ACTION_TYPE = "create_record"
 
@@ -187,6 +188,7 @@ def create_action_definition(
     payload: ActionDefinitionCreate,
     current_user: User | None = None,
 ) -> ActionDefinitionRead:
+    guard_direct_structure_write(db, tenant_id, "create_action_definition")
     _ensure_object_type(db, tenant_id, object_type_id)
     _ensure_action_type_key(payload.action_type_key)
     target_object_type_id = _validate_target_object_type(
@@ -247,6 +249,7 @@ def update_action_definition(
     payload: ActionDefinitionUpdate,
     current_user: User | None = None,
 ) -> ActionDefinitionRead:
+    guard_direct_structure_write(db, tenant_id, "update_action_definition")
     _ensure_object_type(db, tenant_id, object_type_id)
     entity = repository.get_action_definition(db, tenant_id, action_definition_id)
     if not entity or entity.object_type_id != object_type_id:
@@ -351,6 +354,7 @@ def delete_action_definition(
     action_definition_id: UUID,
     current_user: User | None = None,
 ) -> None:
+    guard_direct_structure_write(db, tenant_id, "delete_action_definition")
     _ensure_object_type(db, tenant_id, object_type_id)
     entity = repository.get_action_definition(db, tenant_id, action_definition_id)
     if not entity or entity.object_type_id != object_type_id:

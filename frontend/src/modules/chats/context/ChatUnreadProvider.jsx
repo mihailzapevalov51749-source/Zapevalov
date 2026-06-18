@@ -9,6 +9,8 @@ import {
 } from "react";
 
 import { getChats, updateChatReadState } from "../api/chatsApi";
+import { getToken } from "../../../api/authApi";
+import { getBridgeToken } from "../../../api/sessionBridgeApi";
 import {
   applyChatReadLocally,
   areUnreadMapsEqual,
@@ -79,6 +81,10 @@ export function ChatUnreadProvider({ children, pollIntervalMs = CHAT_UNREAD_POLL
 
   const refreshChats = useCallback(
     async ({ background = false } = {}) => {
+      if (!getToken() && getBridgeToken()) {
+        return;
+      }
+
       if (isRefreshingRef.current) {
         return;
       }

@@ -35,6 +35,9 @@ export const PLATFORM_LANGUAGE_OPTIONS = [
 export const DEFAULT_PLATFORM_SETTINGS = {
   platformName: "ЯсноПро",
   platformShortName: "ЯсноПро",
+  publicSlug: "yasnopro",
+  publicSlugLocked: false,
+  publicUrl: "",
   description:
     "Платформа для управления корпоративными процессами и рабочими пространствами.",
   timezone: "(UTC+03:00) Москва",

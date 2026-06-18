@@ -1,0 +1,26 @@
+{
+  "root_id": "aea2b5f2-4816-4181-868e-28d1283bd462",
+  "created_ids": [
+    "aea2b5f2-4816-4181-868e-28d1283bd462",
+    "0738ed18-f759-4a56-b1d5-019e34894ae1",
+    "e6b9fcb4-a18b-423e-b956-22b86937efe0",
+    "d0c860c6-e85f-46af-af08-1fe53ed24812",
+    "8233e8d2-fe3e-4cf2-bca6-e971b0e62391",
+    "b5ed1315-dad4-4cd0-bc59-f867eaf144a6",
+    "374fcc17-7a26-49f6-a968-be1fb3acce8d",
+    "62aad9d9-b80c-409f-99aa-4b5088737fd0",
+    "3357e643-f0ac-4db3-966c-df12b373cbe7",
+    "44dbe666-407b-47c5-99e5-af6fe222e9c1",
+    "620a2967-4a8c-433a-acba-044d4d57215e",
+    "06f4e962-be08-4147-9c6d-49eb172561ec",
+    "4a0814cf-685b-4005-a149-f615602f3127",
+    "72912c7d-f3e1-4209-8831-9f119a4bd336",
+    "12abfe5f-e1c1-4afe-807a-cd5f9015554e",
+    "0204036d-797e-4925-8388-8fad7554dedc",
+    "0ac92511-c8c2-4a96-932e-5063afbe2056"
+  ],
+  "created_count": 17,
+  "existing_roots_unchanged": true,
+  "existing_root_count_before": 17,
+  "existing_root_count_after": 18
+}

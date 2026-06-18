@@ -15,6 +15,13 @@ export const USERS_ROLES_WORKSPACE_TABS = [
     route: buildControlPlaneUsersRolesPath("roles"),
     enabled: true,
   },
+  {
+    id: "global-users",
+    slug: "global-users",
+    label: "Глобальные пользователи",
+    route: buildControlPlaneUsersRolesPath("global-users"),
+    enabled: true,
+  },
 ];
 
 export function resolveUsersRolesWorkspaceTab(slug = "users") {

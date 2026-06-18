@@ -1,20 +1,20 @@
 import axios from "axios";
 
 import { getToken, logout } from "../../../api/authApi";
+import { getRuntimeAuthToken } from "../../../api/sessionBridgeApi";
 import { recordApiActivity } from "../../../shared/userActivity/userActivityTracker";
 
-const baseURL =
-  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8010";
+import { API_BASE_URL } from "../../../config/apiConfig.js";
 
 export const platformApiClient = axios.create({
-  baseURL,
+  baseURL: API_BASE_URL,
   headers: {
     Accept: "application/json",
   },
 });
 
 platformApiClient.interceptors.request.use((config) => {
-  const token = getToken();
+  const { token } = getRuntimeAuthToken();
 
   if (token) {
     config.headers = config.headers ?? {};
@@ -30,7 +30,10 @@ platformApiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      logout();
+      const { kind } = getRuntimeAuthToken();
+      if (kind === "login" && getToken()) {
+        logout();
+      }
     }
 
     return Promise.reject(error);

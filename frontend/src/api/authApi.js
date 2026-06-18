@@ -1,4 +1,6 @@
-const API_BASE_URL = "http://127.0.0.1:8010";
+import { API_BASE_URL } from "../config/apiConfig.js";
+
+import { clearBridgeSessionStorage } from "./bridgeSessionContext.js";
 
 const TOKEN_KEY = "token";
 const LEGACY_TOKEN_KEY = "access_token";
@@ -22,6 +24,7 @@ export function setToken(token) {
 export function logout() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(LEGACY_TOKEN_KEY);
+  clearBridgeSessionStorage();
 }
 
 function getAuthHeaders() {
@@ -76,7 +79,26 @@ async function parseError(response, fallbackMessage) {
   return extractApiDetail(errorText) || errorText || fallbackMessage;
 }
 
-export async function getTenantLoginBranding(tenantId) {
+export async function getTenantLoginBranding(tenantId, tenantKey = null) {
+  const normalizedTenantKey = String(tenantKey || "").trim();
+  if (normalizedTenantKey) {
+    const response = await fetch(
+      `${API_BASE_URL}/auth/tenant-login-branding?tenantKey=${encodeURIComponent(normalizedTenantKey)}`,
+    );
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    const displayName = String(data?.display_name || "").trim();
+    return displayName || null;
+  }
+
   const normalizedTenantId = Number(tenantId);
   if (!Number.isFinite(normalizedTenantId) || normalizedTenantId <= 0) {
     return null;
@@ -98,6 +120,28 @@ export async function getTenantLoginBranding(tenantId) {
   const displayName = String(data?.display_name || "").trim();
 
   return displayName || null;
+}
+
+export async function getTenantEntryByKey(tenantKey) {
+  const normalizedTenantKey = String(tenantKey || "").trim().toLowerCase();
+  if (!normalizedTenantKey) {
+    throw new Error("tenantKey is required");
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}/auth/tenant-entry/${encodeURIComponent(normalizedTenantKey)}`,
+  );
+
+  if (response.status === 404) {
+    throw new Error("Компания не найдена");
+  }
+
+  if (!response.ok) {
+    const errorMessage = await parseError(response, "Не удалось определить компанию");
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
 }
 
 export async function login(email, password) {

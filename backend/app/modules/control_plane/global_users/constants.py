@@ -1,0 +1,2 @@
+GLOBAL_STATUS_ACTIVE = "active"
+GLOBAL_STATUS_BLOCKED = "blocked"

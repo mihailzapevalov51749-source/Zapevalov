@@ -243,6 +243,28 @@ export function resolveNotificationNavigationOutcome(
     return { action: "open_chat" };
   }
 
+  if (normalizeId(pendingTarget.type) === "calendar_event") {
+    const eventId = normalizeId(
+      pendingTarget.eventId ||
+        pendingTarget.entityId ||
+        pendingTarget.structuredTarget?.id,
+    );
+
+    if (!eventId) {
+      return {
+        action: "blocked",
+        blockedTarget: {
+          type: "notification_unavailable",
+          message:
+            "Не удалось открыть событие календаря: отсутствует идентификатор события.",
+          detail: pendingTarget.detail || null,
+        },
+      };
+    }
+
+    return { action: "open_calendar", calendarTarget: pendingTarget };
+  }
+
   if (isRuntimeEntityNotificationTarget(pendingTarget)) {
     const overlayContext = resolveObjectOverlayContext(pendingTarget);
 

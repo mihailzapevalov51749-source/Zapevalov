@@ -1,5 +1,10 @@
 import { DocumentEditor } from "@onlyoffice/document-editor-react";
 
+import {
+  API_BASE_URL,
+  resolveDockerAccessibleApiUrl,
+} from "../config/apiConfig.js";
+
 export default function OnlyOfficeTest() {
   const config = {
     document: {
@@ -9,7 +14,9 @@ export default function OnlyOfficeTest() {
 
       title: "Тест.docx",
 
-      url: "http://host.docker.internal:8010/files/documents/60f73de6cad74453a7e15a5cb1bd7e61.docx",
+      url: resolveDockerAccessibleApiUrl(
+        `${API_BASE_URL}/files/documents/60f73de6cad74453a7e15a5cb1bd7e61.docx`,
+      ),
 
       permissions: {
         edit: false,
@@ -25,8 +32,7 @@ export default function OnlyOfficeTest() {
 
       lang: "ru",
 
-      callbackUrl:
-        "http://host.docker.internal:8010/",
+      callbackUrl: resolveDockerAccessibleApiUrl(`${API_BASE_URL}/`),
 
       customization: {
         compactToolbar: true,

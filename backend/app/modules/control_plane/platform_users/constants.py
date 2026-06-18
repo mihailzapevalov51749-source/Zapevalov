@@ -1,0 +1,4 @@
+PLATFORM_ROLE_OWNER = "platform_owner"
+
+PLATFORM_STATUS_ACTIVE = "active"
+PLATFORM_STATUS_INACTIVE = "inactive"

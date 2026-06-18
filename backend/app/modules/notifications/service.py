@@ -11,6 +11,9 @@ from app.modules.notifications.models import (
     NotificationRecipient,
 )
 from app.modules.notifications.tenant_access import user_can_view_notification
+from app.modules.tenant_module_configurations.runtime.enforcement import (
+    filter_notifications_by_enabled_categories,
+)
 from app.modules.users.models import User
 
 
@@ -155,10 +158,17 @@ class NotificationService:
             if user_can_view_notification(db, current_user, row.notification)
         ]
 
-        return [
+        serialized = [
             NotificationService._serialize_recipient_row(row)
             for row in visible_rows[:limit]
         ]
+
+        tenant_id = getattr(current_user, "tenant_id", None)
+        return filter_notifications_by_enabled_categories(
+            db,
+            tenant_id=int(tenant_id) if tenant_id is not None else None,
+            notifications=serialized,
+        )
 
     @staticmethod
     def mark_as_read(
@@ -239,8 +249,19 @@ class NotificationService:
             )
             .all()
         )
-        return sum(
-            1
+        visible = [
+            row
             for row in rows
             if user_can_view_notification(db, current_user, row.notification)
+        ]
+        tenant_id = getattr(current_user, "tenant_id", None)
+        serialized = [
+            NotificationService._serialize_recipient_row(row)
+            for row in visible
+        ]
+        filtered = filter_notifications_by_enabled_categories(
+            db,
+            tenant_id=int(tenant_id) if tenant_id is not None else None,
+            notifications=serialized,
         )
+        return len(filtered)

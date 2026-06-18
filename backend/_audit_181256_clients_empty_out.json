@@ -1,0 +1,51 @@
+{
+  "portals_by_db": {
+    "yasnopro_dev": [
+      {
+        "id": 1,
+        "tenant_type": "DEV",
+        "environment_role": "DEV",
+        "code": "корпоративный_портал"
+      }
+    ],
+    "yasnopro_template": [
+      {
+        "id": 2,
+        "tenant_type": "TEMPLATE",
+        "environment_role": "TEMPLATE",
+        "code": "platform_template"
+      }
+    ],
+    "yasnopro_client": [
+      {
+        "id": 21,
+        "tenant_type": "CLIENT",
+        "environment_role": "DEMO_CLIENT",
+        "code": "ooo_rozetka"
+      }
+    ]
+  },
+  "dev_db_api_simulation": {
+    "all_count": 3,
+    "all": [
+      {
+        "id": 1,
+        "tenant_type": "DEV",
+        "code": "корпоративный_портал"
+      },
+      {
+        "id": 2,
+        "tenant_type": "TEMPLATE",
+        "code": "platform_template"
+      },
+      {
+        "id": 21,
+        "tenant_type": "CLIENT",
+        "code": "ooo_rozetka"
+      }
+    ],
+    "clients_only_count": 0,
+    "clients_only": []
+  },
+  "yasnopro_client_clients_only_simulation": []
+}

@@ -18,8 +18,10 @@ from .enrichment import (
 from .models import NavigationItem
 from .permissions import assert_can_delete_navigation_item
 from .removed_system_menu_items import filter_removed_navigation_items
+from .navigation_edit_mode_classification import filter_navigation_for_office_runtime_menu
 from .tenant_access import get_navigation_item_for_portal
 from app.modules.navigation.system_registry.constants import DESIGNER_SYSTEM_NAV_ITEMS
+from app.modules.publication_guard.structure_write_service_guard import guard_direct_structure_write
 
 
 def _filter_navigation_for_deleted_object_types(
@@ -108,6 +110,7 @@ def _guard_object_type_create(data) -> None:
 
 
 def create_item(db: Session, portal_id: int, data):
+    guard_direct_structure_write(db, portal_id, "create_item")
     _guard_object_type_create(data)
 
     if int(data.portal_id) != int(portal_id):
@@ -137,6 +140,7 @@ def create_item(db: Session, portal_id: int, data):
 
 
 def ensure_designer_system_items(db: Session, portal_id: int):
+    guard_direct_structure_write(db, portal_id, "ensure_designer_system_items")
     from app.modules.navigation.system_registry.registry import (
         deactivate_orphan_workspace_placements,
         ensure_designer_system_navigation_items,
@@ -156,30 +160,41 @@ def get_navigation_tree(
     menu_scope: Optional[str] = None,
     *,
     for_edit_mode: bool = False,
+    include_system: bool = False,
 ):
-    if menu_scope == "designer":
-        ensure_designer_system_items(db, portal_id)
     items = repository.get_items_by_portal(db, portal_id, menu_scope)
     items = _filter_navigation_for_deleted_object_types(db, items)
     items = filter_removed_navigation_items(items, menu_scope=menu_scope)
     if menu_scope in {"runtime", "designer"}:
         items = filter_navigation_for_user_menu(db, items, for_edit_mode=for_edit_mode)
+    if menu_scope == "runtime" and not include_system:
+        items = filter_navigation_for_office_runtime_menu(
+            db,
+            portal_id,
+            items,
+            include_system=False,
+        )
     tree = build_tree(items)
     return enrich_navigation_tree(db, tree)
 
 
 def get_navigation_list(db: Session, portal_id: int, menu_scope: Optional[str] = None):
-    if menu_scope == "designer":
-        ensure_designer_system_items(db, portal_id)
     items = repository.get_items_by_portal(db, portal_id, menu_scope)
     items = _filter_navigation_for_deleted_object_types(db, items)
     items = filter_removed_navigation_items(items, menu_scope=menu_scope)
     if menu_scope == "runtime":
         items = filter_navigation_for_office_menu(db, items)
+        items = filter_navigation_for_office_runtime_menu(
+            db,
+            portal_id,
+            items,
+            include_system=False,
+        )
     return enrich_navigation_list(db, items)
 
 
 def update_item(db: Session, portal_id: int, item_id: int, data):
+    guard_direct_structure_write(db, portal_id, "update_item")
     from app.modules.navigation.schemas import NavigationItemUpdate
 
     item = get_navigation_item_for_portal(db, item_id, portal_id)
@@ -227,6 +242,7 @@ def delete_item(
     deleted_by: int | None = None,
     user=None,
 ):
+    guard_direct_structure_write(db, portal_id, "delete_item")
     item = get_navigation_item_for_portal(db, item_id, portal_id)
     if not item:
         return None
@@ -248,6 +264,7 @@ def delete_item(
 
 
 def move_items(db: Session, portal_id: int, items):
+    guard_direct_structure_write(db, portal_id, "move_items")
     if not items:
         return []
 

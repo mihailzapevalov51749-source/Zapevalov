@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { updateBlock } from "../../blocks/services/blockService";
 
-const API_BASE_URL = "http://127.0.0.1:8010";
+import { joinApiUrl } from "../../../config/apiConfig.js";
 
 export default function ButtonBlockView({ portalId, block, isEditMode, onBlockUpdated }) {
   const settings = block.settings || {};
@@ -361,7 +361,7 @@ function getVariantStyle(variant) {
 function normalizeUrl(url) {
   if (!url) return "#";
   if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  if (url.startsWith("/")) return `${API_BASE_URL}${url}`;
+  if (url.startsWith("/")) return joinApiUrl(url);
   return url;
 }
 

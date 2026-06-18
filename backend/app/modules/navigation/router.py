@@ -5,8 +5,11 @@ from typing import Optional
 from app.db.session import get_db
 from app.modules.platform.shared.dependencies import (
     require_designer_user,
-    require_portal_membership,
 )
+from app.modules.control_plane.platform_identity.session_bridge.runtime_read_access import (
+    require_portal_runtime_read,
+)
+from app.modules.tenant_management.dependencies import require_dev_direct_structure_write_portal
 from app.modules.users.models import User
 from .schemas import (
     NavigationItemCreate,
@@ -20,10 +23,20 @@ from . import service
 router = APIRouter(prefix="/navigation", tags=["Navigation"])
 
 
+@router.post("/portal/{portal_id}/ensure-designer-system-items")
+def ensure_designer_system_navigation(
+    portal_id: int = Depends(require_dev_direct_structure_write_portal),
+    db: Session = Depends(get_db),
+    _current_user: User = Depends(require_designer_user),
+):
+    service.ensure_designer_system_items(db, portal_id)
+    return {"message": "Designer system navigation ensured"}
+
+
 @router.post("/portal/{portal_id}/", response_model=NavigationItemResponse)
 def create_navigation_item(
     data: NavigationItemCreate,
-    portal_id: int = Depends(require_portal_membership),
+    portal_id: int = Depends(require_dev_direct_structure_write_portal),
     db: Session = Depends(get_db),
     _current_user: User = Depends(require_designer_user),
 ):
@@ -36,7 +49,7 @@ def get_navigation_list(
     mode: Optional[str] = None,
     context: Optional[str] = None,
     db: Session = Depends(get_db),
-    portal_id: int = Depends(require_portal_membership),
+    portal_id: int = Depends(require_portal_runtime_read),
 ):
     menu_scope = scope or mode or context
     return service.get_navigation_list(db, portal_id, menu_scope)
@@ -48,8 +61,9 @@ def get_navigation_tree(
     mode: Optional[str] = None,
     context: Optional[str] = None,
     for_edit_mode: bool = False,
+    include_system: bool = False,
     db: Session = Depends(get_db),
-    portal_id: int = Depends(require_portal_membership),
+    portal_id: int = Depends(require_portal_runtime_read),
 ):
     menu_scope = scope or mode or context
     return service.get_navigation_tree(
@@ -57,6 +71,7 @@ def get_navigation_tree(
         portal_id,
         menu_scope,
         for_edit_mode=for_edit_mode,
+        include_system=include_system,
     )
 
 
@@ -65,7 +80,7 @@ def update_navigation_item(
     item_id: int,
     data: NavigationItemUpdate,
     db: Session = Depends(get_db),
-    portal_id: int = Depends(require_portal_membership),
+    portal_id: int = Depends(require_dev_direct_structure_write_portal),
     _current_user: User = Depends(require_designer_user),
 ):
     item = service.update_item(db, portal_id, item_id, data)
@@ -80,7 +95,7 @@ def update_navigation_item(
 def delete_navigation_item(
     item_id: int,
     db: Session = Depends(get_db),
-    portal_id: int = Depends(require_portal_membership),
+    portal_id: int = Depends(require_dev_direct_structure_write_portal),
     current_user: User = Depends(require_designer_user),
 ):
     try:
@@ -113,7 +128,7 @@ def delete_navigation_item(
 def move_navigation_items(
     items: list[NavigationItemMove],
     db: Session = Depends(get_db),
-    portal_id: int = Depends(require_portal_membership),
+    portal_id: int = Depends(require_dev_direct_structure_write_portal),
     _current_user: User = Depends(require_designer_user),
 ):
     return service.move_items(db, portal_id, items)

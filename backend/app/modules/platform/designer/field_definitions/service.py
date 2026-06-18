@@ -23,6 +23,7 @@ from app.modules.platform.shared.relation_field_contract import (
     validate_relation_field_with_definition,
 )
 from app.modules.users.models import User
+from app.modules.publication_guard.structure_write_service_guard import guard_direct_structure_write
 
 
 def _actor_user_id(current_user: User | None) -> int | None:
@@ -148,6 +149,7 @@ def create_field(
     payload: FieldDefinitionCreate,
     current_user: User | None,
 ) -> FieldDefinitionRead:
+    guard_direct_structure_write(db, tenant_id, "create_field")
     _ensure_object_type(db, tenant_id, object_type_id)
 
     if repository.get_by_key(db, tenant_id, object_type_id, payload.key):
@@ -214,6 +216,7 @@ def update_field(
     payload: FieldDefinitionUpdate,
     current_user: User | None,
 ) -> FieldDefinitionRead:
+    guard_direct_structure_write(db, tenant_id, "update_field")
     entity = repository.get_field(db, tenant_id, field_id)
 
     if not entity:
@@ -343,6 +346,7 @@ def delete_field(
     field_id: UUID,
     current_user: User | None,
 ) -> FieldDefinitionRead:
+    guard_direct_structure_write(db, tenant_id, "delete_field")
     entity = repository.get_field(db, tenant_id, field_id)
 
     if not entity:
@@ -370,6 +374,7 @@ def reorder_fields(
     payload: FieldDefinitionReorderRequest,
     current_user: User | None,
 ) -> list[FieldDefinitionListItem]:
+    guard_direct_structure_write(db, tenant_id, "reorder_fields")
     _ensure_object_type(db, tenant_id, object_type_id)
 
     field_ids = [item.id for item in payload.items]

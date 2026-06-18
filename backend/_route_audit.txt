@@ -1,0 +1,72 @@
+﻿python : Traceback (most recent call last):
+C:\Users\MSI\AppData\Local\Temp\ps-script-3634ca12-0ea1-499b-abf8-033d1d1635f4.ps1:78 знак:106
++ ... ctor v2\backend"; python scripts/_tmp_find_plan_route.py 2>&1 | Out-F ...
++                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, i
+n _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 952,
+ in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.AmbiguousColumn: column reference "key" is ambiguous
+LINE 2:         SELECT key, name, view_type
+                       ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\scripts\_tmp_find_plan
+_route.py", line 11, in <module>
+    rows = db.execute(
+           ^^^^^^^^^^^
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 2351, i
+n execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\orm\session.py", line 2258, i
+n _execute_internal
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, i
+n execute
+    return meth(
+           ^^^^^
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\sql\elements.py", line 527, i
+n _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, i
+n _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, i
+n _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, i
+n _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 2363, i
+n _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, i
+n _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\MSI\AppData\Local\Programs\Python\Python311\Lib\site-packages\sqlalchemy\engine\default.py", line 952,
+ in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.AmbiguousColumn) column reference "key" is ambiguous
+LINE 2:         SELECT key, name, view_type
+                       ^
+
+[SQL: 
+        SELECT key, name, view_type
+        FROM designer_view_definitions vd
+        JOIN designer_object_types ot ON ot.id = vd.object_type_id
+        WHERE ot.key = 'napravleniya' AND vd.deleted_at IS NULL
+        ]
+(Background on this error at: https://sqlalche.me/e/20/f405)

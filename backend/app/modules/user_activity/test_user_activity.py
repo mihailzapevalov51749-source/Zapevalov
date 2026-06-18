@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 
 import pytest
 from sqlalchemy.orm import Session
@@ -322,6 +322,155 @@ def test_cutoff_excludes_entire_previous_day_from_stats(db: Session, sample_user
     )
     assert stats_today["session_count"] == 1
     assert stats_today["active_seconds"] > 0
+
+
+def test_session_crossing_midnight_splits_active_seconds_between_days(
+    db: Session,
+    sample_user: User,
+):
+    """15.06 23:10 → 16.06 01:30 MSK must split as 50 min + 90 min."""
+    tz = MOSCOW
+    session_start = datetime(2026, 6, 15, 20, 10, tzinfo=timezone.utc)  # 23:10 MSK
+    session_end = datetime(2026, 6, 15, 22, 30, tzinfo=timezone.utc)  # 01:30 MSK
+    now = session_end + timedelta(minutes=1)
+
+    record_activity_heartbeat(
+        db,
+        user_id=sample_user.id,
+        tenant_id=1,
+        source="click",
+        occurred_at=session_start,
+    )
+    record_activity_heartbeat(
+        db,
+        user_id=sample_user.id,
+        tenant_id=1,
+        source="scroll",
+        occurred_at=session_end,
+    )
+    close_open_sessions(
+        db,
+        user_id=sample_user.id,
+        reason="manual",
+        ended_at=session_end,
+    )
+    db.commit()
+
+    day_15 = date(2026, 6, 15)
+    day_16 = date(2026, 6, 16)
+    stats_15 = compute_daily_stats(
+        db,
+        user_id=sample_user.id,
+        day=day_15,
+        tz=tz,
+        now=now,
+    )
+    stats_16 = compute_daily_stats(
+        db,
+        user_id=sample_user.id,
+        day=day_16,
+        tz=tz,
+        now=now,
+    )
+
+    assert stats_15["session_count"] == 1
+    assert stats_16["session_count"] == 1
+    assert stats_15["active_seconds"] == 50 * 60
+    assert stats_16["active_seconds"] == 90 * 60
+    assert stats_15["active_seconds"] + stats_16["active_seconds"] == 140 * 60
+    assert stats_15["last_action_at"] == datetime(2026, 6, 15, 20, 59, 59, tzinfo=timezone.utc)
+    assert stats_16["first_action_at"] == datetime(2026, 6, 15, 21, 0, tzinfo=timezone.utc)
+    assert stats_16["last_action_at"] == session_end
+
+
+def test_open_session_crossing_midnight_uses_now_for_today(db: Session, sample_user: User):
+    """Open session 15.06 23:10 with now=16.06 00:40 splits 50 + 40 minutes."""
+    tz = MOSCOW
+    session_start = datetime(2026, 6, 15, 20, 10, tzinfo=timezone.utc)  # 23:10 MSK
+    now = datetime(2026, 6, 15, 21, 40, tzinfo=timezone.utc)  # 00:40 MSK next day
+
+    record_activity_heartbeat(
+        db,
+        user_id=sample_user.id,
+        tenant_id=1,
+        source="click",
+        occurred_at=session_start,
+    )
+    record_activity_heartbeat(
+        db,
+        user_id=sample_user.id,
+        tenant_id=1,
+        source="scroll",
+        occurred_at=now,
+    )
+    db.commit()
+
+    stats_15 = compute_daily_stats(
+        db,
+        user_id=sample_user.id,
+        day=date(2026, 6, 15),
+        tz=tz,
+        now=now,
+    )
+    stats_16 = compute_daily_stats(
+        db,
+        user_id=sample_user.id,
+        day=date(2026, 6, 16),
+        tz=tz,
+        now=now,
+    )
+
+    assert stats_15["session_count"] == 1
+    assert stats_16["session_count"] == 1
+    assert stats_15["active_seconds"] == 50 * 60
+    assert stats_16["active_seconds"] == 40 * 60
+
+
+def test_session_within_single_day_unchanged(db: Session, sample_user: User):
+    tz = MOSCOW
+    t0 = datetime(2026, 6, 15, 7, 0, tzinfo=timezone.utc)  # 10:00 MSK
+    t1 = datetime(2026, 6, 15, 9, 0, tzinfo=timezone.utc)  # 12:00 MSK
+
+    record_activity_heartbeat(
+        db,
+        user_id=sample_user.id,
+        tenant_id=1,
+        source="click",
+        occurred_at=t0,
+    )
+    record_activity_heartbeat(
+        db,
+        user_id=sample_user.id,
+        tenant_id=1,
+        source="scroll",
+        occurred_at=t1,
+    )
+    close_open_sessions(
+        db,
+        user_id=sample_user.id,
+        reason="manual",
+        ended_at=t1,
+    )
+    db.commit()
+
+    stats_15 = compute_daily_stats(
+        db,
+        user_id=sample_user.id,
+        day=date(2026, 6, 15),
+        tz=tz,
+        now=t1 + timedelta(minutes=1),
+    )
+    stats_16 = compute_daily_stats(
+        db,
+        user_id=sample_user.id,
+        day=date(2026, 6, 16),
+        tz=tz,
+        now=t1 + timedelta(minutes=1),
+    )
+
+    assert stats_15["active_seconds"] == 2 * 60 * 60
+    assert stats_16["active_seconds"] == 0
+    assert stats_16["session_count"] == 0
 
 
 def test_stats_started_at_uses_last_activity_after_cutoff(db: Session, sample_user: User):

@@ -5,11 +5,13 @@ export function resolveSettingsLabels(scope = SETTINGS_SCOPE_TENANT) {
   const isPlatform = scope === SETTINGS_SCOPE_PLATFORM;
 
   return {
-    workspaceTitle: isPlatform ? "Профиль платформы" : "Настройки компании",
+    workspaceTitle: isPlatform ? "Профиль платформы" : "Профиль компании",
     adminSubtitle: isPlatform ? "Администрирование платформы" : "Администрирование компании",
     platformName: isPlatform ? "Название платформы" : "Название компании",
-    shortName: isPlatform ? "Краткое название" : "Короткое название",
-    description: "Описание",
+    shortName: isPlatform ? "Краткое название платформы" : "Краткое название компании",
+    publicSlug: isPlatform ? "Публичный адрес платформы" : "Публичный адрес компании",
+    publicUrl: isPlatform ? "Полная ссылка платформы" : "Полная ссылка компании",
+    description: isPlatform ? "Описание платформы" : "Описание компании",
     owner: isPlatform ? "Владелец платформы" : "Владелец компании",
     version: "Версия платформы",
     brandingTitle: isPlatform ? "Брендинг платформы" : "Брендинг компании",

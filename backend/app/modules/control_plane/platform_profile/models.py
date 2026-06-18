@@ -15,6 +15,8 @@ class PlatformSettings(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     platform_name: Mapped[str] = mapped_column(String(255), nullable=False)
     platform_short_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    public_slug: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True, index=True)
+    public_slug_locked: Mapped[bool] = mapped_column(nullable=False, default=False, server_default="false")
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     timezone: Mapped[str] = mapped_column(String(128), nullable=False)
     date_format: Mapped[str] = mapped_column(String(32), nullable=False)

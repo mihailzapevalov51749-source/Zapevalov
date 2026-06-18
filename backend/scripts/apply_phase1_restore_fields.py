@@ -11,7 +11,11 @@ from datetime import datetime
 from pathlib import Path
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
+SCRIPTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BACKEND_DIR))
+sys.path.insert(0, str(SCRIPTS_DIR))
+
+from structure_write_script_guard import guard_script_structure_write  # noqa: E402
 
 from sqlalchemy import func, text  # noqa: E402
 
@@ -203,6 +207,8 @@ def main() -> int:
         if not plan:
             print("Нечего восстанавливать.")
             return 0
+
+        guard_script_structure_write(db, TARGET, "apply_phase1_restore_fields")
 
         ids = [uuid.UUID(item["id"]) for item in plan]
         try:

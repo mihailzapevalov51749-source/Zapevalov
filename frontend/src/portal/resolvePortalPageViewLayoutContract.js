@@ -8,6 +8,7 @@ import {
   CORPORATE_CHAT_PAGE_ID,
   resolveIsCorporateChatPage,
 } from "./resolveCorporateChatPage.js";
+import { resolveIsCorporateCalendarPage } from "./resolveCorporateCalendarPage.js";
 
 export { CORPORATE_CHAT_PAGE_ID };
 
@@ -183,13 +184,18 @@ export function resolvePortalPageViewLayoutContractOverrides(location, pageId, o
     pageId,
     activeNavigationItem: options.activeNavigationItem,
   });
+  const isCorporateCalendarPage = resolveIsCorporateCalendarPage({
+    pageId,
+    activeNavigationItem: options.activeNavigationItem,
+  });
   const isDesignerCustomPageRoute = /^\/designer\/tenant\/\d+\/page\/\d+/.test(pathname);
   const isPortalCmsPage =
     /^\/portal\/\d+\/page\/\d+/.test(pathname) &&
     !isAdminPage &&
-    !isCorporateChatPage;
+    !isCorporateChatPage &&
+    !isCorporateCalendarPage;
 
-  if (isCorporateChatPage) {
+  if (isCorporateChatPage || isCorporateCalendarPage) {
     return {
       canMinimize: false,
       toolbarZoneId: null,

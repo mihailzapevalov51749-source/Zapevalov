@@ -1,0 +1,151 @@
+﻿entity_id,tenant_id,portal_id,title,type,system_key,object_type_key,page_id,nav_id,classification_now,classification_target,target_registry
+page:1,1,1,Главная,page,runtime.office_home,,1,1,special_office_home,page,pages_registry
+page:7,1,1,Библи,document_library,,,7,12,document_library_entry,library,libraries_registry
+page:8,1,1,ваи,,,,8,,draft_page,legacy_orphan,archive_review
+page:34,1,1,Оргструктура компании,,,,34,,draft_page,legacy_orphan,archive_review
+page:35,1,1,Чат,page,runtime.chat,,35,43,runtime_module_entry,module,modules_registry
+page:36,1,1,Уведомления,page,runtime.notifications,,36,44,runtime_module_entry,module,modules_registry
+page:38,1,1,Отчеты,,,,38,,draft_page,legacy_orphan,archive_review
+page:39,1,1,Календарь,,,,39,,draft_page,legacy_orphan,archive_review
+page:40,1,1,Администрирование,page,,,40,48,user_page,tenant_administration,tenant_administration
+page:41,1,1,Настройка системы,page,,,41,49,user_page,tenant_administration,tenant_administration
+page:45,1,1,Запевалов,,,,45,,draft_page,legacy_orphan,archive_review
+page:49,1,1,Тестовая,,,,49,,draft_page,legacy_orphan,archive_review
+page:50,1,1,первая,,,,50,,draft_page,legacy_orphan,archive_review
+page:51,1,1,Страница,,,,51,,orphan_page,legacy_orphan,archive_review
+page:52,1,1,Вторая,,,,52,,orphan_page,legacy_orphan,archive_review
+page:54,1,1,Разработка продукта,,,,54,,draft_page,legacy_orphan,archive_review
+page:55,1,1,Разработка,,,,55,,workspace_page,workspace,workspaces_registry
+page:56,1,1,Карта платформы,,,,56,,draft_page,legacy_orphan,archive_review
+page:57,1,1,Карта платформы ЯсноПро,,,,57,,workspace_page,workspace,workspaces_registry
+page:58,1,1,Тех. поддержка,,,,58,,workspace_page,workspace,workspaces_registry
+page:59,1,1,Продажи,,,,59,,draft_page,legacy_orphan,archive_review
+page:60,1,1,Отдел кадров,,,,60,,draft_page,legacy_orphan,archive_review
+page:61,1,1,Управление платформой,,,,61,,workspace_page,workspace,workspaces_registry
+page:62,1,1,Отдел кадров,,,,62,,workspace_page,workspace,workspaces_registry
+page:346,1,1,Разработкаа,,,,346,,orphan_page,legacy_orphan,archive_review
+page:459,1,1,Архитектура ЯсноПро,,,,459,,workspace_page,workspace,workspaces_registry
+page:561,1,1,Главная,page,runtime.office_home,,561,329,special_office_home,page,pages_registry
+page:574,1,1,Главная,page,runtime.office_home,,574,340,special_office_home,page,pages_registry
+page:597,1,1,Главная,page,runtime.office_home,,597,354,special_office_home,page,pages_registry
+page:608,1,1,Чат,page,runtime.chat,,608,357,runtime_module_entry,module,modules_registry
+page:622,1,1,Главная,page,runtime.office_home,,622,370,special_office_home,page,pages_registry
+page:713,1,1,Тестовая библиотека,,,,713,,orphan_page,legacy_orphan,archive_review
+page:739,1,1,Главная,page,runtime.office_home,,739,413,special_office_home,page,pages_registry
+page:786,1,1,Главная,page,runtime.office_home,,786,449,special_office_home,page,pages_registry
+page:790,1,1,Календарь,page,runtime.calendar,,790,452,runtime_module_entry,module,modules_registry
+page:347,2,2,Главная,page,runtime.office_home,,347,219,special_office_home,page,pages_registry
+page:376,2,2,Чат,page,runtime.chat,,376,230,runtime_module_entry,module,modules_registry
+page:377,2,2,Уведомления,page,runtime.notifications,,377,233,runtime_module_entry,module,modules_registry
+page:381,2,2,Администрирование,page,,,381,239,user_page,tenant_administration,tenant_administration
+page:382,2,2,Настройка системы,page,,,382,240,user_page,tenant_administration,tenant_administration
+page:791,2,2,Календарь,page,runtime.calendar,,791,453,runtime_module_entry,module,modules_registry
+page:624,21,21,Главная,page,runtime.office_home,,624,371,special_office_home,page,pages_registry
+page:625,21,21,Библи,document_library,,,625,380,document_library_entry,library,libraries_registry
+page:649,21,21,Оргструктура компании,,,,649,,draft_page,legacy_orphan,archive_review
+page:650,21,21,Чат,page,runtime.chat,,650,375,runtime_module_entry,module,modules_registry
+page:651,21,21,Уведомления,page,runtime.notifications,,651,379,runtime_module_entry,module,modules_registry
+page:653,21,21,Календарь,,,,653,,draft_page,legacy_orphan,archive_review
+page:654,21,21,Администрирование,page,,,654,384,user_page,tenant_administration,tenant_administration
+page:655,21,21,Настройка системы,page,,,655,385,user_page,tenant_administration,tenant_administration
+page:659,21,21,Запевалов,,,,659,,draft_page,legacy_orphan,archive_review
+page:663,21,21,Тестовая,,,,663,,draft_page,legacy_orphan,archive_review
+page:664,21,21,первая,,,,664,,draft_page,legacy_orphan,archive_review
+page:665,21,21,Вторая,,,,665,,orphan_page,legacy_orphan,archive_review
+page:666,21,21,Разработка продукта,,,,666,,draft_page,legacy_orphan,archive_review
+page:667,21,21,Разработка,,,,667,,orphan_page,legacy_orphan,archive_review
+page:668,21,21,Тех. поддержка,,,,668,,orphan_page,legacy_orphan,archive_review
+page:792,21,21,Календарь,page,runtime.calendar,,792,454,runtime_module_entry,module,modules_registry
+page:718,901,901,Page 901 d7193620,,,,718,,orphan_page,legacy_orphan,archive_review
+page:719,903,903,Page 903 87e8de77,,,,719,,orphan_page,legacy_orphan,archive_review
+page:720,905,905,Page 905 16860069,,,,720,,orphan_page,legacy_orphan,archive_review
+page:721,907,907,Page 907 76605f52,,,,721,,orphan_page,legacy_orphan,archive_review
+page:722,909,909,Page 909 4826f7c6,,,,722,,orphan_page,legacy_orphan,archive_review
+page:723,911,911,Page 911 63ea1fdc,,,,723,,orphan_page,legacy_orphan,archive_review
+page:725,913,913,Page 913 2faa8c7e,,,,725,,orphan_page,legacy_orphan,archive_review
+page:724,915,915,Page 915 eed51511,,,,724,,orphan_page,legacy_orphan,archive_review
+page:750,9503,9503,Library A 32ceaa47,document_library,,,750,416,document_library_entry,library,libraries_registry
+page:757,9503,9503,Library A 18438484,document_library,,,757,423,document_library_entry,library,libraries_registry
+page:768,9503,9503,Library A 0ccea9a8,document_library,,,768,432,document_library_entry,library,libraries_registry
+page:793,9503,9503,Календарь,page,runtime.calendar,,793,455,runtime_module_entry,module,modules_registry
+page:751,9508,9508,Library B 4f29c6ef,document_library,,,751,417,document_library_entry,library,libraries_registry
+page:758,9508,9508,Library B d09714f7,document_library,,,758,424,document_library_entry,library,libraries_registry
+page:769,9508,9508,Library B b5c2b608,document_library,,,769,433,document_library_entry,library,libraries_registry
+page:794,9508,9508,Календарь,page,runtime.calendar,,794,456,runtime_module_entry,module,modules_registry
+page:752,9510,9510,Library B upload 390b8a4b,document_library,,,752,418,document_library_entry,library,libraries_registry
+page:759,9510,9510,Library B upload 4820df77,document_library,,,759,425,document_library_entry,library,libraries_registry
+page:770,9510,9510,Library B upload c89a4ce3,document_library,,,770,434,document_library_entry,library,libraries_registry
+page:795,9510,9510,Календарь,page,runtime.calendar,,795,457,runtime_module_entry,module,modules_registry
+page:753,9511,9511,Library A doc b9842a15,document_library,,,753,419,document_library_entry,library,libraries_registry
+page:760,9511,9511,Library A doc 50dd1f7d,document_library,,,760,426,document_library_entry,library,libraries_registry
+page:771,9511,9511,Library A doc 855654a2,document_library,,,771,435,document_library_entry,library,libraries_registry
+page:796,9511,9511,Календарь,page,runtime.calendar,,796,458,runtime_module_entry,module,modules_registry
+page:754,9512,9512,Library B doc 2edfba0c,document_library,,,754,420,document_library_entry,library,libraries_registry
+page:761,9512,9512,Library B doc d7c2bc99,document_library,,,761,427,document_library_entry,library,libraries_registry
+page:772,9512,9512,Library B doc c96c1efb,document_library,,,772,436,document_library_entry,library,libraries_registry
+page:797,9512,9512,Календарь,page,runtime.calendar,,797,459,runtime_module_entry,module,modules_registry
+page:755,9514,9514,Library B download 869da078,document_library,,,755,421,document_library_entry,library,libraries_registry
+page:762,9514,9514,Library B download 50e698b7,document_library,,,762,428,document_library_entry,library,libraries_registry
+page:773,9514,9514,Library B download dc746f79,document_library,,,773,437,document_library_entry,library,libraries_registry
+page:798,9514,9514,Календарь,page,runtime.calendar,,798,460,runtime_module_entry,module,modules_registry
+page:756,9516,9516,Library B owner 740ffca0,document_library,,,756,422,document_library_entry,library,libraries_registry
+page:763,9516,9516,Library B owner ab8fd320,document_library,,,763,429,document_library_entry,library,libraries_registry
+page:774,9516,9516,Library B owner 3b5b25c9,document_library,,,774,438,document_library_entry,library,libraries_registry
+page:799,9516,9516,Календарь,page,runtime.calendar,,799,461,runtime_module_entry,module,modules_registry
+page:764,9525,9525,Docs dd3a3df2,document_library,,,764,430,document_library_entry,library,libraries_registry
+page:766,9525,9525,Docs c4a07e17,document_library,,,766,431,document_library_entry,library,libraries_registry
+page:800,9525,9525,Календарь,page,runtime.calendar,,800,462,runtime_module_entry,module,modules_registry
+page:765,9529,9529,Page cda2e6d9,,,,765,,orphan_page,legacy_orphan,archive_review
+page:767,9529,9529,Page d64869a3,,,,767,,orphan_page,legacy_orphan,archive_review
+nav:66,1,1,Пользователи,system_page,designer.users,,,66,unknown,studio,studio_admin
+nav:67,1,1,Системные настройки,system_page,designer.settings,,,67,unknown,studio,studio_admin
+nav:41,1,1,Рабочие пространства,workspace,,,,41,unknown,workspace,workspaces_registry
+nav:63,1,1,Объекты,system_page,designer.objects,,,63,unknown,studio,studio_admin
+nav:64,1,1,Связи,system_page,designer.relations,,,64,unknown,studio,studio_admin
+nav:65,1,1,Представления,system_page,designer.views,,,65,unknown,studio,studio_admin
+nav:87,1,1,Направления,object_type,,napravleniya,,87,object_type_entry,object,objects_registry
+nav:88,1,1,История,object_type,,istoriya,,88,object_type_entry,object,objects_registry
+nav:78,1,1,Разработка продукта,workspace,,,,78,unknown,workspace,workspaces_registry
+nav:85,1,1,Мои задачи,object_type,,zadachnik,,85,object_type_entry,object,objects_registry
+nav:280,1,1,Управление платформой,external_link,,,,280,unknown,needs_review,archive_review
+nav:279,1,1,Разработка,workspace,designer.workspace.34.runtime,,,279,unknown,workspace,workspaces_registry
+nav:269,1,1,Тех. поддержка,workspace,designer.workspace.35.designer,,,269,unknown,workspace,workspaces_registry
+nav:267,1,1,Отдел кадров,workspace,designer.workspace.37.designer,,,267,unknown,workspace,workspaces_registry
+nav:270,1,1,Управление платформой,workspace,designer.workspace.36.designer,,,270,unknown,workspace,workspaces_registry
+nav:222,2,2,Рабочие пространства,workspace,,,,222,unknown,workspace,workspaces_registry
+nav:220,2,2,Объекты,system_page,designer.objects,,,220,unknown,studio,studio_admin
+nav:221,2,2,Разработка продукта,workspace,,,,221,unknown,workspace,workspaces_registry
+nav:224,2,2,Связи,system_page,designer.relations,,,224,unknown,studio,studio_admin
+nav:228,2,2,Представления,system_page,designer.views,,,228,unknown,studio,studio_admin
+nav:226,2,2,Мои задачи,object_type,,zadachnik,,226,object_type_entry,object,objects_registry
+nav:231,2,2,Пользователи,system_page,designer.users,,,231,unknown,studio,studio_admin
+nav:234,2,2,Системные настройки,system_page,designer.settings,,,234,unknown,studio,studio_admin
+nav:372,21,21,Объекты,system_page,designer.objects,,,372,unknown,studio,studio_admin
+nav:373,21,21,Разработка продукта,workspace,,,,373,unknown,workspace,workspaces_registry
+nav:374,21,21,Рабочие пространства,workspace,,,,374,unknown,workspace,workspaces_registry
+nav:376,21,21,Связи,system_page,designer.relations,,,376,unknown,studio,studio_admin
+nav:378,21,21,Пользователи,system_page,designer.users,,,378,unknown,studio,studio_admin
+nav:382,21,21,Представления,system_page,designer.views,,,382,unknown,studio,studio_admin
+nav:383,21,21,Системные настройки,system_page,designer.settings,,,383,unknown,studio,studio_admin
+nav:377,21,21,Мои задачи,object_type,,zadachnik,,377,object_type_entry,object,objects_registry
+route:/designer/tenant/{tenant_id}/object-types,,,Объекты,virtual_route,,,,,studio_virtual_page,studio,studio_admin
+route:/designer/tenant/{tenant_id}/pages,,,Страницы,virtual_route,,,,,studio_virtual_page,studio,studio_admin
+route:/designer/tenant/{tenant_id}/trash,,,Корзина,virtual_route,,,,,studio_virtual_page,studio,studio_admin
+route:/designer/tenant/{tenant_id}/processes,,,Бизнес-процессы,virtual_route,,,,,studio_virtual_page,studio,studio_admin
+route:/designer/tenant/{tenant_id}/workspaces,,,Рабочие пространства,virtual_route,,,,,studio_virtual_page,studio,studio_admin
+route:/designer/tenant/{tenant_id}/event-journal,,,Журнал событий,virtual_route,,,,,studio_virtual_page,studio,studio_admin
+route:/designer/tenant/{tenant_id}/platform-releases,,,Релизы платформы,virtual_route,,,,,studio_virtual_page,studio,studio_admin
+route:/admin/tenant/{tenant_id},,,Администрирование,virtual_route,,,,,studio_virtual_page,studio,studio_admin
+route:/control-plane,,,Управление платформой,virtual_route,,,,,studio_virtual_page,studio,studio_admin
+route:/control-plane,,,Главная,virtual_route,,,,,control_plane_virtual_page,control_plane,control_plane
+route:/control-plane/companies/clients,,,Компании,virtual_route,,,,,control_plane_virtual_page,control_plane,control_plane
+route:/control-plane/templates/versions,,,Версии шаблонов,virtual_route,,,,,control_plane_virtual_page,control_plane,control_plane
+route:/control-plane/templates/updates,,,Обновления,virtual_route,,,,,control_plane_virtual_page,control_plane,control_plane
+route:/control-plane/releases,,,Релизы,virtual_route,,,,,control_plane_virtual_page,control_plane,control_plane
+route:/control-plane/platform-profile/general,,,Профиль платформы,virtual_route,,,,,control_plane_virtual_page,control_plane,control_plane
+route:/control-plane/platform/licenses,,,Лицензии,virtual_route,,,,,control_plane_virtual_page,control_plane,control_plane
+route:/control-plane/platform/policies,,,Политики,virtual_route,,,,,control_plane_virtual_page,control_plane,control_plane
+route:/control-plane/platform/monitoring,,,Мониторинг,virtual_route,,,,,control_plane_virtual_page,control_plane,control_plane
+route:/control-plane/platform/backup,,,Резервное копирование,virtual_route,,,,,control_plane_virtual_page,control_plane,control_plane
+route:/control-plane/users-roles,,,Пользователи и роли,virtual_route,,,,,control_plane_virtual_page,control_plane,control_plane
+route:/control-plane/audit-log,,,Журнал аудита,virtual_route,,,,,control_plane_virtual_page,control_plane,control_plane

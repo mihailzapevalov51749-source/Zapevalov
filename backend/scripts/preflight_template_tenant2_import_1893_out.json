@@ -1,0 +1,390 @@
+{
+  "source_db": "portal_constructor_v2",
+  "target_db": "yasnopro_template",
+  "source_tenant_id": 2,
+  "dry_run": true,
+  "records_inserted": 0,
+  "records_failed": 0,
+  "template_tenant_summary": {
+    "id": 2,
+    "name": "Эталон",
+    "tenant_type": "TEMPLATE",
+    "environment_role": "TEMPLATE",
+    "is_protected": true,
+    "template_version": "1.0.14"
+  },
+  "TEMPLATE_USER_IDS": [],
+  "template_users": [],
+  "preflight": [
+    {
+      "phase": "phase_0_foundation",
+      "table": "portals",
+      "records_planned": 1
+    },
+    {
+      "phase": "phase_0_foundation",
+      "table": "roles",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_0_foundation",
+      "table": "users",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_1_membership",
+      "table": "tenant_user_memberships",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_1_membership",
+      "table": "tenant_user_profiles",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_1_membership",
+      "table": "platform_users",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_2_designer_metadata",
+      "table": "designer_object_types",
+      "records_planned": 1
+    },
+    {
+      "phase": "phase_2_designer_metadata",
+      "table": "designer_field_definitions",
+      "records_planned": 11
+    },
+    {
+      "phase": "phase_2_designer_metadata",
+      "table": "designer_relation_definitions",
+      "records_planned": 1
+    },
+    {
+      "phase": "phase_2_designer_metadata",
+      "table": "designer_view_definitions",
+      "records_planned": 2
+    },
+    {
+      "phase": "phase_2_designer_metadata",
+      "table": "designer_action_definitions",
+      "records_planned": 1
+    },
+    {
+      "phase": "phase_2_designer_metadata",
+      "table": "designer_action_placements",
+      "records_planned": 1
+    },
+    {
+      "phase": "phase_2_designer_metadata",
+      "table": "designer_action_forms",
+      "records_planned": 1
+    },
+    {
+      "phase": "phase_2_designer_metadata",
+      "table": "designer_action_form_fields",
+      "records_planned": 3
+    },
+    {
+      "phase": "phase_2_designer_metadata",
+      "table": "designer_workspaces",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_2_designer_metadata",
+      "table": "designer_workspace_tabs",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_2_designer_metadata",
+      "table": "designer_system_menu_settings",
+      "records_planned": 6
+    },
+    {
+      "phase": "phase_2_designer_metadata",
+      "table": "tenant_runtime_menu_settings",
+      "records_planned": 6
+    },
+    {
+      "phase": "phase_2_designer_metadata",
+      "table": "designer_metadata_snapshots",
+      "records_planned": 2
+    },
+    {
+      "phase": "phase_2_designer_metadata",
+      "table": "designer_publish_records",
+      "records_planned": 2
+    },
+    {
+      "phase": "phase_3_pages_structure",
+      "table": "pages",
+      "records_planned": 6
+    },
+    {
+      "phase": "phase_3_pages_structure",
+      "table": "sections",
+      "records_planned": 4
+    },
+    {
+      "phase": "phase_3_pages_structure",
+      "table": "blocks",
+      "records_planned": 3
+    },
+    {
+      "phase": "phase_3_pages_structure",
+      "table": "navigation_items",
+      "records_planned": 14
+    },
+    {
+      "phase": "phase_4_modules",
+      "table": "tenant_modules",
+      "records_planned": 3
+    },
+    {
+      "phase": "phase_4_modules",
+      "table": "tenant_module_configurations",
+      "records_planned": 3
+    },
+    {
+      "phase": "phase_4_modules",
+      "table": "tenant_module_config_snapshots",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_5_documents",
+      "table": "document_libraries",
+      "records_planned": 11
+    },
+    {
+      "phase": "phase_5_documents",
+      "table": "library_documents",
+      "records_planned": 18
+    },
+    {
+      "phase": "phase_6_runtime",
+      "table": "runtime_entities",
+      "records_planned": 2
+    },
+    {
+      "phase": "phase_6_runtime",
+      "table": "runtime_entity_values",
+      "records_planned": 2
+    },
+    {
+      "phase": "phase_6_runtime",
+      "table": "runtime_relation_instances",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_6_runtime",
+      "table": "runtime_office_user_table_views",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "comments",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "comment_attachments",
+      "records_planned": 1
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "comment_mentions",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "comment_reactions",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "notes",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "note_mentions",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "notifications",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "notification_recipients",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "checklist_items",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "chats",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "chat_participants",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "chat_messages",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "chat_message_attachments",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "chat_message_reactions",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "chat_message_mentions",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "calendar_events",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "calendar_event_participants",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "user_activity_sessions",
+      "records_planned": 1
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "user_presence_states",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "user_menu_preferences",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "user_workspace_tabs",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "quality_issues",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_7_operational",
+      "table": "quality_issue_status_history",
+      "records_planned": 0
+    },
+    {
+      "phase": "phase_8_journal",
+      "table": "platform_event_journal_entries",
+      "records_planned": 0
+    }
+  ],
+  "records_planned_total": 106,
+  "tenant_scope": {
+    "users": 0,
+    "memberships": 0,
+    "profiles": 0,
+    "pages": 6,
+    "navigation": 14,
+    "object_types": 1,
+    "fields": 11,
+    "views": 2,
+    "workspaces": 0,
+    "runtime_entities": 1,
+    "document_libraries": 11,
+    "library_documents": 18,
+    "journal_entries": 0,
+    "modules": 3
+  },
+  "json_audit": {
+    "columns": 74,
+    "records_checked": 378,
+    "failures": [],
+    "failure_count": 0
+  },
+  "phase_order_audit": {
+    "issues": [],
+    "issue_count": 0
+  },
+  "self_fk_audit": {
+    "navigation_items": {
+      "rows": 14,
+      "orphans": 0,
+      "max_depth": 1,
+      "cycles": 0
+    },
+    "library_documents": {
+      "rows": 0,
+      "orphans": 0,
+      "max_depth": 0,
+      "cycles": 0
+    },
+    "comments": {
+      "rows": 48,
+      "orphans": 0,
+      "max_depth": 2,
+      "cycles": 0
+    }
+  },
+  "leakage_audit": {
+    "pages_t1_in_t2_scope": 60,
+    "pages_t21_in_t2_scope": 6,
+    "runtime_entities_t1": 324,
+    "runtime_entities_t21": 1,
+    "runtime_entities_t2": 2,
+    "designer_object_types_t1": 22,
+    "designer_object_types_t2": 1,
+    "memberships_t1": 2,
+    "memberships_t2": 0,
+    "expected_source_only_t1_pages": 60,
+    "expected_source_only_t21_pages": 6,
+    "expected_import_t2_pages": 6,
+    "leak_risk_if_unfiltered": 66
+  },
+  "sequence_sync_audit": {
+    "issues": [],
+    "issue_count": 0
+  },
+  "user_fk_audit": {
+    "template_user_ids": [],
+    "violations": [],
+    "violation_count": 0
+  },
+  "cleanup_source": {
+    "test_cleanup_runs": 0,
+    "test_cleanup_records": 0
+  },
+  "target_readiness": {
+    "table_count": 0,
+    "alembic_version": null,
+    "portals": 0,
+    "users": 0
+  },
+  "blockers": [
+    "target_schema_missing"
+  ],
+  "final_status": "BLOCKED — ROOT CAUSE IDENTIFIED"
+}

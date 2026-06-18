@@ -1,8 +1,8 @@
 import { useRef } from "react";
 import settingsIcon from "../../../../assets/icons/settings.gif";
 import saveIcon from "../../../../assets/icons/save.gif";
-import AppModeSwitch from "../../../appMode/AppModeSwitch";
 import NotificationBell from "../../../../modules/notifications/components/NotificationBell";
+import useRuntimeModuleConfiguration from "../../../runtimeModuleConfiguration/useRuntimeModuleConfiguration";
 import { AppShellPageActionsSlot } from "../../../appShell/AppShellPageActionsContext";
 import { PAGE_LAYOUT_TOOLBAR_ZONE } from "../../../appShell/pageLayoutContract";
 import "./appHeaderRenderer.css";
@@ -69,6 +69,11 @@ export default function AppHeaderRenderer({ contract, onAction }) {
   const mode = contract?.mode || "runtime";
   const tenantId =
     Number(contract?.tenant?.id || contract?.meta?.tenantId || 1) || 1;
+  const { settings: notificationsRuntimeSettings } = useRuntimeModuleConfiguration(
+    tenantId,
+    "runtime.notifications",
+  );
+  const bellEnabled = notificationsRuntimeSettings.bell_enabled !== false;
 
   const showBackButton = Boolean(backAction);
   const isBackDisabled = Boolean(backAction?.disabled);
@@ -165,12 +170,6 @@ export default function AppHeaderRenderer({ contract, onAction }) {
             ◁
           </button>
         ) : null}
-
-        <AppModeSwitch
-          tenantId={tenantId}
-          variant={mode === "designer" ? "designer" : "runtime"}
-          mode={mode}
-        />
 
         <div
           className="app-header-renderer__title-block"
@@ -290,15 +289,17 @@ export default function AppHeaderRenderer({ contract, onAction }) {
             .join(" ")}
           aria-disabled={!notificationsInteractive}
         >
-          <NotificationBell
-            notifications={notificationItems}
-            unreadCount={unreadCount}
-            onReadNotification={
-              typeof onReadNotification === "function"
-                ? onReadNotification
-                : () => Promise.resolve()
-            }
-          />
+          {bellEnabled ? (
+            <NotificationBell
+              notifications={notificationItems}
+              unreadCount={unreadCount}
+              onReadNotification={
+                typeof onReadNotification === "function"
+                  ? onReadNotification
+                  : () => Promise.resolve()
+              }
+            />
+          ) : null}
         </div>
 
         <button

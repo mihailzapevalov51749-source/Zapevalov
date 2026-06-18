@@ -1,10 +1,12 @@
 import {
   buildControlPlaneCompaniesPath,
+  buildControlPlanePlatformPath,
   buildControlPlanePlatformProfilePath,
   buildControlPlaneRoute,
   buildControlPlaneUsersRolesPath,
 } from "./controlPlanePaths.js";
 import { resolvePlatformProfileWorkspaceTab } from "../platformProfile/platformProfileWorkspaceConfig.js";
+import { resolvePlatformWorkspaceTab } from "../platform/platformWorkspaceConfig.js";
 
 const CP = buildControlPlaneRoute();
 
@@ -13,7 +15,6 @@ function cpNavItem({
   title,
   route = null,
   children = null,
-  iconType = "settings",
   sortOrder = 0,
   type = "system_page",
 }) {
@@ -24,7 +25,6 @@ function cpNavItem({
     title,
     type: hasChildren ? "section" : type,
     ...(route ? { route, path: route } : {}),
-    iconType,
     menu_scope: "runtime",
     scope: "runtime",
     mode: "runtime",
@@ -41,21 +41,42 @@ export const CONTROL_PLANE_NAV_ITEMS = [
     id: "cp-overview",
     title: "Главная",
     route: CP,
-    iconType: "settings",
     sortOrder: 10,
+  }),
+  cpNavItem({
+    id: "cp-group-platform-profile",
+    title: "Профиль платформы",
+    route: buildControlPlanePlatformProfilePath("general"),
+    sortOrder: 20,
+  }),
+  cpNavItem({
+    id: "cp-group-users-roles",
+    title: "Пользователи и роли",
+    route: buildControlPlaneUsersRolesPath("users"),
+    sortOrder: 30,
+  }),
+  cpNavItem({
+    id: "cp-group-releases",
+    title: "Релизы",
+    route: buildControlPlaneRoute("releases"),
+    sortOrder: 40,
   }),
   cpNavItem({
     id: "cp-group-companies",
     title: "Компании",
     route: buildControlPlaneCompaniesPath("clients"),
-    iconType: "users",
-    sortOrder: 20,
+    sortOrder: 50,
+  }),
+  cpNavItem({
+    id: "cp-group-platform",
+    title: "Платформа",
+    route: buildControlPlanePlatformPath("overview"),
+    sortOrder: 60,
   }),
   cpNavItem({
     id: "cp-group-templates",
     title: "Шаблоны",
-    iconType: "objects",
-    sortOrder: 30,
+    sortOrder: 70,
     children: [
       cpNavItem({
         id: "cp-templates-versions",
@@ -69,68 +90,18 @@ export const CONTROL_PLANE_NAV_ITEMS = [
         route: buildControlPlaneRoute("templates/updates"),
         sortOrder: 20,
       }),
-      cpNavItem({
-        id: "cp-templates-publish",
-        title: "Публикация",
-        route: buildControlPlaneRoute("templates/publish"),
-        sortOrder: 30,
-      }),
     ],
-  }),
-  cpNavItem({
-    id: "cp-group-platform-profile",
-    title: "Профиль платформы",
-    route: buildControlPlanePlatformProfilePath("general"),
-    iconType: "settings",
-    sortOrder: 35,
-  }),
-  cpNavItem({
-    id: "cp-group-platform",
-    title: "Платформа",
-    iconType: "settings",
-    sortOrder: 40,
-    children: [
-      cpNavItem({
-        id: "cp-platform-licenses",
-        title: "Лицензии",
-        route: buildControlPlaneRoute("platform/licenses"),
-        sortOrder: 10,
-      }),
-      cpNavItem({
-        id: "cp-platform-policies",
-        title: "Глобальные политики",
-        route: buildControlPlaneRoute("platform/policies"),
-        sortOrder: 20,
-      }),
-      cpNavItem({
-        id: "cp-platform-monitoring",
-        title: "Мониторинг",
-        route: buildControlPlaneRoute("platform/monitoring"),
-        sortOrder: 30,
-      }),
-      cpNavItem({
-        id: "cp-platform-backup",
-        title: "Резервное копирование",
-        route: buildControlPlaneRoute("platform/backup"),
-        sortOrder: 40,
-      }),
-    ],
-  }),
-  cpNavItem({
-    id: "cp-group-users-roles",
-    title: "Пользователи и роли",
-    route: buildControlPlaneUsersRolesPath("users"),
-    iconType: "users",
-    sortOrder: 50,
   }),
   cpNavItem({
     id: "cp-audit-log",
     title: "Журнал событий",
     route: buildControlPlaneRoute("audit-log"),
-    iconType: "settings",
-    sortOrder: 60,
+    sortOrder: 80,
   }),
 ];
+
+const PLATFORM_WORKSPACE_ROUTE_PATTERN =
+  /^\/control-plane\/platform\/(overview|environments|modules|module-update-offers|module-update-previews|policies|monitoring|tenant-module-configurations|module-configuration-diffs)(?:\/|$)/;
 
 const ROUTE_MATCHERS = [
   {
@@ -140,6 +111,16 @@ const ROUTE_MATCHERS = [
   },
   {
     test: (path) => /^\/control-plane\/companies\/clients(?:\/|$)/.test(path),
+    itemId: "cp-group-companies",
+    parentIds: [],
+  },
+  {
+    test: (path) => /^\/control-plane\/companies\/clients\/\d+\/profile(?:\/|$)/.test(path),
+    itemId: "cp-group-companies",
+    parentIds: [],
+  },
+  {
+    test: (path) => /^\/control-plane\/companies\/licenses(?:\/|$)/.test(path),
     itemId: "cp-group-companies",
     parentIds: [],
   },
@@ -184,9 +165,19 @@ const ROUTE_MATCHERS = [
     parentIds: ["cp-group-templates"],
   },
   {
+    test: (path) => /^\/control-plane\/releases\/versions(?:\/|$)/.test(path),
+    itemId: "cp-group-companies",
+    parentIds: [],
+  },
+  {
+    test: (path) => /^\/control-plane\/releases(?:\/|$)/.test(path),
+    itemId: "cp-group-releases",
+    parentIds: [],
+  },
+  {
     test: (path) => /^\/control-plane\/templates\/publish(?:\/|$)/.test(path),
-    itemId: "cp-templates-publish",
-    parentIds: ["cp-group-templates"],
+    itemId: "cp-group-releases",
+    parentIds: [],
   },
   {
     test: (path) => /^\/control-plane\/templates(?:\/|$)/.test(path),
@@ -199,29 +190,24 @@ const ROUTE_MATCHERS = [
     parentIds: [],
   },
   {
+    test: (path) => PLATFORM_WORKSPACE_ROUTE_PATTERN.test(path),
+    itemId: "cp-group-platform",
+    parentIds: [],
+  },
+  {
     test: (path) => /^\/control-plane\/platform\/licenses(?:\/|$)/.test(path),
-    itemId: "cp-platform-licenses",
-    parentIds: ["cp-group-platform"],
-  },
-  {
-    test: (path) => /^\/control-plane\/platform\/policies(?:\/|$)/.test(path),
-    itemId: "cp-platform-policies",
-    parentIds: ["cp-group-platform"],
-  },
-  {
-    test: (path) => /^\/control-plane\/platform\/monitoring(?:\/|$)/.test(path),
-    itemId: "cp-platform-monitoring",
-    parentIds: ["cp-group-platform"],
+    itemId: "cp-group-companies",
+    parentIds: [],
   },
   {
     test: (path) => /^\/control-plane\/platform\/backup(?:\/|$)/.test(path),
-    itemId: "cp-platform-backup",
-    parentIds: ["cp-group-platform"],
+    itemId: "cp-group-platform",
+    parentIds: [],
   },
   {
     test: (path) => /^\/control-plane\/platform(?:\/|$)/.test(path),
-    itemId: "cp-platform-licenses",
-    parentIds: ["cp-group-platform"],
+    itemId: "cp-group-platform",
+    parentIds: [],
   },
   {
     test: (path) => /^\/control-plane\/users-roles(?:\/|$)/.test(path),
@@ -255,18 +241,53 @@ const ROUTE_MATCHERS = [
   },
   {
     test: (path) => /^\/control-plane\/settings(?:\/|$)/.test(path),
-    itemId: "cp-platform-policies",
-    parentIds: ["cp-group-platform"],
+    itemId: "cp-group-platform",
+    parentIds: [],
+  },
+  {
+    test: (path) => /^\/control-plane\/module-configuration-diffs(?:\/|$)/.test(path),
+    itemId: "cp-group-platform",
+    parentIds: [],
+  },
+  {
+    test: (path) => /^\/control-plane\/module-applies(?:\/|$)/.test(path),
+    itemId: "cp-group-platform",
+    parentIds: [],
+  },
+  {
+    test: (path) => /^\/control-plane\/module-publications(?:\/|$)/.test(path),
+    itemId: "cp-group-platform",
+    parentIds: [],
+  },
+  {
+    test: (path) => /^\/control-plane\/module-rollbacks(?:\/|$)/.test(path),
+    itemId: "cp-group-platform",
+    parentIds: [],
+  },
+  {
+    test: (path) => /^\/control-plane\/tenant-module-configurations(?:\/|$)/.test(path),
+    itemId: "cp-group-platform",
+    parentIds: [],
+  },
+  {
+    test: (path) => /^\/control-plane\/module-update-previews(?:\/|$)/.test(path),
+    itemId: "cp-group-platform",
+    parentIds: [],
+  },
+  {
+    test: (path) => /^\/control-plane\/module-update-offers(?:\/|$)/.test(path),
+    itemId: "cp-group-platform",
+    parentIds: [],
   },
   {
     test: (path) => /^\/control-plane\/modules(?:\/|$)/.test(path),
-    itemId: "cp-platform-monitoring",
-    parentIds: ["cp-group-platform"],
+    itemId: "cp-group-platform",
+    parentIds: [],
   },
   {
     test: (path) => /^\/control-plane\/integrations(?:\/|$)/.test(path),
-    itemId: "cp-platform-monitoring",
-    parentIds: ["cp-group-platform"],
+    itemId: "cp-group-platform",
+    parentIds: [],
   },
 ];
 
@@ -295,6 +316,47 @@ export function resolveControlPlaneActiveParentIds(pathname = "") {
   return resolveControlPlaneNavState(pathname).activeParentIds;
 }
 
+export function applyControlPlaneNavBadges(navigationItems, badgeCounts = {}) {
+  const counts = badgeCounts && typeof badgeCounts === "object" ? badgeCounts : {};
+
+  return navigationItems.map((item) => {
+    const badgeCount = Number(counts[item.id] ?? 0);
+    const nextItem = badgeCount > 0 ? { ...item, badge_count: badgeCount } : item;
+
+    if (!Array.isArray(item.children) || item.children.length === 0) {
+      return nextItem;
+    }
+
+    return {
+      ...nextItem,
+      children: applyControlPlaneNavBadges(item.children, counts),
+    };
+  });
+}
+
+function buildPlatformWorkspacePageMeta(pathname = "") {
+  const normalized = String(pathname || "").replace(/\/+$/, "");
+  const slugMatch = normalized.match(/\/platform\/([^/]+)/);
+  const slug = slugMatch?.[1] || "overview";
+  const tab = resolvePlatformWorkspaceTab(slug);
+  const platformRoot = buildControlPlanePlatformPath("overview");
+
+  return {
+    title: tab.label,
+    subtitle: "Платформа",
+    breadcrumbTrail: [
+      {
+        label: "Платформа",
+        path: platformRoot,
+      },
+      {
+        label: tab.label,
+        path: tab.route,
+      },
+    ],
+  };
+}
+
 export function resolveControlPlanePageMeta(pathname = "") {
   const normalized = String(pathname || "").replace(/\/+$/, "");
   const subtitle = "Управление платформой — Control Plane";
@@ -304,6 +366,9 @@ export function resolveControlPlanePageMeta(pathname = "") {
   }
   if (/\/companies\/clients\/\d+/.test(normalized)) {
     return { title: "Компании", subtitle: "Клиенты" };
+  }
+  if (/\/companies\/licenses/.test(normalized)) {
+    return { title: "Компании", subtitle: "Лицензии" };
   }
   if (/\/companies\/clients/.test(normalized) || /\/companies/.test(normalized)) {
     return { title: "Компании", subtitle: "Клиенты" };
@@ -335,8 +400,14 @@ export function resolveControlPlanePageMeta(pathname = "") {
   if (/\/templates\/updates/.test(normalized)) {
     return { title: "Обновления", subtitle: "Шаблоны" };
   }
+  if (/\/releases\/versions/.test(normalized)) {
+    return { title: "Компании", subtitle: "Версии" };
+  }
+  if (/\/releases/.test(normalized)) {
+    return { title: "Проверка релизов", subtitle: "Релизы" };
+  }
   if (/\/templates\/publish/.test(normalized)) {
-    return { title: "Публикация", subtitle: "Шаблоны" };
+    return { title: "Релизы", subtitle: "Control Plane" };
   }
   if (/\/platform-profile/.test(normalized)) {
     const slugMatch = normalized.match(/\/platform-profile\/([^/]+)/);
@@ -360,14 +431,17 @@ export function resolveControlPlanePageMeta(pathname = "") {
       breadcrumbTrail,
     };
   }
+  if (PLATFORM_WORKSPACE_ROUTE_PATTERN.test(normalized)) {
+    return buildPlatformWorkspacePageMeta(normalized);
+  }
   if (/\/platform\/licenses/.test(normalized)) {
-    return { title: "Лицензии", subtitle: "Платформа" };
+    return { title: "Компании", subtitle: "Лицензии" };
   }
   if (/\/platform\/policies/.test(normalized)) {
-    return { title: "Глобальные политики", subtitle: "Платформа" };
+    return buildPlatformWorkspacePageMeta(normalized);
   }
   if (/\/platform\/monitoring/.test(normalized)) {
-    return { title: "Мониторинг", subtitle: "Платформа" };
+    return buildPlatformWorkspacePageMeta(normalized);
   }
   if (/\/platform\/backup/.test(normalized)) {
     return { title: "Резервное копирование", subtitle: "Платформа" };
@@ -375,14 +449,46 @@ export function resolveControlPlanePageMeta(pathname = "") {
   if (/\/users-roles\/roles/.test(normalized) || /\/platform-roles/.test(normalized)) {
     return { title: "Роли", subtitle: "Пользователи и роли" };
   }
+  if (/\/users-roles\/global-users/.test(normalized)) {
+    return { title: "Глобальные пользователи", subtitle: "Пользователи и роли" };
+  }
   if (/\/users-roles\/users/.test(normalized) || /\/platform-users/.test(normalized)) {
     return { title: "Пользователи", subtitle: "Пользователи и роли" };
   }
   if (/\/users-roles/.test(normalized)) {
     return { title: "Пользователи", subtitle: "Пользователи и роли" };
   }
+  if (/\/module-configuration-diffs/.test(normalized)) {
+    return buildPlatformWorkspacePageMeta(
+      buildControlPlanePlatformPath("module-configuration-diffs"),
+    );
+  }
+  if (/\/module-applies/.test(normalized)) {
+    return { title: "Module Applies", subtitle: "Платформа" };
+  }
+  if (/\/module-publications/.test(normalized)) {
+    return { title: "Module Publications", subtitle: "Платформа" };
+  }
+  if (/\/module-rollbacks/.test(normalized)) {
+    return { title: "Module Rollbacks", subtitle: "Платформа" };
+  }
+  if (/\/tenant-module-configurations/.test(normalized)) {
+    return buildPlatformWorkspacePageMeta(
+      buildControlPlanePlatformPath("tenant-module-configurations"),
+    );
+  }
+  if (/\/module-update-previews/.test(normalized)) {
+    return buildPlatformWorkspacePageMeta(
+      buildControlPlanePlatformPath("module-update-previews"),
+    );
+  }
+  if (/\/module-update-offers/.test(normalized)) {
+    return buildPlatformWorkspacePageMeta(
+      buildControlPlanePlatformPath("module-update-offers"),
+    );
+  }
   if (/\/modules/.test(normalized)) {
-    return { title: "Модули платформы", subtitle: "Платформа" };
+    return buildPlatformWorkspacePageMeta(buildControlPlanePlatformPath("modules"));
   }
   if (/\/settings/.test(normalized)) {
     return { title: "Настройки платформы", subtitle: "Платформа" };

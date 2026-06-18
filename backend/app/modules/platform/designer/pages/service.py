@@ -22,6 +22,11 @@ from app.modules.platform.designer.object_types.models import DesignerObjectType
 from app.modules.pages.schemas import PageCreate
 from app.modules.pages import service as pages_service
 from app.modules.sections.models import Section
+from app.modules.platform.designer.pages.page_registry_classification import (
+    build_page_registry_classification_context,
+    classify_page_entity_kind,
+    is_default_visible_entity_kind,
+)
 from app.modules.platform.designer.pages.schemas import (
     PageBlockSummaryRead,
     PageBulkDeleteResponse,
@@ -37,6 +42,7 @@ from app.modules.platform.designer.workspaces.models import (
     DesignerWorkspace,
     DesignerWorkspaceTab,
 )
+from app.modules.publication_guard.structure_write_service_guard import guard_direct_structure_write
 
 _BLOCK_TYPE_LABELS: dict[str, str] = {
     "text": "Текст",
@@ -501,6 +507,7 @@ def _to_list_item(
     block_count: int,
     block_types: set[str],
     navigation_urls: list[str],
+    entity_kind: str = "unknown",
 ) -> PageRegistryListItemRead:
     workspace_titles = _workspace_titles_from_usages(usages)
     workspace_label = ", ".join(workspace_titles) if workspace_titles else "—"
@@ -526,10 +533,16 @@ def _to_list_item(
         updated_at=page.updated_at,
         author=None,
         is_protected=is_protected_page(db, tenant_id=tenant_id, page=page),
+        entity_kind=entity_kind,  # type: ignore[arg-type]
     )
 
 
-def list_page_registry(db: Session, tenant_id: int) -> PageRegistryListResponse:
+def list_page_registry(
+    db: Session,
+    tenant_id: int,
+    *,
+    include_system: bool = False,
+) -> PageRegistryListResponse:
     pages = pages_service.get_pages_by_portal(
         db,
         tenant_id,
@@ -538,21 +551,40 @@ def list_page_registry(db: Session, tenant_id: int) -> PageRegistryListResponse:
     usages_map, _, home_page_ids = _collect_placement_maps(db, tenant_id)
     block_counts, _, block_types_map = _collect_block_stats(db, tenant_id)
     nav_urls_map = _navigation_urls_by_page(db, tenant_id)
+    classification_context = build_page_registry_classification_context(db, tenant_id)
 
-    items = [
-        _to_list_item(
+    all_items: list[PageRegistryListItemRead] = []
+    for page in pages:
+        entity_kind = classify_page_entity_kind(
             db,
             tenant_id,
             page,
-            usages=usages_map.get(int(page.id), []),
-            home_page_ids=home_page_ids,
-            block_count=block_counts.get(int(page.id), 0),
-            block_types=block_types_map.get(int(page.id), set()),
-            navigation_urls=nav_urls_map.get(int(page.id), []),
+            context=classification_context,
         )
-        for page in pages
+        all_items.append(
+            _to_list_item(
+                db,
+                tenant_id,
+                page,
+                usages=usages_map.get(int(page.id), []),
+                home_page_ids=home_page_ids,
+                block_count=block_counts.get(int(page.id), 0),
+                block_types=block_types_map.get(int(page.id), set()),
+                navigation_urls=nav_urls_map.get(int(page.id), []),
+                entity_kind=entity_kind,
+            )
+        )
+
+    visible_items = [
+        item for item in all_items if is_default_visible_entity_kind(item.entity_kind)
     ]
-    return PageRegistryListResponse(items=items)
+    hidden_system_count = len(all_items) - len(visible_items)
+
+    return PageRegistryListResponse(
+        items=all_items if include_system else visible_items,
+        total_pages=len(visible_items),
+        hidden_system_count=hidden_system_count,
+    )
 
 
 def get_page_registry_detail(db: Session, tenant_id: int, page_id: int) -> PageRegistryDetailRead:
@@ -581,6 +613,12 @@ def get_page_registry_detail(db: Session, tenant_id: int, page_id: int) -> PageR
         block_count=block_counts.get(int(page.id), 0),
         block_types=block_types_map.get(int(page.id), set()),
         navigation_urls=nav_urls_map.get(int(page.id), []),
+        entity_kind=classify_page_entity_kind(
+            db,
+            tenant_id,
+            page,
+            context=build_page_registry_classification_context(db, tenant_id),
+        ),
     )
     usages = usages_map.get(int(page.id), [])
     page_bindings = bindings_map.get(int(page.id), [])
@@ -627,6 +665,7 @@ def bulk_delete_page_registry(
     *,
     deleted_by: int | None = None,
 ) -> PageBulkDeleteResponse:
+    guard_direct_structure_write(db, tenant_id, "bulk_delete_page_registry")
     unique_ids: list[int] = []
     seen: set[int] = set()
     for raw_id in page_ids:
@@ -697,6 +736,7 @@ def delete_page_registry(
     *,
     deleted_by: int | None = None,
 ) -> dict[str, str]:
+    guard_direct_structure_write(db, tenant_id, "delete_page_registry")
     page = (
         db.query(Page)
         .filter(
@@ -726,6 +766,7 @@ def duplicate_page_registry(
     tenant_id: int,
     page_id: int,
 ) -> PageDuplicateResponse:
+    guard_direct_structure_write(db, tenant_id, "duplicate_page_registry")
     source = (
         db.query(Page)
         .filter(Page.id == page_id, Page.portal_id == tenant_id)

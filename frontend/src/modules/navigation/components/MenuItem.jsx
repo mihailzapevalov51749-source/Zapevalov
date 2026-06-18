@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 
 import MenuItemEditor from "./MenuItemEditor";
-import { hasUploadedIcon } from "../../../shared/icons/iconFileUtils";
 import SidebarNavigationItemIcon from "../../../shared/shell/sidebar/components/SidebarNavigationItemIcon";
 import {
   resolveSidebarNavigationIconSource,
   shouldShowNavigationMenuIcon,
 } from "../../../shared/shell/sidebar/utils/resolveSidebarNavigationIconSource";
+import { isObjectTypeNavigationItem } from "../../../shared/navigation/navigationMenuIconPolicy.js";
 import { theme } from "../../../styles/theme";
 import { LAYOUT_TOKENS } from "../../../shared/layout/layoutTokens";
 
@@ -22,6 +22,7 @@ import {
 import { isControlPlanePath } from "../../controlPlane/config/controlPlanePaths.js";
 import { useChatUnread } from "../../chats/context/ChatUnreadProvider.jsx";
 import { isRuntimeChatNavigationItem } from "../../../portal/resolveCorporateChatPage.js";
+import { canDragNavigationItem } from "../../../shared/navigation/navigationItemDragPolicy.js";
 
 const BASE = {
   rowHeight: 40,
@@ -31,7 +32,6 @@ const BASE = {
   gap: 8,
   indent: 14,
   radius: 8,
-  typeBadgeSize: 18,
 };
 
 const PROTECTED_TITLES = ["главная страница", "мои задачи"];
@@ -59,11 +59,6 @@ function isProtectedMenuTitle(title) {
   return PROTECTED_TITLES.includes(String(title || "").trim().toLowerCase());
 }
 
-function hasCustomMenuIcon(item) {
-  const { iconType, iconFileUrl } = resolveSidebarNavigationIconSource(item);
-  return hasUploadedIcon(iconType, iconFileUrl);
-}
-
 function resolveNavigationPath(item) {
   return (
     item?.targetPath ||
@@ -75,10 +70,6 @@ function resolveNavigationPath(item) {
     item?.meta?.route ||
     null
   );
-}
-
-function isObjectTypeNavigationItem(item) {
-  return item?.type === "object_type" || item?.object_type_id != null;
 }
 
 function resolveMenuItemTextColor(item, isActive, activeAccent) {
@@ -126,6 +117,7 @@ export default function MenuItem({
   onSelectPage,
   onItemAction,
   isEditMode,
+  personalizeOnly = false,
   onUpdateItem,
   onDeleteItem,
   dragAndDrop,
@@ -142,8 +134,11 @@ export default function MenuItem({
     !isEditMode &&
     isRuntimeChatNavigationItem(item) &&
     Number(totalUnreadCount) > 0;
+  const menuBadgeCount = Number(item?.badge_count ?? item?.meta?.badgeCount ?? 0);
+  const showMenuBadge = !isEditMode && menuBadgeCount > 0 && !showChatUnreadBadge;
 
   const iconSource = useMemo(() => resolveSidebarNavigationIconSource(item), [item]);
+  const hasUploadedMenuIcon = iconSource.hasUploadedIcon;
 
   const [isHovered, setIsHovered] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -164,7 +159,6 @@ export default function MenuItem({
   }, [tenantId, item.id, activeSidebarParentIds]);
 
   const isProtectedTitle = isProtectedMenuTitle(item?.title);
-
   const isSystem =
     item?.isSystem ||
     item?.is_system === true ||
@@ -185,10 +179,6 @@ export default function MenuItem({
       document.removeEventListener("click", handleClose);
     };
   }, [setOpenedEditorItemId]);
-
-  if (!isEditMode && !item.is_visible) {
-    return null;
-  }
 
   const currentPathname = normalizeMenuPath(window.location.pathname);
   const navigationPath = resolveNavigationPath(item);
@@ -263,9 +253,7 @@ export default function MenuItem({
       (objectTypeItem && navigationPath) ||
       isSection);
 
-  const allowSystemDrag =
-    isSystem && (sidebarMode === "designer" || sidebarMode === "control-plane");
-  const canDragItem = !isSystem || allowSystemDrag;
+  const canDragItem = canDragNavigationItem(item, { sidebarMode, isEditMode });
   const isDropTarget =
     canDragItem && dragAndDrop?.dropTarget?.targetId === item.id;
 
@@ -361,6 +349,10 @@ export default function MenuItem({
     }
   };
 
+  if (!isEditMode && !item.is_visible) {
+    return null;
+  }
+
   return (
     <div
       style={{
@@ -372,8 +364,10 @@ export default function MenuItem({
 
       <div
         draggable={isEditMode && canDragItem}
-        onDragStart={() => {
+        onDragStart={(event) => {
           if (!canDragItem) return;
+          event.dataTransfer.setData("text/plain", String(item.id));
+          event.dataTransfer.effectAllowed = "move";
           dragAndDrop?.handleDragStart(item.id);
         }}
         onDragOver={(event) => {
@@ -437,61 +431,26 @@ export default function MenuItem({
             </span>
           )}
 
-          {isEditMode && canDragItem && !sidebarCollapsed && (
-            <TypeBadge type={item.type} scale={scale} />
-          )}
-
-          {sidebarCollapsed ? (
-            showMenuIcon && hasCustomMenuIcon(item) ? (
-              <SidebarNavigationItemIcon
-                iconType={iconSource.iconType}
-                iconFileUrl={iconSource.iconFileUrl}
-                size={iconSize}
-              />
-            ) : showMenuIcon ? (
-              <DefaultIcon
-                type={item.type}
-                scale={1}
-                active={isActive}
-                iconSize={iconSize}
-                accentColor={activeAccent}
-              />
-            ) : null
-          ) : (
-            <>
-              {showMenuIcon ? (
-                <SidebarNavigationItemIcon
-                  iconType={iconSource.iconType}
-                  iconFileUrl={iconSource.iconFileUrl}
-                  size={iconSize}
-                />
-              ) : null}
-
-              {isEditMode && item.type === "system_page" && !item.icon_type && (
-                <DefaultIcon
-                  type={item.type}
-                  scale={scale}
-                  active={isActive}
-                  iconSize={iconSize}
-                  accentColor={activeAccent}
-                />
-              )}
-            </>
-          )}
+          {showMenuIcon && hasUploadedMenuIcon ? (
+            <SidebarNavigationItemIcon
+              iconFileUrl={iconSource.iconFileUrl}
+              size={iconSize}
+            />
+          ) : null}
 
           {!sidebarCollapsed && (
-          <span
-            style={{
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              minWidth: 0,
-              color: itemTextColor,
-            }}
-            title={iconSource.title}
-          >
-            {iconSource.title}
-          </span>
+            <span
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                minWidth: 0,
+                color: itemTextColor,
+              }}
+              title={iconSource.title}
+            >
+              {iconSource.title}
+            </span>
           )}
         </div>
 
@@ -512,6 +471,7 @@ export default function MenuItem({
               justifyContent: "center",
               flexShrink: 0,
               boxSizing: "border-box",
+              pointerEvents: "none",
               position: sidebarCollapsed ? "absolute" : "static",
               top: sidebarCollapsed ? 4 : undefined,
               right: sidebarCollapsed ? 4 : undefined,
@@ -519,6 +479,34 @@ export default function MenuItem({
             aria-label={`Непрочитанные сообщения: ${totalUnreadCount}`}
           >
             {totalUnreadCount > 99 ? "99+" : totalUnreadCount}
+          </span>
+        )}
+
+        {!isEditMode && showMenuBadge && (
+          <span
+            style={{
+              minWidth: sidebarCollapsed ? 16 : 18,
+              height: sidebarCollapsed ? 16 : 18,
+              padding: sidebarCollapsed ? "0 4px" : "0 5px",
+              borderRadius: 999,
+              background: "#DC2626",
+              color: "#FFFFFF",
+              fontSize: sidebarCollapsed ? 9 : 10,
+              fontWeight: 700,
+              lineHeight: sidebarCollapsed ? "14px" : "16px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              boxSizing: "border-box",
+              pointerEvents: "none",
+              position: sidebarCollapsed ? "absolute" : "static",
+              top: sidebarCollapsed ? 4 : undefined,
+              right: sidebarCollapsed ? 4 : undefined,
+            }}
+            aria-label={`Требует внимания: ${menuBadgeCount}`}
+          >
+            {menuBadgeCount > 99 ? "99+" : menuBadgeCount}
           </span>
         )}
 
@@ -559,6 +547,7 @@ export default function MenuItem({
         <div onClick={(event) => event.stopPropagation()}>
           <MenuItemEditor
             item={item}
+            personalizeOnly={personalizeOnly}
             onSave={async (data) => {
               await onUpdateItem(item.id, {
                 ...data,
@@ -600,14 +589,13 @@ export default function MenuItem({
               onSelectPage={onSelectPage}
               onItemAction={onItemAction}
               isEditMode={isEditMode}
+              personalizeOnly={personalizeOnly}
               onUpdateItem={onUpdateItem}
               onDeleteItem={onDeleteItem}
               dragAndDrop={
-                child?.isSystem
-                && sidebarMode !== "designer"
-                && sidebarMode !== "control-plane"
-                  ? null
-                  : dragAndDrop
+                canDragNavigationItem(child, { sidebarMode, isEditMode })
+                  ? dragAndDrop
+                  : null
               }
               scale={scale}
               openedEditorItemId={openedEditorItemId}
@@ -615,123 +603,13 @@ export default function MenuItem({
               sidebarCollapsed={sidebarCollapsed}
               sidebarMode={sidebarMode}
               routeOwner={routeOwner}
+              tenantId={tenantId}
             />
           ))}
         </div>
       )}
     </div>
   );
-}
-
-function TypeBadge({ type, scale = 1 }) {
-  const config = {
-    section: { symbol: "▣", title: "Раздел" },
-    workspace: { symbol: "▣", title: "Раздел" },
-    page: { symbol: "□", title: "Страница" },
-    universal_table: {
-      symbol: "▦",
-      title: "Универсальная таблица",
-    },
-    external_link: {
-      symbol: "↗",
-      title: "Ссылка",
-    },
-    document_library: {
-      symbol: "▤",
-      title: "Библиотека документов",
-    },
-    system_page: {
-      symbol: "⚙",
-      title: "Системная страница",
-    },
-  };
-
-  const current =
-    config[type] || {
-      symbol: "?",
-      title: "Тип элемента",
-    };
-
-  return (
-    <span
-      title={current.title}
-      style={{
-        width: BASE.typeBadgeSize * scale,
-        height: BASE.typeBadgeSize * scale,
-        borderRadius: 6 * scale,
-        border: "1px solid #CBD5E1",
-        background: "#F8FAFC",
-        color: "#64748B",
-        fontSize: 12 * scale,
-        fontWeight: 700,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-        lineHeight: 1,
-      }}
-    >
-      {current.symbol}
-    </span>
-  );
-}
-
-function DefaultIcon({
-  type,
-  scale = 1,
-  active = false,
-  iconSize,
-  accentColor = "#2563EB",
-}) {
-  const size = iconSize ?? BASE.iconSize * scale;
-  const config = {
-    section: "▣",
-    workspace: "▣",
-    page: "□",
-    universal_table: "▦",
-    external_link: "↗",
-    document_library: "▤",
-    system_page: "⚙",
-    object_type: "◆",
-    table: "▦",
-  };
-
-  const symbol = config[type] || "?";
-
-  return (
-    <span
-      style={{
-        width: size,
-        height: size,
-        color: active ? accentColor : "#64748B",
-        fontSize: Math.max(12, size - 2),
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexShrink: 0,
-        lineHeight: 1,
-      }}
-      title={itemTypeLabel(type)}
-    >
-      {symbol}
-    </span>
-  );
-}
-
-function itemTypeLabel(type) {
-  const labels = {
-    section: "Раздел",
-    workspace: "Раздел",
-    page: "Страница",
-    universal_table: "Универсальная таблица",
-    external_link: "Ссылка",
-    document_library: "Библиотека документов",
-    system_page: "Системная страница",
-    object_type: "Объект",
-    table: "Таблица",
-  };
-
-  return labels[type] || "Пункт меню";
 }
 
 function DropLine({ scale = 1 }) {

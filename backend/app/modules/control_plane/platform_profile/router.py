@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.modules.auth.dependencies import get_current_user
 from app.modules.control_plane.dependencies import require_platform_admin
+from app.modules.control_plane.platform_identity.principal.pilot import apply_principal_pilot_headers
+from app.modules.control_plane.platform_identity.principal.resolver import get_current_principal
+from app.modules.control_plane.platform_identity.principal.types import Principal
 from app.modules.users.bootstrap_owner_service import has_real_platform_owner, is_bootstrap_owner
 from app.modules.control_plane.platform_profile.owner_service import (
     create_first_platform_owner,
@@ -31,9 +34,12 @@ router = APIRouter(
 
 @router.get("/settings", response_model=PlatformSettingsRead)
 def get_platform_profile_settings_endpoint(
+    response: Response,
     db: Session = Depends(get_db),
     _admin: User = Depends(require_platform_admin),
+    principal: Principal = Depends(get_current_principal),
 ):
+    apply_principal_pilot_headers(response, principal)
     return get_platform_settings(db)
 
 

@@ -171,7 +171,7 @@ export default function ChangeCompanyAdministratorModal({
         setSuccessMessage(
           result?.invitation_sent
             ? "Приглашение отправлено"
-            : "Администратор создан. SMTP не настроен — письмо не отправлено.",
+            : "Superadmin назначен. SMTP не настроен — письмо не отправлено.",
         );
         onChanged?.(result);
         return;
@@ -183,7 +183,7 @@ export default function ChangeCompanyAdministratorModal({
       }
 
       const result = await changeCompanyAdministrator(company.id, selectedUserId);
-      setSuccessMessage("Администратор компании обновлён");
+      setSuccessMessage("Superadmin компании обновлён");
       onChanged?.(result);
     } catch (requestError) {
       setError(
@@ -191,7 +191,7 @@ export default function ChangeCompanyAdministratorModal({
           requestError,
           isInviteMode
             ? "Не удалось отправить приглашение"
-            : "Не удалось сменить администратора",
+            : "Не удалось сменить Superadmin",
         ),
       );
     } finally {
@@ -204,13 +204,13 @@ export default function ChangeCompanyAdministratorModal({
       modalKey={CONTROL_PLANE_CHANGE_ADMIN_MODAL_KEY}
       open={isOpen}
       onClose={onClose}
-      title="Сменить администратора компании"
+      title={isInviteMode ? "Назначить Superadmin" : "Сменить Superadmin"}
       subtitle={companyName}
       canCustomizeLayout
       keepFullyVisible
       viewportInset={CONTROL_PLANE_MODAL_VIEWPORT_INSET}
       defaultBounds={CONTROL_PLANE_CHANGE_ADMIN_MODAL_DEFAULT_BOUNDS}
-      ariaLabel="Смена администратора компании"
+      ariaLabel={isInviteMode ? "Назначение Superadmin" : "Смена Superadmin"}
       contentStyle={CONTROL_PLANE_MODAL_CONTENT_STYLE}
       footer={
         <div className="platform-modal-footer" data-platform-modal-no-drag>

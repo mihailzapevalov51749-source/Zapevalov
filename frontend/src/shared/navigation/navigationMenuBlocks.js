@@ -10,6 +10,7 @@ const CONTROL_PLANE_DEFAULT_BLOCK_BY_ID = {
   "cp-overview": 1,
   "cp-group-companies": 2,
   "cp-group-templates": 2,
+  "cp-group-releases": 2,
   "cp-group-platform": 2,
   "cp-group-platform-profile": 3,
   "cp-group-users-roles": 3,
@@ -84,6 +85,10 @@ export function resolveNavigationItemBlockId(item, settings = {}, options = {}) 
     return 1;
   }
 
+  if (item.personal_block_id != null) {
+    return normalizeNavigationBlockId(item.personal_block_id, 2);
+  }
+
   if (itemSettings.block_id != null) {
     return normalizeNavigationBlockId(itemSettings.block_id, 2);
   }
@@ -140,6 +145,73 @@ export function organizeRootNavigationIntoBlocks(
 
 export function flattenNavigationBlocks(blocks = []) {
   return blocks.flat();
+}
+
+export function formatPersonalBlockKey(blockId) {
+  const parsed = Number(blockId);
+  if (!Number.isFinite(parsed)) {
+    return undefined;
+  }
+
+  const rounded = Math.trunc(parsed);
+  if (rounded < 1 || rounded > NAVIGATION_MENU_BLOCK_COUNT) {
+    return undefined;
+  }
+
+  return `block:${rounded}`;
+}
+
+export function parsePersonalBlockKey(value) {
+  const raw = String(value ?? "").trim();
+  const match = /^block:(\d+)$/.exec(raw);
+  if (!match) {
+    return null;
+  }
+
+  const parsed = Number(match[1]);
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  const rounded = Math.trunc(parsed);
+  if (rounded < 1 || rounded > NAVIGATION_MENU_BLOCK_COUNT) {
+    return null;
+  }
+
+  return rounded;
+}
+
+/**
+ * Returns a block title only when it exists in item/block metadata from data.
+ * Never invents fallback labels.
+ */
+export function resolveNavigationBlockTitle(blockItems = []) {
+  if (!Array.isArray(blockItems) || blockItems.length === 0) {
+    return null;
+  }
+
+  for (const item of blockItems) {
+    if (!item || typeof item !== "object") {
+      continue;
+    }
+
+    const explicitTitle = [
+      item.block_title,
+      item.blockTitle,
+      item.block_label,
+      item.blockLabel,
+      item.block_name,
+      item.blockName,
+    ]
+      .map((value) => String(value ?? "").trim())
+      .find(Boolean);
+
+    if (explicitTitle) {
+      return explicitTitle;
+    }
+  }
+
+  return null;
 }
 
 export function enforcePinnedHomeInFirstBlock(blocks = []) {

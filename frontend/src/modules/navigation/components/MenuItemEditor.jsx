@@ -12,7 +12,7 @@ const isProtectedMenuTitle = (title) => {
   return PROTECTED_TITLES.includes(String(title || "").trim().toLowerCase());
 };
 
-export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
+export default function MenuItemEditor({ item, onSave, onDelete, onClose, personalizeOnly = false }) {
   const fileInputRef = useRef(null);
 
   const isObjectTypeMenuItem =
@@ -31,9 +31,6 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
 
   const [title, setTitle] = useState(
     item.display_title || item.title || "",
-  );
-  const [iconType, setIconType] = useState(
-    item.display_icon_type || item.icon_type || null,
   );
   const [iconFileUrl, setIconFileUrl] = useState(
     item.display_icon_file_url || item.icon_file_url || null,
@@ -59,7 +56,6 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
 
     try {
       const uploaded = await uploadIcon(file);
-      setIconType("upload");
       setIconFileUrl(uploaded.file_url);
     } catch (e) {
       console.error(e);
@@ -68,7 +64,6 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
   };
 
   const handleRemoveIcon = () => {
-    setIconType(null);
     setIconFileUrl(null);
 
     if (fileInputRef.current) {
@@ -77,6 +72,16 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
   };
 
   const handleSave = async () => {
+    if (personalizeOnly) {
+      await onSave({
+        color,
+        is_bold: isBold,
+        is_visible: isVisible,
+        isSystem,
+      });
+      return;
+    }
+
     if (isObjectTypeMenuItem) {
       const trimmedColor = String(color || "").trim();
       await onSave({
@@ -94,9 +99,7 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
 
     await onSave({
       title: title.trim(),
-      icon: null,
-      icon_type: iconType,
-      icon_file_url: iconFileUrl,
+      icon_file_url: iconFileUrl || null,
       color,
       is_bold: isBold,
       is_italic: isItalic,
@@ -124,19 +127,21 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Название"
-          readOnly={isObjectTypeMenuItem}
-          disabled={isObjectTypeMenuItem}
+          readOnly={personalizeOnly || isObjectTypeMenuItem}
+          disabled={personalizeOnly || isObjectTypeMenuItem}
           style={{
             ...titleInputStyle,
             color: color || "#0f172a",
             fontWeight: isBold ? 700 : 500,
             fontStyle: isItalic ? "italic" : "normal",
-            ...(isObjectTypeMenuItem
+            ...(personalizeOnly || isObjectTypeMenuItem
               ? { background: "#f8fafc", cursor: "default" }
               : {}),
           }}
           title={
-            isObjectTypeMenuItem
+            personalizeOnly
+              ? "Название задаёт администратор компании"
+              : isObjectTypeMenuItem
               ? "Название берётся из Object Type"
               : undefined
           }
@@ -195,7 +200,7 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
             />
             <span>Иконка</span>
           </label>
-        ) : (
+        ) : personalizeOnly ? null : (
           <>
             <button
               type="button"
@@ -234,7 +239,7 @@ export default function MenuItemEditor({ item, onSave, onDelete, onClose }) {
       </div>
 
       <div style={footerRowStyle}>
-        {!isSystem && !isObjectTypeMenuItem && canDelete ? (
+        {!personalizeOnly && !isSystem && !isObjectTypeMenuItem && canDelete ? (
           <button type="button" onClick={onDelete} style={deleteButtonStyle}>
             <Trash2 size={14} />
           </button>

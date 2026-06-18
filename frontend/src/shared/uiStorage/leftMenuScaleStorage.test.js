@@ -4,6 +4,9 @@ import { afterEach, beforeEach, describe, it } from "node:test";
 import {
   readLeftMenuScale,
   writeLeftMenuScale,
+  resolveAppliedLeftMenuScale,
+  formatLeftMenuScalePercent,
+  LEFT_MENU_SCALE_VISUAL_BASELINE_FACTOR,
 } from "./leftMenuScaleStorage.js";
 import { LEGACY_UI_KEYS } from "./uiStorageKeys.js";
 
@@ -45,5 +48,25 @@ describe("leftMenuScaleStorage", () => {
       "1.3",
     );
     assert.equal(readLeftMenuScale(14), 1);
+  });
+
+  it("maps stored 100% to former visual 90%", () => {
+    assert.equal(
+      resolveAppliedLeftMenuScale(1),
+      0.9,
+    );
+    assert.equal(
+      resolveAppliedLeftMenuScale(0.9),
+      0.9 * LEFT_MENU_SCALE_VISUAL_BASELINE_FACTOR,
+    );
+    assert.equal(
+      resolveAppliedLeftMenuScale(1.1),
+      1.1 * LEFT_MENU_SCALE_VISUAL_BASELINE_FACTOR,
+    );
+  });
+
+  it("keeps user-facing percent label on stored value", () => {
+    assert.equal(formatLeftMenuScalePercent(1), "100%");
+    assert.equal(formatLeftMenuScalePercent(0.9), "90%");
   });
 });

@@ -32,6 +32,8 @@ from app.modules.platform.designer.object_types.schemas import (
     ObjectTypeUpdate,
 )
 from app.modules.users.models import User
+from app.modules.publication_guard.structure_write_service_guard import guard_direct_structure_write
+
 
 def _dependency_counts_for_entity(
     db: Session | None,
@@ -167,6 +169,7 @@ def create_object_type(
     payload: ObjectTypeCreate,
     current_user: User | None,
 ) -> ObjectTypeRead:
+    guard_direct_structure_write(db, tenant_id, "create_object_type")
     if repository.get_by_key(db, tenant_id, payload.key):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -231,6 +234,7 @@ def update_object_type(
     payload: ObjectTypeUpdate,
     current_user: User | None,
 ) -> ObjectTypeRead:
+    guard_direct_structure_write(db, tenant_id, "update_object_type")
     entity = repository.get_object_type(db, tenant_id, object_type_id)
 
     if not entity:
@@ -382,6 +386,7 @@ def delete_object_type(
     object_type_id: UUID,
     current_user: User | None,
 ) -> ObjectTypeRead:
+    guard_direct_structure_write(db, tenant_id, "delete_object_type")
     entity = repository.get_object_type(db, tenant_id, object_type_id)
 
     if not entity:
@@ -432,6 +437,7 @@ def purge_object_type_from_trash(
     tenant_id: int,
     object_type_id: UUID,
 ) -> None:
+    guard_direct_structure_write(db, tenant_id, "purge_object_type_from_trash")
     entity = (
         db.query(DesignerObjectType)
         .filter(

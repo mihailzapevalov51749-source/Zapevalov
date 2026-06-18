@@ -10,7 +10,11 @@ from pathlib import Path
 from uuid import uuid4
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(BACKEND_ROOT))
+sys.path.insert(0, str(SCRIPTS_ROOT))
+
+from structure_write_script_guard import guard_script_structure_write  # noqa: E402
 
 from sqlalchemy import text
 
@@ -78,6 +82,7 @@ def main() -> int:
     changes: list[dict] = []
 
     try:
+        guard_script_structure_write(db, TENANT_ID, "ensure_plan_self_hierarchy_relations")
         object_types = db.execute(
             text(
                 """

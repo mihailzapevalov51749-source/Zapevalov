@@ -1,6 +1,6 @@
 import { platformApiClient } from "../../designer/api/platformApiClient";
 
-export async function listTenantRegistry({ type, status, search } = {}) {
+export async function listTenantRegistry({ type, status, search, clientsOnly } = {}) {
   const params = {};
 
   if (type) {
@@ -11,6 +11,9 @@ export async function listTenantRegistry({ type, status, search } = {}) {
   }
   if (search) {
     params.search = search;
+  }
+  if (clientsOnly) {
+    params.clients_only = true;
   }
 
   const response = await platformApiClient.get("/control-plane/tenants", {

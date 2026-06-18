@@ -1,21 +1,13 @@
-import {
-  hasUploadedIcon,
-  resolveIconFileSrc,
-} from "../../../icons/iconFileUtils";
+import { resolveIconFileSrc } from "../../../icons/iconFileUtils";
 
 /**
- * Shared sidebar upload icon renderer for navigation and Object Type projection items.
+ * Renders only user-uploaded navigation menu icon files.
  */
 export default function SidebarNavigationItemIcon({
-  iconType,
   iconFileUrl,
   size = 16,
   className = "",
 }) {
-  if (!hasUploadedIcon(iconType, iconFileUrl)) {
-    return null;
-  }
-
   const src = resolveIconFileSrc(iconFileUrl);
   if (!src) {
     return null;

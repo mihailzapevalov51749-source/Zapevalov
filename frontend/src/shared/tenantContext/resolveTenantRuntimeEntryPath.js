@@ -13,6 +13,19 @@ function normalizeTenantId(value) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
+export function formatTenantHomePageNotFoundMessage(tenantId) {
+  const normalizedTenantId = normalizeTenantId(tenantId);
+  if (normalizedTenantId == null) {
+    return TENANT_HOME_PAGE_NOT_FOUND_MESSAGE;
+  }
+
+  return (
+    "Не удалось определить главную страницу компании.\n"
+    + `Tenant/portal: ${normalizedTenantId}.\n`
+    + "Проверьте наличие home page в настройках компании."
+  );
+}
+
 /**
  * Sync tenant runtime entry: stored last path or cached home page only.
  * @returns {string | null}

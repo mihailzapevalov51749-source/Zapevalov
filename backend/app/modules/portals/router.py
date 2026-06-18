@@ -4,6 +4,10 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.modules.auth.dependencies import get_current_user
 from app.modules.control_plane.dependencies import require_platform_admin
+from app.modules.portals.dependencies import (
+    require_portal_profile_manage_access,
+    require_portal_profile_read_access,
+)
 from app.modules.portals.create_with_first_admin import (
     create_portal_with_first_admin,
     get_company_superadmin,
@@ -25,7 +29,9 @@ from app.modules.platform_event_journal.audit_constants import (
 )
 from app.modules.platform_event_journal.constants import PlatformEventJournalSource
 from app.modules.platform_event_journal.service import record_platform_event
+from app.modules.portals.general_settings import serialize_portal_general_settings
 from app.modules.portals.models import Portal
+from app.modules.portals.public_tenant_url import resolve_company_portal_url
 from app.modules.tenant_management.exceptions import (
     SystemTenantDeleteForbiddenError,
     TenantNotFoundError,
@@ -36,24 +42,63 @@ from app.modules.tenant_bootstrap.schemas import (
 )
 
 from . import service
-from .schemas import PortalCreate, PortalCreateWithFirstAdmin, PortalResponse, PortalWithSuperadminResponse
+from app.modules.platform_version_registry.crud import (
+    get_current_version_for_tenant,
+)
+from .schemas import (
+    PortalCreate,
+    PortalCreateWithFirstAdmin,
+    PortalGeneralSettingsUpdate,
+    PortalResponse,
+    PortalWithSuperadminResponse,
+)
 
 router = APIRouter(prefix="/portals", tags=["Portals"])
 
 
+def _resolve_portal_platform_version(db: Session | None, portal: Portal) -> str:
+    if db is not None:
+        registry_row = get_current_version_for_tenant(db, portal.id)
+        if registry_row is not None and registry_row.platform_version:
+            return str(registry_row.platform_version)
+    return str(portal.template_version or "")
+
+
+def _portal_public_url(portal: Portal) -> str | None:
+    public_slug = str(getattr(portal, "public_slug", "") or "").strip()
+    if not public_slug:
+        return None
+    return resolve_company_portal_url(public_slug=public_slug)
+
+
 def _portal_response(portal, clone_result=None, db=None) -> PortalResponse:
+    general = serialize_portal_general_settings(portal)
+    platform_version = _resolve_portal_platform_version(db, portal)
     return PortalResponse(
         id=portal.id,
         name=portal.name,
+        original_name=str(getattr(portal, "original_name", None) or portal.name),
         code=getattr(portal, "code", None),
+        short_name=getattr(portal, "short_name", None),
+        public_slug=getattr(portal, "public_slug", None),
+        public_slug_locked=bool(getattr(portal, "public_slug_locked", False)),
+        public_url=_portal_public_url(portal),
         description=portal.description,
         is_active=portal.is_active,
+        is_protected=bool(getattr(portal, "is_protected", False)),
+        environment_role=getattr(portal, "environment_role", None),
         created_at=portal.created_at,
         tenant_type=portal.tenant_type,
+        platform_version=platform_version,
         template_version=portal.template_version,
         tenant_status=portal.tenant_status,
         source_tenant_id=portal.source_tenant_id,
         notes=portal.notes,
+        timezone=general["timezone"],
+        date_format=general["date_format"],
+        time_format=general["time_format"],
+        week_start_day=general["week_start_day"],
+        default_language=general["default_language"],
         structure_cloned_from=(
             clone_result.source_tenant_id if clone_result is not None else None
         ),
@@ -134,7 +179,7 @@ def get_portal_environment(
 def get_portal(
     portal_id: int,
     db: Session = Depends(get_db),
-    _admin=Depends(require_platform_admin),
+    _reader=Depends(require_portal_profile_read_access),
 ):
     portal = service.get_portal(db, portal_id)
 
@@ -147,6 +192,17 @@ def get_portal(
     return _portal_response(portal, db=db)
 
 
+@router.patch("/{portal_id}/settings/general", response_model=PortalResponse)
+def patch_portal_general_settings(
+    portal_id: int,
+    payload: PortalGeneralSettingsUpdate,
+    db: Session = Depends(get_db),
+    _manager=Depends(require_portal_profile_manage_access),
+):
+    portal = service.update_portal_general_settings(db, portal_id, payload)
+    return _portal_response(portal, db=db)
+
+
 @router.post(
     "/{portal_id}/clone-structure",
     response_model=CloneTenantStructureResponse,
@@ -156,7 +212,7 @@ def clone_portal_structure(
     portal_id: int,
     data: CloneTenantStructureRequest,
     db: Session = Depends(get_db),
-    _admin=Depends(require_platform_admin),
+    admin=Depends(require_platform_admin),
 ):
     portal = service.get_portal(db, portal_id)
     if portal is None:
@@ -166,7 +222,13 @@ def clone_portal_structure(
         )
 
     try:
-        result = clone_tenant_structure(db, data.source_tenant_id, portal_id)
+        result = clone_tenant_structure(
+            db,
+            data.source_tenant_id,
+            portal_id,
+            actor_user_id=int(admin.id),
+            audit_reason="portal_clone_structure_api",
+        )
     except SourceTenantNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except TargetTenantNotFoundError as exc:

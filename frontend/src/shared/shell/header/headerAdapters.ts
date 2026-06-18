@@ -457,23 +457,8 @@ function buildRuntimeLeftActions(
   ];
 }
 
-function buildRuntimeModeActions(
-  input: RuntimeHeaderAdapterInput
-): HeaderActionContract[] {
-  return [
-    {
-      id: "app-mode-switch",
-      kind: "switch",
-      label: "Режим работы",
-      actionKey: "app-mode-switch",
-      onClickKey: "app-mode-switch",
-      variant: "ghost",
-      meta: {
-        tenantId: input.tenantId,
-        variant: "runtime",
-      },
-    },
-  ];
+function buildRuntimeModeActions(): HeaderActionContract[] {
+  return [];
 }
 
 function buildRuntimeRightActions(
@@ -674,22 +659,8 @@ function resolveDesignerTitle(pathname?: string, explicitTitle?: string): string
   return "Студия";
 }
 
-function buildDesignerModeActions(
-  input: DesignerHeaderAdapterInput
-): HeaderActionContract[] {
-  return [
-    {
-      id: "app-mode-switch",
-      kind: "switch",
-      label: "Режим работы",
-      actionKey: "app-mode-switch",
-      onClickKey: "app-mode-switch",
-      meta: {
-        tenantId: input.tenantId,
-        variant: "designer",
-      },
-    },
-  ];
+function buildDesignerModeActions(): HeaderActionContract[] {
+  return [];
 }
 
 function buildDesignerLeftActions(

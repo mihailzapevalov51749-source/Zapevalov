@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { BROWSER_TITLE_SEPARATOR } from "../browserTitle/buildBrowserTitle.js";
 import {
+  buildTenantBrowserDocumentTitle,
   buildTenantEnvironmentDocumentTitle,
   resolveTenantEnvironment,
   resolveTenantEnvironmentRoleCode,
@@ -63,8 +65,31 @@ describe("resolveTenantEnvironment", () => {
   });
 });
 
+describe("buildTenantBrowserDocumentTitle", () => {
+  it("joins page title and tenant display name", () => {
+    assert.equal(
+      buildTenantBrowserDocumentTitle("Главная", {
+        name: "ООО Розетка",
+        short_name: "Розетка",
+        code: "ooo_rozetka",
+      }),
+      `Главная${BROWSER_TITLE_SEPARATOR}Розетка`,
+    );
+  });
+});
+
 describe("buildTenantEnvironmentDocumentTitle", () => {
-  it("puts YasnoPro first with a short environment suffix", () => {
+  it("uses tenant display name when branding is available", () => {
+    assert.equal(
+      buildTenantEnvironmentDocumentTitle(
+        resolveTenantEnvironment({ tenantId: 14, tenantType: "CLIENT" }),
+        { name: "Rozetka Demo", short_name: "Rozetka", code: "rozetka" },
+      ),
+      "Rozetka",
+    );
+  });
+
+  it("falls back to YasnoPro with environment suffix when branding is absent", () => {
     assert.equal(
       buildTenantEnvironmentDocumentTitle(
         resolveTenantEnvironment({ tenantId: 1, tenantType: "DEV" }),

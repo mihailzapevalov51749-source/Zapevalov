@@ -33,7 +33,7 @@ function readCachedHomePageId(normalizedPortalId, { strict = false } = {}) {
 export async function resolvePortalHomePageId(portalId) {
   const normalizedPortalId = Number(portalId);
   if (!Number.isFinite(normalizedPortalId) || normalizedPortalId <= 0) {
-    return 1;
+    return null;
   }
 
   const cached = readCachedHomePageId(normalizedPortalId);
@@ -43,11 +43,12 @@ export async function resolvePortalHomePageId(portalId) {
 
   try {
     const pageId = await fetchPortalHomePageId(normalizedPortalId);
-    const resolvedPageId = pageId ?? 1;
-    homePageIdByPortal.set(normalizedPortalId, resolvedPageId);
-    return resolvedPageId;
+    if (pageId != null) {
+      homePageIdByPortal.set(normalizedPortalId, pageId);
+    }
+    return pageId;
   } catch {
-    return 1;
+    return null;
   }
 }
 
@@ -82,7 +83,7 @@ export async function resolvePortalHomePagePath(portalId, options = {}) {
   const strict = options.strict === true;
   const normalizedPortalId = Number(portalId);
   if (!Number.isFinite(normalizedPortalId) || normalizedPortalId <= 0) {
-    return strict ? null : `/portal/1/page/1`;
+    return null;
   }
 
   const pageId = strict

@@ -15,7 +15,11 @@ from pathlib import Path
 from uuid import UUID
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(BACKEND_ROOT))
+sys.path.insert(0, str(SCRIPTS_ROOT))
+
+from structure_write_script_guard import guard_script_structure_write  # noqa: E402
 
 import json as json_module
 
@@ -113,6 +117,7 @@ def main() -> int:
 
     db = SessionLocal()
     try:
+        guard_script_structure_write(db, tenant_id, "apply_plan_role_mapping_migration")
         row = db.execute(
             text(
                 """

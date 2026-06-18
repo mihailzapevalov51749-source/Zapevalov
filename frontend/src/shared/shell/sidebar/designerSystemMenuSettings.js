@@ -1,3 +1,9 @@
+import {
+  mergeNavigationMenuSettingRecord,
+  sanitizeNavigationMenuSettingRecord,
+  stripNavigationMenuSystemIconsFromItem,
+} from "../../navigation/navigationMenuIconPolicy.js";
+
 const STORAGE_KEY = "yasnopro:designer-system-menu-settings:v1";
 const CHANGE_EVENT = "yasnopro:designer-system-menu-settings:changed";
 
@@ -42,23 +48,7 @@ function writeLocalSettings(tenantId, settings) {
 }
 
 function normalizeSettingEntry(entry) {
-  if (!entry || typeof entry !== "object") {
-    return {};
-  }
-
-  return {
-    ...(entry.title != null ? { title: entry.title } : {}),
-    ...(entry.icon != null ? { icon: entry.icon } : {}),
-    ...(entry.icon_type != null ? { icon_type: entry.icon_type } : {}),
-    ...(entry.icon_file_url != null ? { icon_file_url: entry.icon_file_url } : {}),
-    ...(entry.color != null ? { color: entry.color } : {}),
-    ...(typeof entry.sort_order === "number" ? { sort_order: entry.sort_order } : {}),
-    ...(typeof entry.is_visible === "boolean" ? { is_visible: entry.is_visible } : {}),
-    ...(typeof entry.is_bold === "boolean" ? { is_bold: entry.is_bold } : {}),
-    ...(typeof entry.is_italic === "boolean" ? { is_italic: entry.is_italic } : {}),
-    ...(typeof entry.is_expanded === "boolean" ? { is_expanded: entry.is_expanded } : {}),
-    ...(typeof entry.block_id === "number" ? { block_id: entry.block_id } : {}),
-  };
+  return sanitizeNavigationMenuSettingRecord(entry) || {};
 }
 
 function mapApiSettingsToCache(settings) {
@@ -190,10 +180,10 @@ export async function patchDesignerSystemMenuSettings(tenantId, itemKey, patch) 
 
   const normalizedTenantId = normalizeTenantId(tenantId);
   const current = getDesignerSystemMenuSettings(normalizedTenantId);
-  const nextEntry = {
-    ...(current[itemKey] && typeof current[itemKey] === "object" ? current[itemKey] : {}),
-    ...(patch && typeof patch === "object" ? patch : {}),
-  };
+  const nextEntry = mergeNavigationMenuSettingRecord(
+    current[itemKey] && typeof current[itemKey] === "object" ? current[itemKey] : {},
+    patch,
+  );
   const next = {
     ...current,
     [itemKey]: nextEntry,
@@ -248,15 +238,20 @@ export function applyDesignerSystemMenuSettings(
         typeof itemSettings.sort_order === "number" && Number.isFinite(itemSettings.sort_order)
           ? itemSettings.sort_order
           : fallbackOrder;
-      return {
+      const iconFileUrl =
+        typeof itemSettings.icon_file_url === "string" && itemSettings.icon_file_url.trim()
+          ? itemSettings.icon_file_url.trim()
+          : itemSettings.icon_file_url === null
+            ? undefined
+            : item?.icon_file_url;
+
+      return stripNavigationMenuSystemIconsFromItem({
         ...item,
         title:
           typeof itemSettings.title === "string" && itemSettings.title.trim().length > 0
             ? itemSettings.title
             : item?.title,
-        icon: itemSettings.icon ?? item?.icon,
-        icon_type: itemSettings.icon_type ?? item?.icon_type,
-        icon_file_url: itemSettings.icon_file_url ?? item?.icon_file_url,
+        ...(iconFileUrl ? { icon_file_url: iconFileUrl } : {}),
         color:
           typeof itemSettings.color === "string" ? itemSettings.color : item?.color,
         is_bold:
@@ -278,7 +273,7 @@ export function applyDesignerSystemMenuSettings(
             ? itemSettings.block_id
             : item?.block_id,
         system_key: key || item?.system_key,
-      };
+      });
     })
     .filter(Boolean);
 

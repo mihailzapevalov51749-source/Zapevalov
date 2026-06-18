@@ -10,6 +10,14 @@ export async function getPortal(portalId) {
   return response.data;
 }
 
+export async function patchPortalGeneralSettings(portalId, payload) {
+  const response = await platformApiClient.patch(
+    `/portals/${portalId}/settings/general`,
+    payload,
+  );
+  return response.data;
+}
+
 export async function createPortal(payload) {
   const response = await platformApiClient.post("/portals/", payload);
   return response.data;

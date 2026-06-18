@@ -14,11 +14,13 @@ import {
   deleteTenantUser,
   getTenantRoles,
   getTenantUsers,
+  lookupTenantUserEmail,
+  restoreTenantUser,
   updateTenantUser,
 } from "./tenantUsersApi";
 import { styles } from "./usersStyles";
 
-const API_BASE_URL = "http://127.0.0.1:8010";
+import { API_BASE_URL } from "../../../config/apiConfig.js";
 
 const DEFAULT_AVATAR_SETTINGS = {
   x: 0,
@@ -196,6 +198,8 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [emailLookup, setEmailLookup] = useState(null);
+  const [emailLookupLoading, setEmailLookupLoading] = useState(false);
 
   const filteredUsers = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -297,6 +301,7 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
     setSelectedUser(newUser);
     setForm(newUser);
     setError("");
+    setEmailLookup(null);
   };
 
   const handleSelectUser = (user) => {
@@ -310,6 +315,7 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
     setSelectedUser(normalizedUser);
     setForm(normalizedUser);
     setError("");
+    setEmailLookup(null);
   };
 
   const handleCloseEditor = () => {
@@ -317,6 +323,7 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
     setForm(emptyUser);
     setError("");
     setDeleteModalOpen(false);
+    setEmailLookup(null);
   };
 
   const handleChange = (field, value) => {
@@ -324,6 +331,45 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
       ...prev,
       [field]: value,
     }));
+
+    if (field === "email") {
+      setEmailLookup(null);
+    }
+  };
+
+  const handleEmailLookup = async () => {
+    if (!isTenantVariant || !form.isNew) {
+      return;
+    }
+
+    const email = String(form.email || "").trim();
+    if (!email) {
+      setEmailLookup(null);
+      return;
+    }
+
+    try {
+      setEmailLookupLoading(true);
+      const result = await lookupTenantUserEmail(tenantId, email);
+      setEmailLookup(result);
+      setError("");
+    } catch (lookupError) {
+      console.error(lookupError);
+      setEmailLookup(null);
+    } finally {
+      setEmailLookupLoading(false);
+    }
+  };
+
+  const resolveApiErrorMessage = (requestError, fallback) => {
+    const detail = requestError?.response?.data?.detail;
+    if (typeof detail === "string") {
+      return detail;
+    }
+    if (detail && typeof detail === "object" && detail.message) {
+      return detail.message;
+    }
+    return fallback;
   };
 
   const validatePasswordFields = () => {
@@ -378,6 +424,10 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
         payload.password = form.password;
       }
 
+      if (form.isNew && emailLookup?.outcome === "dismissed") {
+        payload.restore_dismissed = true;
+      }
+
       const savedUser = form.id
         ? isTenantVariant
           ? await updateTenantUser(tenantId, form.id, payload)
@@ -416,10 +466,20 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
     } catch (e) {
       console.error(e);
 
+      const detail = e?.response?.data?.detail;
+      if (detail?.code === "membership_dismissed") {
+        setEmailLookup({ outcome: "dismissed", email: form.email });
+        setError("Пользователь ранее работал в этой компании. Нажмите «Восстановить сотрудника».");
+        return;
+      }
+
       setError(
-        form.id
-          ? "Не удалось сохранить пользователя."
-          : "Не удалось создать пользователя."
+        resolveApiErrorMessage(
+          e,
+          form.id
+            ? "Не удалось сохранить пользователя."
+            : "Не удалось создать пользователя.",
+        ),
       );
     } finally {
       setSaving(false);
@@ -434,6 +494,50 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
   const handleCancelDelete = () => {
     if (deleting) return;
     setDeleteModalOpen(false);
+  };
+
+  const handleRestoreDismissed = async () => {
+    if (!form.isNew || emailLookup?.outcome !== "dismissed") {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError("");
+
+      const payload = {
+        full_name: form.full_name,
+        email: form.email,
+        phone: form.phone,
+        city: form.city,
+        position: form.position,
+        department: form.department,
+        manager: form.manager,
+        mentor: form.mentor,
+        is_active: true,
+        role_id: form.role_id,
+        avatar_url: form.avatar_url,
+        avatar_settings: form.avatar_settings,
+        restore_dismissed: true,
+      };
+
+      if (form.password) {
+        payload.password = form.password;
+      }
+
+      const savedUser = await createTenantUser(tenantId, payload);
+      const updated = normalizeUser(savedUser);
+      setUsers((prev) => [normalizeExistingUser(updated), ...prev]);
+      setSelectedUser({ ...updated, password: "", password_repeat: "" });
+      setForm({ ...updated, password: "", password_repeat: "" });
+      setEmailLookup(null);
+      window.dispatchEvent(new CustomEvent("admin:users-updated"));
+    } catch (e) {
+      console.error(e);
+      setError(resolveApiErrorMessage(e, "Не удалось восстановить сотрудника."));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -458,7 +562,7 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
       handleCloseEditor();
     } catch (e) {
       console.error(e);
-      setError("Не удалось удалить пользователя.");
+      setError("Не удалось отключить доступ сотрудника.");
     } finally {
       setDeleting(false);
       setDeleteModalOpen(false);
@@ -472,6 +576,36 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
       <UsersHeader onRefresh={loadData} onCreate={handleCreateUser} />
 
       {error && <div style={styles.errorBox}>{error}</div>}
+
+      {isTenantVariant && form.isNew && emailLookup?.outcome === "found_existing" ? (
+        <div style={infoStyles.infoBox}>
+          Пользователь с таким email уже существует в платформе. Он будет добавлен только в текущую компанию.
+        </div>
+      ) : null}
+
+      {isTenantVariant && form.isNew && emailLookup?.outcome === "already_member" ? (
+        <div style={infoStyles.warningBox}>
+          Пользователь уже добавлен в эту компанию.
+        </div>
+      ) : null}
+
+      {isTenantVariant && form.isNew && emailLookup?.outcome === "dismissed" ? (
+        <div style={infoStyles.warningBox}>
+          <div>Пользователь ранее работал в этой компании.</div>
+          <button
+            type="button"
+            style={infoStyles.restoreButton}
+            onClick={handleRestoreDismissed}
+            disabled={saving}
+          >
+            {saving ? "Восстановление..." : "Восстановить сотрудника"}
+          </button>
+        </div>
+      ) : null}
+
+      {emailLookupLoading ? (
+        <div style={infoStyles.muted}>Проверка email...</div>
+      ) : null}
 
       <section style={styles.workspace}>
         <UsersList
@@ -491,6 +625,7 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
           saving={saving}
           deleting={deleting}
           onChange={handleChange}
+          onEmailBlur={isTenantVariant && form.isNew ? handleEmailLookup : undefined}
           onSave={handleSave}
           onDelete={handleOpenDeleteModal}
           onClose={handleCloseEditor}
@@ -506,7 +641,7 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
             <div style={modalStyles.header}>
               <div>
                 <div style={modalStyles.kicker}>Подтверждение действия</div>
-                <div style={modalStyles.title}>Удалить пользователя?</div>
+                <div style={modalStyles.title}>Уволить сотрудника?</div>
               </div>
 
               <button
@@ -520,13 +655,12 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
             </div>
 
             <div style={modalStyles.body}>
-              Пользователь <b>{deletingUserName}</b> будет удалён из системы.
-              Это действие нельзя отменить.
+              Сотруднику <b>{deletingUserName}</b> будет отключён доступ к этой компании.
+              Глобальная учётная запись и история действий сохранятся.
             </div>
 
             <div style={modalStyles.warning}>
-              Перед удалением убедитесь, что этот пользователь больше не нужен
-              для работы с порталом.
+              Если сотрудник работает в других компаниях, доступ там сохранится.
             </div>
 
             <div style={modalStyles.actions}>
@@ -551,7 +685,7 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
                   ...(deleting ? modalStyles.buttonDisabled : {}),
                 }}
               >
-                {deleting ? "Удаление..." : "Удалить"}
+                {deleting ? "Отключение..." : "Уволить сотрудника"}
               </button>
             </div>
           </div>
@@ -560,6 +694,46 @@ export default function AdminUsersPage({ variant = "tenant" } = {}) {
     </main>
   );
 }
+
+const infoStyles = {
+  infoBox: {
+    padding: "10px 12px",
+    borderRadius: 12,
+    background: "#eff6ff",
+    border: "1px solid #bfdbfe",
+    color: "#1d4ed8",
+    fontSize: 13,
+    lineHeight: 1.4,
+  },
+  warningBox: {
+    padding: "10px 12px",
+    borderRadius: 12,
+    background: "#fff7ed",
+    border: "1px solid #fed7aa",
+    color: "#9a3412",
+    fontSize: 13,
+    lineHeight: 1.4,
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+  },
+  restoreButton: {
+    alignSelf: "flex-start",
+    height: 34,
+    padding: "0 14px",
+    borderRadius: 8,
+    border: "1px solid #fdba74",
+    background: "#ffffff",
+    color: "#9a3412",
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  muted: {
+    fontSize: 12,
+    color: "#64748b",
+  },
+};
 
 const modalStyles = {
   overlay: {

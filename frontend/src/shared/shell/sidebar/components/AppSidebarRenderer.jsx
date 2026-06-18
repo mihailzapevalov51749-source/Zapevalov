@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import defaultBrandLogo from "../../../../assets/icons/logo.png";
@@ -12,28 +12,41 @@ import { getNavigationDeleteBlockReason } from "../../../../modules/navigation/u
 import { LAYOUT_TOKENS } from "../../../layout/layoutTokens";
 import { TRANSITION_TOKENS } from "../../../layout/transitionTokens";
 import { filterRemovedOfficeMenuItems } from "../../../navigation/removedSystemMenuItems";
+import { buildNavigationMenuSavePayload } from "../../../navigation/navigationMenuIconPolicy.js";
 import {
   applySystemMenuSettingsToTree,
   isSystemMenuItem,
 } from "../../../navigation/applySystemMenuSettingsToTree.js";
 import {
+  buildTenantMenuSettingPayload,
+  buildUserMenuPreferencePayload,
+  buildMovePreferencesPayload,
+} from "../../../navigation/mergeRuntimeMenuLayers.js";
+import {
   persistNavigationMenuBlockMove,
   readNavigationMenuBlockSettings,
 } from "../../../navigation/navigationMenuSettings.js";
+import { useRuntimeMenuLayerSettings } from "../../../navigation/useRuntimeMenuLayerSettings.js";
 import { getDesignerSystemMenuSettingsEventName } from "../designerSystemMenuSettings.js";
 import SidebarTodayActiveTime from "./SidebarTodayActiveTime";
+import SidebarModeSwitcher from "./SidebarModeSwitcher";
 import TenantEnvironmentBadge from "../../../tenantEnvironment/TenantEnvironmentBadge";
 import { useTenantEnvironment } from "../../../tenantEnvironment/useTenantEnvironment";
 import { resolveTenantIdFromPathname } from "../../../tenantContext/tenantContextResolver.js";
 import { isControlPlanePath } from "../../../../modules/controlPlane/config/controlPlanePaths.js";
 import {
   CONTROL_PLANE_SYSTEM_MENU_SETTINGS_CHANGED_EVENT,
+  patchControlPlaneSystemMenuItemSetting,
   readControlPlaneSystemMenuSettings,
 } from "../../../uiStorage/controlPlaneUiStorage.js";
 import {
   readSystemMenuSettings,
   writeSystemMenuSettings,
 } from "../../../uiStorage/systemMenuSettingsStorage.js";
+import {
+  formatLeftMenuScalePercent,
+  resolveAppliedLeftMenuScale,
+} from "../../../uiStorage/leftMenuScaleStorage.js";
 import "./appSidebarRenderer.css";
 
 export default function AppSidebarRenderer({
@@ -71,6 +84,7 @@ function ShellSidebarView({
   const {
     brand,
     editMode = false,
+    personalizeMode = false,
     isSaving = false,
     menuScale = 1,
     activePageId,
@@ -94,11 +108,18 @@ function ShellSidebarView({
     typeof contract.reloadNavigation === "function"
       ? contract.reloadNavigation
       : async () => {};
-  const canDragMenu = Boolean(
-    editMode &&
-      contract?.capabilities?.canDragItems &&
-      (hasDesignerScope || hasPersistableNavigationItems(navigationItems))
-  );
+
+  const pendingPersonalMoveRef = useRef(null);
+  const holdPersonalBlocksRef = useRef(false);
+
+  const useRuntimeMenuLayers = !isControlPlane && !hasDesignerScope && tenantId;
+  const menuLayers = useRuntimeMenuLayerSettings({
+    tenantId,
+    navigationItems,
+    enabled: Boolean(useRuntimeMenuLayers),
+    applyUserPreferences: false,
+    loadUserPreferences: false,
+  });
 
   const [systemMenuSettings, setSystemMenuSettings] = useState(() => {
     if (isControlPlane) {
@@ -151,6 +172,55 @@ function ShellSidebarView({
 
   const [menuBlockSettingsVersion, setMenuBlockSettingsVersion] = useState(0);
 
+  const rootItemsForBlocks = useMemo(() => {
+    const baseTree = navigationItems;
+    let treeWithProtectedSettings = baseTree;
+
+    if (isControlPlane) {
+      treeWithProtectedSettings = applySystemMenuSettingsToTree(baseTree, systemMenuSettings);
+    } else if (!hasDesignerScope && useRuntimeMenuLayers) {
+      treeWithProtectedSettings = menuLayers.applyMenuLayers(baseTree);
+    } else if (!hasDesignerScope) {
+      treeWithProtectedSettings = applySystemMenuSettingsToTree(baseTree, systemMenuSettings);
+    }
+
+    return filterRemovedOfficeMenuItems(treeWithProtectedSettings);
+  }, [
+    hasDesignerScope,
+    isControlPlane,
+    navigationItems,
+    systemMenuSettings,
+    useRuntimeMenuLayers,
+    menuLayers.applyMenuLayers,
+    menuLayers.tenantSettingsByItemId,
+    menuLayers.userPreferencesByItemId,
+  ]);
+
+  const canDragMenu = Boolean(
+    (editMode || personalizeMode) &&
+      contract?.capabilities?.canDragItems &&
+      (hasDesignerScope ||
+        useRuntimeMenuLayers ||
+        hasPersistableNavigationItems(navigationItems)),
+  );
+
+  const isPersonalizeBlockDrag =
+    personalizeMode && !editMode && canDragMenu && useRuntimeMenuLayers;
+
+  const handlePersonalMoveDraft = async (itemsPayload) => {
+    const preferences = buildMovePreferencesPayload(
+      itemsPayload,
+      rootItemsForBlocks,
+    );
+    menuLayers.applyLocalUserPreferencesMove(preferences);
+    pendingPersonalMoveRef.current = itemsPayload;
+    holdPersonalBlocksRef.current = true;
+  };
+
+  const effectiveTenantSettings = useRuntimeMenuLayers
+    ? menuLayers.tenantSettingsByItemId
+    : systemMenuSettings;
+
   const dragAndDrop = useMenuDragAndDrop({
     portalId: tenantId,
     items: navigationItems,
@@ -163,25 +233,18 @@ function ShellSidebarView({
         itemsPayload,
         rootItems: rootItemsForBlocks,
         reloadNavigation,
+        preferenceScope: editMode ? "tenant" : "user",
       });
 
       setMenuBlockSettingsVersion((previous) => previous + 1);
 
-      if (menuProfile === "control-plane" || menuProfile === "platform") {
+      if (useRuntimeMenuLayers) {
+        await menuLayers.reload();
+      } else if (menuProfile === "control-plane" || menuProfile === "platform") {
         setSystemMenuSettings(result.settings);
       }
     },
   });
-
-  const rootItemsForBlocks = useMemo(() => {
-    const baseTree = navigationItems;
-    const treeWithProtectedSettings =
-      isControlPlane || !hasDesignerScope
-        ? applySystemMenuSettingsToTree(baseTree, systemMenuSettings)
-        : baseTree;
-
-    return filterRemovedOfficeMenuItems(treeWithProtectedSettings);
-  }, [hasDesignerScope, isControlPlane, navigationItems, systemMenuSettings]);
 
   const menuBlockSettings = useMemo(
     () =>
@@ -189,8 +252,17 @@ function ShellSidebarView({
         menuProfile,
         tenantId,
         rootItems: rootItemsForBlocks,
+        tenantSettingsOverride: useRuntimeMenuLayers ? effectiveTenantSettings : null,
       }),
-    [menuProfile, tenantId, rootItemsForBlocks, systemMenuSettings, menuBlockSettingsVersion],
+    [
+      menuProfile,
+      tenantId,
+      rootItemsForBlocks,
+      effectiveTenantSettings,
+      useRuntimeMenuLayers,
+      systemMenuSettings,
+      menuBlockSettingsVersion,
+    ],
   );
 
   useEffect(() => {
@@ -220,22 +292,37 @@ function ShellSidebarView({
     settings: menuBlockSettings,
     menuProfile,
     isEnabled: canDragMenu,
+    skipBlocksSyncRef: holdPersonalBlocksRef,
     onMove: async (itemsPayload) => {
+      if (isPersonalizeBlockDrag) {
+        await handlePersonalMoveDraft(itemsPayload);
+        return;
+      }
+
       const result = await persistNavigationMenuBlockMove({
         menuProfile,
         tenantId,
         itemsPayload,
         rootItems: rootItemsForBlocks,
         reloadNavigation,
+        preferenceScope: editMode ? "tenant" : "user",
       });
 
       setMenuBlockSettingsVersion((previous) => previous + 1);
 
-      if (menuProfile === "control-plane" || menuProfile === "platform") {
+      if (useRuntimeMenuLayers) {
+        await menuLayers.reload();
+      } else if (menuProfile === "control-plane" || menuProfile === "platform") {
         setSystemMenuSettings(result.settings);
       }
     },
   });
+
+  useEffect(() => {
+    if (!personalizeMode) {
+      holdPersonalBlocksRef.current = false;
+    }
+  }, [personalizeMode]);
 
   const logoSrc = brand.logoSrc || defaultBrandLogo;
   const sidebarVisual = LAYOUT_TOKENS.sidebar;
@@ -245,6 +332,7 @@ function ShellSidebarView({
     hasDesignerScope ? "app-sidebar-renderer--designer" : "app-sidebar-renderer--runtime",
     collapsed ? "is-collapsed" : "",
     editMode ? "is-edit-mode" : "",
+    personalizeMode ? "is-personalize-mode" : "",
     className,
   ]
     .filter(Boolean)
@@ -252,12 +340,14 @@ function ShellSidebarView({
 
   const handleEditButtonClick = () => {
     const capabilities = contract?.capabilities ?? {};
-    const openSettingsActionKey =
-      contract?.actions?.find((action) => action.id === "open-settings")?.actionKey
-      ?? "open-menu-settings";
 
     if (editMode) {
       onAction?.("toggle-edit-mode");
+      return;
+    }
+
+    if (personalizeMode) {
+      onAction?.("toggle-personalize-mode");
       return;
     }
 
@@ -266,13 +356,65 @@ function ShellSidebarView({
       return;
     }
 
-    if (capabilities.canOpenSettings !== false) {
-      onAction?.(openSettingsActionKey);
+    if (capabilities.canPersonalizeMenu) {
+      onAction?.("toggle-personalize-mode");
+      return;
+    }
+  };
+
+  const handleCancelPersonalize = async () => {
+    pendingPersonalMoveRef.current = null;
+    holdPersonalBlocksRef.current = false;
+    if (useRuntimeMenuLayers) {
+      await menuLayers.reload();
+    }
+    onAction?.("cancel-personalize-mode");
+  };
+
+  const handleResetPersonalize = async () => {
+    pendingPersonalMoveRef.current = null;
+    holdPersonalBlocksRef.current = false;
+    if (useRuntimeMenuLayers) {
+      try {
+        await menuLayers.resetUserPreferences();
+        await menuLayers.reload();
+      } catch (resetError) {
+        console.error("Failed to reset user menu preferences:", resetError);
+      }
       return;
     }
 
-    onAction?.("toggle-edit-mode");
+    onAction?.("reset-menu-preferences");
   };
+
+  const handleSavePersonalize = async () => {
+    if (useRuntimeMenuLayers && pendingPersonalMoveRef.current) {
+      try {
+        await menuLayers.saveUserMove(
+          pendingPersonalMoveRef.current,
+          rootItemsForBlocks,
+        );
+        pendingPersonalMoveRef.current = null;
+        holdPersonalBlocksRef.current = false;
+        await menuLayers.reload();
+      } catch (saveError) {
+        console.error("Failed to save personal menu order:", saveError);
+        return;
+      }
+    } else {
+      holdPersonalBlocksRef.current = false;
+    }
+
+    onAction?.("toggle-personalize-mode");
+  };
+
+  const settingsButtonTitle = editMode
+    ? "Сохранить меню"
+    : personalizeMode
+      ? "Готово"
+      : contract?.capabilities?.canEditMenu
+        ? "Редактировать меню"
+        : "Мои настройки меню";
 
   const handleSelectPage = (pageId) => {
     if (pageId == null || typeof onItemAction !== "function") {
@@ -288,29 +430,50 @@ function ShellSidebarView({
     }
 
     const item = findItemById(navigationItems, itemId);
+    if (personalizeMode && useRuntimeMenuLayers && item) {
+      try {
+        await menuLayers.saveUserMenuItem(item, {
+          is_hidden: data.is_visible === false,
+          color: data.color,
+          is_bold: data.is_bold,
+        });
+        await menuLayers.reload();
+      } catch (saveError) {
+        console.error("Failed to save user menu preference:", saveError);
+      }
+      return;
+    }
+
     const isSystemItem = isSystemMenuItem(itemId, data, item);
 
-    if (isSystemItem && !hasDesignerScope) {
-      const safeData = {
-        title: data.title,
-        icon: data.icon ?? null,
-        icon_type: data.icon_type ?? null,
-        icon_file_url: data.icon_file_url ?? null,
-        color: data.color,
-        is_bold: data.is_bold,
-        is_italic: data.is_italic,
-        is_visible: data.is_visible,
-      };
+    if (isSystemItem && !hasDesignerScope && !personalizeMode) {
+      const safeData = buildNavigationMenuSavePayload(data);
 
-      const nextSettings = {
-        ...systemMenuSettings,
-        [itemId]: safeData,
-      };
+      if (useRuntimeMenuLayers && item) {
+        try {
+          await menuLayers.saveTenantMenuItem(item, safeData);
+          await menuLayers.reload();
+        } catch (saveError) {
+          console.error("Failed to save tenant runtime menu setting:", saveError);
+        }
+        return;
+      }
+
+      const nextSettings = isControlPlane
+        ? patchControlPlaneSystemMenuItemSetting(itemId, safeData)
+        : {
+            ...systemMenuSettings,
+            [itemId]: {
+              ...(systemMenuSettings[itemId] &&
+              typeof systemMenuSettings[itemId] === "object"
+                ? systemMenuSettings[itemId]
+                : {}),
+              ...safeData,
+            },
+          };
 
       setSystemMenuSettings(nextSettings);
-      if (isControlPlane) {
-        writeControlPlaneSystemMenuSettings(nextSettings);
-      } else {
+      if (!isControlPlane) {
         writeSystemMenuSettings(tenantId, nextSettings);
       }
       return;
@@ -377,7 +540,7 @@ function ShellSidebarView({
           flex: 1,
           minHeight: 0,
           overflowY: "auto",
-          overflowX: editMode ? "visible" : "hidden",
+          overflowX: editMode || personalizeMode ? "visible" : "hidden",
           scrollbarWidth: "none",
           msOverflowStyle: "none",
           paddingLeft: collapsed ? 6 : 14,
@@ -385,6 +548,60 @@ function ShellSidebarView({
           paddingBottom: 4,
         }}
       >
+        {!collapsed && personalizeMode && !editMode ? (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              marginBottom: 12,
+              padding: "8px 10px",
+              borderRadius: 8,
+              background: "#F3F9FD",
+              border: "1px solid #DEECF9",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: "#0078D4",
+              }}
+            >
+              Мои настройки меню
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  void handleSavePersonalize();
+                }}
+                style={personalizeActionButtonStyle}
+              >
+                Сохранить
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void handleCancelPersonalize();
+                }}
+                style={personalizeSecondaryButtonStyle}
+              >
+                Отмена
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void handleResetPersonalize();
+                }}
+                style={personalizeSecondaryButtonStyle}
+              >
+                Сбросить мои настройки
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         {!collapsed && editMode ? (
           <div
             style={{
@@ -409,7 +626,7 @@ function ShellSidebarView({
                 textAlign: "center",
               }}
             >
-              {Math.round(menuScale * 100)}%
+              {formatLeftMenuScalePercent(menuScale)}
             </span>
             <button
               type="button"
@@ -430,7 +647,8 @@ function ShellSidebarView({
           activeSidebarParentIds={activeParentIds}
           onSelectPage={handleSelectPage}
           onItemAction={onItemAction}
-          isEditMode={editMode}
+          isEditMode={editMode || personalizeMode}
+          personalizeOnly={personalizeMode && !editMode}
           onUpdateItem={handleUpdateItem}
           onDeleteItem={handleDeleteItem}
           dragAndDrop={hasDesignerScope && canDragMenu ? dragAndDrop : null}
@@ -445,16 +663,34 @@ function ShellSidebarView({
 
         {!collapsed && !editMode && serviceNavigationActions.length > 0 ? (
           <div className="app-sidebar-renderer__service-actions app-sidebar-renderer__service-actions--nav">
-            {serviceNavigationActions.map((action) => (
+            {serviceNavigationActions.map((action) => {
+              const actionBadgeCount = Number(action.badgeCount ?? action.badge_count ?? 0);
+              return (
               <button
                 key={action.id}
                 type="button"
-                className="app-sidebar-renderer__service-action"
+                className={[
+                  "app-sidebar-renderer__service-action",
+                  action.className,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
                 onClick={() => onAction?.(action.actionKey || action.id)}
               >
-                {action.label}
+                <span className="app-sidebar-renderer__service-action-label">
+                  {action.label}
+                </span>
+                {actionBadgeCount > 0 ? (
+                  <span
+                    className="app-sidebar-renderer__service-action-badge"
+                    aria-label={`Доступно: ${actionBadgeCount}`}
+                  >
+                    {actionBadgeCount > 99 ? "99+" : actionBadgeCount}
+                  </span>
+                ) : null}
               </button>
-            ))}
+            );
+            })}
           </div>
         ) : null}
 
@@ -485,6 +721,8 @@ function ShellSidebarView({
           padding: collapsed ? "10px 8px 12px" : sidebarFooterStyle.padding,
         }}
       >
+        {!collapsed && !editMode ? <SidebarModeSwitcher tenantIdFallback={tenantId ?? 1} /> : null}
+
         <div
           className="app-sidebar-renderer__footer-row"
           style={{
@@ -522,19 +760,19 @@ function ShellSidebarView({
             <SidebarTodayActiveTime collapsed={collapsed} />
           </div>
 
-          {!collapsed ? (
+          {!collapsed && contract?.capabilities?.canEditMenu ? (
             <button
               type="button"
               onClick={handleEditButtonClick}
               disabled={isSaving}
-              title={editMode ? "Сохранить меню" : "Редактировать меню"}
+              title={settingsButtonTitle}
               style={{
                 ...settingsButtonStyle,
                 opacity: isSaving ? 0.5 : 1,
               }}
             >
               <img
-                src={editMode ? saveIcon : settingsIcon}
+                src={editMode || personalizeMode ? saveIcon : settingsIcon}
                 alt=""
                 style={settingsImageStyle}
               />
@@ -549,6 +787,7 @@ function ShellSidebarView({
 function SidebarBrand({ menuScale, collapsed, logoSrc, brand, hideEnvironmentBadge = false }) {
   const { environment } = useTenantEnvironment();
   const sidebarVisual = LAYOUT_TOKENS.sidebar;
+  const appliedMenuScale = resolveAppliedLeftMenuScale(menuScale);
   const logoSize = collapsed
     ? sidebarVisual.brandLogoCollapsedSize
     : sidebarVisual.brandLogoSize;
@@ -601,7 +840,7 @@ function SidebarBrand({ menuScale, collapsed, logoSrc, brand, hideEnvironmentBad
             <div
               style={{
                 color: "#0F172A",
-                fontSize: sidebarVisual.brandTitleFontSize * menuScale,
+                fontSize: sidebarVisual.brandTitleFontSize * appliedMenuScale,
                 fontWeight: 800,
                 letterSpacing: 0.2,
                 whiteSpace: "nowrap",
@@ -618,7 +857,7 @@ function SidebarBrand({ menuScale, collapsed, logoSrc, brand, hideEnvironmentBad
             <div
               style={{
                 color: "#64748B",
-                fontSize: sidebarVisual.brandSubtitleFontSize * menuScale,
+                fontSize: sidebarVisual.brandSubtitleFontSize * appliedMenuScale,
                 marginTop: 3,
                 whiteSpace: "nowrap",
                 overflow: "hidden",
@@ -705,6 +944,28 @@ const scaleButtonStyle = {
   fontSize: 16,
   fontWeight: 700,
   lineHeight: 1,
+};
+
+const personalizeActionButtonStyle = {
+  border: "none",
+  borderRadius: 8,
+  background: "#0078D4",
+  color: "#FFFFFF",
+  fontSize: 12,
+  fontWeight: 600,
+  padding: "6px 12px",
+  cursor: "pointer",
+};
+
+const personalizeSecondaryButtonStyle = {
+  border: "1px solid #CBD5E1",
+  borderRadius: 8,
+  background: "#FFFFFF",
+  color: "#334155",
+  fontSize: 12,
+  fontWeight: 500,
+  padding: "6px 12px",
+  cursor: "pointer",
 };
 
 const createButtonStyle = {

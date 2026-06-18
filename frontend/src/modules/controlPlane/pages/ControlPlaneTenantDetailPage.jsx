@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { buildControlPlaneClientsPath } from "../config/controlPlanePaths";
 import ClientsSectionNav from "../../admin/clients/ClientsSectionNav";
 import { getTenantRegistryItem } from "../api/tenantRegistryApi";
+import { resolveTenantPlatformVersion } from "../companies/resolveTenantPlatformVersion.js";
 import ControlPlaneAccessGate from "../components/ControlPlaneAccessGate";
 import TenantRegistryStatusBadge from "../components/TenantRegistryStatusBadge";
 import TenantRegistryTypeBadge from "../components/TenantRegistryTypeBadge";
@@ -110,7 +111,7 @@ function ControlPlaneTenantDetailView({ tenantId }) {
               </div>
 
               <div style={styles.detailLabel}>Версия</div>
-              <div style={styles.detailValue}>{tenant.template_version || "—"}</div>
+              <div style={styles.detailValue}>{resolveTenantPlatformVersion(tenant)}</div>
 
               <div style={styles.detailLabel}>Статус</div>
               <div style={styles.detailValue}>

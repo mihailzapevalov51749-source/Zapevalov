@@ -68,7 +68,27 @@ def publish_tenant_catalog(
     db: Session,
     tenant_id: int,
     current_user: User | None,
+    *,
+    bypass_write_policy: bool = False,
 ) -> PublishResult:
+    if not bypass_write_policy:
+        from app.modules.tenant_management.exceptions import TenantWriteForbiddenError
+        from app.modules.tenant_management.tenant_write_policy import (
+            assert_tenant_allows_direct_structure_write,
+        )
+
+        try:
+            assert_tenant_allows_direct_structure_write(
+                db,
+                tenant_id,
+                operation_name="publish_tenant_catalog",
+            )
+        except TenantWriteForbiddenError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=str(exc),
+            ) from exc
+
     catalog = load_tenant_draft_catalog(db, tenant_id)
     report = validate_tenant_draft_catalog(catalog)
 

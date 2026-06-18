@@ -41,6 +41,7 @@ from app.modules.platform.designer.workspaces.workspace_home.registry import (
     reconcile_workspace_home_root_sections,
     resolve_workspace_home_page,
 )
+from app.modules.publication_guard.structure_write_service_guard import guard_direct_structure_write
 
 
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
@@ -355,6 +356,7 @@ def ensure_workspace_home_tab(
     tenant_id: int,
     workspace_id: int,
 ) -> DesignerWorkspaceTab:
+    guard_direct_structure_write(db, tenant_id, "ensure_workspace_home_tab")
     workspace = _get_workspace_or_404(db, tenant_id=tenant_id, workspace_id=workspace_id)
     acquire_workspace_home_lock(db, workspace.id)
 
@@ -399,6 +401,7 @@ def ensure_workspace_tabs(
     tenant_id: int,
     workspace_id: int,
 ) -> list[WorkspaceTabRead]:
+    guard_direct_structure_write(db, tenant_id, "ensure_workspace_tabs")
     workspace = _get_workspace_or_404(db, tenant_id=tenant_id, workspace_id=workspace_id)
     changed = False
     if workspace.home_page_id is None:
@@ -469,6 +472,7 @@ def ensure_workspace_home_page(
     tenant_id: int,
     workspace_id: int,
 ) -> DesignerWorkspace:
+    guard_direct_structure_write(db, tenant_id, "ensure_workspace_home_page")
     workspace = _get_workspace_or_404(db, tenant_id=tenant_id, workspace_id=workspace_id)
     acquire_workspace_home_lock(db, workspace.id)
 
@@ -609,6 +613,7 @@ def create_workspace(
     tenant_id: int,
     payload: DesignerWorkspaceCreate,
 ) -> DesignerWorkspace:
+    guard_direct_structure_write(db, tenant_id, "create_workspace")
     slug = _resolve_unique_slug(db, tenant_id=tenant_id, base_value=(payload.slug or payload.title))
 
     workspace = DesignerWorkspace(
@@ -646,6 +651,7 @@ def update_workspace(
     workspace_id: int,
     payload: DesignerWorkspaceUpdate,
 ) -> DesignerWorkspace:
+    guard_direct_structure_write(db, tenant_id, "update_workspace")
     workspace = _get_workspace_or_404(db, tenant_id=tenant_id, workspace_id=workspace_id)
     next_slug = _resolve_unique_slug(
         db,
@@ -689,6 +695,7 @@ def publish_workspace(
     tenant_id: int,
     workspace_id: int,
 ) -> DesignerWorkspace:
+    guard_direct_structure_write(db, tenant_id, "publish_workspace")
     workspace = _get_workspace_or_404(db, tenant_id=tenant_id, workspace_id=workspace_id)
     if workspace.home_page_id is None:
         workspace = ensure_workspace_home_page(db, tenant_id=tenant_id, workspace_id=workspace_id)
@@ -719,6 +726,7 @@ def publish_workspace_menu_placements(
     workspace_id: int,
     placements: list[MenuPlacementInput],
 ) -> list[WorkspaceMenuPlacementResult]:
+    guard_direct_structure_write(db, tenant_id, "publish_workspace_menu_placements")
     workspace = _get_workspace_or_404(db, tenant_id=tenant_id, workspace_id=workspace_id)
     if workspace.home_page_id is None:
         workspace = ensure_workspace_home_page(db, tenant_id=tenant_id, workspace_id=workspace_id)
@@ -787,6 +795,7 @@ def unpublish_workspace(
     tenant_id: int,
     workspace_id: int,
 ) -> DesignerWorkspace:
+    guard_direct_structure_write(db, tenant_id, "unpublish_workspace")
     workspace = _get_workspace_or_404(db, tenant_id=tenant_id, workspace_id=workspace_id)
     placements = list_workspace_placements(db, tenant_id=tenant_id, workspace_id=workspace_id)
     if placements:
@@ -804,6 +813,7 @@ def archive_workspace(
     tenant_id: int,
     workspace_id: int,
 ) -> DesignerWorkspace:
+    guard_direct_structure_write(db, tenant_id, "archive_workspace")
     workspace = _get_workspace_or_404(db, tenant_id=tenant_id, workspace_id=workspace_id)
     workspace.status = "archived"
     for nav_item in list_workspace_placements(db, tenant_id=tenant_id, workspace_id=workspace_id):
@@ -820,6 +830,7 @@ def delete_workspace(
     workspace_id: int,
     deleted_by: int | None = None,
 ) -> None:
+    guard_direct_structure_write(db, tenant_id, "delete_workspace")
     from app.modules.platform.designer.shared.soft_delete import apply_soft_delete
 
     workspace = _get_workspace_or_404(db, tenant_id=tenant_id, workspace_id=workspace_id)
@@ -903,6 +914,7 @@ def create_workspace_tab(
     workspace_id: int,
     payload: WorkspaceTabCreate,
 ) -> WorkspaceTabRead:
+    guard_direct_structure_write(db, tenant_id, "create_workspace_tab")
     workspace = _get_workspace_or_404(db, tenant_id=tenant_id, workspace_id=workspace_id)
     try:
         tab_type = _normalize_tab_type(payload.tab_type)
@@ -1018,6 +1030,7 @@ def update_workspace_tab(
     tab_id: int,
     payload: WorkspaceTabUpdate,
 ) -> WorkspaceTabRead:
+    guard_direct_structure_write(db, tenant_id, "update_workspace_tab")
     _get_workspace_or_404(db, tenant_id=tenant_id, workspace_id=workspace_id)
     tab = _get_tab_or_404(db, workspace_id=workspace_id, tab_id=tab_id)
     if tab.is_system:
@@ -1160,6 +1173,7 @@ def delete_workspace_tab(
     tab_id: int,
     deleted_by: int | None = None,
 ) -> None:
+    guard_direct_structure_write(db, tenant_id, "delete_workspace_tab")
     from app.modules.platform.designer.shared.soft_delete import apply_soft_delete
 
     _get_workspace_or_404(db, tenant_id=tenant_id, workspace_id=workspace_id)

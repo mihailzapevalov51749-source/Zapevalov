@@ -43,6 +43,9 @@ from app.modules.platform.shared.dependencies import (
     require_designer_user,
     require_tenant_membership,
 )
+from app.modules.tenant_management.dependencies import (
+    enforce_dev_direct_structure_write_for_mutating_requests,
+)
 from app.modules.tenant_users.router import router as tenant_administration_router
 
 # Без tags на агрегаторе — иначе Swagger дублирует endpoints в "designer" + domain tags.
@@ -53,6 +56,7 @@ tenant_router = APIRouter(
     dependencies=[
         Depends(require_tenant_membership),
         Depends(require_designer_user),
+        Depends(enforce_dev_direct_structure_write_for_mutating_requests),
     ],
 )
 

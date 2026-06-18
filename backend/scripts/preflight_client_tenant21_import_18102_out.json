@@ -1,0 +1,441 @@
+{
+  "step": "18.10.2",
+  "source_db": "portal_constructor_v2",
+  "target_db": "yasnopro_client",
+  "client_tenant_id": 21,
+  "client_portal_id": 21,
+  "portal": {
+    "id": 21,
+    "name": "ЯсноДемос",
+    "tenant_type": "CLIENT",
+    "environment_role": "DEMO_CLIENT",
+    "is_protected": true,
+    "code": "ooo_rozetka"
+  },
+  "table_plans": [
+    {
+      "phase": 0,
+      "phase_name": "Platform Catalog Seed",
+      "table": "platform_modules",
+      "filter_note": "module_key IN (runtime.chat, runtime.notifications, runtime.calendar)",
+      "records_planned": 3
+    },
+    {
+      "phase": 0,
+      "phase_name": "Platform Catalog Seed",
+      "table": "platform_module_manifests",
+      "filter_note": "module_key IN (runtime.chat, runtime.notifications, runtime.calendar)",
+      "records_planned": 3
+    },
+    {
+      "phase": 1,
+      "phase_name": "Foundation",
+      "table": "portals",
+      "filter_note": "id = 21",
+      "records_planned": 1
+    },
+    {
+      "phase": 2,
+      "phase_name": "Users",
+      "table": "users",
+      "filter_note": "id IN (SELECT user_id FROM tenant_user_memberships WHERE tenant_id = 21)",
+      "records_planned": 2
+    },
+    {
+      "phase": 2,
+      "phase_name": "Users",
+      "table": "tenant_user_memberships",
+      "filter_note": "tenant_id = 21 ONLY (excludes user 1840 DEV membership)",
+      "records_planned": 2
+    },
+    {
+      "phase": 2,
+      "phase_name": "Users",
+      "table": "tenant_user_profiles",
+      "filter_note": "tenant_id = 21",
+      "records_planned": 2
+    },
+    {
+      "phase": 3,
+      "phase_name": "Designer",
+      "table": "designer_object_types",
+      "filter_note": "tenant_id = 21",
+      "records_planned": 1
+    },
+    {
+      "phase": 3,
+      "phase_name": "Designer",
+      "table": "designer_field_definitions",
+      "filter_note": "tenant_id = 21",
+      "records_planned": 11
+    },
+    {
+      "phase": 3,
+      "phase_name": "Designer",
+      "table": "designer_relation_definitions",
+      "filter_note": "tenant_id = 21",
+      "records_planned": 1
+    },
+    {
+      "phase": 3,
+      "phase_name": "Designer",
+      "table": "designer_view_definitions",
+      "filter_note": "tenant_id = 21",
+      "records_planned": 2
+    },
+    {
+      "phase": 3,
+      "phase_name": "Designer",
+      "table": "designer_action_definitions",
+      "filter_note": "tenant_id = 21",
+      "records_planned": 1
+    },
+    {
+      "phase": 3,
+      "phase_name": "Designer",
+      "table": "designer_action_placements",
+      "filter_note": "tenant_id = 21",
+      "records_planned": 1
+    },
+    {
+      "phase": 3,
+      "phase_name": "Designer",
+      "table": "designer_action_forms",
+      "filter_note": "tenant_id = 21",
+      "records_planned": 1
+    },
+    {
+      "phase": 3,
+      "phase_name": "Designer",
+      "table": "designer_action_form_fields",
+      "filter_note": "tenant_id = 21",
+      "records_planned": 3
+    },
+    {
+      "phase": 3,
+      "phase_name": "Designer",
+      "table": "designer_metadata_snapshots",
+      "filter_note": "tenant_id = 21",
+      "records_planned": 1
+    },
+    {
+      "phase": 3,
+      "phase_name": "Designer",
+      "table": "designer_publish_records",
+      "filter_note": "tenant_id = 21",
+      "records_planned": 1
+    },
+    {
+      "phase": 3,
+      "phase_name": "Designer",
+      "table": "designer_system_menu_settings",
+      "filter_note": "tenant_id = 21",
+      "records_planned": 6
+    },
+    {
+      "phase": 3,
+      "phase_name": "Designer",
+      "table": "tenant_runtime_menu_settings",
+      "filter_note": "tenant_id = 21",
+      "records_planned": 6
+    },
+    {
+      "phase": 4,
+      "phase_name": "Pages / Navigation",
+      "table": "pages",
+      "filter_note": "portal_id = 21",
+      "records_planned": 6
+    },
+    {
+      "phase": 4,
+      "phase_name": "Pages / Navigation",
+      "table": "sections",
+      "filter_note": "page_id IN CLIENT pages",
+      "records_planned": 4
+    },
+    {
+      "phase": 4,
+      "phase_name": "Pages / Navigation",
+      "table": "blocks",
+      "filter_note": "section_id IN CLIENT sections",
+      "records_planned": 3
+    },
+    {
+      "phase": 4,
+      "phase_name": "Pages / Navigation",
+      "table": "navigation_items",
+      "filter_note": "portal_id = 21; self-FK ordered insert",
+      "records_planned": 14
+    },
+    {
+      "phase": 5,
+      "phase_name": "Modules",
+      "table": "tenant_modules",
+      "filter_note": "tenant_id = 21",
+      "records_planned": 3
+    },
+    {
+      "phase": 5,
+      "phase_name": "Modules",
+      "table": "tenant_module_configurations",
+      "filter_note": "tenant_id = 21",
+      "records_planned": 3
+    },
+    {
+      "phase": 6,
+      "phase_name": "Runtime Seed",
+      "table": "runtime_entities",
+      "filter_note": "id = 260ed1f0-dc7b-4458-9e54-2f47378d30df; is_system=true; deleted_at IS NULL",
+      "records_planned": 1
+    },
+    {
+      "phase": 6,
+      "phase_name": "Runtime Seed",
+      "table": "runtime_entity_values",
+      "filter_note": "entity_id = 260ed1f0-dc7b-4458-9e54-2f47378d30df",
+      "records_planned": 1
+    },
+    {
+      "phase": 7,
+      "phase_name": "Operational Data",
+      "table": "document_libraries",
+      "filter_note": "scoped via navigation/blocks — tenant 21 has 0",
+      "records_planned": 0
+    },
+    {
+      "phase": 7,
+      "phase_name": "Operational Data",
+      "table": "library_documents",
+      "filter_note": "scoped via document_libraries — tenant 21 has 0",
+      "records_planned": 0
+    },
+    {
+      "phase": 7,
+      "phase_name": "Operational Data",
+      "table": "comments",
+      "filter_note": "entity-scoped; no CLIENT runtime/doc targets — 0 planned",
+      "records_planned": 0
+    },
+    {
+      "phase": 7,
+      "phase_name": "Operational Data",
+      "table": "notes",
+      "filter_note": "entity-scoped; no CLIENT targets — 0 planned",
+      "records_planned": 0
+    },
+    {
+      "phase": 7,
+      "phase_name": "Operational Data",
+      "table": "notifications",
+      "filter_note": "entity-scoped; no CLIENT targets — 0 planned",
+      "records_planned": 0
+    }
+  ],
+  "records_planned_by_phase": {
+    "0": 6,
+    "1": 1,
+    "2": 6,
+    "3": 35,
+    "4": 27,
+    "5": 6,
+    "6": 2,
+    "7": 0
+  },
+  "records_planned_total": 83,
+  "user_import_strategy": {
+    "users": {
+      "filter": "id IN (SELECT user_id FROM tenant_user_memberships WHERE tenant_id = 21)",
+      "records_planned": 2,
+      "rows": [
+        {
+          "id": 1237,
+          "email": "mihailzapevalov51749@gmail.com",
+          "full_name": "Михаил Запевалов"
+        },
+        {
+          "id": 1840,
+          "email": "yasno.pro@yandex.ru",
+          "full_name": "Ясно Провович"
+        }
+      ]
+    },
+    "tenant_user_memberships": {
+      "filter": "tenant_id = 21 ONLY",
+      "records_planned": 2,
+      "all_memberships_for_client_users": [
+        {
+          "tenant_id": 21,
+          "user_id": 1237,
+          "role_key": "superadmin"
+        },
+        {
+          "tenant_id": 1,
+          "user_id": 1840,
+          "role_key": "user"
+        },
+        {
+          "tenant_id": 21,
+          "user_id": 1840,
+          "role_key": "user"
+        }
+      ],
+      "import_rows": [
+        {
+          "tenant_id": 21,
+          "user_id": 1840,
+          "role_key": "user"
+        }
+      ],
+      "excluded_rows": [
+        {
+          "tenant_id": 1,
+          "user_id": 1840,
+          "role_key": "user"
+        }
+      ],
+      "user_1840_client_only_membership_confirmed": true
+    },
+    "tenant_user_profiles": {
+      "filter": "tenant_id = 21",
+      "records_planned": 2,
+      "rows": [
+        {
+          "id": 28,
+          "user_id": 1237,
+          "tenant_id": 21
+        },
+        {
+          "id": 93,
+          "user_id": 1840,
+          "tenant_id": 21
+        }
+      ]
+    }
+  },
+  "runtime_classification": {
+    "runtime_entities": {
+      "source_total": 1,
+      "import_filter": "id = 260ed1f0-dc7b-4458-9e54-2f47378d30df AND is_system = true AND deleted_at IS NULL",
+      "records_planned": 1,
+      "import_rows": [
+        {
+          "id": "260ed1f0-dc7b-4458-9e54-2f47378d30df",
+          "is_system": true,
+          "deleted_at": null,
+          "object_type_key": "zadachnik"
+        }
+      ],
+      "excluded_rows": []
+    },
+    "runtime_entity_values": {
+      "source_total": 1,
+      "import_filter": "entity_id = 260ed1f0-dc7b-4458-9e54-2f47378d30df AND tenant_id = 21",
+      "records_planned": 1,
+      "import_rows": [
+        {
+          "id": "d3da0a19-769a-4506-8411-724b6a6ecc25",
+          "entity_id": "260ed1f0-dc7b-4458-9e54-2f47378d30df",
+          "field_key": "nazvanie"
+        }
+      ],
+      "excluded_rows": []
+    }
+  },
+  "platform_catalog_seed": {
+    "required_module_keys": [
+      "runtime.chat",
+      "runtime.notifications",
+      "runtime.calendar"
+    ],
+    "records_planned_delta": 6,
+    "platform_modules": 3,
+    "platform_module_manifests": 3,
+    "bulk_versions_excluded": true,
+    "per_module": [
+      {
+        "module_key": "runtime.chat",
+        "platform_modules": 1,
+        "platform_module_manifests": 1,
+        "platform_module_versions": 1
+      },
+      {
+        "module_key": "runtime.notifications",
+        "platform_modules": 1,
+        "platform_module_manifests": 1,
+        "platform_module_versions": 1
+      },
+      {
+        "module_key": "runtime.calendar",
+        "platform_modules": 1,
+        "platform_module_manifests": 1,
+        "platform_module_versions": 266
+      }
+    ]
+  },
+  "leakage_protection": {
+    "execute_scope": {
+      "tenant_id": 21,
+      "portal_id": 21
+    },
+    "excluded_tenant_ids": [
+      1,
+      2
+    ],
+    "source_boundary_counts": {
+      "pages_client": 6,
+      "pages_excluded": 66,
+      "navigation_client": 14,
+      "navigation_excluded": 67,
+      "designer_client": 1,
+      "designer_excluded": 23,
+      "runtime_entities_client": 1,
+      "runtime_entities_excluded": 326,
+      "runtime_values_client": 1,
+      "runtime_values_excluded": 1016,
+      "portals_client": 1,
+      "portals_excluded": 2
+    },
+    "post_execute_leakage_checks": {
+      "portals_excluded": "SELECT COUNT(*) FROM portals WHERE id = ANY(:excluded_tenant_ids)",
+      "pages_excluded": "SELECT COUNT(*) FROM pages WHERE portal_id = ANY(:excluded_tenant_ids)",
+      "navigation_excluded": "SELECT COUNT(*) FROM navigation_items WHERE portal_id = ANY(:excluded_tenant_ids)",
+      "designer_excluded": "SELECT COUNT(*) FROM designer_object_types WHERE tenant_id = ANY(:excluded_tenant_ids)",
+      "runtime_entities_excluded": "SELECT COUNT(*) FROM runtime_entities WHERE tenant_id = ANY(:excluded_tenant_ids)",
+      "runtime_values_excluded": "\n            SELECT COUNT(*) FROM runtime_entity_values rev\n            JOIN runtime_entities re ON re.id = rev.entity_id\n            WHERE re.tenant_id = ANY(:excluded_tenant_ids)\n        "
+    },
+    "expected_post_execute_leak_count": 0
+  },
+  "schema_bootstrap_plan": {
+    "action": "schema-only bootstrap (NOT executed in 18.10.2)",
+    "schema_only_source": "yasnopro_dev",
+    "target": "yasnopro_client",
+    "method": "pg_dump --schema-only from yasnopro_dev -> restore to yasnopro_client",
+    "post_restore_sql": "INSERT INTO alembic_version (version_num) VALUES ('20260616_0076') ON CONFLICT DO NOTHING",
+    "expected_tables": 94,
+    "expected_alembic_version": "20260616_0076",
+    "reference_step": "18.9.4-fix (TEMPLATE schema bootstrap)"
+  },
+  "target_readiness": {
+    "table_count": 0,
+    "alembic_version": null,
+    "portals": null,
+    "data_empty": true,
+    "schema_ready": false
+  },
+  "execute_readiness": {
+    "schema_ready": false,
+    "data_empty": true,
+    "platform_catalog_ready": false,
+    "records_planned": 83,
+    "user_scope_ready": true,
+    "runtime_scope_ready": true,
+    "blocked_reasons": [
+      "schema_missing"
+    ],
+    "records_planned_expected": 83
+  },
+  "cleanup_source": {
+    "test_cleanup_runs": 0,
+    "test_cleanup_records": 0
+  }
+}

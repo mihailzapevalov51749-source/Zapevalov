@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:8010";
+import { API_BASE_URL } from "../../../config/apiConfig.js";
 
 function getToken() {
   return (
@@ -23,7 +23,7 @@ function getAuthHeaders() {
 
 async function request(path, options = {}) {
   const response = await fetch(
-    `${API_URL}${path}`,
+    `${API_BASE_URL}${path}`,
     {
       ...options,
 

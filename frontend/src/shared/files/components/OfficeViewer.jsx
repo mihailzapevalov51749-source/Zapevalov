@@ -1,5 +1,7 @@
 import { DocumentEditor } from "@onlyoffice/document-editor-react";
 
+import { resolveDockerAccessibleApiUrl } from "../../../config/apiConfig.js";
+
 function getFileExtensionFromValue(value = "") {
   const clean = String(value || "")
     .toLowerCase()
@@ -41,9 +43,7 @@ function getDocumentType(fileType = "") {
 function normalizeOfficeUrl(fileUrl = "") {
   if (!fileUrl) return "";
 
-  return fileUrl
-    .replace("http://127.0.0.1:8010", "http://host.docker.internal:8010")
-    .replace("http://localhost:8010", "http://host.docker.internal:8010");
+  return resolveDockerAccessibleApiUrl(fileUrl);
 }
 
 function createDocumentKey(fileUrl = "", fileName = "") {

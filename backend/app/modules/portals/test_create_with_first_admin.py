@@ -2,15 +2,18 @@ import pytest
 from fastapi import HTTPException
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from unittest.mock import patch
 
 from app.db.base import Base
 from app.modules.control_plane.customer_companies.models import CustomerCompany
+from app.modules.navigation.models import NavigationItem
+from app.modules.pages.models import Page
 from app.modules.platform_event_journal.models import PlatformEventJournalEntry
 from app.modules.portals.create_with_first_admin import create_portal_with_first_admin
 from app.modules.portals.models import Portal
 from app.modules.portals.schemas import CompanyFirstAdminCreate, PortalCreateWithFirstAdmin
 from app.modules.tenant_environment.constants import TenantType
-from app.modules.tenant_users.models import TenantUserMembership
+from app.modules.tenant_users.models import TenantUserMembership, TenantUserProfile
 from app.modules.users.bootstrap_owner_service import is_visible_platform_user
 from app.modules.users.models import Role, User
 from app.modules.users.provisioning_credentials import generate_provisioning_password
@@ -23,8 +26,11 @@ def db_session():
         bind=engine,
         tables=[
             Portal.__table__,
+            Page.__table__,
+            NavigationItem.__table__,
             CustomerCompany.__table__,
             TenantUserMembership.__table__,
+            TenantUserProfile.__table__,
             User.__table__,
             Role.__table__,
             PlatformEventJournalEntry.__table__,
@@ -47,21 +53,30 @@ def test_generate_provisioning_password_format():
 
 
 def test_create_portal_with_first_admin_provisions_company(db_session):
-    result = create_portal_with_first_admin(
-        db_session,
-        PortalCreateWithFirstAdmin(
-            name="ООО Ромашка",
-            description="Клиент",
-            tenant_type=TenantType.CLIENT,
-            bootstrap_from_tenant_id=None,
-            first_admin=CompanyFirstAdminCreate(
-                full_name="Иван Иванов",
-                email="admin@romashka.ru",
-                phone="+79990000000",
-                position="Директор",
-            ),
+    with (
+        patch(
+            "app.modules.tenant_bootstrap.runtime_module_provisioning.provision_tenant_runtime_modules",
         ),
-    )
+        patch(
+            "app.modules.control_plane.customer_companies.service.build_active_platform_version_map",
+            return_value={},
+        ),
+    ):
+        result = create_portal_with_first_admin(
+            db_session,
+            PortalCreateWithFirstAdmin(
+                name="ООО Ромашка",
+                description="Клиент",
+                tenant_type=TenantType.CLIENT,
+                bootstrap_from_tenant_id=None,
+                first_admin=CompanyFirstAdminCreate(
+                    full_name="Иван Иванов",
+                    email="admin@romashka.ru",
+                    phone="+79990000000",
+                    position="Директор",
+                ),
+            ),
+        )
 
     assert result.code == "ooo_romashka"
     assert result.company_superadmin is not None
@@ -70,7 +85,7 @@ def test_create_portal_with_first_admin_provisions_company(db_session):
 
     user = db_session.get(User, result.company_superadmin.user_id)
     assert user is not None
-    assert user.tenant_id == result.id
+    assert user.tenant_id is None
     assert is_visible_platform_user(user) is False
 
     membership = (
@@ -79,12 +94,16 @@ def test_create_portal_with_first_admin_provisions_company(db_session):
         .one()
     )
     assert membership.role_key == "superadmin"
-    assert user.is_company_owner is True
-    assert user.role.name == "superadmin"
+    assert user.is_company_owner is False
 
     customer_company = db_session.get(CustomerCompany, result.customer_company_id)
     assert customer_company is not None
     assert customer_company.primary_portal_id == result.id
+    assert customer_company.portal_id == result.id
+    assert customer_company.code == result.code
+    assert customer_company.tenant_type == TenantType.CLIENT.value
+    assert customer_company.home_page_id is not None
+    assert customer_company.home_page_id > 0
 
 
 def test_create_portal_with_first_admin_rolls_back_on_duplicate_email(db_session):

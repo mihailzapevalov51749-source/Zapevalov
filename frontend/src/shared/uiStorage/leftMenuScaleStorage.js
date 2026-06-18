@@ -6,12 +6,26 @@ const DEFAULT_SCALE = 1;
 const MIN_SCALE = 0.8;
 const MAX_SCALE = 1.4;
 
+/**
+ * Stored UI 100% maps to the former visual density at stored 90%.
+ * Applied only at render time; persisted values stay user-facing percentages.
+ */
+export const LEFT_MENU_SCALE_VISUAL_BASELINE_FACTOR = 0.9;
+
 export function clampLeftMenuScale(value) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
     return DEFAULT_SCALE;
   }
   return Math.max(MIN_SCALE, Math.min(MAX_SCALE, parsed));
+}
+
+export function resolveAppliedLeftMenuScale(storedScale) {
+  return clampLeftMenuScale(storedScale) * LEFT_MENU_SCALE_VISUAL_BASELINE_FACTOR;
+}
+
+export function formatLeftMenuScalePercent(storedScale) {
+  return `${Math.round(clampLeftMenuScale(storedScale) * 100)}%`;
 }
 
 export function readLeftMenuScale(tenantId) {

@@ -29,6 +29,13 @@ class TenantStatus(StrEnum):
     ARCHIVED = "ARCHIVED"
 
 
+class TenantEnvironmentRole(StrEnum):
+    DEV = "DEV"
+    TEMPLATE = "TEMPLATE"
+    DEMO_CLIENT = "DEMO_CLIENT"
+    DEMO = "DEMO"
+
+
 DEFAULT_TEMPLATE_VERSION = "1.0.0"
 
 # Fallback when DB row has no tenant_type (legacy compatibility only).

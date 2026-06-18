@@ -7,6 +7,15 @@ export const companiesWorkspaceStyles = {
     gap: 12,
     overflow: "hidden",
   },
+  tabContentScrollable: {
+    flex: 1,
+    minHeight: 0,
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+    overflowX: "hidden",
+    overflowY: "auto",
+  },
   tabToolbar: {
     display: "flex",
     alignItems: "center",
@@ -18,7 +27,7 @@ export const companiesWorkspaceStyles = {
     flex: 1,
     minHeight: 0,
     display: "grid",
-    gridTemplateColumns: "minmax(620px, 1fr) minmax(430px, 500px)",
+    gridTemplateColumns: "minmax(760px, 1fr) minmax(430px, 500px)",
     gap: 18,
     alignItems: "stretch",
     overflow: "hidden",
@@ -52,7 +61,7 @@ export const companiesWorkspaceStyles = {
   },
   tableHeader: {
     display: "grid",
-    gridTemplateColumns: "minmax(220px, 1.35fr) 120px 90px 110px",
+    gridTemplateColumns: "56px minmax(140px, 1.1fr) minmax(140px, 1.1fr) 110px 90px 110px",
     gap: 10,
     alignItems: "center",
     padding: "10px 16px",
@@ -72,7 +81,7 @@ export const companiesWorkspaceStyles = {
   },
   listRow: {
     display: "grid",
-    gridTemplateColumns: "minmax(220px, 1.35fr) 120px 90px 110px",
+    gridTemplateColumns: "56px minmax(140px, 1.1fr) minmax(140px, 1.1fr) 110px 90px 110px",
     gap: 10,
     alignItems: "center",
     width: "100%",
@@ -97,6 +106,12 @@ export const companiesWorkspaceStyles = {
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
+  },
+  idCell: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: "#475569",
+    fontVariantNumeric: "tabular-nums",
   },
   listCellMuted: {
     color: "#64748b",

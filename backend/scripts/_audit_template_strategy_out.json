@@ -1,0 +1,427 @@
+﻿{
+  "databases": {
+    "yasnopro_dev": {
+      "status": "ok",
+      "tables": [
+        {
+          "table": "alembic_version",
+          "records": 1
+        },
+        {
+          "table": "blocks",
+          "records": 18
+        },
+        {
+          "table": "calendar_event_participants",
+          "records": 0
+        },
+        {
+          "table": "calendar_events",
+          "records": 0
+        },
+        {
+          "table": "chat_message_attachments",
+          "records": 0
+        },
+        {
+          "table": "chat_message_mentions",
+          "records": 0
+        },
+        {
+          "table": "chat_message_reactions",
+          "records": 0
+        },
+        {
+          "table": "chat_messages",
+          "records": 0
+        },
+        {
+          "table": "chat_participants",
+          "records": 0
+        },
+        {
+          "table": "chats",
+          "records": 0
+        },
+        {
+          "table": "checklist_items",
+          "records": 0
+        },
+        {
+          "table": "comment_attachments",
+          "records": 1
+        },
+        {
+          "table": "comment_mentions",
+          "records": 0
+        },
+        {
+          "table": "comment_reactions",
+          "records": 0
+        },
+        {
+          "table": "comments",
+          "records": 18
+        },
+        {
+          "table": "customer_companies",
+          "records": 0
+        },
+        {
+          "table": "designer_action_definitions",
+          "records": 3
+        },
+        {
+          "table": "designer_action_form_fields",
+          "records": 6
+        },
+        {
+          "table": "designer_action_forms",
+          "records": 2
+        },
+        {
+          "table": "designer_action_placements",
+          "records": 4
+        },
+        {
+          "table": "designer_field_definitions",
+          "records": 70
+        },
+        {
+          "table": "designer_metadata_snapshots",
+          "records": 150
+        },
+        {
+          "table": "designer_object_types",
+          "records": 22
+        },
+        {
+          "table": "designer_publish_records",
+          "records": 165
+        },
+        {
+          "table": "designer_relation_definitions",
+          "records": 10
+        },
+        {
+          "table": "designer_system_menu_settings",
+          "records": 9
+        },
+        {
+          "table": "designer_view_definitions",
+          "records": 36
+        },
+        {
+          "table": "designer_workspace_tabs",
+          "records": 14
+        },
+        {
+          "table": "designer_workspaces",
+          "records": 22
+        },
+        {
+          "table": "document_libraries",
+          "records": 2
+        },
+        {
+          "table": "library_documents",
+          "records": 16
+        },
+        {
+          "table": "navigation_items",
+          "records": 53
+        },
+        {
+          "table": "note_mentions",
+          "records": 0
+        },
+        {
+          "table": "notes",
+          "records": 1
+        },
+        {
+          "table": "notification_recipients",
+          "records": 0
+        },
+        {
+          "table": "notifications",
+          "records": 18
+        },
+        {
+          "table": "pages",
+          "records": 60
+        },
+        {
+          "table": "platform_activities",
+          "records": 618
+        },
+        {
+          "table": "platform_code_builds",
+          "records": 13
+        },
+        {
+          "table": "platform_components",
+          "records": 10
+        },
+        {
+          "table": "platform_dashboard_meta",
+          "records": 1
+        },
+        {
+          "table": "platform_deployments",
+          "records": 0
+        },
+        {
+          "table": "platform_environment_versions",
+          "records": 1
+        },
+        {
+          "table": "platform_event_journal_entries",
+          "records": 633
+        },
+        {
+          "table": "platform_implementation_stages",
+          "records": 8
+        },
+        {
+          "table": "platform_module_manifests",
+          "records": 3
+        },
+        {
+          "table": "platform_module_publications",
+          "records": 0
+        },
+        {
+          "table": "platform_module_versions",
+          "records": 268
+        },
+        {
+          "table": "platform_modules",
+          "records": 7
+        },
+        {
+          "table": "platform_release_modules",
+          "records": 0
+        },
+        {
+          "table": "platform_release_packages",
+          "records": 0
+        },
+        {
+          "table": "platform_releases",
+          "records": 0
+        },
+        {
+          "table": "platform_settings",
+          "records": 1
+        },
+        {
+          "table": "platform_tasks",
+          "records": 220
+        },
+        {
+          "table": "platform_users",
+          "records": 1
+        },
+        {
+          "table": "platform_version_history",
+          "records": 1
+        },
+        {
+          "table": "platform_version_schema_catalog",
+          "records": 2
+        },
+        {
+          "table": "portals",
+          "records": 1
+        },
+        {
+          "table": "quality_issue_status_history",
+          "records": 0
+        },
+        {
+          "table": "quality_issues",
+          "records": 0
+        },
+        {
+          "table": "release_changes",
+          "records": 0
+        },
+        {
+          "table": "roles",
+          "records": 7
+        },
+        {
+          "table": "runtime_entities",
+          "records": 324
+        },
+        {
+          "table": "runtime_entity_values",
+          "records": 1014
+        },
+        {
+          "table": "runtime_office_user_table_views",
+          "records": 0
+        },
+        {
+          "table": "runtime_relation_instances",
+          "records": 358
+        },
+        {
+          "table": "sections",
+          "records": 26
+        },
+        {
+          "table": "table_columns",
+          "records": 0
+        },
+        {
+          "table": "table_rows",
+          "records": 0
+        },
+        {
+          "table": "tables",
+          "records": 0
+        },
+        {
+          "table": "task_assignees",
+          "records": 0
+        },
+        {
+          "table": "task_checklist_items",
+          "records": 0
+        },
+        {
+          "table": "task_view_columns",
+          "records": 0
+        },
+        {
+          "table": "tasks",
+          "records": 0
+        },
+        {
+          "table": "tenant_module_config_snapshots",
+          "records": 0
+        },
+        {
+          "table": "tenant_module_configuration_applies",
+          "records": 0
+        },
+        {
+          "table": "tenant_module_configuration_diffs",
+          "records": 0
+        },
+        {
+          "table": "tenant_module_configuration_rollbacks",
+          "records": 0
+        },
+        {
+          "table": "tenant_module_configurations",
+          "records": 3
+        },
+        {
+          "table": "tenant_module_update_offers",
+          "records": 0
+        },
+        {
+          "table": "tenant_module_update_previews",
+          "records": 0
+        },
+        {
+          "table": "tenant_modules",
+          "records": 3
+        },
+        {
+          "table": "tenant_runtime_menu_settings",
+          "records": 21
+        },
+        {
+          "table": "tenant_update_offers",
+          "records": 0
+        },
+        {
+          "table": "tenant_user_memberships",
+          "records": 2
+        },
+        {
+          "table": "tenant_user_profiles",
+          "records": 2
+        },
+        {
+          "table": "tenant_versions",
+          "records": 0
+        },
+        {
+          "table": "test_cleanup_records",
+          "records": 0
+        },
+        {
+          "table": "test_cleanup_runs",
+          "records": 0
+        },
+        {
+          "table": "user_activity_sessions",
+          "records": 20
+        },
+        {
+          "table": "user_menu_preferences",
+          "records": 0
+        },
+        {
+          "table": "user_presence_states",
+          "records": 1
+        },
+        {
+          "table": "user_workspace_tabs",
+          "records": 0
+        },
+        {
+          "table": "users",
+          "records": 2
+        }
+      ],
+      "portals": [
+        {
+          "id": 1,
+          "tenant_type": "DEV",
+          "environment_role": "DEV",
+          "name": "╨рчЁрсюЄър",
+          "code": "ъюЁяюЁрЄштэ√щ_яюЁЄры",
+          "is_protected": true
+        }
+      ],
+      "cleanup": {
+        "test_cleanup_runs": 0,
+        "test_cleanup_records": 0
+      }
+    },
+    "yasnopro_template": {
+      "status": "error",
+      "tables": [],
+      "portals": [
+        {
+          "error": "(psycopg2.errors.UndefinedTable) relation \"portals\" does not exist\nLINE 3:                 FROM portals\n                             ^\n\n[SQL: \n                SELECT id, tenant_type, environment_role, name, code, is_protected\n                FROM portals\n                ORDER BY id\n                ]\n(Background on this error at: https://sqlalche.me/e/20/f405)"
+        }
+      ],
+      "cleanup": {
+        "test_cleanup_runs": -1,
+        "test_cleanup_records": -1
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: \n            SELECT table_name\n            FROM information_schema.tables\n            WHERE table_schema = 'public' AND table_type = 'BASE TABLE'\n            ORDER BY table_name\n            ]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    },
+    "yasnopro_client": {
+      "status": "error",
+      "tables": [],
+      "portals": [
+        {
+          "error": "(psycopg2.errors.UndefinedTable) relation \"portals\" does not exist\nLINE 3:                 FROM portals\n                             ^\n\n[SQL: \n                SELECT id, tenant_type, environment_role, name, code, is_protected\n                FROM portals\n                ORDER BY id\n                ]\n(Background on this error at: https://sqlalche.me/e/20/f405)"
+        }
+      ],
+      "cleanup": {
+        "test_cleanup_runs": -1,
+        "test_cleanup_records": -1
+      },
+      "error": "InternalError: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block\n\n[SQL: \n            SELECT table_name\n            FROM information_schema.tables\n            WHERE table_schema = 'public' AND table_type = 'BASE TABLE'\n            ORDER BY table_name\n            ]\n(Background on this error at: https://sqlalche.me/e/20/2j85)"
+    }
+  }
+}

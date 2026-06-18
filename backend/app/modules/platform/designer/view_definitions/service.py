@@ -36,6 +36,7 @@ from app.modules.platform.designer.view_definitions.schemas import (
     ViewDefinitionUpdate,
 )
 from app.modules.users.models import User
+from app.modules.publication_guard.structure_write_service_guard import guard_direct_structure_write
 
 
 def _actor_user_id(current_user: User | None) -> int | None:
@@ -284,6 +285,7 @@ def create_default_table_view(
     object_type_id: UUID,
     current_user: User | None = None,
 ) -> ViewDefinitionRead:
+    guard_direct_structure_write(db, tenant_id, "create_default_table_view")
     object_type = _get_object_type_or_404(db, tenant_id, object_type_id)
 
     existing_views = repository.list_views(db, tenant_id, object_type_id)
@@ -455,6 +457,7 @@ def ensure_default_quick_form_view(
     current_user: User | None = None,
 ) -> ViewDefinitionRead | None:
     """Ensure canonical system quick_form view exists for the object type."""
+    guard_direct_structure_write(db, tenant_id, "ensure_default_quick_form_view")
     object_type = _get_object_type_or_404(db, tenant_id, object_type_id)
 
     acquire_default_quick_form_view_lock(db, tenant_id, object_type_id)
@@ -558,6 +561,7 @@ def create_view(
     payload: ViewDefinitionCreate,
     current_user: User | None,
 ) -> ViewDefinitionRead:
+    guard_direct_structure_write(db, tenant_id, "create_view")
     object_type = _get_object_type_or_404(db, tenant_id, object_type_id)
 
     if payload.key == DEFAULT_QUICK_FORM_VIEW_KEY:
@@ -630,6 +634,7 @@ def update_view(
     payload: ViewDefinitionUpdate,
     current_user: User | None,
 ) -> ViewDefinitionRead:
+    guard_direct_structure_write(db, tenant_id, "update_view")
     entity = repository.get_view(db, tenant_id, view_id)
 
     if not entity:
@@ -748,6 +753,7 @@ def delete_view(
     view_id: UUID,
     current_user: User | None,
 ) -> ViewDefinitionRead:
+    guard_direct_structure_write(db, tenant_id, "delete_view")
     entity = repository.get_view(db, tenant_id, view_id)
 
     if not entity:
@@ -794,6 +800,7 @@ def reorder_views(
     payload: ViewDefinitionReorderRequest,
     current_user: User | None,
 ) -> list[ViewDefinitionListItem]:
+    guard_direct_structure_write(db, tenant_id, "reorder_views")
     object_type = _get_object_type_or_404(db, tenant_id, object_type_id)
 
     view_ids = [item.id for item in payload.items]

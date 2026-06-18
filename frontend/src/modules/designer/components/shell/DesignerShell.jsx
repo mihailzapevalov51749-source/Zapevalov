@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
-import { getMe } from "../../../../api/authApi";
+import { getTenantMe } from "../../../../api/tenantMeApi";
 import CreateMenuItemModal from "../../../../modules/navigation/components/CreateMenuItemModal";
 import NavigationDeleteDialogs from "../../../../modules/navigation/components/NavigationDeleteDialogs";
 import { canManageNavigationMenu } from "../../constants/designerRoles";
@@ -16,6 +16,7 @@ import AppShellFrame from "../../../../shared/shell/AppShellFrame";
 import { ShellLayoutModeProvider } from "../../../../shared/shell/ShellLayoutModeContext.jsx";
 import { SHELL_LAYOUT_MODE } from "../../../../shared/shell/shellLayoutMode.js";
 import { createDesignerSidebarContract } from "../../../../shared/shell/sidebar";
+import { useTenantSidebarBrand } from "../../../../shared/tenantEnvironment/useTenantSidebarBrand.js";
 import { usePlatformSidebarControls } from "../../../../shared/shell/sidebar/usePlatformSidebarControls";
 import {
   applyDesignerSystemMenuSettings,
@@ -24,10 +25,7 @@ import {
 } from "../../../../shared/shell/sidebar/designerSystemMenuSettings";
 import { defaultCapabilitiesForMode } from "../../../../shared/shell/provider/appShellTypes";
 import { emitDesignerShadowSnapshot } from "../../../../shared/shell/shadow/designer";
-import { resolveStudioToOfficePathAsync } from "../../../../shared/appMode/appModeNavigation";
-import { showPlatformNotification } from "../../../../shared/platformNotification/PlatformNotification";
 import { buildAvatarUrl } from "../../../../shared/files/api/filesApi";
-import { TENANT_HOME_PAGE_NOT_FOUND_MESSAGE } from "../../../../shared/tenantContext/resolveTenantRuntimeEntryPath";
 import {
   readLeftMenuScale,
   writeLeftMenuScale,
@@ -53,35 +51,38 @@ import { useHeaderSearchContext } from "../../../../shared/search/useHeaderSearc
 import { useHeaderSearchController } from "../../../../shared/search/useHeaderSearchController";
 import { canUseHeaderSearch } from "../../../../shared/search/searchRoleUtils";
 import {
-  canAccessControlPlane,
   canAccessTenantAdministration,
-  canShowControlPlaneStudioMenuEntry,
   canShowPlatformEventJournalInStudio,
+  canShowPlatformReleasesInStudio,
+  canShowPlatformArchitectureInStudio,
   filterControlPlaneStudioMenuItems,
   filterPlatformStudioMenuItems,
 } from "../../../admin/access/adminAccess";
+import TenantPlatformUpdateModal from "../../../platformReleases/components/TenantPlatformUpdateModal";
+import useTenantPlatformUpdates from "../../../platformReleases/hooks/useTenantPlatformUpdates";
+import {
+  TENANT_PLATFORM_UPDATE_ACTION_KEY,
+  buildTenantPlatformUpdateSidebarAction,
+  canManageTenantPlatformUpdates,
+  isClientTenantType,
+  shouldShowTenantPlatformUpdateSidebar,
+} from "../../../platformReleases/utils/tenantPlatformUpdateNavigation";
 import { buildTenantAdminPath } from "../../../admin/config/tenantAdminPaths";
 import { useTenantEnvironment } from "../../../../shared/tenantEnvironment/useTenantEnvironment";
 import { SEARCH_MODES } from "../../../../shared/search/searchScopes";
 import { YasiiSurfaceContextProvider } from "../../../../yasii/context/YasiiSurfaceContext.jsx";
 import { buildDesignerYasiiSurfaceValue } from "../../../../yasii/designer/buildDesignerContextData.js";
 import { resolvePlatformDashboardUserId } from "../../../../yasii/hostContextBuilders.js";
+import {
+  getCachedHeaderUser,
+  setCachedHeaderUser,
+} from "../../../../shared/tenantContext/headerUserCache.js";
 
 const DEFAULT_AVATAR_SETTINGS = {
   x: 0,
   y: 0,
   scale: 1,
 };
-const HEADER_USER_CACHE_KEY = "__YASNOPRO_HEADER_USER_CACHE__";
-
-function getCachedHeaderUser() {
-  return window[HEADER_USER_CACHE_KEY] ?? null;
-}
-
-function setCachedHeaderUser(nextUser) {
-  if (!nextUser) return;
-  window[HEADER_USER_CACHE_KEY] = nextUser;
-}
 
 function normalizeAvatarSettings(settings) {
   if (!settings) return DEFAULT_AVATAR_SETTINGS;
@@ -121,15 +122,10 @@ function hasNavigationRoute(items, route) {
     : false;
 }
 
-function appendDesignerAdministrationItems(items, user, tenantId, tenantType) {
+function appendDesignerAdministrationItems(items, user, tenantId) {
   const result = [...(Array.isArray(items) ? items : [])];
   const normalizedTenantId = Number(tenantId) > 0 ? Number(tenantId) : 1;
   const tenantAdminPath = buildTenantAdminPath(normalizedTenantId);
-  const controlPlanePath = "/control-plane";
-  const showControlPlaneEntry = canShowControlPlaneStudioMenuEntry({
-    tenantId: normalizedTenantId,
-    tenantType,
-  });
 
   if (canAccessTenantAdministration(user) && !hasNavigationRoute(result, tenantAdminPath)) {
     result.push({
@@ -147,30 +143,10 @@ function appendDesignerAdministrationItems(items, user, tenantId, tenantType) {
     });
   }
 
-  if (
-    showControlPlaneEntry
-    && canAccessControlPlane(user)
-    && !hasNavigationRoute(result, controlPlanePath)
-  ) {
-    result.push({
-      id: "system-designer-control-plane",
-      title: "Управление платформой",
-      type: "system_page",
-      route: controlPlanePath,
-      path: controlPlanePath,
-      menu_scope: "designer",
-      scope: "designer",
-      mode: "designer",
-      is_system: true,
-      is_protected: true,
-      sort_order: 9999,
-    });
-  }
-
   return result;
 }
 
-function buildDesignerMetaNavigation(tenantId, user, tenantType) {
+function buildDesignerMetaNavigation(tenantId, user) {
   const normalizedTenantId = Number(tenantId) || 1;
   const base = `/designer/tenant/${normalizedTenantId}`;
   const items = [
@@ -206,8 +182,6 @@ function buildDesignerMetaNavigation(tenantId, user, tenantType) {
       type: "system_page",
       route: `${base}/trash`,
       path: `${base}/trash`,
-      icon: "trash",
-      icon_type: "trash",
       menu_scope: "designer",
       scope: "designer",
       mode: "designer",
@@ -256,9 +230,39 @@ function buildDesignerMetaNavigation(tenantId, user, tenantType) {
       is_protected: true,
       sort_order: 85,
     },
+    {
+      id: "system-designer-platform-releases",
+      title: "Релизы платформы",
+      type: "system_page",
+      route: `${base}/platform-releases`,
+      path: `${base}/platform-releases`,
+      system_key: "platform-releases",
+      section: "platform-releases",
+      menu_scope: "designer",
+      scope: "designer",
+      mode: "designer",
+      is_system: true,
+      is_protected: true,
+      sort_order: 86,
+    },
+    {
+      id: "system-designer-platform-architecture",
+      title: "Архитектура платформы",
+      type: "system_page",
+      route: `${base}/platform-architecture`,
+      path: `${base}/platform-architecture`,
+      system_key: "platform-architecture",
+      section: "platform-architecture",
+      menu_scope: "designer",
+      scope: "designer",
+      mode: "designer",
+      is_system: true,
+      is_protected: true,
+      sort_order: 84,
+    },
   ];
 
-  return appendDesignerAdministrationItems(items, user, tenantId, tenantType);
+  return appendDesignerAdministrationItems(items, user, tenantId);
 }
 
 export default function DesignerShell() {
@@ -268,6 +272,7 @@ export default function DesignerShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const { tenantEnvironment } = useTenantEnvironment();
+  const tenantSidebarBrand = useTenantSidebarBrand({ subtitle: "Режим аналитика" });
   const studioTenantType = tenantEnvironment?.tenant_type ?? null;
   const [menuScale, setMenuScale] = useState(() =>
     readLeftMenuScale(resolvedPortalId),
@@ -290,14 +295,30 @@ export default function DesignerShell() {
       isMounted = false;
     };
   }, [resolvedPortalId]);
-  const [headerUser, setHeaderUser] = useState(() => getCachedHeaderUser());
+  const [headerUser, setHeaderUser] = useState(() => getCachedHeaderUser(resolvedPortalId));
   const [isPageEditMode, setIsPageEditMode] = useState(false);
   const [activeObjectTypeName, setActiveObjectTypeName] = useState("");
   const [activeObjectAdapterLabel, setActiveObjectAdapterLabel] = useState("");
   const [activeWorkspaceTitle, setActiveWorkspaceTitle] = useState("");
   const [systemSettingsVersion, setSystemSettingsVersion] = useState(0);
+  const [isPlatformUpdateModalOpen, setIsPlatformUpdateModalOpen] = useState(false);
   const { notifications, unreadCount, markAsRead } = useNotifications();
   const canSeeAdministrationMenu = canSeeTenantAdministrationMenu(headerUser ?? user);
+  const effectiveUser = headerUser ?? user;
+  const canLoadTenantPlatformUpdates =
+    isClientTenantType(studioTenantType) && canManageTenantPlatformUpdates(effectiveUser);
+  const tenantPlatformUpdates = useTenantPlatformUpdates(resolvedPortalId, {
+    enabled: canLoadTenantPlatformUpdates,
+  });
+  const tenantPlatformUpdateSidebarAction = buildTenantPlatformUpdateSidebarAction(
+    tenantPlatformUpdates.availableCount,
+  );
+  const shouldRenderTenantPlatformUpdateSidebar = shouldShowTenantPlatformUpdateSidebar({
+    tenantType: studioTenantType,
+    user: effectiveUser,
+    availableCount: tenantPlatformUpdates.availableCount,
+    isControlPlane: false,
+  });
 
   const isDesignerCustomPage = /\/designer\/tenant\/\d+\/page\/\d+/.test(
     location.pathname
@@ -385,7 +406,6 @@ export default function DesignerShell() {
     const baseItems = buildDesignerMetaNavigation(
       resolvedPortalId,
       headerUser ?? user,
-      studioTenantType,
     );
     const withSettings = applyDesignerSystemMenuSettings(
       baseItems,
@@ -396,17 +416,17 @@ export default function DesignerShell() {
       },
     );
     const merged = mergeDesignerSidebarNavigation(withSettings, navigation);
-    let filtered = merged;
+    let filtered = filterControlPlaneStudioMenuItems(merged);
     if (
-      !canShowControlPlaneStudioMenuEntry({
+      !canShowPlatformEventJournalInStudio({
         tenantId: resolvedPortalId,
         tenantType: studioTenantType,
       })
-    ) {
-      filtered = filterControlPlaneStudioMenuItems(filtered);
-    }
-    if (
-      !canShowPlatformEventJournalInStudio({
+      || !canShowPlatformReleasesInStudio({
+        tenantId: resolvedPortalId,
+        tenantType: studioTenantType,
+      })
+      || !canShowPlatformArchitectureInStudio({
         tenantId: resolvedPortalId,
         tenantType: studioTenantType,
       })
@@ -512,6 +532,7 @@ export default function DesignerShell() {
       canOpenSettings: true,
       canDragItems: hasPersistedDesignerNavigation && sidebarControls.isEditMode,
       canScaleMenu: true,
+      brand: tenantSidebarBrand ?? undefined,
     });
 
     return {
@@ -519,6 +540,9 @@ export default function DesignerShell() {
       editMode: sidebarControls.isEditMode,
       isSaving: sidebarControls.isSaving,
       menuScale,
+      serviceNavigationActions: shouldRenderTenantPlatformUpdateSidebar && tenantPlatformUpdateSidebarAction
+        ? [tenantPlatformUpdateSidebarAction]
+        : [],
     };
   }, [
     designerSidebarNavigation,
@@ -532,23 +556,29 @@ export default function DesignerShell() {
     sidebarControls.isSaving,
     handleMenuScaleChange,
     designerRouteOwner,
+    shouldRenderTenantPlatformUpdateSidebar,
+    tenantPlatformUpdateSidebarAction,
+    tenantSidebarBrand,
   ]);
 
   const loadHeaderUser = useCallback(async () => {
     try {
-      const data = await getMe();
+      const data = await getTenantMe(resolvedPortalId);
       setHeaderUser({
         ...data,
         avatar_settings: normalizeAvatarSettings(data.avatar_settings),
       });
-      setCachedHeaderUser({
-        ...data,
-        avatar_settings: normalizeAvatarSettings(data.avatar_settings),
-      });
+      setCachedHeaderUser(
+        {
+          ...data,
+          avatar_settings: normalizeAvatarSettings(data.avatar_settings),
+        },
+        resolvedPortalId,
+      );
     } catch {
-      setHeaderUser((previous) => previous ?? getCachedHeaderUser());
+      setHeaderUser((previous) => previous ?? getCachedHeaderUser(resolvedPortalId));
     }
-  }, []);
+  }, [resolvedPortalId]);
 
   useEffect(() => {
     loadHeaderUser();
@@ -762,18 +792,6 @@ export default function DesignerShell() {
   const handleHeaderAction = useCallback(
     (actionKey, payload) => {
       switch (actionKey) {
-        case "app-mode-switch":
-          void resolveStudioToOfficePathAsync(location.pathname).then((path) => {
-            if (!path) {
-              showPlatformNotification({
-                message: TENANT_HOME_PAGE_NOT_FOUND_MESSAGE,
-                variant: "warning",
-              });
-              return;
-            }
-            navigate(path);
-          });
-          return;
         case "search-change":
         case "search":
           headerSearch.onQueryChange?.(String(payload?.value ?? ""));
@@ -803,6 +821,9 @@ export default function DesignerShell() {
             }
             if (breadcrumbId === "designer-event-journal") {
               publishRootSectionRouteOwner("event-journal", resolvedPortalId);
+            }
+            if (breadcrumbId === "designer-platform-releases") {
+              publishRootSectionRouteOwner("platform-releases", resolvedPortalId);
             }
             navigate(payload.path);
           }
@@ -915,6 +936,7 @@ export default function DesignerShell() {
       const normalizedTarget = String(targetPath).trim().replace(/\/+$/, "");
       const objectsSectionPath = `/designer/tenant/${resolvedPortalId}/object-types`;
       const eventJournalSectionPath = `/designer/tenant/${resolvedPortalId}/event-journal`;
+      const platformReleasesSectionPath = `/designer/tenant/${resolvedPortalId}/platform-releases`;
       if (
         normalizedTarget === objectsSectionPath ||
         String(item?.id || "") === "system-designer-objects"
@@ -925,6 +947,11 @@ export default function DesignerShell() {
         String(item?.id || "") === "system-designer-event-journal"
       ) {
         publishRootSectionRouteOwner("event-journal", resolvedPortalId);
+      } else if (
+        normalizedTarget === platformReleasesSectionPath ||
+        String(item?.id || "") === "system-designer-platform-releases"
+      ) {
+        publishRootSectionRouteOwner("platform-releases", resolvedPortalId);
       }
       navigate(targetPath);
       return;
@@ -957,13 +984,7 @@ export default function DesignerShell() {
       header: {
         title: "Типы объектов",
         subtitle: "Студия",
-        modeActions: [
-          {
-            id: "app-mode-switch",
-            actionKey: "app-mode-switch",
-            target: "runtime",
-          },
-        ],
+        modeActions: [],
         pageActions: [],
       },
       capabilities: defaultCapabilitiesForMode("designer"),
@@ -989,7 +1010,13 @@ export default function DesignerShell() {
           platformZone="studio"
           onHeaderAction={handleHeaderAction}
           onSidebarItemAction={handleSidebarItemAction}
-          onSidebarAction={sidebarControls.handleSidebarAction}
+          onSidebarAction={(actionKey, payload) => {
+            if (actionKey === TENANT_PLATFORM_UPDATE_ACTION_KEY) {
+              setIsPlatformUpdateModalOpen(true);
+              return;
+            }
+            sidebarControls.handleSidebarAction(actionKey, payload);
+          }}
           sidebarTransition={TRANSITION_TOKENS.shell.sidebarWidth}
           workspaceTransition={TRANSITION_TOKENS.shell.workspaceLeft}
           workspace={
@@ -1050,6 +1077,14 @@ export default function DesignerShell() {
         onCancelDelete={sidebarControls.cancelDeleteItem}
         onConfirmDelete={sidebarControls.confirmDeleteItem}
         onCloseNotice={sidebarControls.clearDeleteNotice}
+      />
+      <TenantPlatformUpdateModal
+        open={isPlatformUpdateModalOpen}
+        onClose={() => setIsPlatformUpdateModalOpen(false)}
+        tenantId={resolvedPortalId}
+        offer={tenantPlatformUpdates.primaryOffer}
+        onApplied={tenantPlatformUpdates.reloadOffers}
+        onSkipped={tenantPlatformUpdates.reloadOffers}
       />
       <NotificationOverlayHost />
     </>

@@ -140,6 +140,22 @@ export function normalizeNotificationContext(detail = {}) {
       detail?.detail?.context?.library_id ||
       detail?.detail?.context?.libraryId ||
       null,
+
+    event_id:
+      detail?.eventId ||
+      detail?.event_id ||
+      detail?.context?.event_id ||
+      detail?.context?.eventId ||
+      detail?.target?.id ||
+      detail?.context?.target?.id ||
+      null,
+
+    target:
+      detail?.target && typeof detail.target === "object"
+        ? detail.target
+        : detail?.context?.target && typeof detail.context.target === "object"
+          ? detail.context.target
+          : null,
   };
 }
 
@@ -259,6 +275,60 @@ function getNoteId(detail) {
   );
 }
 
+function getEventId(detail) {
+  const context = getContext(detail);
+  const structuredTarget = context?.target;
+
+  if (structuredTarget && typeof structuredTarget === "object") {
+    const targetType = normalizeId(structuredTarget.type);
+    if (targetType === "calendar_event") {
+      return normalizeId(structuredTarget.id);
+    }
+  }
+
+  return normalizeId(
+    detail?.eventId ||
+      detail?.event_id ||
+      context?.event_id ||
+      context?.eventId,
+  );
+}
+
+function getStructuredTarget(detail) {
+  const context = getContext(detail);
+  const raw = context?.target;
+
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+
+  const type = normalizeId(raw.type);
+  const id = normalizeId(raw.id);
+
+  if (!type || !id) {
+    return null;
+  }
+
+  return {
+    type,
+    id,
+    tenant_id: raw.tenant_id ?? raw.tenantId ?? context.tenant_id ?? context.tenantId ?? null,
+    portal_id: raw.portal_id ?? raw.portalId ?? context.portal_id ?? context.portalId ?? null,
+    runtime: raw.runtime ?? null,
+    object_type_key: raw.object_type_key ?? raw.objectTypeKey ?? null,
+    action: raw.action ?? "open",
+  };
+}
+
+function isCalendarEventEntityType(entityType) {
+  return normalizeId(entityType) === "calendar_event";
+}
+
+function isCalendarInviteNotificationType(detail) {
+  const notificationType = normalizeId(detail?.type || detail?.notification?.type);
+  return notificationType === "calendar_invite" || notificationType === "calendar_update";
+}
+
 function getHighlightId(detail) {
   const context = getContext(detail);
   return (
@@ -318,6 +388,9 @@ export function mapNotificationNavigateDetail(detail = {}) {
   const noteId = getNoteId(detail);
   const publishedRuntimeRef = getPublishedRuntimeRef(detail);
 
+  const eventId = getEventId(detail);
+  const structuredTarget = getStructuredTarget(detail);
+
   return {
     source,
     entityType,
@@ -331,6 +404,8 @@ export function mapNotificationNavigateDetail(detail = {}) {
     highlightId,
     noteId,
     publishedRuntimeRef,
+    eventId,
+    structuredTarget,
   };
 }
 
@@ -396,6 +471,8 @@ export function buildPendingTarget({
   entityType,
   entityId,
   publishedRuntimeRef,
+  eventId,
+  structuredTarget,
   detail,
 }) {
   if (publishedRuntimeRef) {
@@ -445,6 +522,37 @@ export function buildPendingTarget({
       messageId,
       tab: "chat",
       highlightId,
+      structuredTarget,
+      detail,
+    };
+  }
+
+  const resolvedEventId = normalizeId(eventId || entityId);
+  const calendarTargetType = normalizeId(structuredTarget?.type);
+
+  if (
+    isCalendarEventEntityType(entityType) ||
+    calendarTargetType === "calendar_event" ||
+    (isCalendarInviteNotificationType(detail) && resolvedEventId)
+  ) {
+    if (!resolvedEventId) {
+      return {
+        type: "notification_unavailable",
+        entityType,
+        entityId,
+        detail,
+        message:
+          "Не удалось открыть событие календаря: отсутствует идентификатор события.",
+      };
+    }
+
+    return {
+      type: "calendar_event",
+      entityType: "calendar_event",
+      entityId: resolvedEventId,
+      eventId: resolvedEventId,
+      tab: "calendar",
+      structuredTarget,
       detail,
     };
   }

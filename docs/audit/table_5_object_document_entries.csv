@@ -1,0 +1,32 @@
+﻿tenant_id,nav_id,title,nav_type,system_key,object_type_key,library_id,classification,location_summary,recommended_place
+1,66,Пользователи,system_page,designer.users,,,unknown,Office sidebar,Documents
+1,67,Системные настройки,system_page,designer.settings,,,unknown,Office sidebar,Documents
+1,41,Рабочие пространства,workspace,,,,unknown,Office sidebar,Documents
+1,63,Объекты,system_page,designer.objects,,,unknown,Office sidebar,Documents
+1,64,Связи,system_page,designer.relations,,,unknown,Office sidebar,Documents
+1,65,Представления,system_page,designer.views,,,unknown,Office sidebar,Documents
+1,87,Направления,object_type,,napravleniya,,object_type_entry,hidden nav,Objects registry
+1,88,История,object_type,,istoriya,,object_type_entry,hidden nav,Objects registry
+1,78,Разработка продукта,workspace,,,,unknown,Office sidebar,Documents
+1,85,Мои задачи,object_type,,zadachnik,,object_type_entry,Office sidebar,Objects registry
+1,280,Управление платформой,external_link,,,,unknown,Office sidebar,Documents
+1,279,Разработка,workspace,designer.workspace.34.runtime,,,unknown,Office sidebar,Documents
+1,269,Тех. поддержка,workspace,designer.workspace.35.designer,,,unknown,Office sidebar,Documents
+1,267,Отдел кадров,workspace,designer.workspace.37.designer,,,unknown,Office sidebar,Documents
+1,270,Управление платформой,workspace,designer.workspace.36.designer,,,unknown,Office sidebar,Documents
+2,222,Рабочие пространства,workspace,,,,unknown,Office sidebar,Documents
+2,220,Объекты,system_page,designer.objects,,,unknown,Office sidebar,Documents
+2,221,Разработка продукта,workspace,,,,unknown,Office sidebar,Documents
+2,224,Связи,system_page,designer.relations,,,unknown,Office sidebar,Documents
+2,228,Представления,system_page,designer.views,,,unknown,Office sidebar,Documents
+2,226,Мои задачи,object_type,,zadachnik,,object_type_entry,Office sidebar,Objects registry
+2,231,Пользователи,system_page,designer.users,,,unknown,Office sidebar,Documents
+2,234,Системные настройки,system_page,designer.settings,,,unknown,Office sidebar,Documents
+21,372,Объекты,system_page,designer.objects,,,unknown,Office sidebar,Documents
+21,373,Разработка продукта,workspace,,,,unknown,Office sidebar,Documents
+21,374,Рабочие пространства,workspace,,,,unknown,Office sidebar,Documents
+21,376,Связи,system_page,designer.relations,,,unknown,Office sidebar,Documents
+21,378,Пользователи,system_page,designer.users,,,unknown,Office sidebar,Documents
+21,382,Представления,system_page,designer.views,,,unknown,Office sidebar,Documents
+21,383,Системные настройки,system_page,designer.settings,,,unknown,Office sidebar,Documents
+21,377,Мои задачи,object_type,,zadachnik,,object_type_entry,Office sidebar,Objects registry

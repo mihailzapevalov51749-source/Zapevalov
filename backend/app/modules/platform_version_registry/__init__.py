@@ -1,0 +1,1 @@
+"""Platform environment version registry."""

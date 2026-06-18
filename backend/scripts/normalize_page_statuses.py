@@ -15,8 +15,13 @@ import sys
 from pathlib import Path
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
+SCRIPTS_DIR = Path(__file__).resolve().parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from structure_write_script_guard import guard_script_structure_write  # noqa: E402
 
 from app.db.session import SessionLocal
 from app.modules.platform.designer.pages.page_status_normalization import (
@@ -24,6 +29,7 @@ from app.modules.platform.designer.pages.page_status_normalization import (
     normalize_page_statuses,
 )
 from app.modules.users.models import User  # noqa: F401 - ensure users mapper is registered
+from sqlalchemy import text
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
@@ -38,6 +44,19 @@ def main() -> None:
 
     db = SessionLocal()
     try:
+        if args.apply:
+            if args.tenant_id is not None:
+                guard_script_structure_write(db, args.tenant_id, "normalize_page_statuses")
+            else:
+                portal_ids = {
+                    int(row[0])
+                    for row in db.execute(
+                        text("SELECT DISTINCT portal_id FROM pages WHERE deleted_at IS NULL")
+                    )
+                }
+                for portal_id in sorted(portal_ids):
+                    guard_script_structure_write(db, portal_id, "normalize_page_statuses")
+
         result = normalize_page_statuses(
             db,
             dry_run=not args.apply,

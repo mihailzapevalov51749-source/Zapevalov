@@ -2,6 +2,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
+import "./config/apiConfig.js";
+
 import "./index.css";
 import "./styles/global.css";
 import "./shared/platformAccent/platformAccentTokens.css";

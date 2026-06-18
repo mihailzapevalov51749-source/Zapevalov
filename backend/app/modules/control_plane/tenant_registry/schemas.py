@@ -11,11 +11,17 @@ class TenantRegistryListItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    original_name: str
     name: str
+    short_name: str | None = None
+    code: str | None = None
     tenant_type: TenantType
+    platform_version: str
     template_version: str
     source_tenant_id: int | None = None
     tenant_status: TenantStatus
+    public_slug: str | None = None
+    public_url: str | None = None
 
 
 class TenantRegistryDetail(TenantRegistryListItem):

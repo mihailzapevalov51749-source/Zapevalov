@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useLocation } from "react-router-dom";
 
+import GlobalUsersPage from "../globalUsers/GlobalUsersPage";
 import PlatformRolesPage from "../platformRoles/PlatformRolesPage";
 import PlatformUsersPage from "../platformUsers/PlatformUsersPage";
 import UsersRolesWorkspaceTabs from "../usersRoles/UsersRolesWorkspaceTabs";
@@ -24,7 +25,13 @@ export default function UsersRolesWorkspacePage() {
     <div className="users-roles-workspace">
       <UsersRolesWorkspaceTabs />
       <div className="users-roles-workspace__canvas" data-page-canvas>
-        {activeSlug === "roles" ? <PlatformRolesPage /> : <PlatformUsersPage />}
+        {activeSlug === "roles" ? (
+          <PlatformRolesPage />
+        ) : activeSlug === "global-users" ? (
+          <GlobalUsersPage />
+        ) : (
+          <PlatformUsersPage />
+        )}
       </div>
     </div>
   );

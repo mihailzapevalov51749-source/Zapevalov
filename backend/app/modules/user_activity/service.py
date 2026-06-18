@@ -116,10 +116,29 @@ def _close_session(
 
 
 def _session_effective_end(session: UserActivitySession, now: datetime) -> datetime:
-    """Closed sessions end at ended_at, open sessions end at now."""
+    """Activity interval ends at last recorded activity, capped at now."""
+    now = _ensure_utc(now)
+    last_activity = _ensure_utc(session.last_activity_at)
     if session.ended_at is not None:
-        return min(_ensure_utc(session.ended_at), _ensure_utc(now))
-    return _ensure_utc(now)
+        ended = _ensure_utc(session.ended_at)
+        return min(ended, last_activity, now)
+    return min(last_activity, now)
+
+
+def _session_day_overlap(
+    session: UserActivitySession,
+    *,
+    range_start: datetime,
+    range_end: datetime,
+    now: datetime,
+) -> tuple[datetime, datetime, int]:
+    """Clip session activity interval to [range_start, range_end) for one calendar day."""
+    return _session_activity_window(
+        session,
+        range_start=range_start,
+        range_end=range_end,
+        now=now,
+    )
 
 
 def _get_open_session(db: Session, user_id: int) -> UserActivitySession | None:
@@ -238,6 +257,53 @@ def _sessions_in_range(
     )
 
 
+def _pick_latest_timestamp(*values: datetime | None) -> datetime | None:
+    normalized = [_ensure_utc(value) for value in values if value is not None]
+    if not normalized:
+        return None
+    return max(normalized)
+
+
+def get_last_session_started_at(db: Session, user_id: int) -> datetime | None:
+    return (
+        db.query(func.max(UserActivitySession.started_at))
+        .filter(UserActivitySession.user_id == user_id)
+        .scalar()
+    )
+
+
+def get_last_session_started_at_map(
+    db: Session,
+    user_ids: Iterable[int],
+) -> dict[int, datetime]:
+    ids = sorted({int(user_id) for user_id in user_ids})
+    if not ids:
+        return {}
+
+    rows = (
+        db.query(UserActivitySession.user_id, func.max(UserActivitySession.started_at))
+        .filter(UserActivitySession.user_id.in_(ids))
+        .group_by(UserActivitySession.user_id)
+        .all()
+    )
+    return {
+        int(user_id): _ensure_utc(started_at)
+        for user_id, started_at in rows
+        if started_at is not None
+    }
+
+
+def resolve_user_last_login_at(
+    *,
+    stored_last_login_at: datetime | None,
+    last_session_started_at: datetime | None,
+) -> datetime | None:
+    """Last login from user activity sessions, with users.last_login_at as fallback."""
+    if last_session_started_at is not None:
+        return _pick_latest_timestamp(last_session_started_at, stored_last_login_at)
+    return stored_last_login_at
+
+
 def _iter_dates(start: date, end: date) -> Iterable[date]:
     current = start
     while current <= end:
@@ -273,7 +339,7 @@ def compute_daily_stats(
     session_count = 0
 
     for session in sessions:
-        start, end, seconds = _session_activity_window(
+        start, end, seconds = _session_day_overlap(
             session,
             range_start=range_start,
             range_end=range_end,
@@ -286,7 +352,10 @@ def compute_daily_stats(
         active_seconds += seconds
         longest_session_seconds = max(longest_session_seconds, seconds)
         first_action_at = start if first_action_at is None else min(first_action_at, start)
-        last_action_at = end if last_action_at is None else max(last_action_at, end)
+        action_end = end
+        if action_end == range_end and seconds > 0:
+            action_end = range_end - timedelta(microseconds=1)
+        last_action_at = action_end if last_action_at is None else max(last_action_at, action_end)
 
     return {
         "date": day,

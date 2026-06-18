@@ -72,6 +72,26 @@ describe("officeRuntimeTenantGuard", () => {
     );
   });
 
+  it("allows bridge session only for bridged portal_id", () => {
+    const bridgeUser = {
+      is_bridge_session: true,
+      principal_type: "bridge",
+      portal_id: 21,
+      tenant_code: "ooo_rozetka",
+    };
+
+    assert.equal(userCanAccessOfficeRuntimeTenant(bridgeUser, 21), true);
+    assert.equal(userCanAccessOfficeRuntimeTenant(bridgeUser, 15), false);
+    assert.equal(
+      evaluateOfficeRuntimeGuardAccess(bridgeUser, 21).status,
+      "allowed",
+    );
+    assert.equal(
+      evaluateOfficeRuntimeGuardAccess(bridgeUser, 15).status,
+      "denied",
+    );
+  });
+
   it("blocks legacy /tasks for company user without portal 1 membership", () => {
     const result = evaluateOfficeRuntimeGuardAccess(
       tenantAUser,

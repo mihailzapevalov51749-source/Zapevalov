@@ -1,0 +1,262 @@
+﻿tenant_id,portal_id,tenant_name,tenant_type,is_dev,is_template,is_client
+1,1,Корпоративный портал,DEV,True,False,False
+2,2,Platform Template,TEMPLATE,False,True,False
+21,21,ООО Розетка,CLIENT,False,False,True
+25,25,ООО Тест ded4a0f8,CLIENT,False,False,True
+26,26,ООО Тест fc0132a0,CLIENT,False,False,True
+27,27,ООО Тест 9b4d77d3,CLIENT,False,False,True
+28,28,ООО Тест d5b0b0b5,CLIENT,False,False,True
+29,29,ООО Тест 007ae8a5,CLIENT,False,False,True
+30,30,ООО Тест bf8ebcf6,CLIENT,False,False,True
+31,31,ООО Тест 9ab81014,CLIENT,False,False,True
+32,32,ООО Тест 58331de2,CLIENT,False,False,True
+33,33,ООО Тест d415e37f,CLIENT,False,False,True
+34,34,ООО Тест 18400ae1,CLIENT,False,False,True
+35,35,ООО Тест 0cfe436e,CLIENT,False,False,True
+36,36,ООО Тест ce0ed489,CLIENT,False,False,True
+37,37,ООО Тест a76cb3ad,CLIENT,False,False,True
+38,38,ООО Тест bb6ce141,CLIENT,False,False,True
+39,39,ООО Тест 2ef02d08,CLIENT,False,False,True
+40,40,ООО Тест 18bf8a61,CLIENT,False,False,True
+41,41,ООО Тест da6e36cf,CLIENT,False,False,True
+42,42,ООО Тест b119355b,CLIENT,False,False,True
+59,59,Test DEV 1e6e093f,DEV,True,False,False
+60,60,Test DEV 750a9c1a,DEV,True,False,False
+61,61,Test DEV 2570e3f8,DEV,True,False,False
+64,64,Test DEV 366bde7c,DEV,True,False,False
+66,66,Test DEV ec3c0306,DEV,True,False,False
+68,68,Test DEV 5c014154,DEV,True,False,False
+69,69,Test CLIENT 493c5953,CLIENT,False,False,True
+70,70,Test DEV c63ca07f,DEV,True,False,False
+71,71,Test DEV f5d19d41,DEV,True,False,False
+72,72,Test DEV b365f991,DEV,True,False,False
+75,75,Test DEV 35cf12ae,DEV,True,False,False
+77,77,Test DEV bfb0e53d,DEV,True,False,False
+78,78,Test CLIENT 9efc9ab2,CLIENT,False,False,True
+79,79,Test DEV b877bcb1,DEV,True,False,False
+81,81,Test DEV ce84d678,DEV,True,False,False
+82,82,Test DEV f0de3e26,DEV,True,False,False
+83,83,Test DEV c1a6141a,DEV,True,False,False
+86,86,Test DEV 5c255116,DEV,True,False,False
+88,88,Test DEV fdd94298,DEV,True,False,False
+90,90,Test DEV 62710120,DEV,True,False,False
+92,92,Test DEV b9d3b7d2,DEV,True,False,False
+93,93,Test DEV d04ab695,DEV,True,False,False
+94,94,Test DEV a7ad8d70,DEV,True,False,False
+95,95,Test DEV 03210937,DEV,True,False,False
+96,96,Test DEV 6f96bd4f,DEV,True,False,False
+97,97,Test DEV 2f5e7f9d,DEV,True,False,False
+98,98,Test DEV 77eecf4b,DEV,True,False,False
+99,99,Test DEV 0cee3838,DEV,True,False,False
+100,100,Test DEV 782e13be,DEV,True,False,False
+102,102,Test DEV 2a06969a,DEV,True,False,False
+104,104,Test DEV 148e055a,DEV,True,False,False
+105,105,Test DEV 56ff2e36,DEV,True,False,False
+106,106,Test DEV 08cf8758,DEV,True,False,False
+107,107,Test DEV fb1a4e30,DEV,True,False,False
+108,108,Test DEV 9cd4b8d8,DEV,True,False,False
+109,109,Test DEV 6fae10c5,DEV,True,False,False
+110,110,Test DEV eed083d5,DEV,True,False,False
+111,111,Test DEV 8eaaf896,DEV,True,False,False
+112,112,Test DEV 61d32f08,DEV,True,False,False
+113,113,Test DEV b74be9dd,DEV,True,False,False
+115,115,Test DEV 13236273,DEV,True,False,False
+117,117,Test DEV a0c7f4a0,DEV,True,False,False
+901,901,Tenant A d22ad23d,CLIENT,False,False,True
+902,902,Tenant B ca1fb256,CLIENT,False,False,True
+903,903,Tenant A fdb55bac,CLIENT,False,False,True
+904,904,Tenant B 6ffde3cb,CLIENT,False,False,True
+905,905,Tenant A a9369dcf,CLIENT,False,False,True
+906,906,Tenant B 0aca9989,CLIENT,False,False,True
+907,907,Tenant A 041d1509,CLIENT,False,False,True
+908,908,Tenant B 7f63d772,CLIENT,False,False,True
+909,909,Tenant A 2da5b3c5,CLIENT,False,False,True
+910,910,Tenant B 359091dc,CLIENT,False,False,True
+911,911,Tenant A ac60437f,CLIENT,False,False,True
+912,912,Tenant B 229324be,CLIENT,False,False,True
+913,913,Tenant A 6ff6908e,CLIENT,False,False,True
+914,914,Tenant B 6fc81b42,CLIENT,False,False,True
+915,915,Tenant A ef3ee9c0,CLIENT,False,False,True
+916,916,Tenant B 9d0f8ef3,CLIENT,False,False,True
+9201,9201,Runtime ISO A bde401c2,CLIENT,False,False,True
+9202,9202,Runtime ISO B 0ffb57fa,CLIENT,False,False,True
+9203,9203,Runtime ISO A fb800b1e,CLIENT,False,False,True
+9204,9204,Runtime ISO B 236657cf,CLIENT,False,False,True
+9205,9205,Runtime ISO A 747d344c,CLIENT,False,False,True
+9206,9206,Runtime ISO B d56d758e,CLIENT,False,False,True
+9207,9207,Runtime ISO A a051e2fc,CLIENT,False,False,True
+9208,9208,Runtime ISO B e417f187,CLIENT,False,False,True
+9301,9301,YASII ISO A 5ee3e522,CLIENT,False,False,True
+9302,9302,YASII ISO B f3ba27c6,CLIENT,False,False,True
+9303,9303,YASII ISO A e6f966f5,CLIENT,False,False,True
+9304,9304,YASII ISO B cfed27d9,CLIENT,False,False,True
+9305,9305,YASII ISO A d24e248d,CLIENT,False,False,True
+9306,9306,YASII ISO B 1cc8e815,CLIENT,False,False,True
+9307,9307,YASII ISO A 5a44d0d1,CLIENT,False,False,True
+9308,9308,YASII ISO B e0c1e187,CLIENT,False,False,True
+9309,9309,YASII ISO A b7a92fcd,CLIENT,False,False,True
+9310,9310,YASII ISO B 386acd7f,CLIENT,False,False,True
+9311,9311,YASII ISO A 2f224ee5,CLIENT,False,False,True
+9312,9312,YASII ISO B 80a11306,CLIENT,False,False,True
+9313,9313,YASII ISO A d57c969c,CLIENT,False,False,True
+9314,9314,YASII ISO B d3a18a62,CLIENT,False,False,True
+9401,9401,Workspace Tabs ISO A c8944b2a,CLIENT,False,False,True
+9402,9402,Workspace Tabs ISO B 2d4d3d87,CLIENT,False,False,True
+9403,9403,Workspace Tabs ISO A de44f6ad,CLIENT,False,False,True
+9404,9404,Workspace Tabs ISO B 64fddd63,CLIENT,False,False,True
+9405,9405,Workspace Tabs ISO A 12d87e78,CLIENT,False,False,True
+9406,9406,Workspace Tabs ISO B a28a939a,CLIENT,False,False,True
+9407,9407,Workspace Tabs ISO A 1cad51c7,CLIENT,False,False,True
+9408,9408,Workspace Tabs ISO B 003c207d,CLIENT,False,False,True
+9409,9409,Workspace Tabs ISO A b77f88e4,CLIENT,False,False,True
+9410,9410,Workspace Tabs ISO B 858c4acc,CLIENT,False,False,True
+9411,9411,Workspace Tabs ISO A ce828a55,CLIENT,False,False,True
+9412,9412,Workspace Tabs ISO B 864c1e50,CLIENT,False,False,True
+9413,9413,Workspace Tabs ISO A 320f464a,CLIENT,False,False,True
+9414,9414,Workspace Tabs ISO B d8a1f699,CLIENT,False,False,True
+9415,9415,Workspace Tabs ISO A 7adf2427,CLIENT,False,False,True
+9416,9416,Workspace Tabs ISO B 86eb95de,CLIENT,False,False,True
+9417,9417,Workspace Tabs ISO A 2207e9d6,CLIENT,False,False,True
+9418,9418,Workspace Tabs ISO B 316fd019,CLIENT,False,False,True
+9419,9419,Workspace Tabs ISO A 8c0a87ca,CLIENT,False,False,True
+9420,9420,Workspace Tabs ISO B b5bd8d6c,CLIENT,False,False,True
+9421,9421,Workspace Tabs ISO A d7c41872,CLIENT,False,False,True
+9422,9422,Workspace Tabs ISO B a3b40ab1,CLIENT,False,False,True
+9423,9423,Workspace Tabs ISO A 84eb2b8d,CLIENT,False,False,True
+9424,9424,Workspace Tabs ISO B 3a1b34cc,CLIENT,False,False,True
+9425,9425,Workspace Tabs ISO A 5ae22d8f,CLIENT,False,False,True
+9426,9426,Workspace Tabs ISO B 8169444e,CLIENT,False,False,True
+9501,9501,DocLib ISO A 604a2e9c,CLIENT,False,False,True
+9502,9502,DocLib ISO B 44967091,CLIENT,False,False,True
+9503,9503,DocLib ISO A 88b1af89,CLIENT,False,False,True
+9504,9504,DocLib ISO B 745256bc,CLIENT,False,False,True
+9505,9505,DocLib ISO A 0d1ae401,CLIENT,False,False,True
+9506,9506,DocLib ISO B 5ac807f7,CLIENT,False,False,True
+9507,9507,DocLib ISO A 4ee51e17,CLIENT,False,False,True
+9508,9508,DocLib ISO B 941d37da,CLIENT,False,False,True
+9509,9509,DocLib ISO A e3f8261b,CLIENT,False,False,True
+9510,9510,DocLib ISO B d3fb2620,CLIENT,False,False,True
+9511,9511,DocLib ISO A cda411cf,CLIENT,False,False,True
+9512,9512,DocLib ISO B c66d83df,CLIENT,False,False,True
+9513,9513,DocLib ISO A 68ab0874,CLIENT,False,False,True
+9514,9514,DocLib ISO B 541805ae,CLIENT,False,False,True
+9515,9515,DocLib ISO A 4641a08c,CLIENT,False,False,True
+9516,9516,DocLib ISO B 6490bd6c,CLIENT,False,False,True
+9517,9517,DocLib ISO A 32246cf5,CLIENT,False,False,True
+9518,9518,DocLib ISO B 1613d6b1,CLIENT,False,False,True
+9521,9521,OrphanDoc ISO A fbf90d4f,CLIENT,False,False,True
+9522,9522,OrphanDoc ISO B e297053d,CLIENT,False,False,True
+9523,9523,OrphanDoc ISO A 0c865dd6,CLIENT,False,False,True
+9524,9524,OrphanDoc ISO B 786ba862,CLIENT,False,False,True
+9525,9525,OrphanDoc ISO A 3d3e8487,CLIENT,False,False,True
+9526,9526,OrphanDoc ISO B 7032d77d,CLIENT,False,False,True
+9527,9527,OrphanDoc ISO A bd105b98,CLIENT,False,False,True
+9528,9528,OrphanDoc ISO B e1a4045f,CLIENT,False,False,True
+9529,9529,OrphanDoc ISO A b70b385d,CLIENT,False,False,True
+9530,9530,OrphanDoc ISO B 76d0cb8b,CLIENT,False,False,True
+9531,9531,Comments ISO A 26fa0c56,CLIENT,False,False,True
+9532,9532,Comments ISO B 1c09e8b4,CLIENT,False,False,True
+9533,9533,Comments ISO A e614ceab,CLIENT,False,False,True
+9534,9534,Comments ISO B aa54e4df,CLIENT,False,False,True
+9535,9535,Comments ISO A 32d3410e,CLIENT,False,False,True
+9536,9536,Comments ISO B be1da97c,CLIENT,False,False,True
+9537,9537,Comments ISO A bcf33e9c,CLIENT,False,False,True
+9538,9538,Comments ISO B 608666c9,CLIENT,False,False,True
+9539,9539,Comments ISO A c58c8ced,CLIENT,False,False,True
+9540,9540,Comments ISO B 80bca08a,CLIENT,False,False,True
+9541,9541,Comments ISO A 19d6a482,CLIENT,False,False,True
+9542,9542,Comments ISO B 015f24ca,CLIENT,False,False,True
+9543,9543,Comments ISO A f90de1b6,CLIENT,False,False,True
+9544,9544,Comments ISO B dafda19d,CLIENT,False,False,True
+9545,9545,Comments ISO A f5d84d7a,CLIENT,False,False,True
+9546,9546,Comments ISO B f757faf8,CLIENT,False,False,True
+9547,9547,Comments ISO A 72f22aab,CLIENT,False,False,True
+9548,9548,Comments ISO B f7205359,CLIENT,False,False,True
+9549,9549,Comments ISO A d2502464,CLIENT,False,False,True
+9550,9550,Comments ISO B 136d557d,CLIENT,False,False,True
+9551,9551,Notes ISO A 93dfb0ef,CLIENT,False,False,True
+9552,9552,Notes ISO B 64d4b6f8,CLIENT,False,False,True
+9553,9553,Notes ISO A 8d074200,CLIENT,False,False,True
+9554,9554,Notes ISO B 1eac25fa,CLIENT,False,False,True
+9555,9555,Notes ISO A 095a935d,CLIENT,False,False,True
+9556,9556,Notes ISO B eae4e55b,CLIENT,False,False,True
+9557,9557,Notes ISO A e00fbd92,CLIENT,False,False,True
+9558,9558,Notes ISO B cd68d88e,CLIENT,False,False,True
+9559,9559,Notes ISO A 2a54a3bf,CLIENT,False,False,True
+9560,9560,Notes ISO B 65290dbe,CLIENT,False,False,True
+9561,9561,Notes ISO A b6f0756d,CLIENT,False,False,True
+9562,9562,Notes ISO B 229432e8,CLIENT,False,False,True
+9563,9563,Notes ISO A 13de7320,CLIENT,False,False,True
+9564,9564,Notes ISO B 05922ddc,CLIENT,False,False,True
+9565,9565,Notes ISO A 1f02bf96,CLIENT,False,False,True
+9566,9566,Notes ISO B fc7e7c91,CLIENT,False,False,True
+9567,9567,Notes ISO A 70c57e6d,CLIENT,False,False,True
+9568,9568,Notes ISO B 844498e2,CLIENT,False,False,True
+9661,9661,Notifications ISO A f35cc8d6,CLIENT,False,False,True
+9662,9662,Notifications ISO B 83772d80,CLIENT,False,False,True
+9663,9663,Notifications ISO A 695478af,CLIENT,False,False,True
+9664,9664,Notifications ISO B 85c84a8e,CLIENT,False,False,True
+9665,9665,Notifications ISO A 894ee3d0,CLIENT,False,False,True
+9666,9666,Notifications ISO B 9bb37e6b,CLIENT,False,False,True
+9667,9667,Notifications ISO A 230e84e0,CLIENT,False,False,True
+9668,9668,Notifications ISO B 6a1e1de2,CLIENT,False,False,True
+9669,9669,Notifications ISO A c3589ee7,CLIENT,False,False,True
+9670,9670,Notifications ISO B afe5df7e,CLIENT,False,False,True
+9671,9671,Notifications ISO A 05171f45,CLIENT,False,False,True
+9672,9672,Notifications ISO B 2b9c8ba4,CLIENT,False,False,True
+9673,9673,Notifications ISO A 0b59139a,CLIENT,False,False,True
+9674,9674,Notifications ISO B ac093d54,CLIENT,False,False,True
+9675,9675,Notifications ISO A 978c7aff,CLIENT,False,False,True
+9676,9676,Notifications ISO B 6e1e0761,CLIENT,False,False,True
+9751,9751,Checklists ISO A f8cbdb45,CLIENT,False,False,True
+9752,9752,Checklists ISO B b5aba0c1,CLIENT,False,False,True
+9753,9753,Checklists ISO A 36bca9b2,CLIENT,False,False,True
+9754,9754,Checklists ISO B ddcbb368,CLIENT,False,False,True
+9755,9755,Checklists ISO A 7c4e8928,CLIENT,False,False,True
+9756,9756,Checklists ISO B b630b673,CLIENT,False,False,True
+9757,9757,Checklists ISO A 12408000,CLIENT,False,False,True
+9758,9758,Checklists ISO B ea470f3e,CLIENT,False,False,True
+9759,9759,Checklists ISO A 2c2b2a3a,CLIENT,False,False,True
+9760,9760,Checklists ISO B b095e3c4,CLIENT,False,False,True
+9761,9761,Checklists ISO A 433e77dd,CLIENT,False,False,True
+9762,9762,Checklists ISO B 23872073,CLIENT,False,False,True
+9763,9763,Checklists ISO A eec16aea,CLIENT,False,False,True
+9764,9764,Checklists ISO B 61d0e000,CLIENT,False,False,True
+9765,9765,Checklists ISO A bf74981b,CLIENT,False,False,True
+9766,9766,Checklists ISO B 4568e97b,CLIENT,False,False,True
+9767,9767,Checklists ISO A 15bb4b7d,CLIENT,False,False,True
+9768,9768,Checklists ISO B 21852b47,CLIENT,False,False,True
+9769,9769,Checklists ISO A e76a6a16,CLIENT,False,False,True
+9770,9770,Checklists ISO B fc9a234e,CLIENT,False,False,True
+9771,9771,Checklists ISO A 99c884d0,CLIENT,False,False,True
+9772,9772,Checklists ISO B 2bafbfb2,CLIENT,False,False,True
+88001,88001,Chat ISO A 89b70c64,CLIENT,False,False,True
+88002,88002,Chat ISO B 83d3a25a,CLIENT,False,False,True
+88003,88003,Chat ISO A 6df3d6fd,CLIENT,False,False,True
+88004,88004,Chat ISO B c3e89492,CLIENT,False,False,True
+88005,88005,Chat ISO A 533ab37f,CLIENT,False,False,True
+88006,88006,Chat ISO B edea69e4,CLIENT,False,False,True
+88007,88007,Chat ISO B 4d459e7b,CLIENT,False,False,True
+88008,88008,Chat ISO A 1370e6dc,CLIENT,False,False,True
+88009,88009,Chat ISO B d7c87959,CLIENT,False,False,True
+88010,88010,Chat ISO B bba0be27,CLIENT,False,False,True
+88011,88011,Chat ISO A 2c018a16,CLIENT,False,False,True
+88012,88012,Chat ISO B cc3b2585,CLIENT,False,False,True
+88013,88013,Chat ISO B 73791196,CLIENT,False,False,True
+88014,88014,Chat ISO A 761faaf7,CLIENT,False,False,True
+88015,88015,Chat ISO B 81e42eb1,CLIENT,False,False,True
+88016,88016,Chat ISO B 74c3fa73,CLIENT,False,False,True
+88017,88017,Chat ISO B 85323ad0,CLIENT,False,False,True
+88018,88018,Chat ISO B 9b8dd91b,CLIENT,False,False,True
+88019,88019,Chat ISO B dffd30ed,CLIENT,False,False,True
+89001,89001,Calendar ISO A fa0bfa2b,CLIENT,False,False,True
+89002,89002,Calendar ISO B 9fa4270a,CLIENT,False,False,True
+89003,89003,Calendar ISO B a465eaae,CLIENT,False,False,True
+89004,89004,Calendar ISO A a5c39b10,CLIENT,False,False,True
+89005,89005,Calendar ISO B 451ead3f,CLIENT,False,False,True
+89006,89006,Calendar ISO A 6396632d,CLIENT,False,False,True
+89007,89007,Calendar ISO B 510e787b,CLIENT,False,False,True
+89008,89008,Calendar ISO B 029fb2c0,CLIENT,False,False,True
+89009,89009,Calendar ISO B 9fa6c0ce,CLIENT,False,False,True
+89010,89010,Calendar ISO B be613f9b,CLIENT,False,False,True
+89011,89011,Calendar ISO B 4359da34,CLIENT,False,False,True

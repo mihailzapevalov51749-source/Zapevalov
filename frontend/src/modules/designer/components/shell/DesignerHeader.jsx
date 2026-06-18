@@ -1,7 +1,5 @@
 import { Bell, CircleHelp, MessageSquare } from "lucide-react";
 
-import AppModeSwitch from "../../../../shared/appMode/AppModeSwitch";
-
 import "./designerHeader.css";
 
 export default function DesignerHeader({ tenantId, user }) {
@@ -16,9 +14,7 @@ export default function DesignerHeader({ tenantId, user }) {
 
   return (
     <header className="designer-header">
-      <div className="designer-header__left">
-        <AppModeSwitch tenantId={tenantId} variant="designer" />
-      </div>
+      <div className="designer-header__left" />
 
       <div className="designer-header__center">
         <input

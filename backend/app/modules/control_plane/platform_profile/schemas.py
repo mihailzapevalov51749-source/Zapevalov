@@ -48,6 +48,9 @@ class PlatformSettingsGeneralRead(BaseModel):
 
     platform_name: str
     platform_short_name: str
+    public_slug: str | None = None
+    public_slug_locked: bool = False
+    public_url: str | None = None
     description: str | None = None
     timezone: str
     date_format: str
@@ -60,6 +63,8 @@ class PlatformSettingsGeneralRead(BaseModel):
 class PlatformSettingsGeneralUpdate(BaseModel):
     platform_name: str = Field(min_length=1, max_length=255)
     platform_short_name: str = Field(min_length=1, max_length=64)
+    public_slug: str = Field(min_length=1, max_length=64)
+    public_slug_locked: bool = False
     description: str | None = Field(default=None, max_length=4000)
     timezone: str = Field(min_length=1, max_length=128)
     date_format: str = Field(min_length=1, max_length=32)

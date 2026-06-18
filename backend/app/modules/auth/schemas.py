@@ -33,3 +33,13 @@ class UserUpdate(BaseModel):
 
 class TenantLoginBrandingRead(BaseModel):
     display_name: str
+    tenant_id: int | None = None
+    public_slug: str | None = None
+    tenant_key: str | None = None
+
+
+class TenantEntryRead(BaseModel):
+    tenant_id: int
+    public_slug: str
+    display_name: str
+    tenant_key: str | None = None

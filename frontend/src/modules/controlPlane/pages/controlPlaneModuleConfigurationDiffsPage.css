@@ -1,0 +1,98 @@
+.cp-module-config-diffs-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px 28px;
+}
+
+.cp-module-config-diffs-page__intro,
+.cp-module-config-diffs-page__status,
+.cp-module-config-diffs-page__empty,
+.cp-module-config-diffs-page__muted {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.cp-module-config-diffs-page__error {
+  margin: 0;
+  color: #b42318;
+  font-size: 14px;
+}
+
+.cp-module-config-diffs-page__table-wrap {
+  overflow: auto;
+  border: 1px solid #d8dee8;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.cp-module-config-diffs-page__table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 980px;
+  font-size: 13px;
+}
+
+.cp-module-config-diffs-page__table th,
+.cp-module-config-diffs-page__table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e7ebf1;
+  text-align: left;
+  vertical-align: top;
+}
+
+.cp-module-config-diffs-page__table th {
+  background: #f7f9fc;
+  font-weight: 600;
+  color: #334155;
+}
+
+.cp-module-config-diffs-page__table tr:last-child td {
+  border-bottom: none;
+}
+
+.cp-module-config-diffs-page__table code {
+  font-size: 12px;
+}
+
+.cp-module-config-diffs-page__detail-panel {
+  border: 1px solid #d8dee8;
+  border-radius: 10px;
+  background: #fff;
+  padding: 16px;
+}
+
+.cp-module-config-diffs-page__detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.cp-module-config-diffs-page__detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cp-module-config-diffs-page__diff-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.cp-module-config-diffs-page__diff-json {
+  margin: 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow: auto;
+  max-height: 220px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

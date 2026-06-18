@@ -24,7 +24,8 @@ def test_known_slug_uses_canonical_russian_title():
 
     assert title == "Исправление изоляции ролей журнала событий"
     assert event_type == "fix"
-    assert "Категория:" in (description or "")
+    assert (description or "").startswith("Что сделано:")
+    assert "Категория:" not in (description or "")
     assert is_mostly_english(description) is False
 
 
@@ -39,7 +40,7 @@ def test_unknown_slug_translates_english_title():
     assert is_mostly_english(title) is False
     assert title.startswith("Исправление:")
     assert event_type == "fix"
-    assert "Категория:" in (description or "")
+    assert (description or "").startswith("Что сделано:")
 
 
 def test_russian_title_is_preserved():
@@ -50,8 +51,8 @@ def test_russian_title_is_preserved():
         event_type="ux_improvement",
     )
 
-    assert title == "Добавлен фильтр журнала событий"
-    assert description.startswith("Категория: Журнал событий.")
+    assert title == "Обновление: Добавлен фильтр журнала событий"
+    assert description.startswith("Что сделано:")
     assert event_type == "ux_improvement"
 
 

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.modules.platform.shared.dependencies import require_portal_membership
+from app.modules.tenant_management.dependencies import require_dev_direct_structure_write_portal
 
 from .schemas import BlockCreate, BlockUpdate, BlockMove, BlockResponse
 from . import service
@@ -14,7 +15,7 @@ router = APIRouter(prefix="/blocks", tags=["Blocks"])
 def create_block(
     data: BlockCreate,
     db: Session = Depends(get_db),
-    portal_id: int = Depends(require_portal_membership),
+    portal_id: int = Depends(require_dev_direct_structure_write_portal),
 ):
     return service.create_block(db, data, portal_id=portal_id)
 
@@ -56,7 +57,7 @@ def update_block(
     block_id: int,
     data: BlockUpdate,
     db: Session = Depends(get_db),
-    portal_id: int = Depends(require_portal_membership),
+    portal_id: int = Depends(require_dev_direct_structure_write_portal),
 ):
     block = service.update_block(db, block_id, data, portal_id=portal_id)
 
@@ -70,7 +71,7 @@ def update_block(
 def delete_block(
     block_id: int,
     db: Session = Depends(get_db),
-    portal_id: int = Depends(require_portal_membership),
+    portal_id: int = Depends(require_dev_direct_structure_write_portal),
 ):
     block = service.delete_block(db, block_id, portal_id=portal_id)
 
@@ -84,6 +85,6 @@ def delete_block(
 def move_blocks(
     items: list[BlockMove],
     db: Session = Depends(get_db),
-    portal_id: int = Depends(require_portal_membership),
+    portal_id: int = Depends(require_dev_direct_structure_write_portal),
 ):
     return service.move_blocks(db, items, portal_id=portal_id)

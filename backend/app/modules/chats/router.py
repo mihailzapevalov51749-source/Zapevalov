@@ -31,6 +31,13 @@ from app.modules.chats.tenant_access import (
     resolve_chat_tenant_id,
     search_tenant_chat_users,
 )
+from app.modules.tenant_module_configurations.runtime.enforcement import (
+    assert_chat_attachments_allowed,
+    assert_chat_mentions_allowed,
+    assert_chat_message_edit_allowed,
+    assert_chat_participant_limit,
+    assert_chat_reactions_allowed,
+)
 from app.modules.users.models import User
 
 router = APIRouter(
@@ -221,6 +228,14 @@ def create_chat(
         participant_ids=payload.participant_ids,
     )
 
+    participant_count = 1 + len(payload.participant_ids or [])
+    assert_chat_participant_limit(
+        db,
+        tenant_id=tenant_id,
+        current_count=0,
+        incoming_count=participant_count,
+    )
+
     return crud.create_chat(
         db,
         title=payload.title,
@@ -353,6 +368,20 @@ def create_message(
         current_user=current_user,
     )
 
+    chat = crud.get_chat_by_id(db, chat_id)
+    tenant_id = int(chat.tenant_id) if chat and chat.tenant_id is not None else None
+
+    assert_chat_attachments_allowed(
+        db,
+        tenant_id=tenant_id,
+        attachments=payload.attachments,
+    )
+    assert_chat_mentions_allowed(
+        db,
+        tenant_id=tenant_id,
+        mentions=payload.mentions,
+    )
+
     if not payload.content and not payload.attachments:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -420,10 +449,26 @@ def update_message(
         current_user=current_user,
     )
 
+    chat = crud.get_chat_by_id(db, message.chat_id)
+    tenant_id = int(chat.tenant_id) if chat and chat.tenant_id is not None else None
+
     if message.created_by_id != user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Можно редактировать только свои сообщения",
+        )
+
+    assert_chat_message_edit_allowed(
+        db,
+        tenant_id=tenant_id,
+        message_created_at=message.created_at,
+    )
+
+    if payload.mentions is not None:
+        assert_chat_mentions_allowed(
+            db,
+            tenant_id=tenant_id,
+            mentions=payload.mentions,
         )
 
     return crud.update_message(
@@ -500,6 +545,10 @@ def add_reaction(
         chat_id=message.chat_id,
         current_user=current_user,
     )
+
+    chat = crud.get_chat_by_id(db, message.chat_id)
+    tenant_id = int(chat.tenant_id) if chat and chat.tenant_id is not None else None
+    assert_chat_reactions_allowed(db, tenant_id=tenant_id)
 
     return crud.add_reaction(
         db,
@@ -597,6 +646,14 @@ def add_participant(
         db,
         user_id=payload.user_id,
         tenant_id=int(chat.tenant_id),
+    )
+
+    current_participants = crud.get_chat_participants(db, chat_id)
+    assert_chat_participant_limit(
+        db,
+        tenant_id=int(chat.tenant_id),
+        current_count=len(current_participants),
+        incoming_count=1,
     )
 
     return crud.add_participant(

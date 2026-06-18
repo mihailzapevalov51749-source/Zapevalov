@@ -1,6 +1,11 @@
 import { shouldApplySystemMenuSettings } from "./applySystemMenuSettingsToTree.js";
 import { patchNavigationMenuSettings } from "./navigationMenuBlocks.js";
 import {
+  assignDistinctSortOrders,
+  buildMovePreferencesPayload,
+  buildMoveTenantSettingsPayload,
+} from "./mergeRuntimeMenuLayers.js";
+import {
   patchControlPlaneSystemMenuOrder,
   readControlPlaneSystemMenuSettings,
 } from "../uiStorage/controlPlaneUiStorage.js";
@@ -13,6 +18,10 @@ import {
   readSystemMenuSettings,
   writeSystemMenuSettings,
 } from "../uiStorage/systemMenuSettingsStorage.js";
+
+async function loadRuntimeMenuSettingsApi() {
+  return import("../../modules/navigation/api/runtimeMenuSettingsApi.js");
+}
 
 export function mapDesignerMenuSettingsToItemIds(rootItems = [], tenantId) {
   const designerSettings = getDesignerSystemMenuSettings(tenantId);
@@ -39,12 +48,15 @@ export function readNavigationMenuBlockSettings({
   menuProfile = "platform",
   tenantId = null,
   rootItems = [],
+  tenantSettingsOverride = null,
 } = {}) {
   if (menuProfile === "control-plane") {
     return readControlPlaneSystemMenuSettings();
   }
 
-  const tenantSettings = tenantId ? readSystemMenuSettings(tenantId) : {};
+  const tenantSettings =
+    tenantSettingsOverride ??
+    (tenantId ? readSystemMenuSettings(tenantId) : {});
 
   if (menuProfile !== "designer") {
     return tenantSettings;
@@ -62,7 +74,9 @@ export async function persistNavigationMenuBlockMove({
   itemsPayload = [],
   rootItems = [],
   reloadNavigation,
+  preferenceScope = "tenant",
 } = {}) {
+  const normalizedItemsPayload = assignDistinctSortOrders(itemsPayload);
   const rootById = new Map(
     rootItems.map((item) => [String(item.id), item]),
   );
@@ -75,7 +89,7 @@ export async function persistNavigationMenuBlockMove({
   const tenantEntries = [];
   const designerEntries = [];
 
-  itemsPayload.forEach((entry) => {
+  normalizedItemsPayload.forEach((entry) => {
     const itemId = String(entry?.id || "").trim();
     if (!itemId) {
       return;
@@ -92,8 +106,24 @@ export async function persistNavigationMenuBlockMove({
 
   let tenantSettings = tenantId ? readSystemMenuSettings(tenantId) : {};
   if (tenantEntries.length > 0 && tenantId) {
-    tenantSettings = patchNavigationMenuSettings(tenantSettings, tenantEntries);
-    writeSystemMenuSettings(tenantId, tenantSettings);
+    if (menuProfile === "platform") {
+      const { putTenantRuntimeMenuSettingsBulk, putUserMenuPreferencesBulk } =
+        await loadRuntimeMenuSettingsApi();
+      if (preferenceScope === "user") {
+        const preferences = buildMovePreferencesPayload(tenantEntries, rootItems);
+        if (Object.keys(preferences).length > 0) {
+          await putUserMenuPreferencesBulk(tenantId, preferences);
+        }
+      } else {
+        const settings = buildMoveTenantSettingsPayload(tenantEntries, rootItems);
+        if (Object.keys(settings).length > 0) {
+          tenantSettings = await putTenantRuntimeMenuSettingsBulk(tenantId, settings);
+        }
+      }
+    } else {
+      tenantSettings = patchNavigationMenuSettings(tenantSettings, tenantEntries);
+      writeSystemMenuSettings(tenantId, tenantSettings);
+    }
   }
 
   if (designerEntries.length > 0 && tenantId) {
@@ -119,7 +149,7 @@ export async function persistNavigationMenuBlockMove({
     );
   }
 
-  const customDbPayload = itemsPayload
+  const customDbPayload = normalizedItemsPayload
     .filter((entry) => {
       const itemId = String(entry?.id || "").trim();
       if (!itemId) {

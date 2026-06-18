@@ -11,7 +11,11 @@ from pathlib import Path
 from uuid import UUID, uuid4
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
+SCRIPTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BACKEND_DIR))
+sys.path.insert(0, str(SCRIPTS_DIR))
+
+from structure_write_script_guard import guard_script_structure_write  # noqa: E402
 
 from sqlalchemy import func, text  # noqa: E402
 
@@ -462,6 +466,7 @@ def clone_action_definition(
 
 
 def apply_phase5(db, plan: dict) -> dict:
+    guard_script_structure_write(db, TARGET, "apply_phase5_restore_actions")
     before = safety_counts(db)
     ctx = build_remap_context(db)
 

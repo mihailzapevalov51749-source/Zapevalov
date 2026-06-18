@@ -1,4 +1,5 @@
 import {
+  emitCalendarNavigateWithRetry,
   emitChatNavigateWithRetry,
   emitPendingTargetWithRetry,
   setPendingTargetCompat,
@@ -6,9 +7,11 @@ import {
 import {
   buildPendingTarget,
   mapNotificationNavigateDetail,
+  normalizeNotificationContext,
 } from "./notificationNavigationMapper.js";
 import {
   resolveNotificationNavigationOutcome,
+  resolveNotificationTenantId,
 } from "./notificationTargetRouting.js";
 
 const DEFAULT_CHAT_PAGE_ID = 35;
@@ -19,6 +22,7 @@ export function orchestrateNotificationNavigation({
   onSelectPage,
   pushNavigationState,
   chatPageId = DEFAULT_CHAT_PAGE_ID,
+  calendarPageId = null,
   user = null,
   pathname = window.location.pathname,
 }) {
@@ -47,6 +51,36 @@ export function orchestrateNotificationNavigation({
     setPendingTargetCompat(pendingTarget);
     onSelectPage?.(chatPageId);
     emitChatNavigateWithRetry(pendingTarget, [300, 800, 1500]);
+    return pendingTarget;
+  }
+
+  if (outcome.action === "open_calendar") {
+    const tenantId = resolveNotificationTenantId(
+      {
+        ...pendingTarget,
+        context: normalizeNotificationContext(pendingTarget.detail || detail),
+      },
+      pathname,
+    );
+
+    pushNavigationState?.({
+      pageId: activePageId,
+      pathname,
+    });
+    setPendingTargetCompat(pendingTarget);
+
+    if (calendarPageId) {
+      onSelectPage?.(calendarPageId);
+    }
+
+    emitCalendarNavigateWithRetry(
+      {
+        ...pendingTarget,
+        eventId: pendingTarget.eventId,
+        tenantId,
+      },
+      [300, 800, 1500],
+    );
     return pendingTarget;
   }
 

@@ -62,6 +62,24 @@ test("tenant access helpers use canonical role names", () => {
   assert.equal(canAccessTenantDesigner(user), false);
 });
 
+test("global user with active superadmin membership can access tenant studio", () => {
+  const globalSuperadmin = {
+    tenant_id: null,
+    role: "user",
+    tenant_memberships: [
+      {
+        tenant_id: 21,
+        role_key: "superadmin",
+        membership_status: "active",
+        is_active: true,
+      },
+    ],
+  };
+
+  assert.equal(canAccessTenantDesigner(globalSuperadmin), true);
+  assert.equal(canAccessTenantAdministration(globalSuperadmin), true);
+});
+
 test("platform owner passes designer and administration guards without tenant role", () => {
   const platformOwner = {
     tenant_id: null,
@@ -71,4 +89,48 @@ test("platform owner passes designer and administration guards without tenant ro
 
   assert.equal(canAccessTenantDesigner(platformOwner), true);
   assert.equal(canAccessTenantAdministration(platformOwner), true);
+});
+
+test("infrastructure superadmin bridge owner can access studio and administration", () => {
+  const bridgeOwner = {
+    is_bridge_session: true,
+    is_infrastructure_superadmin: true,
+    is_platform_owner: true,
+    role: "superadmin",
+    portal_id: 2,
+  };
+
+  assert.equal(canAccessTenantDesigner(bridgeOwner), true);
+  assert.equal(canAccessTenantAdministration(bridgeOwner), true);
+});
+
+test("client bridge owner without infrastructure flag cannot access studio", () => {
+  const bridgeOwner = {
+    is_bridge_session: true,
+    platform_role: "platform_owner",
+    is_infrastructure_superadmin: false,
+    is_platform_owner: false,
+    portal_id: 21,
+  };
+
+  assert.equal(canAccessTenantDesigner(bridgeOwner), false);
+  assert.equal(canAccessTenantAdministration(bridgeOwner), false);
+});
+
+test("global user with user membership cannot access tenant studio", () => {
+  const globalUser = {
+    tenant_id: null,
+    role: "user",
+    tenant_memberships: [
+      {
+        tenant_id: 21,
+        role_key: "user",
+        membership_status: "active",
+        is_active: true,
+      },
+    ],
+  };
+
+  assert.equal(canAccessTenantDesigner(globalUser), false);
+  assert.equal(canAccessTenantAdministration(globalUser), false);
 });

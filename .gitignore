@@ -15,4 +15,9 @@ node_modules/
 
 # Build
 dist/
+dist-template/
 build/
+
+# Local dev stack runtime (WI-20.1)
+.run/
+logs/

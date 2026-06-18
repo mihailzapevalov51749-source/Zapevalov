@@ -67,7 +67,7 @@ export function resolveDesignerTenantBase(tenantId) {
 
 export function isDesignerPlatformRoute(pathname) {
   const normalized = normalizePath(pathname);
-  return /\/designer\/tenant\/\d+\/(?:event-journal|platform)(?:\/|$)/.test(normalized);
+  return /\/designer\/tenant\/\d+\/(?:event-journal|platform-releases|platform-architecture|platform)(?:\/|$)/.test(normalized);
 }
 
 export function getDesignerSectionDefinitions(tenantId) {
@@ -84,7 +84,9 @@ export function getDesignerSectionDefinitions(tenantId) {
       key: "administration",
       label: "Администрирование",
       path: `${base}/administration`,
-      match: (pathname) => /\/administration(?:\/|$)/.test(pathname),
+      match: (pathname) =>
+        /\/administration(?:\/|$)/.test(pathname) ||
+        /\/designer\/tenant\/\d+\/modules(?:\/|$)/.test(pathname),
     },
     {
       key: "pages",
@@ -128,6 +130,18 @@ export function getDesignerSectionDefinitions(tenantId) {
       label: "Журнал событий",
       path: `${base}/event-journal`,
       match: (pathname) => /\/event-journal(?:\/|$)/.test(pathname),
+    },
+    {
+      key: "platform-releases",
+      label: "Релизы платформы",
+      path: `${base}/platform-releases`,
+      match: (pathname) => /\/platform-releases(?:\/|$)/.test(pathname),
+    },
+    {
+      key: "platform-architecture",
+      label: "Архитектура платформы",
+      path: `${base}/platform-architecture`,
+      match: (pathname) => /\/platform-architecture(?:\/|$)/.test(pathname),
     },
     {
       key: "relations",
@@ -323,8 +337,12 @@ function resolveOwnedRootSectionMenuItemActive({
     return false;
   }
 
-  if (ownedSectionKey === "event-journal") {
-    return isDesignerPlatformRoute(normalizedActivePath);
+  if (
+    ownedSectionKey === "event-journal"
+    || ownedSectionKey === "platform-releases"
+    || ownedSectionKey === "platform-architecture"
+  ) {
+    return Boolean(ownedSection?.match(normalizedActivePath));
   }
 
   const ownedSectionPath = normalizePath(ownedSection.path);
@@ -398,7 +416,11 @@ function scoreDesignerSidebarItemActive({
         ownedSection,
       })
     ) {
-      if (ownedSectionKey === "event-journal") {
+      if (
+    ownedSectionKey === "event-journal"
+    || ownedSectionKey === "platform-releases"
+    || ownedSectionKey === "platform-architecture"
+  ) {
         return 50000;
       }
 
@@ -431,15 +453,23 @@ function scoreDesignerSidebarItemActive({
   }
 
   if (isDesignerMenuRootSectionItem(item, resolvedTenantId)) {
-    if (isDesignerPlatformRoute(normalizedActivePath)) {
-      const itemSection = resolveDesignerSectionByPath(
-        normalizedItemPath,
-        resolvedTenantId,
-      );
-      if (itemSection?.key === "event-journal") {
-        return 50000;
-      }
-      return -1;
+    const activeSection = resolveDesignerSectionByPath(
+      normalizedActivePath,
+      resolvedTenantId,
+    );
+    const itemSection = resolveDesignerSectionByPath(
+      normalizedItemPath,
+      resolvedTenantId,
+    );
+    if (
+      activeSection &&
+      itemSection &&
+      activeSection.key === itemSection.key &&
+      (activeSection.key === "event-journal"
+        || activeSection.key === "platform-releases"
+        || activeSection.key === "platform-architecture")
+    ) {
+      return 50000;
     }
 
     if (isDesignerSectionRouteActive(normalizedItemPath, normalizedActivePath)) {
@@ -987,9 +1017,44 @@ function buildEventJournalBreadcrumbs(pathname, base) {
   ]);
 }
 
+function buildPlatformReleasesBreadcrumbs(pathname, base) {
+  return markLastActive([
+    {
+      id: "designer-platform-releases",
+      label: "Релизы платформы",
+      path: `${base}/platform-releases`,
+    },
+  ]);
+}
+
+function buildPlatformArchitectureBreadcrumbs(pathname, base) {
+  return markLastActive([
+    {
+      id: "designer-platform-architecture",
+      label: "Архитектура платформы",
+      path: `${base}/platform-architecture`,
+    },
+  ]);
+}
+
 function buildAdministrationBreadcrumbs(pathname, base) {
   const normalized = normalizePath(pathname);
   const root = `${base}/administration`;
+  const modulesPath = `${base}/modules`;
+
+  if (normalized === modulesPath) {
+    return markLastActive([
+      {
+        id: "designer-administration",
+        label: "Администрирование",
+        path: root,
+      },
+      {
+        id: "designer-administration-modules",
+        label: "Модули",
+      },
+    ]);
+  }
 
   if (normalized === root) {
     return markLastActive([
@@ -1118,6 +1183,14 @@ export function buildDesignerBreadcrumbs(pathname, context = {}) {
 
   if (section.key === "event-journal") {
     return buildEventJournalBreadcrumbs(pathname, base);
+  }
+
+  if (section.key === "platform-releases") {
+    return buildPlatformReleasesBreadcrumbs(pathname, base);
+  }
+
+  if (section.key === "platform-architecture") {
+    return buildPlatformArchitectureBreadcrumbs(pathname, base);
   }
 
   const activeItem = resolveDesignerBreadcrumbActiveItem(pathname, context, tenantId);

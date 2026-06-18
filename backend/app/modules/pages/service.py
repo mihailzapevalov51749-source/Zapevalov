@@ -9,9 +9,11 @@ from .tenant_access import (
 )
 from app.modules.sections import repository as sections_repo
 from app.modules.blocks import repository as blocks_repo
+from app.modules.publication_guard.structure_write_service_guard import guard_direct_structure_write
 
 
 def create_page(db: Session, data, *, portal_id: int):
+    guard_direct_structure_write(db, portal_id, "create_page")
     assert_portal_id_matches_expected(int(data.portal_id), portal_id)
     return repository.create_page(db, data)
 
@@ -26,6 +28,7 @@ def get_page(db: Session, page_id: int, *, portal_id: int):
 
 
 def update_page(db: Session, page_id: int, data, *, portal_id: int):
+    guard_direct_structure_write(db, portal_id, "update_page")
     page = get_page_for_portal_any_state(db, page_id, portal_id)
     if not page:
         return None
@@ -39,6 +42,7 @@ def delete_page(
     portal_id: int,
     deleted_by: int | None = None,
 ):
+    guard_direct_structure_write(db, portal_id, "delete_page")
     page = get_page_for_portal_any_state(db, page_id, portal_id)
     if not page:
         return None

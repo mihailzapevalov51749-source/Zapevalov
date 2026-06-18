@@ -25,6 +25,7 @@ from app.modules.platform.designer.field_definitions import (
 )
 from app.modules.platform.designer.object_types import repository as object_type_repository
 from app.modules.users.models import User
+from app.modules.publication_guard.structure_write_service_guard import guard_direct_structure_write
 
 
 def _actor_user_id(current_user: User | None) -> int | None:
@@ -205,6 +206,7 @@ def create_action_form(
     payload: ActionFormCreate,
     current_user: User | None = None,
 ) -> ActionFormRead:
+    guard_direct_structure_write(db, tenant_id, "create_action_form")
     action_definition = _get_scoped_action_definition(
         db,
         tenant_id,
@@ -255,6 +257,7 @@ def update_action_form(
     payload: ActionFormUpdate,
     current_user: User | None = None,
 ) -> ActionFormRead:
+    guard_direct_structure_write(db, tenant_id, "update_action_form")
     action_definition = _get_scoped_action_definition(
         db,
         tenant_id,
@@ -296,6 +299,7 @@ def delete_action_form(
     action_definition_id: UUID,
     current_user: User | None = None,
 ) -> None:
+    guard_direct_structure_write(db, tenant_id, "delete_action_form")
     action_definition = _get_scoped_action_definition(
         db,
         tenant_id,
@@ -362,6 +366,7 @@ def create_action_form_field(
     payload: ActionFormFieldCreate,
     current_user: User | None = None,
 ) -> ActionFormFieldRead:
+    guard_direct_structure_write(db, tenant_id, "create_action_form_field")
     action_definition = _get_scoped_action_definition(
         db,
         tenant_id,
@@ -434,6 +439,7 @@ def update_action_form_field(
     payload: ActionFormFieldUpdate,
     current_user: User | None = None,
 ) -> ActionFormFieldRead:
+    guard_direct_structure_write(db, tenant_id, "update_action_form_field")
     action_definition = _get_scoped_action_definition(
         db,
         tenant_id,
@@ -488,6 +494,7 @@ def delete_action_form_field(
     field_id: UUID,
     current_user: User | None = None,
 ) -> None:
+    guard_direct_structure_write(db, tenant_id, "delete_action_form_field")
     action_definition = _get_scoped_action_definition(
         db,
         tenant_id,

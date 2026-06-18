@@ -26,7 +26,8 @@
 }
 
 .users-roles-workspace__canvas .platform-users-page,
-.users-roles-workspace__canvas .platform-roles-page {
+.users-roles-workspace__canvas .platform-roles-page,
+.users-roles-workspace__canvas .global-users-page {
   flex: 0 0 auto;
   width: 100%;
   min-height: 0;

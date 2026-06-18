@@ -1,0 +1,1345 @@
+﻿{
+  "yasnopro_dev": {
+    "database": "yasnopro_dev",
+    "status": "ok",
+    "table_count": 94,
+    "total_records": 4273,
+    "catalog": [
+      {
+        "table": "alembic_version",
+        "records": 1,
+        "level": "0"
+      },
+      {
+        "table": "blocks",
+        "records": 18,
+        "level": "1A"
+      },
+      {
+        "table": "calendar_event_participants",
+        "records": 0,
+        "level": "0"
+      },
+      {
+        "table": "calendar_events",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "chat_message_attachments",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "chat_message_mentions",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "chat_message_reactions",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "chat_messages",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "chat_participants",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "chats",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "checklist_items",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "comment_attachments",
+        "records": 1,
+        "level": "2"
+      },
+      {
+        "table": "comment_mentions",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "comment_reactions",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "comments",
+        "records": 18,
+        "level": "2"
+      },
+      {
+        "table": "customer_companies",
+        "records": 0,
+        "level": "0"
+      },
+      {
+        "table": "designer_action_definitions",
+        "records": 3,
+        "level": "1A"
+      },
+      {
+        "table": "designer_action_form_fields",
+        "records": 6,
+        "level": "1A"
+      },
+      {
+        "table": "designer_action_forms",
+        "records": 2,
+        "level": "1A"
+      },
+      {
+        "table": "designer_action_placements",
+        "records": 4,
+        "level": "1A"
+      },
+      {
+        "table": "designer_field_definitions",
+        "records": 70,
+        "level": "1A"
+      },
+      {
+        "table": "designer_metadata_snapshots",
+        "records": 150,
+        "level": "1A"
+      },
+      {
+        "table": "designer_object_types",
+        "records": 22,
+        "level": "1A"
+      },
+      {
+        "table": "designer_publish_records",
+        "records": 165,
+        "level": "0"
+      },
+      {
+        "table": "designer_relation_definitions",
+        "records": 10,
+        "level": "1A"
+      },
+      {
+        "table": "designer_system_menu_settings",
+        "records": 9,
+        "level": "1A"
+      },
+      {
+        "table": "designer_view_definitions",
+        "records": 36,
+        "level": "1A"
+      },
+      {
+        "table": "designer_workspace_tabs",
+        "records": 14,
+        "level": "1A"
+      },
+      {
+        "table": "designer_workspaces",
+        "records": 22,
+        "level": "1A"
+      },
+      {
+        "table": "document_libraries",
+        "records": 2,
+        "level": "2"
+      },
+      {
+        "table": "library_documents",
+        "records": 16,
+        "level": "2"
+      },
+      {
+        "table": "navigation_items",
+        "records": 53,
+        "level": "1A"
+      },
+      {
+        "table": "note_mentions",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "notes",
+        "records": 1,
+        "level": "2"
+      },
+      {
+        "table": "notification_recipients",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "notifications",
+        "records": 18,
+        "level": "2"
+      },
+      {
+        "table": "pages",
+        "records": 60,
+        "level": "1A"
+      },
+      {
+        "table": "platform_activities",
+        "records": 618,
+        "level": "0"
+      },
+      {
+        "table": "platform_code_builds",
+        "records": 13,
+        "level": "0"
+      },
+      {
+        "table": "platform_components",
+        "records": 10,
+        "level": "0"
+      },
+      {
+        "table": "platform_dashboard_meta",
+        "records": 1,
+        "level": "0"
+      },
+      {
+        "table": "platform_deployments",
+        "records": 0,
+        "level": "0"
+      },
+      {
+        "table": "platform_environment_versions",
+        "records": 1,
+        "level": "0"
+      },
+      {
+        "table": "platform_event_journal_entries",
+        "records": 634,
+        "level": "0"
+      },
+      {
+        "table": "platform_implementation_stages",
+        "records": 8,
+        "level": "0"
+      },
+      {
+        "table": "platform_module_manifests",
+        "records": 3,
+        "level": "0"
+      },
+      {
+        "table": "platform_module_publications",
+        "records": 0,
+        "level": "0"
+      },
+      {
+        "table": "platform_module_versions",
+        "records": 268,
+        "level": "0"
+      },
+      {
+        "table": "platform_modules",
+        "records": 7,
+        "level": "0"
+      },
+      {
+        "table": "platform_release_modules",
+        "records": 0,
+        "level": "0"
+      },
+      {
+        "table": "platform_release_packages",
+        "records": 0,
+        "level": "0"
+      },
+      {
+        "table": "platform_releases",
+        "records": 0,
+        "level": "0"
+      },
+      {
+        "table": "platform_settings",
+        "records": 1,
+        "level": "0"
+      },
+      {
+        "table": "platform_tasks",
+        "records": 220,
+        "level": "0"
+      },
+      {
+        "table": "platform_users",
+        "records": 1,
+        "level": "0"
+      },
+      {
+        "table": "platform_version_history",
+        "records": 1,
+        "level": "0"
+      },
+      {
+        "table": "platform_version_schema_catalog",
+        "records": 2,
+        "level": "0"
+      },
+      {
+        "table": "portals",
+        "records": 1,
+        "level": "0"
+      },
+      {
+        "table": "quality_issue_status_history",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "quality_issues",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "release_changes",
+        "records": 0,
+        "level": "0"
+      },
+      {
+        "table": "roles",
+        "records": 7,
+        "level": "0"
+      },
+      {
+        "table": "runtime_entities",
+        "records": 324,
+        "level": "2"
+      },
+      {
+        "table": "runtime_entity_values",
+        "records": 1014,
+        "level": "2"
+      },
+      {
+        "table": "runtime_office_user_table_views",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "runtime_relation_instances",
+        "records": 358,
+        "level": "2"
+      },
+      {
+        "table": "sections",
+        "records": 26,
+        "level": "1A"
+      },
+      {
+        "table": "table_columns",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "table_rows",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "tables",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "task_assignees",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "task_checklist_items",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "task_view_columns",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "tasks",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "tenant_module_config_snapshots",
+        "records": 0,
+        "level": "1A"
+      },
+      {
+        "table": "tenant_module_configuration_applies",
+        "records": 0,
+        "level": "0"
+      },
+      {
+        "table": "tenant_module_configuration_diffs",
+        "records": 0,
+        "level": "0"
+      },
+      {
+        "table": "tenant_module_configuration_rollbacks",
+        "records": 0,
+        "level": "0"
+      },
+      {
+        "table": "tenant_module_configurations",
+        "records": 3,
+        "level": "1A"
+      },
+      {
+        "table": "tenant_module_update_offers",
+        "records": 0,
+        "level": "0"
+      },
+      {
+        "table": "tenant_module_update_previews",
+        "records": 0,
+        "level": "0"
+      },
+      {
+        "table": "tenant_modules",
+        "records": 3,
+        "level": "1A"
+      },
+      {
+        "table": "tenant_runtime_menu_settings",
+        "records": 21,
+        "level": "1A"
+      },
+      {
+        "table": "tenant_update_offers",
+        "records": 0,
+        "level": "0"
+      },
+      {
+        "table": "tenant_user_memberships",
+        "records": 2,
+        "level": "0"
+      },
+      {
+        "table": "tenant_user_profiles",
+        "records": 2,
+        "level": "0"
+      },
+      {
+        "table": "tenant_versions",
+        "records": 0,
+        "level": "0"
+      },
+      {
+        "table": "test_cleanup_records",
+        "records": 0,
+        "level": "0"
+      },
+      {
+        "table": "test_cleanup_runs",
+        "records": 0,
+        "level": "0"
+      },
+      {
+        "table": "user_activity_sessions",
+        "records": 20,
+        "level": "2"
+      },
+      {
+        "table": "user_menu_preferences",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "user_presence_states",
+        "records": 1,
+        "level": "2"
+      },
+      {
+        "table": "user_workspace_tabs",
+        "records": 0,
+        "level": "2"
+      },
+      {
+        "table": "users",
+        "records": 2,
+        "level": "0"
+      }
+    ],
+    "portals": [
+      {
+        "id": 1,
+        "name": "╨рчЁрсюЄър",
+        "tenant_type": "DEV",
+        "environment_role": "DEV",
+        "code": "ъюЁяюЁрЄштэ√щ_яюЁЄры",
+        "is_protected": true,
+        "template_version": "1.0.0"
+      }
+    ],
+    "portal_count": 1,
+    "template_portal_id": 1,
+    "structure": {
+      "pages": 35,
+      "sections": 15,
+      "blocks": 7,
+      "navigation_items": 38,
+      "designer_object_types": 11,
+      "designer_field_definitions": 51,
+      "designer_relation_definitions": 8,
+      "designer_view_definitions": 25,
+      "designer_action_definitions": 3,
+      "designer_action_forms": 2,
+      "designer_workspaces": 22,
+      "designer_workspace_tabs": 14,
+      "designer_system_menu_settings": 9,
+      "tenant_runtime_menu_settings": 21,
+      "tenant_modules": 3,
+      "tenant_module_configurations": 3
+    },
+    "level2": {
+      "runtime_entities": 324,
+      "runtime_entity_values": 1014,
+      "runtime_relation_instances": 358,
+      "comments": 18,
+      "notes": 1,
+      "notifications": 18,
+      "notification_recipients": 0,
+      "document_libraries": 2,
+      "library_documents": 16,
+      "calendar_events": 0,
+      "chat_messages": 0,
+      "chats": 0,
+      "user_activity_sessions": 20,
+      "user_presence_states": 1
+    },
+    "cleanup": {
+      "test_cleanup_runs": 0,
+      "test_cleanup_records": 0
+    },
+    "object_types": [
+      {
+        "key": "idei",
+        "name": "╚фхш",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "istoriya",
+        "name": "╚ёЄюЁш ",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "klienty",
+        "name": "╩ышхэЄ√",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "litsenzii",
+        "name": "╦шЎхэчшш",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "napravleniya",
+        "name": "╧ырэ ЁрчтшЄш ",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "new_object",
+        "name": "═ют√щ юс·хъЄ",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "problemy",
+        "name": "╧Ёюсыхь√",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "prodazhi",
+        "name": "╧Ёюфрцш",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "task",
+        "name": "╟рфрўр",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "test",
+        "name": "╥хёЄют√щ юс·хъЄ",
+        "is_system": false,
+        "status": "active"
+      },
+      {
+        "key": "zadachnik",
+        "name": "╠юш чрфрўш",
+        "is_system": false,
+        "status": "active"
+      }
+    ],
+    "pages_list": [
+      {
+        "id": 1,
+        "title": "├ыртэр ",
+        "status": "published",
+        "is_home": true,
+        "is_visible": true
+      },
+      {
+        "id": 7,
+        "title": "┴шсыш",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 8,
+        "title": "трш",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 34,
+        "title": "╬ЁуёЄЁєъЄєЁр ъюьярэшш",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 35,
+        "title": "╫рЄ",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 36,
+        "title": "╙тхфюьыхэш ",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 38,
+        "title": "╬ЄўхЄ√",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 39,
+        "title": "╩рыхэфрЁ№",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 40,
+        "title": "└фьшэшёЄЁшЁютрэшх",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 41,
+        "title": "═рёЄЁющър ёшёЄхь√",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 45,
+        "title": "╟ряхтрыют",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 49,
+        "title": "╥хёЄютр ",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 50,
+        "title": "яхЁтр ",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 51,
+        "title": "╤ЄЁрэшЎр",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 52,
+        "title": "┬ЄюЁр ",
+        "status": "hidden",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 54,
+        "title": "╨рчЁрсюЄър яЁюфєъЄр",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 55,
+        "title": "╨рчЁрсюЄър",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 58,
+        "title": "╥хї. яюффхЁцър",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 59,
+        "title": "╧Ёюфрцш",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 60,
+        "title": "╬Єфхы ърфЁют",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 61,
+        "title": "╙яЁртыхэшх яырЄЇюЁьющ",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 62,
+        "title": "╬Єфхы ърфЁют",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 346,
+        "title": "╨рчЁрсюЄърр",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 459,
+        "title": "└ЁїшЄхъЄєЁр ▀ёэю╧Ёю",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 561,
+        "title": "├ыртэр ",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 574,
+        "title": "├ыртэр ",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 597,
+        "title": "├ыртэр ",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 608,
+        "title": "╫рЄ",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 622,
+        "title": "├ыртэр ",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 713,
+        "title": "╥хёЄютр  сшсышюЄхър",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 739,
+        "title": "├ыртэр ",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 786,
+        "title": "├ыртэр ",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 790,
+        "title": "╩рыхэфрЁ№",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 57,
+        "title": "╩рЁЄр яырЄЇюЁь√ ▀ёэю╧Ёю",
+        "status": "published",
+        "is_home": false,
+        "is_visible": true
+      },
+      {
+        "id": 56,
+        "title": "╩рЁЄр яырЄЇюЁь√",
+        "status": "draft",
+        "is_home": false,
+        "is_visible": true
+      }
+    ],
+    "workspaces_list": [
+      {
+        "id": 34,
+        "title": "╨рчЁрсюЄър",
+        "slug": "razrabotka",
+        "status": "active"
+      },
+      {
+        "id": 35,
+        "title": "╥хї. яюффхЁцър",
+        "slug": "teh-podderzhka",
+        "status": "active"
+      },
+      {
+        "id": 36,
+        "title": "╙яЁртыхэшх яырЄЇюЁьющ",
+        "slug": "upravlenie-platformoy",
+        "status": "active"
+      },
+      {
+        "id": 37,
+        "title": "╬Єфхы ърфЁют",
+        "slug": "otdel-kadrov-2",
+        "status": "active"
+      },
+      {
+        "id": 46,
+        "title": "WS d4280f4f",
+        "slug": "ws-d4280f4f",
+        "status": "active"
+      },
+      {
+        "id": 47,
+        "title": "WS tab 7128eb55",
+        "slug": "ws-tab-7128eb55",
+        "status": "active"
+      },
+      {
+        "id": 49,
+        "title": "WS 846d6673",
+        "slug": "ws-846d6673",
+        "status": "active"
+      },
+      {
+        "id": 50,
+        "title": "WS tab 23822289",
+        "slug": "ws-tab-23822289",
+        "status": "active"
+      },
+      {
+        "id": 52,
+        "title": "WS 5bab13b8",
+        "slug": "ws-5bab13b8",
+        "status": "active"
+      },
+      {
+        "id": 53,
+        "title": "WS tab 8786f3ee",
+        "slug": "ws-tab-8786f3ee",
+        "status": "active"
+      },
+      {
+        "id": 55,
+        "title": "WS 0f64ee6c",
+        "slug": "ws-0f64ee6c",
+        "status": "active"
+      },
+      {
+        "id": 56,
+        "title": "WS tab 1e4a9d73",
+        "slug": "ws-tab-1e4a9d73",
+        "status": "active"
+      },
+      {
+        "id": 58,
+        "title": "WS 71ed4df9",
+        "slug": "ws-71ed4df9",
+        "status": "active"
+      },
+      {
+        "id": 59,
+        "title": "WS tab 73ad6399",
+        "slug": "ws-tab-73ad6399",
+        "status": "active"
+      },
+      {
+        "id": 61,
+        "title": "WS b5924292",
+        "slug": "ws-b5924292",
+        "status": "active"
+      },
+      {
+        "id": 62,
+        "title": "WS tab 72c84688",
+        "slug": "ws-tab-72c84688",
+        "status": "active"
+      },
+      {
+        "id": 64,
+        "title": "WS 4e19ac9b",
+        "slug": "ws-4e19ac9b",
+        "status": "active"
+      },
+      {
+        "id": 65,
+        "title": "WS tab b1dcbaaa",
+        "slug": "ws-tab-b1dcbaaa",
+        "status": "active"
+      },
+      {
+        "id": 67,
+        "title": "WS 0d9d5e4d",
+        "slug": "ws-0d9d5e4d",
+        "status": "active"
+      },
+      {
+        "id": 68,
+        "title": "WS tab 113960ea",
+        "slug": "ws-tab-113960ea",
+        "status": "active"
+      },
+      {
+        "id": 70,
+        "title": "WS c09bd3a6",
+        "slug": "ws-c09bd3a6",
+        "status": "active"
+      },
+      {
+        "id": 71,
+        "title": "WS tab 2edb2386",
+        "slug": "ws-tab-2edb2386",
+        "status": "active"
+      }
+    ],
+    "views_list": [
+      {
+        "key": "default_quick_form",
+        "name": "┴√ёЄЁр  ЇюЁьр",
+        "view_type": "quick_form",
+        "is_system": true,
+        "object_type_key": "idei"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "view_type": "table",
+        "is_system": true,
+        "object_type_key": "idei"
+      },
+      {
+        "key": "idei_razvitiya",
+        "name": "╚фхш ЁрчтшЄш ",
+        "view_type": "plan",
+        "is_system": false,
+        "object_type_key": "idei"
+      },
+      {
+        "key": "default_quick_form",
+        "name": "┴√ёЄЁр  ЇюЁьр",
+        "view_type": "quick_form",
+        "is_system": true,
+        "object_type_key": "istoriya"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "view_type": "table",
+        "is_system": true,
+        "object_type_key": "istoriya"
+      },
+      {
+        "key": "default_quick_form",
+        "name": "┴√ёЄЁр  ЇюЁьр",
+        "view_type": "quick_form",
+        "is_system": true,
+        "object_type_key": "klienty"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "view_type": "table",
+        "is_system": true,
+        "object_type_key": "klienty"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "view_type": "table",
+        "is_system": true,
+        "object_type_key": "litsenzii"
+      },
+      {
+        "key": "arhitektura",
+        "name": "╧ырэ ЁрчтшЄш ",
+        "view_type": "plan",
+        "is_system": false,
+        "object_type_key": "napravleniya"
+      },
+      {
+        "key": "default_quick_form",
+        "name": "┴√ёЄЁр  ЇюЁьр",
+        "view_type": "quick_form",
+        "is_system": true,
+        "object_type_key": "napravleniya"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "view_type": "table",
+        "is_system": true,
+        "object_type_key": "napravleniya"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "view_type": "table",
+        "is_system": true,
+        "object_type_key": "new_object"
+      },
+      {
+        "key": "default_quick_form",
+        "name": "┴√ёЄЁр  ЇюЁьр",
+        "view_type": "quick_form",
+        "is_system": true,
+        "object_type_key": "problemy"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "view_type": "table",
+        "is_system": true,
+        "object_type_key": "problemy"
+      },
+      {
+        "key": "problemy",
+        "name": "╧Ёюсыхь√",
+        "view_type": "plan",
+        "is_system": false,
+        "object_type_key": "problemy"
+      },
+      {
+        "key": "default_quick_form",
+        "name": "┴√ёЄЁр  ЇюЁьр",
+        "view_type": "quick_form",
+        "is_system": true,
+        "object_type_key": "prodazhi"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "view_type": "table",
+        "is_system": true,
+        "object_type_key": "prodazhi"
+      },
+      {
+        "key": "tasks_table",
+        "name": "╥рсышЎр чрфрў",
+        "view_type": "table",
+        "is_system": false,
+        "object_type_key": "task"
+      },
+      {
+        "key": "default_quick_form",
+        "name": "┴√ёЄЁр  ЇюЁьр",
+        "view_type": "quick_form",
+        "is_system": true,
+        "object_type_key": "test"
+      },
+      {
+        "key": "default_table",
+        "name": "╥рсышЎр",
+        "view_type": "table",
+        "is_system": true,
+        "object_type_key": "test"
+      },
+      {
+        "key": "default_quick_form",
+        "name": "┴√ёЄЁр  ЇюЁьр",
+        "view_type": "quick_form",
+        "is_system": true,
+        "object_type_key": "zadachnik"
+      },
+      {
+        "key": "default_table",
+        "name": "┬ёх чрфрўш",
+        "view_type": "table",
+        "is_system": true,
+        "object_type_key": "zadachnik"
+      }
+    ],
+    "runtime_by_object": [
+      {
+        "key": "napravleniya",
+        "name": "╧ырэ ЁрчтшЄш ",
+        "is_system": false,
+        "entities": 158
+      },
+      {
+        "key": "problemy",
+        "name": "╧Ёюсыхь√",
+        "is_system": false,
+        "entities": 10
+      },
+      {
+        "key": "idei",
+        "name": "╚фхш",
+        "is_system": false,
+        "entities": 4
+      },
+      {
+        "key": "zadachnik",
+        "name": "╠юш чрфрўш",
+        "is_system": false,
+        "entities": 3
+      },
+      {
+        "key": "istoriya",
+        "name": "╚ёЄюЁш ",
+        "is_system": false,
+        "entities": 0
+      },
+      {
+        "key": "klienty",
+        "name": "╩ышхэЄ√",
+        "is_system": false,
+        "entities": 0
+      },
+      {
+        "key": "litsenzii",
+        "name": "╦шЎхэчшш",
+        "is_system": false,
+        "entities": 0
+      },
+      {
+        "key": "new_object",
+        "name": "═ют√щ юс·хъЄ",
+        "is_system": false,
+        "entities": 0
+      },
+      {
+        "key": "prodazhi",
+        "name": "╧Ёюфрцш",
+        "is_system": false,
+        "entities": 0
+      },
+      {
+        "key": "task",
+        "name": "╟рфрўр",
+        "is_system": false,
+        "entities": 0
+      },
+      {
+        "key": "test",
+        "name": "╥хёЄют√щ юс·хъЄ",
+        "is_system": false,
+        "entities": 0
+      }
+    ]
+  },
+  "yasnopro_template": {
+    "database": "yasnopro_template",
+    "status": "error",
+    "table_count": 0,
+    "total_records": 0,
+    "catalog": [],
+    "error": "ProgrammingError: (psycopg2.errors.UndefinedTable) relation \"portals\" does not exist\nLINE 3:                 FROM portals ORDER BY id\n                             ^\n\n[SQL: \n                SELECT id, name, tenant_type, environment_role, code, is_protected, template_version\n                FROM portals ORDER BY id\n                ]\n(Background on this error at: https://sqlalche.me/e/20/f405)"
+  },
+  "yasnopro_client": {
+    "database": "yasnopro_client",
+    "status": "error",
+    "table_count": 0,
+    "total_records": 0,
+    "catalog": [],
+    "error": "ProgrammingError: (psycopg2.errors.UndefinedTable) relation \"portals\" does not exist\nLINE 3:                 FROM portals ORDER BY id\n                             ^\n\n[SQL: \n                SELECT id, name, tenant_type, environment_role, code, is_protected, template_version\n                FROM portals ORDER BY id\n                ]\n(Background on this error at: https://sqlalche.me/e/20/f405)"
+  },
+  "functional_parity": [
+    {
+      "metric": "blocks",
+      "dev": 7,
+      "template": null,
+      "delta": null,
+      "parity": false
+    },
+    {
+      "metric": "designer_action_definitions",
+      "dev": 3,
+      "template": null,
+      "delta": null,
+      "parity": false
+    },
+    {
+      "metric": "designer_action_forms",
+      "dev": 2,
+      "template": null,
+      "delta": null,
+      "parity": false
+    },
+    {
+      "metric": "designer_field_definitions",
+      "dev": 51,
+      "template": null,
+      "delta": null,
+      "parity": false
+    },
+    {
+      "metric": "designer_object_types",
+      "dev": 11,
+      "template": null,
+      "delta": null,
+      "parity": false
+    },
+    {
+      "metric": "designer_relation_definitions",
+      "dev": 8,
+      "template": null,
+      "delta": null,
+      "parity": false
+    },
+    {
+      "metric": "designer_system_menu_settings",
+      "dev": 9,
+      "template": null,
+      "delta": null,
+      "parity": false
+    },
+    {
+      "metric": "designer_view_definitions",
+      "dev": 25,
+      "template": null,
+      "delta": null,
+      "parity": false
+    },
+    {
+      "metric": "designer_workspace_tabs",
+      "dev": 14,
+      "template": null,
+      "delta": null,
+      "parity": false
+    },
+    {
+      "metric": "designer_workspaces",
+      "dev": 22,
+      "template": null,
+      "delta": null,
+      "parity": false
+    },
+    {
+      "metric": "navigation_items",
+      "dev": 38,
+      "template": null,
+      "delta": null,
+      "parity": false
+    },
+    {
+      "metric": "pages",
+      "dev": 35,
+      "template": null,
+      "delta": null,
+      "parity": false
+    },
+    {
+      "metric": "sections",
+      "dev": 15,
+      "template": null,
+      "delta": null,
+      "parity": false
+    },
+    {
+      "metric": "tenant_module_configurations",
+      "dev": 3,
+      "template": null,
+      "delta": null,
+      "parity": false
+    },
+    {
+      "metric": "tenant_modules",
+      "dev": 3,
+      "template": null,
+      "delta": null,
+      "parity": false
+    },
+    {
+      "metric": "tenant_runtime_menu_settings",
+      "dev": 21,
+      "template": null,
+      "delta": null,
+      "parity": false
+    }
+  ],
+  "missing_template_assets": [
+    {
+      "kind": "page",
+      "key": "├ыртэр ",
+      "reason": "home/system page in DEV missing in TEMPLATE"
+    }
+  ],
+  "contamination": {
+    "level_1b": [],
+    "level_2": []
+  }
+}

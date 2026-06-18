@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { API_BASE_URL } from "../../../config/apiConfig.js";
 import {
   formatPlatformLastLogin,
   mergePlatformUserWithSessionProfile,
@@ -62,6 +63,49 @@ test("tenant-scoped users are excluded from platform users normalization", () =>
   assert.equal(tenantUser, null);
 });
 
+test("platform registry owner with tenant membership is visible", () => {
+  const owner = normalizePlatformUser(
+    {
+      id: 13,
+      email: "zmn8@ya.ru",
+      full_name: "Михаил Запевалов",
+      tenant_id: 1,
+      platform_role: "platform_owner",
+      platform_status: "active",
+      is_platform_registry_user: true,
+      role_name: "superadmin",
+      role_id: 4,
+      is_active: true,
+    },
+    [{ id: 4, name: "superadmin" }],
+    { systemOwnerUserId: 13 },
+  );
+
+  assert.notEqual(owner, null);
+  assert.equal(owner.platformRoleKey, "platform_owner");
+  assert.equal(owner.is_active, true);
+});
+
+test("resolvePlatformOwner uses configured owner id", () => {
+  const users = [
+    normalizePlatformUser(
+      {
+        id: 13,
+        email: "zmn8@ya.ru",
+        tenant_id: 1,
+        platform_role: "platform_owner",
+        is_platform_registry_user: true,
+        role_name: "superadmin",
+      },
+      [],
+      { systemOwnerUserId: 13 },
+    ),
+    normalizePlatformUser({ id: 2, role_name: "admin" }, []),
+  ].filter(Boolean);
+
+  assert.equal(resolvePlatformOwner(users, { systemOwnerUserId: 13 })?.id, 13);
+});
+
 test("resolvePlatformOwner prefers platform_owner role", () => {
   const users = [
     normalizePlatformUser({ id: 2, role_name: "admin" }, []),
@@ -82,11 +126,11 @@ test("resolveUserAvatarUrl uses shared avatar fields", () => {
   );
   assert.equal(
     resolveUserAvatarUrl({ avatar_url: "/uploads/avatars/user.png" }),
-    "http://127.0.0.1:8010/uploads/avatars/user.png",
+    `${API_BASE_URL}/uploads/avatars/user.png`,
   );
   assert.equal(
     resolveUserAvatarUrl({ avatar_url: "/files/avatars/user.png" }),
-    "http://127.0.0.1:8010/uploads/avatars/user.png",
+    `${API_BASE_URL}/uploads/avatars/user.png`,
   );
 });
 

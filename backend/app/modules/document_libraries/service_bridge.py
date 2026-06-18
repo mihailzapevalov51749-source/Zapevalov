@@ -22,6 +22,7 @@ from app.modules.document_libraries.tenant_access import (
     get_library_for_portal,
     list_libraries_for_portal,
 )
+from app.modules.tenant_management.exceptions import TenantWriteForbiddenError
 from app.modules.users.models import User
 
 
@@ -63,7 +64,13 @@ def create_library(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="portal_id в теле запроса должен совпадать с tenant в URL",
         )
-    return service.create_library(db, data)
+    try:
+        return service.create_library(db, data)
+    except TenantWriteForbiddenError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(exc),
+        ) from exc
 
 
 def list_libraries(db: Session, current_user: User, portal_id: int):

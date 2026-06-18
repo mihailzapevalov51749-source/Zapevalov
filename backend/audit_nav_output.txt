@@ -1,0 +1,9 @@
+﻿python : Traceback (most recent call last):
+C:\Users\MSI\AppData\Local\Temp\ps-script-38de8b39-27d5-4792-a2fd-8e0928915583.ps1:109 знак:140
++ ... в v2\portal-constructor v2\backend'; $env:PYTHONPATH='.'; python -c "
++                                                               ~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "<string>", line 3, in <module>
+ModuleNotFoundError: No module named 'app.db'

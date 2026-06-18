@@ -5,6 +5,10 @@ from app.modules.notifications.models import (
     Notification,
     NotificationRecipient,
 )
+from app.modules.notifications.target_context import (
+    build_notification_target,
+    merge_notification_context,
+)
 
 
 def create_chat_message(
@@ -202,14 +206,39 @@ def create_chat_notification(
     sender_user_id: int,
     context_extra: dict | None = None,
 ):
-    context = {
-        "entity_type": "chat",
-        "entity_id": str(chat_id),
+    chat = crud.get_chat_by_id(db, chat_id)
+    tenant_id = int(chat.tenant_id) if chat and chat.tenant_id else None
+
+    extra = {
         "chat_id": chat_id,
         "message_id": message_id,
         "highlight_id": f"chat-message-{message_id}",
         "tab": "chat",
     }
+
+    if tenant_id:
+        target = build_notification_target(
+            target_type="chat",
+            target_id=chat_id,
+            tenant_id=tenant_id,
+            portal_id=tenant_id,
+            runtime="runtime.chat",
+            action="open",
+        )
+        context = merge_notification_context(
+            tenant_id=tenant_id,
+            portal_id=tenant_id,
+            entity_type="chat",
+            entity_id=chat_id,
+            target=target,
+            extra=extra,
+        )
+    else:
+        context = {
+            "entity_type": "chat",
+            "entity_id": str(chat_id),
+            **extra,
+        }
 
     if context_extra:
         context.update(context_extra)

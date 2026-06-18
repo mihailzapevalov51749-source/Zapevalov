@@ -1,0 +1,401 @@
+{
+  "source_db": "portal_constructor_v2",
+  "target_db": "yasnopro_client",
+  "client_tenant_id": 21,
+  "portal_summary": [
+    {
+      "id": 21,
+      "name": "ЯсноДемос",
+      "tenant_type": "CLIENT",
+      "environment_role": "DEMO_CLIENT",
+      "is_protected": true,
+      "code": "ooo_rozetka"
+    }
+  ],
+  "tenant_21_catalog": {
+    "portals": 1,
+    "pages": 6,
+    "sections": 4,
+    "blocks": 3,
+    "navigation_items": 14,
+    "designer_object_types": 1,
+    "designer_field_definitions": 11,
+    "designer_relation_definitions": 1,
+    "designer_view_definitions": 2,
+    "tenant_modules": 3,
+    "tenant_module_configurations": 3,
+    "runtime_entities": 1,
+    "runtime_entity_values": 1,
+    "runtime_relation_instances": 0,
+    "document_libraries": 0,
+    "library_documents": 0,
+    "comments": 0,
+    "notes": 0,
+    "notifications": 0,
+    "users": 2,
+    "tenant_user_memberships": 2,
+    "tenant_user_profiles": 2
+  },
+  "client_module_keys": [
+    "runtime.calendar",
+    "runtime.chat",
+    "runtime.notifications"
+  ],
+  "fk_dependency_audit": {
+    "tenant_modules": [
+      {
+        "child_table": "tenant_module_configurations",
+        "child_column": "module_key",
+        "parent_table": "platform_modules",
+        "parent_column": "module_key",
+        "constraint_name": "tenant_module_configurations_module_key_fkey"
+      },
+      {
+        "child_table": "tenant_module_configurations",
+        "child_column": "tenant_id",
+        "parent_table": "portals",
+        "parent_column": "id",
+        "constraint_name": "tenant_module_configurations_tenant_id_fkey"
+      },
+      {
+        "child_table": "tenant_modules",
+        "child_column": "module_key",
+        "parent_table": "platform_modules",
+        "parent_column": "module_key",
+        "constraint_name": "tenant_modules_module_key_fkey"
+      },
+      {
+        "child_table": "tenant_modules",
+        "child_column": "portal_id",
+        "parent_table": "portals",
+        "parent_column": "id",
+        "constraint_name": "tenant_modules_portal_id_fkey"
+      },
+      {
+        "child_table": "tenant_modules",
+        "child_column": "tenant_id",
+        "parent_table": "portals",
+        "parent_column": "id",
+        "constraint_name": "tenant_modules_tenant_id_fkey"
+      }
+    ],
+    "runtime": [
+      {
+        "child_table": "runtime_entities",
+        "child_column": "tenant_id",
+        "parent_table": "portals",
+        "parent_column": "id",
+        "constraint_name": "runtime_entities_tenant_id_fkey"
+      },
+      {
+        "child_table": "runtime_entities",
+        "child_column": "created_by",
+        "parent_table": "users",
+        "parent_column": "id",
+        "constraint_name": "runtime_entities_created_by_fkey"
+      },
+      {
+        "child_table": "runtime_entities",
+        "child_column": "updated_by",
+        "parent_table": "users",
+        "parent_column": "id",
+        "constraint_name": "runtime_entities_updated_by_fkey"
+      },
+      {
+        "child_table": "runtime_entity_values",
+        "child_column": "tenant_id",
+        "parent_table": "portals",
+        "parent_column": "id",
+        "constraint_name": "runtime_entity_values_tenant_id_fkey"
+      },
+      {
+        "child_table": "runtime_entity_values",
+        "child_column": "entity_id",
+        "parent_table": "runtime_entities",
+        "parent_column": "id",
+        "constraint_name": "runtime_entity_values_entity_id_fkey"
+      },
+      {
+        "child_table": "runtime_relation_instances",
+        "child_column": "tenant_id",
+        "parent_table": "portals",
+        "parent_column": "id",
+        "constraint_name": "runtime_relation_instances_tenant_id_fkey"
+      },
+      {
+        "child_table": "runtime_relation_instances",
+        "child_column": "source_entity_id",
+        "parent_table": "runtime_entities",
+        "parent_column": "id",
+        "constraint_name": "runtime_relation_instances_source_entity_id_fkey"
+      },
+      {
+        "child_table": "runtime_relation_instances",
+        "child_column": "target_entity_id",
+        "parent_table": "runtime_entities",
+        "parent_column": "id",
+        "constraint_name": "runtime_relation_instances_target_entity_id_fkey"
+      },
+      {
+        "child_table": "runtime_relation_instances",
+        "child_column": "created_by",
+        "parent_table": "users",
+        "parent_column": "id",
+        "constraint_name": "runtime_relation_instances_created_by_fkey"
+      },
+      {
+        "child_table": "runtime_relation_instances",
+        "child_column": "updated_by",
+        "parent_table": "users",
+        "parent_column": "id",
+        "constraint_name": "runtime_relation_instances_updated_by_fkey"
+      }
+    ],
+    "documents": [
+      {
+        "child_table": "library_documents",
+        "child_column": "library_id",
+        "parent_table": "document_libraries",
+        "parent_column": "id",
+        "constraint_name": "library_documents_library_id_fkey"
+      },
+      {
+        "child_table": "library_documents",
+        "child_column": "parent_id",
+        "parent_table": "library_documents",
+        "parent_column": "id",
+        "constraint_name": "fk_library_documents_parent"
+      }
+    ],
+    "comments": [
+      {
+        "child_table": "comment_attachments",
+        "child_column": "comment_id",
+        "parent_table": "comments",
+        "parent_column": "id",
+        "constraint_name": "comment_attachments_comment_id_fkey"
+      },
+      {
+        "child_table": "comment_attachments",
+        "child_column": "uploaded_by_user_id",
+        "parent_table": "users",
+        "parent_column": "id",
+        "constraint_name": "comment_attachments_uploaded_by_user_id_fkey"
+      },
+      {
+        "child_table": "comments",
+        "child_column": "parent_comment_id",
+        "parent_table": "comments",
+        "parent_column": "id",
+        "constraint_name": "comments_parent_comment_id_fkey"
+      },
+      {
+        "child_table": "comments",
+        "child_column": "root_comment_id",
+        "parent_table": "comments",
+        "parent_column": "id",
+        "constraint_name": "comments_root_comment_id_fkey"
+      },
+      {
+        "child_table": "comments",
+        "child_column": "author_user_id",
+        "parent_table": "users",
+        "parent_column": "id",
+        "constraint_name": "comments_author_user_id_fkey"
+      },
+      {
+        "child_table": "comments",
+        "child_column": "deleted_by_user_id",
+        "parent_table": "users",
+        "parent_column": "id",
+        "constraint_name": "comments_deleted_by_user_id_fkey"
+      },
+      {
+        "child_table": "comments",
+        "child_column": "edited_by_user_id",
+        "parent_table": "users",
+        "parent_column": "id",
+        "constraint_name": "comments_edited_by_user_id_fkey"
+      },
+      {
+        "child_table": "comments",
+        "child_column": "pinned_by_user_id",
+        "parent_table": "users",
+        "parent_column": "id",
+        "constraint_name": "comments_pinned_by_user_id_fkey"
+      },
+      {
+        "child_table": "notifications",
+        "child_column": "created_by_id",
+        "parent_table": "users",
+        "parent_column": "id",
+        "constraint_name": "notifications_created_by_id_fkey"
+      }
+    ],
+    "users": [
+      {
+        "child_table": "platform_users",
+        "child_column": "user_id",
+        "parent_table": "users",
+        "parent_column": "id",
+        "constraint_name": "platform_users_user_id_fkey"
+      },
+      {
+        "child_table": "tenant_user_memberships",
+        "child_column": "tenant_id",
+        "parent_table": "portals",
+        "parent_column": "id",
+        "constraint_name": "tenant_user_memberships_tenant_id_fkey"
+      },
+      {
+        "child_table": "tenant_user_memberships",
+        "child_column": "user_id",
+        "parent_table": "users",
+        "parent_column": "id",
+        "constraint_name": "tenant_user_memberships_user_id_fkey"
+      },
+      {
+        "child_table": "tenant_user_profiles",
+        "child_column": "tenant_id",
+        "parent_table": "portals",
+        "parent_column": "id",
+        "constraint_name": "tenant_user_profiles_tenant_id_fkey"
+      },
+      {
+        "child_table": "tenant_user_profiles",
+        "child_column": "user_id",
+        "parent_table": "users",
+        "parent_column": "id",
+        "constraint_name": "tenant_user_profiles_user_id_fkey"
+      },
+      {
+        "child_table": "users",
+        "child_column": "tenant_id",
+        "parent_table": "portals",
+        "parent_column": "id",
+        "constraint_name": "users_tenant_id_fkey"
+      },
+      {
+        "child_table": "users",
+        "child_column": "role_id",
+        "parent_table": "roles",
+        "parent_column": "id",
+        "constraint_name": "users_role_id_fkey"
+      }
+    ]
+  },
+  "platform_catalog_dependency": [
+    {
+      "module_key": "runtime.calendar",
+      "table": "platform_modules",
+      "records": 1
+    },
+    {
+      "module_key": "runtime.calendar",
+      "table": "platform_module_manifests",
+      "records": 1
+    },
+    {
+      "module_key": "runtime.calendar",
+      "table": "platform_module_versions",
+      "records": 266
+    },
+    {
+      "module_key": "runtime.calendar",
+      "table": "platform_module_publications",
+      "records": 0
+    },
+    {
+      "module_key": "runtime.calendar",
+      "table": "platform_releases",
+      "records": 0
+    },
+    {
+      "module_key": "runtime.chat",
+      "table": "platform_modules",
+      "records": 1
+    },
+    {
+      "module_key": "runtime.chat",
+      "table": "platform_module_manifests",
+      "records": 1
+    },
+    {
+      "module_key": "runtime.chat",
+      "table": "platform_module_versions",
+      "records": 1
+    },
+    {
+      "module_key": "runtime.chat",
+      "table": "platform_module_publications",
+      "records": 0
+    },
+    {
+      "module_key": "runtime.chat",
+      "table": "platform_releases",
+      "records": 0
+    },
+    {
+      "module_key": "runtime.notifications",
+      "table": "platform_modules",
+      "records": 1
+    },
+    {
+      "module_key": "runtime.notifications",
+      "table": "platform_module_manifests",
+      "records": 1
+    },
+    {
+      "module_key": "runtime.notifications",
+      "table": "platform_module_versions",
+      "records": 1
+    },
+    {
+      "module_key": "runtime.notifications",
+      "table": "platform_module_publications",
+      "records": 0
+    },
+    {
+      "module_key": "runtime.notifications",
+      "table": "platform_releases",
+      "records": 0
+    }
+  ],
+  "platform_catalog_totals": {
+    "platform_modules": 7,
+    "platform_module_manifests": 3,
+    "platform_module_versions": 268,
+    "platform_module_publications": 3,
+    "platform_releases": 1
+  },
+  "cleanup_source": {
+    "test_cleanup_runs": 0,
+    "test_cleanup_records": 0
+  },
+  "boundary_comparison": {
+    "tenant_1": {
+      "pages": 60,
+      "object_types": 11,
+      "runtime_entities": 175,
+      "users": 2
+    },
+    "tenant_2": {
+      "pages": 6,
+      "object_types": 1,
+      "runtime_entities": 1,
+      "users": 0
+    },
+    "tenant_21": {
+      "pages": 6,
+      "object_types": 1,
+      "runtime_entities": 1,
+      "users": 2
+    }
+  },
+  "target_readiness": {
+    "table_count": 0,
+    "alembic_version": null,
+    "portals": null,
+    "data_empty": true
+  }
+}

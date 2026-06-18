@@ -14,7 +14,7 @@ from app.modules.tenant_users.administration_service import (
     create_tenant_user,
     list_tenant_users,
 )
-from app.modules.tenant_users.models import TenantUserMembership
+from app.modules.tenant_users.models import TenantUserMembership, TenantUserProfile
 from app.modules.users.models import Role, User
 
 
@@ -28,6 +28,7 @@ def db_session():
             User.__table__,
             Role.__table__,
             TenantUserMembership.__table__,
+            TenantUserProfile.__table__,
         ],
     )
     session = sessionmaker(bind=engine)()
@@ -68,6 +69,20 @@ def db_session():
                 role_id=1,
                 is_company_owner=True,
             ),
+            TenantUserMembership(
+                tenant_id=21,
+                user_id=100,
+                role_key=TENANT_SUPERADMIN,
+                is_active=True,
+                membership_status="active",
+            ),
+            TenantUserMembership(
+                tenant_id=22,
+                user_id=300,
+                role_key=TENANT_SUPERADMIN,
+                is_active=True,
+                membership_status="active",
+            ),
         ]
     )
     session.commit()
@@ -81,10 +96,51 @@ def test_list_tenant_users_returns_only_current_tenant(db_session):
     users = list_tenant_users(db_session, 21)
 
     assert len(users) == 1
-    assert users[0].email == "owner@company-a.test"
+    assert users[0]["email"] == "owner@company-a.test"
 
 
-def test_create_tenant_user_assigns_tenant_scope(db_session):
+def test_list_tenant_users_includes_global_superadmin_membership(db_session):
+    global_superadmin = User(
+        id=400,
+        email="global-superadmin@company-a.test",
+        full_name="Global Superadmin",
+        hashed_password="hash",
+        is_active=True,
+        tenant_id=None,
+        role_id=3,
+        is_company_owner=False,
+    )
+    db_session.add(global_superadmin)
+    db_session.add(
+        TenantUserMembership(
+            tenant_id=21,
+            user_id=400,
+            role_key=TENANT_SUPERADMIN,
+            is_active=True,
+            membership_status="active",
+        )
+    )
+    db_session.add(
+        TenantUserProfile(
+            tenant_id=21,
+            user_id=400,
+            display_name="Global Superadmin",
+        )
+    )
+    db_session.commit()
+
+    users = list_tenant_users(db_session, 21)
+    emails = [item["email"] for item in users]
+
+    assert "global-superadmin@company-a.test" in emails
+    matched = next(
+        item for item in users if item["email"] == "global-superadmin@company-a.test"
+    )
+    assert matched["role"] == TENANT_SUPERADMIN
+    assert matched["membership_status"] == "active"
+
+
+def test_create_tenant_user_assigns_membership_and_profile(db_session):
     user, _ = create_tenant_user(
         db_session,
         tenant_id=21,
@@ -96,16 +152,21 @@ def test_create_tenant_user_assigns_tenant_scope(db_session):
         },
     )
 
-    assert user.tenant_id == 21
-    assert user.role.name == TENANT_USER
-    assert user.is_company_owner is False
+    assert user["role"] == TENANT_USER
+    assert user["membership_status"] == "active"
 
     membership = (
         db_session.query(TenantUserMembership)
-        .filter_by(tenant_id=21, user_id=user.id)
+        .filter_by(tenant_id=21, user_id=user["id"])
+        .one()
+    )
+    profile = (
+        db_session.query(TenantUserProfile)
+        .filter_by(tenant_id=21, user_id=user["id"])
         .one()
     )
     assert membership.role_key == TENANT_USER
+    assert profile.display_name == "Employee A"
 
 
 def test_create_tenant_user_rejects_platform_role(db_session):

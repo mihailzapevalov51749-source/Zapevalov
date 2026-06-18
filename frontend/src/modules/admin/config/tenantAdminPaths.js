@@ -5,6 +5,11 @@ export function buildTenantAdminPath(tenantId, segment = "") {
   return normalizedSegment ? `${base}/${normalizedSegment}` : base;
 }
 
+export function buildTenantModulesPath(tenantId) {
+  const normalizedTenantId = Number(tenantId) > 0 ? Number(tenantId) : 1;
+  return `/designer/tenant/${normalizedTenantId}/modules`;
+}
+
 export function resolveStudioTenantIdFromPath(pathname = window.location.pathname) {
   const match = String(pathname || "").match(/\/designer\/tenant\/(\d+)/);
   return match ? Number(match[1]) : null;

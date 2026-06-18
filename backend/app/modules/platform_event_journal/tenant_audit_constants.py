@@ -22,6 +22,7 @@ class TenantEventCategory(str, Enum):
     TRASH = "trash"
     SETTINGS = "settings"
     SYSTEM = "system"
+    CALENDAR = "calendar"
 
 
 class TenantEventCode(str, Enum):
@@ -84,6 +85,15 @@ class TenantEventCode(str, Enum):
 
     SETTINGS_UPDATED = "settings_updated"
 
+    CALENDAR_EVENT_CREATED = "calendar_event_created"
+    CALENDAR_EVENT_UPDATED = "calendar_event_updated"
+    CALENDAR_EVENT_DELETED = "calendar_event_deleted"
+
+    PLATFORM_UPDATE_APPLIED = "platform_update_applied"
+    PLATFORM_UPDATE_SKIPPED = "platform_update_skipped"
+    MODULE_CONFIGURATION_APPLIED = "MODULE_CONFIGURATION_APPLIED"
+    MODULE_CONFIGURATION_ROLLED_BACK = "MODULE_CONFIGURATION_ROLLED_BACK"
+
     LEGACY = "legacy"
 
 
@@ -104,6 +114,7 @@ TENANT_EVENT_CATEGORY_LABELS: dict[str, str] = {
     TenantEventCategory.TRASH.value: "Trash",
     TenantEventCategory.SETTINGS.value: "Settings",
     TenantEventCategory.SYSTEM.value: "System",
+    TenantEventCategory.CALENDAR.value: "Calendar",
 }
 
 TENANT_EVENT_CODE_LABELS: dict[str, str] = {
@@ -151,6 +162,11 @@ TENANT_EVENT_CODE_LABELS: dict[str, str] = {
     TenantEventCode.TRASH_ITEM_PURGED.value: "Окончательное удаление",
     TenantEventCode.TRASH_BULK_PURGED.value: "Массовое удаление из корзины",
     TenantEventCode.SETTINGS_UPDATED.value: "Изменение настроек",
+    TenantEventCode.CALENDAR_EVENT_CREATED.value: "Создание события календаря",
+    TenantEventCode.CALENDAR_EVENT_UPDATED.value: "Изменение события календаря",
+    TenantEventCode.CALENDAR_EVENT_DELETED.value: "Удаление события календаря",
+    TenantEventCode.MODULE_CONFIGURATION_APPLIED.value: "Применена конфигурация модуля",
+    TenantEventCode.MODULE_CONFIGURATION_ROLLED_BACK.value: "Откат конфигурации модуля",
     TenantEventCode.LEGACY.value: "legacy",
 }
 

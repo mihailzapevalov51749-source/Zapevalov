@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { getMe, updateMe, logout, uploadAvatar } from "../../api/authApi";
+import { updateTenantMe } from "../../api/tenantMeApi";
+import { loadRuntimeSessionUser } from "../../api/runtimeSessionUser.js";
+import { isBridgeSessionUser } from "../../api/sessionBridgeApi.js";
 import { closeActivitySession } from "../../api/userActivityApi";
+import { resolveTenantIdFromPathname } from "../../shared/tenantContext/tenantContextResolver.js";
+import { setCachedHeaderUser } from "../../shared/tenantContext/headerUserCache.js";
+import { resolveDisplayRoleLabel } from "../../shared/tenantContext/identityResolution.js";
 import ProfileActivityPanel from "./ProfileActivityPanel";
 
 import settingsIcon from "../../assets/icons/settings.gif";
@@ -61,6 +68,7 @@ const getAvatarTransform = (settings) => {
 
 const normalizeUserData = (data) => ({
   ...data,
+  full_name: data?.full_name || data?.display_name || data?.name || "",
   city: data?.city || "",
   manager: data?.manager || "",
   mentor: data?.mentor || "",
@@ -165,6 +173,10 @@ export default function ProfileSidePanel({
   initialPanelState = {},
   onMinimize,
 }) {
+  const location = useLocation();
+  const tenantId = resolveTenantIdFromPathname(location.pathname);
+  const isTenantContext = Number.isFinite(tenantId) && tenantId > 0;
+
   const fileInputRef = useRef(null);
   const avatarCircleRef = useRef(null);
   const dragStateRef = useRef(null);
@@ -187,7 +199,34 @@ export default function ProfileSidePanel({
     if (isOpen) {
       loadUser();
     }
-  }, [isOpen]);
+  }, [isOpen, tenantId]);
+
+  const loadUser = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const data = await loadRuntimeSessionUser({
+        tenantId: isTenantContext ? tenantId : null,
+      });
+
+      if (!data) {
+        throw new Error("profile unavailable");
+      }
+
+      const normalizedData = normalizeUserData(data);
+
+      setUser(normalizedData);
+      setForm(normalizedData);
+      setInitialForm(normalizedData);
+      setIsEdit(false);
+      setIsConfirmOpen(false);
+    } catch {
+      setError("Ошибка загрузки профиля");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) {
@@ -264,26 +303,6 @@ export default function ProfileSidePanel({
       avatarElement.removeEventListener("wheel", handleWheel);
     };
   }, [isEdit, form.avatar_url]);
-
-  const loadUser = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const data = await getMe();
-      const normalizedData = normalizeUserData(data);
-
-      setUser(normalizedData);
-      setForm(normalizedData);
-      setInitialForm(normalizedData);
-      setIsEdit(false);
-      setIsConfirmOpen(false);
-    } catch {
-      setError("Ошибка загрузки профиля");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleChange = (field, value) => {
     setForm((prev) => ({
@@ -379,16 +398,33 @@ export default function ProfileSidePanel({
   };
 
   const handleSave = async () => {
+    if (isBridgeSessionUser(user)) {
+      setError("Профиль Session Bridge доступен только для просмотра");
+      setIsEdit(false);
+      setIsConfirmOpen(false);
+      return;
+    }
+
     try {
       setError("");
 
-      const updated = await updateMe({
-        phone: form.phone,
-        avatar_url: form.avatar_url,
-        avatar_settings: normalizeAvatarSettings(form.avatar_settings),
-      });
+      const updated = isTenantContext
+        ? await updateTenantMe(tenantId, {
+            phone: form.phone,
+            avatar_url: form.avatar_url,
+            avatar_settings: normalizeAvatarSettings(form.avatar_settings),
+          })
+        : await updateMe({
+            phone: form.phone,
+            avatar_url: form.avatar_url,
+            avatar_settings: normalizeAvatarSettings(form.avatar_settings),
+          });
 
       const normalizedUpdated = normalizeUserData(updated);
+
+      if (isTenantContext) {
+        setCachedHeaderUser(normalizedUpdated, tenantId);
+      }
 
       setUser(normalizedUpdated);
       setForm(normalizedUpdated);
@@ -439,7 +475,7 @@ export default function ProfileSidePanel({
     user?.email?.trim()?.charAt(0)?.toUpperCase() ||
     "?";
 
-  const roleName = getUserRoleName(user);
+  const roleName = resolveDisplayRoleLabel(user);
   const roleDescription = getUserRoleDescription(user);
 
   const panel = (

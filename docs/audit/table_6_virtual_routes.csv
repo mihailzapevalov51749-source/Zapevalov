@@ -1,0 +1,22 @@
+﻿area,route,title,source_file,purpose,system_user,page_backed
+Studio,/designer/tenant/{tenant_id}/object-types,Объекты,DesignerShell.jsx,designer admin screen,virtual,False
+Studio,/designer/tenant/{tenant_id}/pages,Страницы,DesignerShell.jsx,designer admin screen,virtual,False
+Studio,/designer/tenant/{tenant_id}/trash,Корзина,DesignerShell.jsx,designer admin screen,virtual,False
+Studio,/designer/tenant/{tenant_id}/processes,Бизнес-процессы,DesignerShell.jsx,designer admin screen,virtual,False
+Studio,/designer/tenant/{tenant_id}/workspaces,Рабочие пространства,DesignerShell.jsx,designer admin screen,virtual,False
+Studio,/designer/tenant/{tenant_id}/event-journal,Журнал событий,DesignerShell.jsx,designer admin screen,virtual,False
+Studio,/designer/tenant/{tenant_id}/platform-releases,Релизы платформы,DesignerShell.jsx,designer admin screen,virtual,False
+Studio,/admin/tenant/{tenant_id},Администрирование,DesignerShell.jsx,designer admin screen,virtual,False
+Studio,/control-plane,Управление платформой,DesignerShell.jsx,designer admin screen,virtual,False
+Control Plane,/control-plane,Главная,controlPlaneNavigation.js,control plane admin screen,virtual,False
+Control Plane,/control-plane/companies/clients,Компании,controlPlaneNavigation.js,control plane admin screen,virtual,False
+Control Plane,/control-plane/templates/versions,Версии шаблонов,controlPlaneNavigation.js,control plane admin screen,virtual,False
+Control Plane,/control-plane/templates/updates,Обновления,controlPlaneNavigation.js,control plane admin screen,virtual,False
+Control Plane,/control-plane/releases,Релизы,controlPlaneNavigation.js,control plane admin screen,virtual,False
+Control Plane,/control-plane/platform-profile/general,Профиль платформы,controlPlaneNavigation.js,control plane admin screen,virtual,False
+Control Plane,/control-plane/platform/licenses,Лицензии,controlPlaneNavigation.js,control plane admin screen,virtual,False
+Control Plane,/control-plane/platform/policies,Политики,controlPlaneNavigation.js,control plane admin screen,virtual,False
+Control Plane,/control-plane/platform/monitoring,Мониторинг,controlPlaneNavigation.js,control plane admin screen,virtual,False
+Control Plane,/control-plane/platform/backup,Резервное копирование,controlPlaneNavigation.js,control plane admin screen,virtual,False
+Control Plane,/control-plane/users-roles,Пользователи и роли,controlPlaneNavigation.js,control plane admin screen,virtual,False
+Control Plane,/control-plane/audit-log,Журнал аудита,controlPlaneNavigation.js,control plane admin screen,virtual,False

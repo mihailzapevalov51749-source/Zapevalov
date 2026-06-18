@@ -12,7 +12,11 @@ from pathlib import Path
 from uuid import UUID
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
+SCRIPTS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BACKEND_DIR))
+sys.path.insert(0, str(SCRIPTS_DIR))
+
+from structure_write_script_guard import guard_script_structure_write  # noqa: E402
 
 from sqlalchemy import func, text  # noqa: E402
 
@@ -322,6 +326,7 @@ def print_dry_check(check: dict) -> None:
 
 
 def apply_phase3(db) -> dict:
+    guard_script_structure_write(db, TARGET, "apply_phase3_restore_workspaces")
     before = safety_counts(db)
     ctx = build_remap_context(db)
 

@@ -15,6 +15,9 @@ from app.modules.users.bootstrap_owner_service import (
     ensure_bootstrap_owner_recovery,
     is_bootstrap_owner,
 )
+from app.modules.control_plane.platform_identity.platform_auth_resolver import (
+    link_platform_owner_after_login,
+)
 from app.modules.users.models import User
 from .security import create_access_token, hash_password, verify_password
 
@@ -77,6 +80,8 @@ def login_user(db: Session, email: str, password: str):
             slug=f"bootstrap-owner-used-{user.id}-{int(datetime.now(timezone.utc).timestamp() * 1000)}",
             commit=False,
         )
+    else:
+        link_platform_owner_after_login(db, user)
 
     token = create_access_token({"sub": str(user.id)})
     setup_state = build_platform_setup_state(db, user)

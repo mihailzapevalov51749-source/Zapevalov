@@ -26,6 +26,9 @@ export default function ChatWindow({
   onOpenSettings,
   onOpenParticipants,
   onOpenFile,
+  attachmentsEnabled = true,
+  mentionsEnabled = true,
+  reactionsEnabled = true,
 }) {
   return (
     <main style={chatLayoutStyles.workspace}>
@@ -78,6 +81,7 @@ export default function ChatWindow({
                 onEdit={onEditMessage}
                 onDelete={onDeleteMessage}
                 onOpenFile={onOpenFile}
+                reactionsEnabled={reactionsEnabled}
               />
             ))}
         </div>
@@ -86,6 +90,8 @@ export default function ChatWindow({
           <ChatComposer
             placeholder="Написать сообщение..."
             submitErrorLabel="Ошибка отправки сообщения"
+            attachmentsEnabled={attachmentsEnabled}
+            mentionsEnabled={mentionsEnabled}
             onSubmit={onSubmit}
           />
         </div>

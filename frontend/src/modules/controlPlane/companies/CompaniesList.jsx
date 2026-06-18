@@ -1,5 +1,10 @@
 import TenantRegistryStatusBadge from "../components/TenantRegistryStatusBadge";
 import TenantRegistryTypeBadge from "../components/TenantRegistryTypeBadge";
+import {
+  resolveCompanyCurrentName,
+  resolveCompanyOriginalName,
+} from "./companiesSearch.js";
+import { resolveTenantPlatformVersion } from "./resolveTenantPlatformVersion.js";
 import { companiesWorkspaceStyles as styles } from "./companiesWorkspaceStyles.js";
 
 export default function CompaniesList({
@@ -16,13 +21,15 @@ export default function CompaniesList({
         <input
           value={searchQuery}
           onChange={(event) => onSearch(event.target.value)}
-          placeholder="Поиск по названию или ID"
+          placeholder="Поиск по ID, названию, slug или коду"
           style={styles.searchInput}
         />
       </div>
 
       <div style={styles.tableHeader}>
-        <div>Название</div>
+        <div>ID</div>
+        <div>Название при создании</div>
+        <div>Текущее название</div>
         <div>Тип</div>
         <div>Версия</div>
         <div>Статус</div>
@@ -52,14 +59,9 @@ export default function CompaniesList({
                 }}
                 aria-pressed={isSelected}
               >
-                <div style={{ minWidth: 0 }}>
-                  <div style={styles.companyName}>{company.name}</div>
-                  {company.description ? (
-                    <div style={{ ...styles.listCellMuted, marginTop: 2 }}>
-                      {company.description}
-                    </div>
-                  ) : null}
-                </div>
+                <div style={styles.idCell}>{company.id}</div>
+                <div style={styles.companyName}>{resolveCompanyOriginalName(company)}</div>
+                <div style={styles.companyName}>{resolveCompanyCurrentName(company)}</div>
                 <div>
                   <TenantRegistryTypeBadge
                     tenantId={company.id}
@@ -67,7 +69,7 @@ export default function CompaniesList({
                   />
                 </div>
                 <div style={styles.mutedText}>
-                  {company.template_version || "—"}
+                  {resolveTenantPlatformVersion(company)}
                 </div>
                 <div>
                   <TenantRegistryStatusBadge status={company.tenant_status} />

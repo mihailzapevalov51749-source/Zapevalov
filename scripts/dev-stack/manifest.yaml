@@ -1,0 +1,72 @@
+# Local dev stack manifest — single source of truth for WI-20.1.
+# Ports align with PLATFORM_ENVIRONMENT_LAUNCH_PORTS / vite.config.js / ENVIRONMENT_MATRIX.
+
+postgres:
+  host: localhost
+  port: 5434
+  user: portal_user
+  password: portal_pass
+
+paths:
+  backend_dir: backend
+  frontend_dir: frontend
+  backend_venv: backend/.venv
+  frontend_node_modules: frontend/node_modules
+  run_dir: .run
+  logs_dir: logs
+
+backend_launch:
+  module: app.main:app
+  host: 127.0.0.1
+  uvicorn_args: [-m, uvicorn]
+
+frontend_launch:
+  node_executable: node.exe
+  vite_script: node_modules/vite/bin/vite.js
+
+environment_order: [DEV, TEMPLATE, CLIENT]
+
+environments:
+  DEV:
+    backend:
+      port: 8010
+      app_env: DEV
+      database: yasnopro_dev
+      service: dev-backend
+      log_file: dev-backend.log
+    frontend:
+      port: 5173
+      npm_script: dev
+      vite_mode: development
+      service: dev-frontend
+      log_file: dev-frontend.log
+
+  TEMPLATE:
+    backend:
+      port: 8011
+      app_env: TEMPLATE
+      database: yasnopro_template
+      service: template-backend
+      log_file: template-backend.log
+    frontend:
+      port: 5174
+      npm_script: preview:template
+      vite_mode: template
+      runtime: artifact
+      artifact_dir: dist-template
+      service: template-frontend
+      log_file: template-frontend.log
+
+  CLIENT:
+    backend:
+      port: 8012
+      app_env: CLIENT
+      database: yasnopro_client
+      service: client-backend
+      log_file: client-backend.log
+    frontend:
+      port: 5175
+      npm_script: dev:client
+      vite_mode: client
+      service: client-frontend
+      log_file: client-frontend.log

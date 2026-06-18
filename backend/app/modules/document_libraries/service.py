@@ -10,6 +10,9 @@ from openpyxl import Workbook
 from app.modules.document_libraries import repository
 from app.modules.pages.models import Page
 from app.modules.navigation.models import NavigationItem
+from app.modules.tenant_management.tenant_write_policy import (
+    assert_tenant_allows_direct_structure_write,
+)
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
@@ -20,6 +23,12 @@ DOCUMENTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def create_library(db: Session, data):
+    assert_tenant_allows_direct_structure_write(
+        db,
+        int(data.portal_id),
+        operation_name="document_library_create",
+    )
+
     library = repository.create_library(
         db=db,
         title=data.title,

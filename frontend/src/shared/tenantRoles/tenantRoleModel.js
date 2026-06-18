@@ -1,4 +1,5 @@
 import { isPlatformOwner } from "../platformAccess/platformOwnerAccess.js";
+import { isInfrastructureSuperadmin } from "../platformAccess/infrastructureSuperadminAccess.js";
 
 export const TENANT_SUPERADMIN = "superadmin";
 export const TENANT_ADMIN = "admin";
@@ -15,6 +16,7 @@ export const TENANT_SYSTEM_ROLES = new Set(TENANT_SYSTEM_ROLE_ORDER);
 export const TENANT_DESIGNER_ROLES = new Set([TENANT_SUPERADMIN, TENANT_ADMIN]);
 export const TENANT_ADMINISTRATION_ROLES = new Set([TENANT_SUPERADMIN]);
 export const TENANT_USER_MANAGEMENT_ROLES = new Set([TENANT_SUPERADMIN]);
+export const TENANT_MODULES_READER_ROLES = new Set([TENANT_SUPERADMIN, TENANT_ADMIN]);
 
 export const PLATFORM_DESIGNER_ROLES = new Set([
   TENANT_SUPERADMIN,
@@ -131,12 +133,63 @@ export function isCompanyOwner(user) {
   return Boolean(user?.is_company_owner ?? user?.isCompanyOwner);
 }
 
+function isActiveMembership(membership) {
+  if (membership?.is_active === false) {
+    return false;
+  }
+
+  const membershipStatus = String(membership?.membership_status || "active")
+    .trim()
+    .toLowerCase();
+
+  return !membershipStatus || membershipStatus === "active";
+}
+
+export function collectActiveMembershipRoleKeys(user) {
+  const memberships = Array.isArray(user?.tenant_memberships)
+    ? user.tenant_memberships
+    : [];
+  const roleKeys = new Set();
+
+  for (const membership of memberships) {
+    if (!isActiveMembership(membership)) {
+      continue;
+    }
+
+    const roleKey = normalizeTenantRoleName(membership?.role_key);
+    if (roleKey) {
+      roleKeys.add(roleKey);
+    }
+  }
+
+  return roleKeys;
+}
+
+function userHasMembershipRole(user, allowedRoles) {
+  const roleKeys = collectActiveMembershipRoleKeys(user);
+  for (const roleKey of roleKeys) {
+    if (allowedRoles.has(roleKey)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export function canAccessTenantDesigner(user) {
   if (!user) {
     return false;
   }
 
+  if (isInfrastructureSuperadmin(user)) {
+    return true;
+  }
+
   if (isPlatformOwner(user)) {
+    return true;
+  }
+
+  if (userHasMembershipRole(user, TENANT_DESIGNER_ROLES)) {
     return true;
   }
 
@@ -148,7 +201,15 @@ export function canAccessTenantDesigner(user) {
 }
 
 export function canAccessTenantAdministration(user) {
+  if (isInfrastructureSuperadmin(user)) {
+    return true;
+  }
+
   if (isPlatformOwner(user)) {
+    return true;
+  }
+
+  if (userHasMembershipRole(user, TENANT_ADMINISTRATION_ROLES)) {
     return true;
   }
 
@@ -160,7 +221,15 @@ export function canAccessTenantAdministration(user) {
 }
 
 export function canManageTenantUsers(user) {
+  if (isInfrastructureSuperadmin(user)) {
+    return true;
+  }
+
   if (isPlatformOwner(user)) {
+    return true;
+  }
+
+  if (userHasMembershipRole(user, TENANT_USER_MANAGEMENT_ROLES)) {
     return true;
   }
 
@@ -169,4 +238,24 @@ export function canManageTenantUsers(user) {
   }
 
   return TENANT_USER_MANAGEMENT_ROLES.has(resolveTenantRoleName(user));
+}
+
+export function canReadTenantModules(user) {
+  if (isInfrastructureSuperadmin(user)) {
+    return true;
+  }
+
+  if (isPlatformOwner(user)) {
+    return true;
+  }
+
+  if (userHasMembershipRole(user, TENANT_MODULES_READER_ROLES)) {
+    return true;
+  }
+
+  if (!isTenantScopedUser(user)) {
+    return false;
+  }
+
+  return TENANT_MODULES_READER_ROLES.has(resolveTenantRoleName(user));
 }

@@ -29,10 +29,12 @@ export type RuntimeSidebarAdapterInput = {
   activeItemId?: string | null;
   activeParentIds?: string[];
   isEditMode?: boolean;
+  isPersonalizeMode?: boolean;
   isSaving?: boolean;
   onChangeMenuScale?: (value: number) => void;
   menuScale?: number;
   canEditMenu?: boolean;
+  canPersonalizeMenu?: boolean;
   canCreateItem?: boolean;
   canOpenSettings?: boolean;
   canDragItems?: boolean;
@@ -81,9 +83,9 @@ const DESIGNER_BRAND_DEFAULTS: SidebarBrandContract = {
 };
 
 const DESIGNER_FALLBACK_MENU = [
-  { id: "objects", label: "Объекты", iconType: "objects" },
-  { id: "users", label: "Пользователи", iconType: "users" },
-  { id: "settings", label: "Системные настройки", iconType: "settings" },
+  { id: "objects", label: "Объекты" },
+  { id: "users", label: "Пользователи" },
+  { id: "settings", label: "Системные настройки" },
 ];
 
 
@@ -127,18 +129,19 @@ function mergeBrand(
 function resolveRuntimeCapabilities(
   input: RuntimeSidebarAdapterInput
 ): SidebarCapabilitiesContract {
-  const canEditMenu = input.canEditMenu ?? true;
+  const canEditMenu = input.canEditMenu ?? false;
+  const canPersonalizeMenu = input.canPersonalizeMenu ?? false;
   const canCreateItem = input.canCreateItem ?? canEditMenu;
-  const canOpenSettings = input.canOpenSettings ?? true;
+  const canOpenSettings = input.canOpenSettings ?? canEditMenu;
+  const isMenuEditing = Boolean(input.isEditMode);
   const canDragItems =
     input.canDragItems ??
-    Boolean(
-      input.isEditMode && hasPersistableNavigationItems(input.navigationItems)
-    );
-  const canScaleMenu = input.canScaleMenu ?? Boolean(input.isEditMode);
+    Boolean(isMenuEditing && canEditMenu && hasPersistableNavigationItems(input.navigationItems));
+  const canScaleMenu = input.canScaleMenu ?? isMenuEditing;
 
   return {
     canEditMenu,
+    canPersonalizeMenu,
     canCreateItem,
     canOpenSettings,
     canDragItems,
@@ -188,8 +191,6 @@ function buildDesignerFallbackNavigationItems(
         title: item.label,
         type: "system_page",
         route: routeById[item.id],
-        icon_type: item.iconType,
-        icon: item.iconType,
         is_visible: true,
         sort_order: index,
       })),
@@ -443,15 +444,6 @@ function resolveRuntimePageId(item: UnknownRecord): string | number | undefined 
   return Number.isFinite(pageIdNumber) ? pageIdNumber : pageIdString;
 }
 
-function resolveRuntimeIconType(item: UnknownRecord): string | undefined {
-  return (
-    asString(item.display_icon_type) ??
-    asString(item.icon_type) ??
-    asString(item.type) ??
-    asString(item.icon_name)
-  );
-}
-
 function resolveRuntimeIconFileUrl(item: UnknownRecord): string | undefined {
   return asString(item.display_icon_file_url) ?? asString(item.icon_file_url);
 }
@@ -580,23 +572,17 @@ function shouldHideRuntimeAdministrationItem(item: UnknownRecord): boolean {
 
 function buildRuntimeItemMeta(
   item: UnknownRecord,
-  iconType?: string,
   iconFileUrl?: string
 ): Record<string, unknown> {
   return {
     source: item,
-    iconType,
-    icon_type: item.display_icon_type ?? item.icon_type,
-    icon_file_url: item.display_icon_file_url ?? item.icon_file_url,
-    display_title: item.display_title,
-    display_icon_type: item.display_icon_type,
+    icon_file_url: item.display_icon_file_url ?? item.icon_file_url ?? iconFileUrl,
     display_icon_file_url: item.display_icon_file_url,
     display_color: item.display_color,
+    display_title: item.display_title,
     show_icon: item.show_icon,
     object_type_id: item.object_type_id,
     type: item.type,
-    icon: item.icon,
-    icon_name: item.icon_name,
     settings: item.settings,
     page_id: item.page_id,
     route: item.route,
@@ -715,7 +701,6 @@ function mapRuntimeNavigationItem(
   const id = resolveRuntimeItemId(item, label);
   const path = resolveRuntimeItemPath(item);
   const pageId = resolveRuntimePageId(item);
-  const iconType = resolveRuntimeIconType(item);
   const iconFileUrl = resolveRuntimeIconFileUrl(item);
   const displayColor = resolveRuntimeDisplayColor(item);
   const objectTypeItem = isObjectTypeNavigationItem(item);
@@ -728,7 +713,6 @@ function mapRuntimeNavigationItem(
     id,
     kind: "item",
     label,
-    icon: asString(item.icon) ?? iconType,
     path,
     active: isRuntimeItemActive(
       item,
@@ -755,14 +739,13 @@ function mapRuntimeNavigationItem(
       Boolean(context.capabilities.canDragItems) &&
       context.isEditMode &&
       !isSystem,
-    iconType,
     iconFileUrl,
     pageId,
     systemKey,
     actionKey: "select-menu-item",
     routeKey,
     meta: {
-      ...buildRuntimeItemMeta(item, iconType, iconFileUrl),
+      ...buildRuntimeItemMeta(item, iconFileUrl),
       display_color: displayColor,
       is_object_type: objectTypeItem,
     },
@@ -869,6 +852,24 @@ function buildRuntimeActions(
       icon: input.isEditMode ? "save" : "settings",
       actionKey: input.onToggleEditModeKey ?? "toggle-edit-mode",
     });
+  } else if (capabilities.canPersonalizeMenu) {
+    actions.push({
+      id: "personalize-menu",
+      label: input.isPersonalizeMode ? "Готово" : "Настроить меню",
+      kind: "button",
+      icon: input.isPersonalizeMode ? "save" : "settings",
+      actionKey: "toggle-personalize-mode",
+    });
+  }
+
+  if (capabilities.canPersonalizeMenu && input.isPersonalizeMode) {
+    actions.push({
+      id: "reset-menu-preferences",
+      label: "Сбросить мои настройки",
+      kind: "button",
+      icon: "settings",
+      actionKey: "reset-menu-preferences",
+    });
   }
 
   if (capabilities.canCreateItem) {
@@ -888,7 +889,9 @@ function buildRuntimeActions(
       label: "Настройки меню",
       kind: "iconButton",
       icon: "settings",
-      actionKey: input.onOpenSettingsKey ?? "toggle-edit-mode",
+      actionKey: capabilities.canEditMenu
+        ? (input.onOpenSettingsKey ?? "toggle-edit-mode")
+        : "toggle-personalize-mode",
     });
   }
 
@@ -931,6 +934,7 @@ export function createRuntimeSidebarContract(
     ],
     footerActions: [],
     editMode: Boolean(input.isEditMode),
+    personalizeMode: Boolean(input.isPersonalizeMode),
     isSaving: Boolean(input.isSaving),
     menuScale: input.menuScale ?? 1,
     activePageId,

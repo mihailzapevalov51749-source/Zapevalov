@@ -2,13 +2,22 @@ import { useCallback, useEffect, useState } from "react";
 
 import PlatformOwnerFirstSetupWizard from "./PlatformOwnerFirstSetupWizard.jsx";
 import { getPlatformSetupState } from "./platformSetupApi.js";
+import { shouldShowPlatformOwnerFirstSetup } from "./platformSetupGateLogic.js";
+import { isBridgeSessionUser } from "../../api/sessionBridgeApi.js";
 
 export default function PlatformSetupGate({ children, onUserRefresh, user = null }) {
   const [setupState, setSetupState] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => !isBridgeSessionUser(user));
   const [loadError, setLoadError] = useState("");
 
   const refreshSetupState = useCallback(async () => {
+    if (isBridgeSessionUser(user)) {
+      setSetupState(null);
+      setLoadError("");
+      setIsLoading(false);
+      return null;
+    }
+
     setIsLoading(true);
     setLoadError("");
 
@@ -22,16 +31,20 @@ export default function PlatformSetupGate({ children, onUserRefresh, user = null
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     refreshSetupState().catch(() => {});
-  }, [refreshSetupState]);
+  }, [refreshSetupState, user]);
 
   const handleCompleted = async () => {
     await onUserRefresh?.();
     await refreshSetupState();
   };
+
+  if (isBridgeSessionUser(user)) {
+    return children;
+  }
 
   if (isLoading) {
     return <div style={{ padding: 24 }}>Проверка состояния платформы...</div>;
@@ -41,9 +54,7 @@ export default function PlatformSetupGate({ children, onUserRefresh, user = null
     return <div style={{ padding: 24, color: "#dc2626" }}>{loadError}</div>;
   }
 
-  const isCompanyUser = user?.tenant_id != null;
-
-  if (setupState?.needs_owner_setup && !isCompanyUser) {
+  if (shouldShowPlatformOwnerFirstSetup(user, setupState)) {
     return <PlatformOwnerFirstSetupWizard onCompleted={handleCompleted} />;
   }
 

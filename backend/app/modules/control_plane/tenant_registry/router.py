@@ -19,6 +19,7 @@ def list_tenants_registry_endpoint(
     tenant_type: TenantType | None = Query(default=None, alias="type"),
     tenant_status: TenantStatus | None = Query(default=None, alias="status"),
     search: str | None = Query(default=None, min_length=1, max_length=255),
+    clients_only: bool = Query(default=False, alias="clients_only"),
     db: Session = Depends(get_db),
     _admin=Depends(require_platform_admin),
 ):
@@ -27,6 +28,7 @@ def list_tenants_registry_endpoint(
         tenant_type=tenant_type,
         tenant_status=tenant_status,
         search=search,
+        clients_only=clients_only,
     )
 
 

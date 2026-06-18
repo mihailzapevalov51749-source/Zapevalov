@@ -8,6 +8,13 @@ export const COMPANIES_WORKSPACE_TABS = [
     route: buildControlPlaneCompaniesPath("clients"),
     enabled: true,
   },
+  {
+    id: "licenses",
+    slug: "licenses",
+    label: "Лицензии",
+    route: buildControlPlaneCompaniesPath("licenses"),
+    enabled: true,
+  },
 ];
 
 export function resolveCompaniesWorkspaceTab(slug = "clients") {

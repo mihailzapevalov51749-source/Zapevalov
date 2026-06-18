@@ -1,0 +1,51 @@
+.cp-module-offers-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px 28px;
+}
+
+.cp-module-offers-page__intro,
+.cp-module-offers-page__status,
+.cp-module-offers-page__empty {
+  margin: 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.cp-module-offers-page__error {
+  margin: 0;
+  color: #b42318;
+  font-size: 14px;
+}
+
+.cp-module-offers-page__table-wrap {
+  overflow: auto;
+  border: 1px solid #d8dee8;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.cp-module-offers-page__table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 920px;
+  font-size: 13px;
+}
+
+.cp-module-offers-page__table th,
+.cp-module-offers-page__table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e7ebf1;
+  text-align: left;
+  vertical-align: top;
+}
+
+.cp-module-offers-page__table th {
+  background: #f7f9fc;
+  font-weight: 600;
+}
+
+.cp-module-offers-page__table tr:last-child td {
+  border-bottom: none;
+}

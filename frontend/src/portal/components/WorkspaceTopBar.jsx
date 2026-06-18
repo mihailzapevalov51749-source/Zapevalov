@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { getMe } from "../../api/authApi";
+import { loadRuntimeSessionUser } from "../../api/runtimeSessionUser.js";
 import { useProfileSidePanel } from "../../profile/ProfileSidePanelProvider.jsx";
+import {
+  getCachedHeaderUser,
+  setCachedHeaderUser,
+} from "../../shared/tenantContext/headerUserCache.js";
 
 
 import useNotifications from "../../modules/notifications/hooks/useNotifications";
@@ -10,27 +14,14 @@ import {
   AppHeaderRenderer,
   createRuntimeHeaderContract,
 } from "../../shared/shell/header";
-import {
-  resolveOfficeToStudioPath,
-  resolveStudioToOfficePathAsync,
-} from "../../shared/appMode/appModeNavigation";
 import { showPlatformNotification } from "../../shared/platformNotification/PlatformNotification";
 import { buildAvatarUrl } from "../../shared/files/api/filesApi";
-import { TENANT_HOME_PAGE_NOT_FOUND_MESSAGE } from "../../shared/tenantContext/resolveTenantRuntimeEntryPath";
 import { emitRuntimeShadowSnapshot } from "../../shared/shell/shadow/runtime";
 
 const DEFAULT_AVATAR_SETTINGS = {
   x: 0,
   y: 0,
   scale: 1,
-};
-const HEADER_USER_CACHE_KEY = "__YASNOPRO_HEADER_USER_CACHE__";
-
-const getCachedHeaderUser = () => window[HEADER_USER_CACHE_KEY] ?? null;
-
-const setCachedHeaderUser = (nextUser) => {
-  if (!nextUser) return;
-  window[HEADER_USER_CACHE_KEY] = nextUser;
 };
 
 const buildRuntimePathChain = ({ pathname, sectionTitle, breadcrumbItems }) => {
@@ -111,7 +102,10 @@ export default function WorkspaceTopBar({
 }) {
   const navigate = useNavigate();
   const { openProfileSidePanel } = useProfileSidePanel();
-  const [user, setUser] = useState(() => getCachedHeaderUser());
+  const normalizedTenantId = Number(tenantId);
+  const hasTenantContext =
+    Number.isFinite(normalizedTenantId) && normalizedTenantId > 0;
+  const [user, setUser] = useState(() => getCachedHeaderUser(normalizedTenantId));
 
   const { notifications, unreadCount, markAsRead } = useNotifications();
 
@@ -129,22 +123,31 @@ const effectiveShowBackButton = true;
 
   const loadUser = async () => {
     try {
-      const data = await getMe();
+      const data = await loadRuntimeSessionUser({
+        tenantId: hasTenantContext ? normalizedTenantId : null,
+      });
+
+      if (!data) {
+        throw new Error("runtime user unavailable");
+      }
 
       const nextUser = {
         ...data,
         avatar_settings: normalizeAvatarSettings(data.avatar_settings),
       };
-      setCachedHeaderUser(nextUser);
+      setCachedHeaderUser(nextUser, hasTenantContext ? normalizedTenantId : null);
       setUser(nextUser);
     } catch {
-      setUser((previous) => previous ?? getCachedHeaderUser());
+      setUser(
+        (previous) =>
+          previous ?? getCachedHeaderUser(hasTenantContext ? normalizedTenantId : null),
+      );
     }
   };
 
   useEffect(() => {
     loadUser();
-  }, []);
+  }, [normalizedTenantId, hasTenantContext]);
 
   useEffect(() => {
     if (!import.meta.env.DEV) {
@@ -234,22 +237,6 @@ const effectiveShowBackButton = true;
       switch (actionKey) {
         case "back":
           handleBack();
-          return;
-        case "app-mode-switch":
-          if (pathname.startsWith("/designer")) {
-            void resolveStudioToOfficePathAsync(pathname).then((path) => {
-              if (!path) {
-                showPlatformNotification({
-                  message: TENANT_HOME_PAGE_NOT_FOUND_MESSAGE,
-                  variant: "warning",
-                });
-                return;
-              }
-              navigate(path);
-            });
-          } else {
-            navigate(resolveOfficeToStudioPath(pathname, tenantId));
-          }
           return;
         case "search-change":
         case "search":

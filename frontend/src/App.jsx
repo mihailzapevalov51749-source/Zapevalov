@@ -13,7 +13,7 @@ import AppHeaderRendererPreview from "./shared/shell/header/dev/AppHeaderRendere
 import AppShellShadowRuntimePreview from "./shared/shell/shadow/dev/AppShellShadowRuntimePreview";
 import AppShellShadowDesignerPreview from "./shared/shell/shadow/dev/AppShellShadowDesignerPreview";
 
-import { getMe } from "./api/authApi";
+import { resolveAuthSession } from "./api/sessionBridgeApi";
 import RootEntryRedirect from "./shared/appMode/RootEntryRedirect";
 import {
   saveLastDesignerPath,
@@ -44,6 +44,8 @@ import DesignerTrashPage from "./modules/designer/pages/DesignerTrashPage";
 import DesignerWorkspacesPage from "./modules/designer/pages/DesignerWorkspacesPage";
 import DesignerWorkspaceDetailPage from "./modules/designer/pages/DesignerWorkspaceDetailPage";
 import PlatformEventJournalPage from "./modules/platformDashboard/pages/PlatformEventJournalPage";
+import PlatformReleasesPage from "./modules/platformReleases/pages/PlatformReleasesPage";
+import PlatformArchitecturePage from "./modules/platformArchitecture/pages/PlatformArchitecturePage";
 import PlatformStudioSectionGuard, {
   PlatformStudioLegacyRedirect,
 } from "./modules/platformDashboard/pages/PlatformStudioSectionGuard";
@@ -56,9 +58,15 @@ import { YasiiFloatingButton } from "./yasii";
 import ControlPlaneLayout from "./modules/controlPlane/layout/ControlPlaneLayout.jsx";
 import LegacyControlPlaneRedirect from "./modules/controlPlane/layout/LegacyControlPlaneRedirect.jsx";
 import TenantAdministrationRouter from "./modules/admin/routes/TenantAdministrationRouter.jsx";
+import TenantModulesAccessGate from "./modules/admin/components/TenantModulesAccessGate.jsx";
+import AdminModulesPage from "./modules/admin/modules/AdminModulesPage.jsx";
 import PlatformSetupGate from "./modules/platformSetup/PlatformSetupGate.jsx";
 import { PlatformConfirmProvider } from "./shared/platformModal";
 import { ChatUnreadProvider } from "./modules/chats/context/ChatUnreadProvider.jsx";
+import UnauthenticatedApp, {
+  AuthenticatedCompanyKeyRoute,
+} from "./shared/tenantContext/CompanyKeyRoutes.jsx";
+import SessionBridgeEntryPage from "./pages/sessionBridge/SessionBridgeEntryPage";
 
 function isSuperadmin(user) {
   if (!user) return false;
@@ -107,15 +115,16 @@ function UserActivityBootstrap() {
 }
 
 export default function App() {
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const isBridgeEntryRoute = location.pathname.startsWith("/auth/session-bridge-entry");
+
   const loadUser = async () => {
     try {
-      const data = await getMe();
-
-      setUser(data);
-      localStorage.setItem("currentUser", JSON.stringify(data));
+      const { user: resolvedUser } = await resolveAuthSession();
+      setUser(resolvedUser);
     } catch {
       setUser(null);
       localStorage.removeItem("currentUser");
@@ -125,6 +134,11 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (isBridgeEntryRoute) {
+      setLoading(false);
+      return undefined;
+    }
+
     // eslint-disable-next-line react-hooks/set-state-in-effect
     const id = window.setTimeout(() => {
       loadUser();
@@ -133,14 +147,18 @@ export default function App() {
     return () => {
       window.clearTimeout(id);
     };
-  }, []);
+  }, [isBridgeEntryRoute]);
+
+  if (isBridgeEntryRoute) {
+    return <SessionBridgeEntryPage />;
+  }
 
   if (loading) {
     return <div>Загрузка...</div>;
   }
 
   if (!user) {
-    return <LoginPage onLogin={loadUser} />;
+    return <UnauthenticatedApp onLogin={loadUser} />;
   }
 
   return (
@@ -273,7 +291,31 @@ export default function App() {
               </PlatformStudioSectionGuard>
             }
           />
+          <Route
+            path="platform-releases"
+            element={
+              <PlatformStudioSectionGuard>
+                <PlatformReleasesPage />
+              </PlatformStudioSectionGuard>
+            }
+          />
+          <Route
+            path="platform-architecture"
+            element={
+              <PlatformStudioSectionGuard>
+                <PlatformArchitecturePage />
+              </PlatformStudioSectionGuard>
+            }
+          />
           <Route path="platform/*" element={<PlatformStudioLegacyRedirect />} />
+          <Route
+            path="modules"
+            element={
+              <TenantModulesAccessGate>
+                <AdminModulesPage />
+              </TenantModulesAccessGate>
+            }
+          />
           <Route path="administration/*" element={<TenantAdministrationRouter />} />
           <Route path="object-types" element={<ObjectTypesPage />} />
           <Route
@@ -294,6 +336,11 @@ export default function App() {
       <Route path="/designer/administration/*" element={<LegacyControlPlaneRedirect />} />
 
       <Route path="/admin/*" element={<LegacyControlPlaneRedirect />} />
+
+      <Route
+        path="/:companyKey"
+        element={<AuthenticatedCompanyKeyRoute user={user} onLogin={loadUser} />}
+      />
 
       <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

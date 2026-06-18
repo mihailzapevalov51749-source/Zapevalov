@@ -15,7 +15,7 @@ import {
   userButtonStyle,
 } from "../../../modules/comments/styles/commentPopoverStyles";
 
-const API_BASE_URL = "http://127.0.0.1:8010";
+import { API_BASE_URL } from "../../../config/apiConfig.js";
 
 const DEFAULT_AVATAR_SETTINGS = {
   x: 0,

@@ -8,7 +8,9 @@ import sys
 from pathlib import Path
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(BACKEND_ROOT))
+sys.path.insert(0, str(SCRIPTS_ROOT))
 
 # Register ORM metadata required for designer publish FK resolution.
 from app.modules.portals.models import Portal  # noqa: F401
@@ -31,6 +33,8 @@ from app.modules.platform.designer.view_definitions.models import (  # noqa: F40
 
 from app.db.session import SessionLocal
 from app.modules.platform.designer.publish.service import publish_tenant_catalog
+from app.modules.tenant_management.exceptions import TenantWriteForbiddenError
+from structure_write_script_guard import guard_script_structure_write
 
 
 def main() -> int:
@@ -38,6 +42,11 @@ def main() -> int:
 
     db = SessionLocal()
     try:
+        guard_script_structure_write(
+            db,
+            tenant_id,
+            "publish_tenant_catalog_cli",
+        )
         result = publish_tenant_catalog(db, tenant_id, current_user=None)
         db.commit()
         payload = {
@@ -52,6 +61,10 @@ def main() -> int:
         )
         sys.stdout.buffer.write(b"\n")
         return 0
+    except TenantWriteForbiddenError as exc:
+        db.rollback()
+        print(f"Publish blocked by tenant write policy: {exc}", file=sys.stderr)
+        return 2
     except Exception as exc:
         db.rollback()
         print(f"Publish failed: {exc}", file=sys.stderr)

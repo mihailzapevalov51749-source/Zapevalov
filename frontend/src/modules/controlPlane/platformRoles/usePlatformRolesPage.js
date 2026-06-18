@@ -17,7 +17,7 @@ import {
 } from "./platformRoleStorage.js";
 import { normalizePlatformUser } from "../platformUsers/platformUserUtils.js";
 
-const API_BASE_URL = "http://127.0.0.1:8010";
+import { API_BASE_URL } from "../../../config/apiConfig.js";
 
 function getToken() {
   return localStorage.getItem("token");

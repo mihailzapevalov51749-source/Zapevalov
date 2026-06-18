@@ -7,8 +7,12 @@ export default function useMenuDragAndDrop({ portalId, items, isEnabled, reload,
   const [dropTarget, setDropTarget] = useState(null);
 
   useEffect(() => {
+    if (draggedId) {
+      return;
+    }
+
     setTree(items || []);
-  }, [items]);
+  }, [items, draggedId]);
 
   const handleDragStart = (itemId) => {
     if (!isEnabled) return;

@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 
+import { API_BASE_URL } from "../../../config/apiConfig.js";
 import { getMessageAvatarUrl } from "./messageItemUtils.js";
 
 describe("getMessageAvatarUrl", () => {
@@ -14,7 +15,7 @@ describe("getMessageAvatarUrl", () => {
           avatar_url: "/files/avatars/user.png",
         },
       }),
-      "http://127.0.0.1:8010/uploads/avatars/user.png",
+      `${API_BASE_URL}/uploads/avatars/user.png`,
     );
   });
 });

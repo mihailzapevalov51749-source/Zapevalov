@@ -21,6 +21,15 @@
   background: #eef4ff;
 }
 
+.navigation-menu-block-zone__header {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+  padding: 4px 8px 6px;
+  user-select: none;
+}
+
 .navigation-menu-block-zone__empty {
   min-height: 28px;
   width: 100%;

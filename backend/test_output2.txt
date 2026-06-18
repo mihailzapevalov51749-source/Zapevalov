@@ -1,0 +1,161 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.11.0, pytest-9.0.3, pluggy-1.6.0 -- C:\Users\MSI\AppData\Local\Programs\Python\Python311\python.exe
+cachedir: .pytest_cache
+rootdir: E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend
+plugins: anyio-4.13.0
+collecting ... collected 1 item
+
+tests/test_company_administrator.py::TestCompanyAdministratorAccess::test_platform_admin_allowed_change FAILED [100%]
+
+================================== FAILURES ===================================
+______ TestCompanyAdministratorAccess.test_platform_admin_allowed_change ______
+tests\test_company_administrator.py:171: in test_platform_admin_allowed_change
+    assert response.status_code == 200
+E   assert 500 == 200
+E    +  where 500 = <Response [500 Internal Server Error]>.status_code
+============================== warnings summary ===============================
+app\modules\platform\designer\publish\schemas.py:53
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\platform\designer\publish\schemas.py:53: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class PublishHistoryItem(BaseModel):
+
+app\modules\comments\schemas.py:20
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\comments\schemas.py:20: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class CommentAttachmentOut(BaseModel):
+
+app\modules\comments\schemas.py:40
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\comments\schemas.py:40: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class CommentMentionOut(BaseModel):
+
+app\modules\comments\schemas.py:51
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\comments\schemas.py:51: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class CommentReactionOut(BaseModel):
+
+app\modules\comments\schemas.py:110
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\comments\schemas.py:110: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class CommentOut(BaseModel):
+
+app\modules\notes\schemas.py:6
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\notes\schemas.py:6: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class NoteMentionOut(BaseModel):
+
+app\modules\notes\schemas.py:18
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\notes\schemas.py:18: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class NoteOut(BaseModel):
+
+app\modules\navigation\schemas.py:69
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\navigation\schemas.py:69: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class NavigationItemResponse(BaseModel):
+
+app\modules\sections\schemas.py:30
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\sections\schemas.py:30: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class SectionResponse(BaseModel):
+
+app\modules\blocks\schemas.py:36
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\blocks\schemas.py:36: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class BlockResponse(BaseModel):
+
+app\modules\pages\schemas.py:28
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\pages\schemas.py:28: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class PageResponse(BaseModel):
+
+app\modules\document_libraries\schemas.py:14
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\document_libraries\schemas.py:14: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class DocumentLibraryResponse(BaseModel):
+
+app\modules\document_libraries\schemas.py:35
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\document_libraries\schemas.py:35: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class LibraryDocumentResponse(BaseModel):
+
+app\modules\notifications\schemas.py:31
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\notifications\schemas.py:31: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class NotificationRead(BaseModel):
+
+app\modules\checklists\schemas.py:12
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\checklists\schemas.py:12: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ChecklistAuthorOut(BaseModel):
+
+app\modules\checklists\schemas.py:45
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\checklists\schemas.py:45: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ChecklistItemOut(BaseModel):
+
+app\modules\quality_issues\schemas.py:45
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\quality_issues\schemas.py:45: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class QualityIssueStatusHistoryRead(BaseModel):
+
+app\modules\quality_issues\schemas.py:56
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\quality_issues\schemas.py:56: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class QualityIssueRead(BaseModel):
+
+app\modules\chats\schemas.py:7
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\chats\schemas.py:7: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ChatUserOut(BaseModel):
+
+app\modules\chats\schemas.py:25
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\chats\schemas.py:25: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ChatAttachmentOut(BaseModel):
+
+app\modules\chats\schemas.py:37
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\chats\schemas.py:37: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ChatReactionOut(BaseModel):
+
+app\modules\chats\schemas.py:53
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\chats\schemas.py:53: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ChatMentionOut(BaseModel):
+
+app\modules\chats\schemas.py:70
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\chats\schemas.py:70: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ChatParticipantOut(BaseModel):
+
+app\modules\chats\schemas.py:106
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\chats\schemas.py:106: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ChatOut(BaseModel):
+
+app\modules\chats\schemas.py:130
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\chats\schemas.py:130: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ChatListItemOut(BaseModel):
+
+app\modules\chats\schemas.py:168
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\chats\schemas.py:168: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ChatMessageOut(BaseModel):
+
+app\modules\platform\designer\field_definitions\schemas.py:114
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\platform\designer\field_definitions\schemas.py:114: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FieldDefinitionRead(BaseModel):
+
+app\modules\platform\designer\field_definitions\schemas.py:141
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\platform\designer\field_definitions\schemas.py:141: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class FieldDefinitionListItem(BaseModel):
+
+app\modules\platform\designer\relation_definitions\schemas.py:100
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\platform\designer\relation_definitions\schemas.py:100: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class RelationDefinitionRead(BaseModel):
+
+app\modules\platform\designer\relation_definitions\schemas.py:131
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\platform\designer\relation_definitions\schemas.py:131: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class RelationDefinitionListItem(BaseModel):
+
+app\modules\platform\designer\view_definitions\schemas.py:94
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\platform\designer\view_definitions\schemas.py:94: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ViewDefinitionRead(BaseModel):
+
+app\modules\platform\designer\view_definitions\schemas.py:121
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\platform\designer\view_definitions\schemas.py:121: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ViewDefinitionListItem(BaseModel):
+
+app\modules\platform\designer\object_types\schemas.py:140
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\platform\designer\object_types\schemas.py:140: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ObjectTypeRead(BaseModel):
+
+app\modules\platform\designer\object_types\schemas.py:167
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\platform\designer\object_types\schemas.py:167: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class ObjectTypeListItem(BaseModel):
+
+app\modules\platform\runtime\office_user_views\schemas.py:32
+  E:\▀ёэю╧Ёю\╩юэёрыЄшэу\╠ю  ъюьярэш \╩юэёЄЁєъЄюЁ яюЁЄрыют т2\portal-constructor v2\backend\app\modules\platform\runtime\office_user_views\schemas.py:32: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+    class OfficeUserTableViewRead(BaseModel):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/test_company_administrator.py::TestCompanyAdministratorAccess::test_platform_admin_allowed_change - assert 500 == 200
+ +  where 500 = <Response [500 Internal Server Error]>.status_code
+======================= 1 failed, 35 warnings in 1.04s ========================

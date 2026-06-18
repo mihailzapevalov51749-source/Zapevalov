@@ -1,0 +1,28 @@
+﻿tenant_id,page_id,title,navigation_item_id,navigation_system_key,runtime_key_derived,displays,location_summary,recommended_place,risk
+1,1,Главная,1,runtime.office_home,runtime.office_home,CMS canvas (office home),"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — protected home
+1,35,Чат,43,,runtime.chat,runtime chat UI,Studio Pages registry,Studio Modules (not Pages),medium — page-backed runtime module
+1,36,Уведомления,44,runtime.notifications,runtime.notifications,notifications overlay/page,"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — page-backed runtime module
+1,561,Главная,329,,runtime.office_home,CMS canvas (office home),Studio Pages registry,Studio Modules (not Pages),medium — protected home
+1,574,Главная,340,,runtime.office_home,CMS canvas (office home),Studio Pages registry,Studio Modules (not Pages),medium — protected home
+1,597,Главная,354,,runtime.office_home,CMS canvas (office home),Studio Pages registry,Studio Modules (not Pages),medium — protected home
+1,608,Чат,357,runtime.chat,runtime.chat,runtime chat UI,"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — page-backed runtime module
+1,622,Главная,370,,runtime.office_home,CMS canvas (office home),Studio Pages registry,Studio Modules (not Pages),medium — protected home
+1,739,Главная,413,,runtime.office_home,CMS canvas (office home),Studio Pages registry,Studio Modules (not Pages),medium — protected home
+1,786,Главная,449,,runtime.office_home,CMS canvas (office home),Studio Pages registry,Studio Modules (not Pages),medium — protected home
+1,790,Календарь,452,runtime.calendar,runtime.calendar,runtime calendar UI,"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — page-backed runtime module
+2,347,Главная,219,runtime.office_home,runtime.office_home,CMS canvas (office home),"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — protected home
+2,376,Чат,230,runtime.chat,runtime.chat,runtime chat UI,"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — page-backed runtime module
+2,377,Уведомления,233,runtime.notifications,runtime.notifications,notifications overlay/page,"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — page-backed runtime module
+2,791,Календарь,453,runtime.calendar,runtime.calendar,runtime calendar UI,"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — page-backed runtime module
+21,624,Главная,371,runtime.office_home,runtime.office_home,CMS canvas (office home),"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — protected home
+21,650,Чат,375,runtime.chat,runtime.chat,runtime chat UI,"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — page-backed runtime module
+21,651,Уведомления,379,runtime.notifications,runtime.notifications,notifications overlay/page,"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — page-backed runtime module
+21,792,Календарь,454,runtime.calendar,runtime.calendar,runtime calendar UI,"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — page-backed runtime module
+9503,793,Календарь,455,runtime.calendar,runtime.calendar,runtime calendar UI,"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — page-backed runtime module
+9508,794,Календарь,456,runtime.calendar,runtime.calendar,runtime calendar UI,"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — page-backed runtime module
+9510,795,Календарь,457,runtime.calendar,runtime.calendar,runtime calendar UI,"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — page-backed runtime module
+9511,796,Календарь,458,runtime.calendar,runtime.calendar,runtime calendar UI,"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — page-backed runtime module
+9512,797,Календарь,459,runtime.calendar,runtime.calendar,runtime calendar UI,"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — page-backed runtime module
+9514,798,Календарь,460,runtime.calendar,runtime.calendar,runtime calendar UI,"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — page-backed runtime module
+9516,799,Календарь,461,runtime.calendar,runtime.calendar,runtime calendar UI,"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — page-backed runtime module
+9525,800,Календарь,462,runtime.calendar,runtime.calendar,runtime calendar UI,"Office sidebar, Studio Pages registry",Studio Modules (not Pages),medium — page-backed runtime module

@@ -47,6 +47,9 @@ test("ChangeCompanyAdministratorModal uses PlatformModal and dual modes", () => 
   assert.match(source, /inviteCompanyAdministrator/);
   assert.match(source, /В компании пока нет пользователей/);
   assert.match(source, /назначен суперадминистратором компании/);
+  assert.match(source, /Сменить Superadmin/);
+  assert.match(source, /Назначить Superadmin/);
+  assert.doesNotMatch(source, /Сменить администратора компании/);
   assert.doesNotMatch(source, /position:\s*fixed/);
 });
 

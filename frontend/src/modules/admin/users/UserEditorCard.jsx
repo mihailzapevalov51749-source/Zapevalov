@@ -8,7 +8,7 @@ import { sendTenantUserInvite } from "./tenantUsersApi";
 import { buildAvatarUrl } from "../../../shared/files/api/filesApi";
 import { styles } from "./usersStyles";
 
-const API_BASE_URL = "http://127.0.0.1:8010";
+import { API_BASE_URL } from "../../../config/apiConfig.js";
 
 const DEFAULT_AVATAR_SETTINGS = {
   x: 0,
@@ -306,6 +306,7 @@ export default function UserEditorCard({
   roles = [],
   tenantId = null,
   onChange,
+  onEmailBlur,
   onSave,
   onDelete,
   onClose,
@@ -412,6 +413,7 @@ export default function UserEditorCard({
           value={user.email}
           disabled={!user.isNew}
           onChange={(value) => onChange("email", value)}
+          onBlur={onEmailBlur}
         />
 
         <Field
@@ -622,6 +624,7 @@ function Field({
   label,
   value,
   onChange,
+  onBlur,
   disabled = false,
   type = "text",
   placeholder = "",
@@ -637,6 +640,7 @@ function Field({
         placeholder={placeholder}
         autoComplete={type === "password" ? "new-password" : "off"}
         onChange={(event) => onChange?.(event.target.value)}
+        onBlur={onBlur}
         style={{
           ...cardStyles.input,
           ...(disabled ? cardStyles.inputDisabled : {}),

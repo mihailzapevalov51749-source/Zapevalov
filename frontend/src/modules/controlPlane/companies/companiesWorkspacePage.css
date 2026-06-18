@@ -19,6 +19,14 @@
   box-sizing: border-box;
 }
 
+.companies-workspace__versions-tab {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .companies-workspace .workspace-runtime-tabs {
   --workspace-tabs-accent: #2563eb;
   --workspace-tabs-accent-soft: rgba(37, 99, 235, 0.1);

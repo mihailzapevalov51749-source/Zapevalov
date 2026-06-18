@@ -1,0 +1,56 @@
+.cp-tenant-module-configs-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px 28px;
+}
+
+.cp-tenant-module-configs-page__intro,
+.cp-tenant-module-configs-page__status,
+.cp-tenant-module-configs-page__empty,
+.cp-tenant-module-configs-page__muted {
+  color: #64748b;
+  font-size: 14px;
+}
+
+.cp-tenant-module-configs-page__error {
+  margin: 0;
+  color: #b42318;
+  font-size: 14px;
+}
+
+.cp-tenant-module-configs-page__table-wrap {
+  overflow: auto;
+  border: 1px solid #d8dee8;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.cp-tenant-module-configs-page__table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 980px;
+  font-size: 13px;
+}
+
+.cp-tenant-module-configs-page__table th,
+.cp-tenant-module-configs-page__table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e7ebf1;
+  text-align: left;
+  vertical-align: top;
+}
+
+.cp-tenant-module-configs-page__table th {
+  background: #f7f9fc;
+  font-weight: 600;
+  color: #334155;
+}
+
+.cp-tenant-module-configs-page__table tr:last-child td {
+  border-bottom: none;
+}
+
+.cp-tenant-module-configs-page__table code {
+  font-size: 12px;
+}

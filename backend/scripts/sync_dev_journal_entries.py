@@ -9,9 +9,13 @@ from pathlib import Path
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND_ROOT))
 
-from app.db.session import SessionLocal
 from app.modules.platform_event_journal.constants import PlatformEventJournalType
 from app.modules.platform_event_journal.cursor_dev_journal import record_cursor_dev_event
+from app.modules.platform_event_journal.dev_journal_database import (
+    DevJournalDatabaseMismatchError,
+    open_dev_journal_db_session,
+    resolve_dev_database_name,
+)
 from app.modules.platform_event_journal.models import PlatformEventJournalEntry
 from app.modules.platform_event_journal.service import ensure_platform_event_journal_bootstrap
 
@@ -54,36 +58,38 @@ BACKFILL_ENTRIES = (
 
 
 def main() -> None:
-    db = SessionLocal()
     try:
-        bootstrap_created = ensure_platform_event_journal_bootstrap(db)
-        backfill_created = 0
+        with open_dev_journal_db_session() as db:
+            bootstrap_created = ensure_platform_event_journal_bootstrap(db)
+            backfill_created = 0
 
-        for entry in BACKFILL_ENTRIES:
-            slug = entry["slug"]
-            exists = (
-                db.query(PlatformEventJournalEntry.id)
-                .filter(PlatformEventJournalEntry.slug == slug)
-                .first()
-            )
-            if exists is not None:
-                continue
+            for entry in BACKFILL_ENTRIES:
+                slug = entry["slug"]
+                exists = (
+                    db.query(PlatformEventJournalEntry.id)
+                    .filter(PlatformEventJournalEntry.slug == slug)
+                    .first()
+                )
+                if exists is not None:
+                    continue
 
-            created = record_cursor_dev_event(
-                db,
-                slug=slug,
-                title=entry["title"],
-                description=entry["description"],
-                event_type=entry["event_type"],
-                commit=False,
-            )
-            if created is not None:
-                backfill_created += 1
+                created = record_cursor_dev_event(
+                    db,
+                    slug=slug,
+                    title=entry["title"],
+                    description=entry["description"],
+                    event_type=entry["event_type"],
+                    commit=False,
+                )
+                if created is not None:
+                    backfill_created += 1
 
-        db.commit()
-        print(f"bootstrap_created={bootstrap_created} backfill_created={backfill_created}")
-    finally:
-        db.close()
+            db.commit()
+            print(f"Database: {resolve_dev_database_name()}")
+            print(f"bootstrap_created={bootstrap_created} backfill_created={backfill_created}")
+    except DevJournalDatabaseMismatchError as exc:
+        print(exc.format_blocked_message(), file=sys.stderr)
+        raise SystemExit(2) from exc
 
 
 if __name__ == "__main__":

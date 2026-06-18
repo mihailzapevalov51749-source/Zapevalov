@@ -16,6 +16,9 @@ class TenantEnvironmentRead(BaseModel):
 
     tenant_id: int
     tenant_type: TenantType
+    name: str
+    short_name: str | None = None
+    code: str | None = None
     template_version: str = DEFAULT_TEMPLATE_VERSION
     tenant_status: TenantStatus = TenantStatus.ACTIVE
     source_tenant_id: int | None = None

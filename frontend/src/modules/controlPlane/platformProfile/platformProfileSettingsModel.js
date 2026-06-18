@@ -10,6 +10,9 @@ export function createDefaultPlatformProfileSettings() {
     general: {
       name: "ЯсноПро",
       shortName: "ЯсноПро",
+      publicSlug: "yasnopro",
+      publicSlugLocked: false,
+      publicUrl: "",
       description:
         "Платформа для управления корпоративными процессами и рабочими пространствами.",
       timezone: "(UTC+03:00) Москва",
@@ -104,9 +107,9 @@ export function createDefaultPlatformProfileSettings() {
 }
 
 /**
- * Shape consumed by GeneralSettingsPanel (platform scope only).
+ * Shape consumed by GeneralSettingsPanel (platform and tenant profile workspace).
  */
-export function mapPlatformProfileToGeneralSettings(profile = {}) {
+export function mapProfileToGeneralPanelSettings(profile = {}) {
   const defaults = createDefaultPlatformProfileSettings();
 
   return {
@@ -152,3 +155,5 @@ export function mapPlatformProfileToGeneralSettings(profile = {}) {
     },
   };
 }
+
+export const mapPlatformProfileToGeneralSettings = mapProfileToGeneralPanelSettings;

@@ -2,6 +2,7 @@ import { isPlatformOwner } from "../../../shared/platformAccess/platformOwnerAcc
 import { resolveTenantEnvironmentRoleCode } from "../../../shared/tenantEnvironment/tenantEnvironment.js";
 import {
   canAccessTenantAdministration as canAccessTenantAdministrationByRole,
+  canReadTenantModules as canReadTenantModulesByRole,
   isTenantScopedUser,
   resolveTenantRoleName,
 } from "../../../shared/tenantRoles/tenantRoleModel.js";
@@ -32,9 +33,18 @@ export function canAccessTenantAdministration(user) {
   return canAccessTenantAdministrationByRole(user);
 }
 
+export function canReadTenantModules(user) {
+  if (canAccessControlPlane(user)) {
+    return true;
+  }
+
+  return canReadTenantModulesByRole(user);
+}
+
 /**
- * Temporary UX gate: Studio menu entry to Control Plane is DEV-only.
- * Shows for tenantId=1 (platform dev workspace) or tenant_type=DEV.
+ * DEV-only visibility gate for platform tooling sections in Studio sidebar
+ * (event journal, platform releases). Control Plane root entry is hidden from
+ * Studio navigation — use Sidebar Mode Switcher instead.
  */
 export function canShowControlPlaneStudioMenuEntry({ tenantId, tenantType } = {}) {
   const normalizedTenantId = Number(tenantId) > 0 ? Number(tenantId) : 1;
@@ -84,6 +94,30 @@ export function isPlatformEventJournalStudioMenuItem(item) {
   );
 }
 
+export function canShowPlatformReleasesInStudio({ tenantId, tenantType } = {}) {
+  return canShowControlPlaneStudioMenuEntry({ tenantId, tenantType });
+}
+
+export function isPlatformReleasesStudioMenuItem(item) {
+  const route = String(item?.route || item?.path || item?.url || "").trim();
+  return (
+    route.includes("/platform-releases")
+    || String(item?.id || "") === "system-designer-platform-releases"
+  );
+}
+
+export function canShowPlatformArchitectureInStudio({ tenantId, tenantType } = {}) {
+  return canShowControlPlaneStudioMenuEntry({ tenantId, tenantType });
+}
+
+export function isPlatformArchitectureStudioMenuItem(item) {
+  const route = String(item?.route || item?.path || item?.url || "").trim();
+  return (
+    route.includes("/platform-architecture")
+    || String(item?.id || "") === "system-designer-platform-architecture"
+  );
+}
+
 export function isLegacyPlatformDashboardStudioMenuItem(item) {
   const route = String(item?.route || item?.path || item?.url || "").trim();
   return (
@@ -102,6 +136,8 @@ export function filterPlatformStudioMenuItems(items) {
     .filter(
       (item) =>
         !isPlatformEventJournalStudioMenuItem(item)
+        && !isPlatformReleasesStudioMenuItem(item)
+        && !isPlatformArchitectureStudioMenuItem(item)
         && !isLegacyPlatformDashboardStudioMenuItem(item),
     )
     .map((item) => ({

@@ -5,6 +5,17 @@ from pydantic import BaseModel, Field
 
 PagePublicationStatus = Literal["draft", "published", "hidden"]
 PageUsageKind = Literal["workspace_home", "workspace_tab", "navigation"]
+PageRegistryEntityKind = Literal[
+    "home_page",
+    "user_page",
+    "module",
+    "library",
+    "workspace",
+    "tenant_administration",
+    "draft",
+    "orphan",
+    "unknown",
+]
 
 
 class PageUsageRead(BaseModel):
@@ -53,6 +64,7 @@ class PageRegistryListItemRead(BaseModel):
     updated_at: datetime | None = None
     author: str | None = None
     is_protected: bool = False
+    entity_kind: PageRegistryEntityKind = "unknown"
 
 
 class PageRegistryDetailRead(PageRegistryListItemRead):
@@ -66,6 +78,8 @@ class PageRegistryDetailRead(PageRegistryListItemRead):
 
 class PageRegistryListResponse(BaseModel):
     items: list[PageRegistryListItemRead] = Field(default_factory=list)
+    total_pages: int = 0
+    hidden_system_count: int = 0
 
 
 class PageDuplicateResponse(BaseModel):

@@ -17,7 +17,6 @@ import {
   saveButtonStyle,
   settingsListStyle,
   settingsTabGridStyle,
-  settingsTabPageStyle,
   storageCardStyle,
   storageHeaderStyle,
   storageMetaStyle,
@@ -25,13 +24,10 @@ import {
   twoColumnsStyle,
   twoColumnsWideLeftStyle,
 } from "../systemSettingsUi.jsx";
-import PlatformGeneralMainInfoForm from "../../../controlPlane/platformProfile/PlatformGeneralMainInfoForm.jsx";
-import { mapPlatformProfileToGeneralSettings } from "../../../controlPlane/platformProfile/platformProfileSettingsModel.js";
+import ProfileSettingsTabPage from "../../../profileWorkspace/ProfileSettingsTabPage.jsx";
+import ProfileGeneralMainInfoForm from "../../../profileWorkspace/ProfileGeneralMainInfoForm.jsx";
+import { mapProfileToGeneralPanelSettings } from "../../../controlPlane/platformProfile/platformProfileSettingsModel.js";
 import { formatPlatformDateTime } from "../../../../shared/platformSettings/platformDateTimeFormat.js";
-
-function TabPage({ children }) {
-  return <div style={settingsTabPageStyle}>{children}</div>;
-}
 
 function resolveProfile(settings = {}, path, fallback = "") {
   const segments = String(path || "").split(".");
@@ -45,35 +41,35 @@ function resolveProfile(settings = {}, path, fallback = "") {
   return current ?? fallback;
 }
 
-export function GeneralSettingsTab({ scope = SETTINGS_SCOPE_PLATFORM, settings = {} }) {
-  const generalSettings =
-    scope === SETTINGS_SCOPE_PLATFORM
-      ? mapPlatformProfileToGeneralSettings(settings)
-      : settings;
+export function GeneralSettingsTab({
+  scope = SETTINGS_SCOPE_PLATFORM,
+  settings = {},
+  mainInfoSlot = undefined,
+}) {
+  const panelSettings = mapProfileToGeneralPanelSettings(settings);
+  const formattedPanelSettings = settings?.updatedAt
+    ? {
+        ...panelSettings,
+        systemInfo: {
+          ...panelSettings.systemInfo,
+          updatedAt: formatPlatformDateTime(settings.updatedAt),
+        },
+      }
+    : panelSettings;
 
-  const platformGeneralSettings =
-    scope === SETTINGS_SCOPE_PLATFORM
-      ? {
-          ...generalSettings,
-          systemInfo: {
-            ...generalSettings.systemInfo,
-            updatedAt: settings?.updatedAt
-              ? formatPlatformDateTime(settings.updatedAt)
-              : generalSettings.systemInfo.updatedAt,
-          },
-        }
-      : generalSettings;
+  const resolvedMainInfoSlot =
+    mainInfoSlot !== undefined
+      ? mainInfoSlot
+      : <ProfileGeneralMainInfoForm />;
 
   return (
-    <TabPage>
+    <ProfileSettingsTabPage>
       <GeneralSettingsPanel
         scope={scope}
-        settings={platformGeneralSettings}
-        mainInfoSlot={
-          scope === SETTINGS_SCOPE_PLATFORM ? <PlatformGeneralMainInfoForm /> : null
-        }
+        settings={formattedPanelSettings}
+        mainInfoSlot={resolvedMainInfoSlot}
       />
-    </TabPage>
+    </ProfileSettingsTabPage>
   );
 }
 
@@ -81,7 +77,7 @@ export function BrandingTab({ scope = SETTINGS_SCOPE_PLATFORM, settings = {} }) 
   const labels = resolveSettingsLabels(scope);
 
   return (
-    <TabPage>
+    <ProfileSettingsTabPage>
       <div style={settingsTabGridStyle}>
         <section style={cardStyle}>
           <CardTitle title={labels.brandingTitle} />
@@ -95,13 +91,13 @@ export function BrandingTab({ scope = SETTINGS_SCOPE_PLATFORM, settings = {} }) 
           </div>
         </section>
       </div>
-    </TabPage>
+    </ProfileSettingsTabPage>
   );
 }
 
 export function LocalizationTab({ settings = {} }) {
   return (
-    <TabPage>
+    <ProfileSettingsTabPage>
       <div style={settingsTabGridStyle}>
         <section style={cardStyle}>
           <CardTitle title="Локализация" />
@@ -119,13 +115,13 @@ export function LocalizationTab({ settings = {} }) {
           </div>
         </section>
       </div>
-    </TabPage>
+    </ProfileSettingsTabPage>
   );
 }
 
 export function NotificationsTab({ settings = {} }) {
   return (
-    <TabPage>
+    <ProfileSettingsTabPage>
       <div style={settingsTabGridStyle}>
         <section style={cardStyle}>
           <CardTitle title="Почтовые настройки (SMTP)" badge="Подключено" />
@@ -148,13 +144,13 @@ export function NotificationsTab({ settings = {} }) {
           </div>
         </section>
       </div>
-    </TabPage>
+    </ProfileSettingsTabPage>
   );
 }
 
 export function LimitsTab({ settings = {} }) {
   return (
-    <TabPage>
+    <ProfileSettingsTabPage>
       <div style={settingsTabGridStyle}>
         <section style={cardStyle}>
           <CardTitle title="Лимиты и квоты" />
@@ -188,13 +184,13 @@ export function LimitsTab({ settings = {} }) {
           </div>
         </section>
       </div>
-    </TabPage>
+    </ProfileSettingsTabPage>
   );
 }
 
 export function BackupTab({ settings = {} }) {
   return (
-    <TabPage>
+    <ProfileSettingsTabPage>
       <div style={settingsTabGridStyle}>
         <section style={cardStyle}>
           <CardTitle title="Резервное копирование" />
@@ -208,13 +204,13 @@ export function BackupTab({ settings = {} }) {
           </div>
         </section>
       </div>
-    </TabPage>
+    </ProfileSettingsTabPage>
   );
 }
 
 export function SecurityTab({ settings = {} }) {
   return (
-    <TabPage>
+    <ProfileSettingsTabPage>
       <div style={settingsTabGridStyle}>
         <section style={cardStyle}>
           <CardTitle title="Безопасность" />
@@ -241,13 +237,13 @@ export function SecurityTab({ settings = {} }) {
           </div>
         </section>
       </div>
-    </TabPage>
+    </ProfileSettingsTabPage>
   );
 }
 
 export function SystemBehaviorTab({ settings = {} }) {
   return (
-    <TabPage>
+    <ProfileSettingsTabPage>
       <div style={settingsTabGridStyle}>
         <section style={cardStyle}>
           <CardTitle title="Поведение системы" />
@@ -273,6 +269,6 @@ export function SystemBehaviorTab({ settings = {} }) {
           </button>
         </section>
       </div>
-    </TabPage>
+    </ProfileSettingsTabPage>
   );
 }

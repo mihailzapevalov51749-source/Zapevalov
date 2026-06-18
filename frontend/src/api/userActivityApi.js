@@ -1,7 +1,6 @@
 import { getToken, logout as clearAuthToken } from "./authApi";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8010";
+import { API_BASE_URL } from "../config/apiConfig.js";
 
 const BASE_PATH = "/user-activity";
 

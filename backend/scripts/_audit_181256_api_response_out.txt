@@ -1,0 +1,13 @@
+﻿python : Environment Guard skipped (YASNOPRO_SKIP_ENVIRONMENT_GUARD is set).
+C:\Users\MSI\AppData\Local\Temp\ps-script-e0af186c-cc53-4161-9127-eb77371c3d66.ps1:77 знак:1
++ python scripts/_audit_181256_api_response.py 2>&1 | Out-File -Encodin ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Environment Gua..._GUARD is set).:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+=== clients_only ===
+status: 200
+body: []
+=== all ===
+status: 200
+body: [{"id":1,"original_name":"╨рчЁрсюЄър","name":"╨рчЁрсюЄър","short_name":"╨рчЁрсюЄър","code":"ъюЁяюЁрЄштэ√щ_яюЁЄры","tenant_type":"DEV","platform_version":"1.0.0-dev","template_version":"1.0.0","source_tenant_id":null,"tenant_status":"ACTIVE","public_slug":"razrabotka","public_url":"http://localhost:5173/razrabotka"}]
