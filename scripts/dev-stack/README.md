@@ -61,10 +61,23 @@ backend\.venv\Scripts\python.exe scripts\dev-stack\dev_stack.py status --repo-ro
 | Среда | Backend | Frontend |
 |-------|---------|----------|
 | DEV | 8010 | 5173 |
-| TEMPLATE | 8011 | 5174 (artifact: `dist-template` + `vite preview`) |
+| TEMPLATE | 8011 | 5174 (physical runtime: `../runtime/template/current/frontend`) |
 | CLIENT | 8012 | 5175 |
 
-TEMPLATE frontend (WI-RUNTIME-ISOLATION-02 spike): перед `dev-stack start` выполнить `cd frontend && npm run build:template`. TEMPLATE обслуживает статический `frontend/dist-template`, не live `frontend/src`.
+TEMPLATE frontend (WI-RUNTIME-ISOLATION-03B): перед `dev-stack start` выполнить promote:
+
+```powershell
+.\scripts\runtime\promote_template_frontend.ps1
+.\scripts\runtime\verify_template_runtime.ps1
+```
+
+TEMPLATE обслуживает sibling runtime `../runtime/template/current/frontend` (вне DEV workspace). Build staging: `frontend/.build-staging/template`.
+
+Rollback:
+
+```powershell
+.\scripts\runtime\promote_template_frontend.ps1 -SwitchToRelease release-001
+```
 
 ## Артефакты runtime
 

@@ -194,33 +194,61 @@ def _resolve_windows_console_executable(
     )
 
 
-def _resolve_template_artifact_dir(
+def _resolve_template_runtime_root(
+    repo_root: Path,
+    manifest: dict[str, Any],
+) -> Path:
+    paths = manifest["paths"]
+    runtime_relative = str(
+        paths.get("template_runtime_root", "../runtime/template")
+    ).strip() or "../runtime/template"
+    return (repo_root / runtime_relative).resolve()
+
+
+def _resolve_template_runtime_frontend_dir(
     repo_root: Path,
     manifest: dict[str, Any],
     frontend: dict[str, Any],
 ) -> Path:
-    paths = manifest["paths"]
-    frontend_dir = repo_root / paths["frontend_dir"]
-    artifact_relative = str(frontend.get("artifact_dir", "dist-template")).strip() or "dist-template"
-    return frontend_dir / artifact_relative
+    runtime_root = _resolve_template_runtime_root(repo_root, manifest)
+    slot_relative = str(
+        frontend.get("runtime_frontend_slot", "current/frontend")
+    ).strip() or "current/frontend"
+    return (runtime_root / slot_relative).resolve()
 
 
-def _assert_template_artifact_ready(
+def _assert_template_runtime_ready(
     repo_root: Path,
     manifest: dict[str, Any],
     frontend: dict[str, Any],
-) -> None:
-    artifact_dir = _resolve_template_artifact_dir(repo_root, manifest, frontend)
-    index_file = artifact_dir / "index.html"
-    if artifact_dir.is_dir() and index_file.is_file():
-        return
-
-    raise DevStackError(
-        "TEMPLATE artifact runtime is not ready.\n"
-        f"Expected build output: {artifact_dir.relative_to(repo_root)}/index.html\n"
-        "Build once from frontend/:\n"
-        "  npm run build:template"
+) -> Path:
+    runtime_root = _resolve_template_runtime_root(repo_root, manifest)
+    frontend_artifact_dir = _resolve_template_runtime_frontend_dir(
+        repo_root,
+        manifest,
+        frontend,
     )
+    current_link = runtime_root / "current"
+    manifest_file = current_link / "manifest.json"
+    index_file = frontend_artifact_dir / "index.html"
+
+    missing: list[str] = []
+    if not current_link.is_dir():
+        missing.append(f"current junction: {current_link}")
+    if not manifest_file.is_file():
+        missing.append(f"manifest: {manifest_file}")
+    if not index_file.is_file():
+        missing.append(f"frontend index: {index_file}")
+
+    if missing:
+        raise DevStackError(
+            "TEMPLATE physical runtime is not ready.\n"
+            + "\n".join(f"  - {item}" for item in missing)
+            + "\nPromote once from repo root:\n"
+            "  .\\scripts\\runtime\\promote_template_frontend.ps1"
+        )
+
+    return frontend_artifact_dir
 
 
 def _build_frontend_command(
@@ -240,8 +268,8 @@ def _build_frontend_command(
     runtime = str(frontend.get("runtime", "dev")).strip().lower() or "dev"
     node_executable = _resolve_node_executable(manifest)
 
-    if runtime == "artifact":
-        _assert_template_artifact_ready(repo_root, manifest, frontend)
+    if runtime in {"artifact", "external_artifact"}:
+        _assert_template_runtime_ready(repo_root, manifest, frontend)
         return [
             node_executable,
             str(vite_script),
@@ -303,6 +331,17 @@ def _iter_services(repo_root: Path, manifest: dict[str, Any]) -> list[ServiceSpe
         )
 
         frontend = env_config["frontend"]
+        frontend_env = dict(base_env)
+        frontend_runtime = str(frontend.get("runtime", "dev")).strip().lower() or "dev"
+        if frontend_runtime in {"artifact", "external_artifact"}:
+            artifact_frontend_dir = _assert_template_runtime_ready(
+                repo_root,
+                manifest,
+                frontend,
+            )
+            frontend_env["YASNOPRO_TEMPLATE_RUNTIME_FRONTEND"] = str(
+                artifact_frontend_dir
+            )
         frontend_cmd = _build_frontend_command(repo_root, manifest, frontend)
         services.append(
             ServiceSpec(
@@ -313,7 +352,7 @@ def _iter_services(repo_root: Path, manifest: dict[str, Any]) -> list[ServiceSpe
                 log_file=str(frontend["log_file"]),
                 command=frontend_cmd,
                 cwd=frontend_dir,
-                env=dict(base_env),
+                env=frontend_env,
             )
         )
 

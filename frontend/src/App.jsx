@@ -14,6 +14,8 @@ import AppShellShadowRuntimePreview from "./shared/shell/shadow/dev/AppShellShad
 import AppShellShadowDesignerPreview from "./shared/shell/shadow/dev/AppShellShadowDesignerPreview";
 
 import { resolveAuthSession } from "./api/sessionBridgeApi";
+import { attachPlatformApiClientActivityInterceptor } from "./api/platformApiClientActivity.js";
+import { platformApiClient } from "./modules/designer/api/platformApiClient";
 import RootEntryRedirect from "./shared/appMode/RootEntryRedirect";
 import {
   saveLastDesignerPath,
@@ -102,6 +104,7 @@ function ModePathTracker() {
 
 function UserActivityBootstrap() {
   useEffect(() => {
+    attachPlatformApiClientActivityInterceptor(platformApiClient);
     startUserActivityTracking();
     startTodayActiveTimePolling();
 

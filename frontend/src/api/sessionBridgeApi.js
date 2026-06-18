@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "../config/apiConfig.js";
 import { getMe, getToken, logout } from "./authApi.js";
+import { getRuntimeAuthToken } from "./runtimeAuthToken.js";
 import {
   BRIDGE_TOKEN_KEY,
   clearBridgeSessionStorage,
@@ -19,6 +20,8 @@ export {
   resolveBridgePortalId,
   setBridgeToken,
 } from "./bridgeSessionContext.js";
+
+export { getRuntimeAuthToken } from "./runtimeAuthToken.js";
 
 export function clearBridgeSession() {
   clearBridgeSessionStorage();
@@ -200,27 +203,6 @@ export async function resolveAuthSession() {
 
 export function isBridgeSessionUser(user) {
   return Boolean(user?.is_bridge_session);
-}
-
-/**
- * Runtime API auth: bridge_token first when bridge session is active.
- *
- * @returns {{ token: string | null, kind: "login" | "bridge" | null }}
- */
-export function getRuntimeAuthToken() {
-  if (hasActiveBridgeSession()) {
-    const bridgeToken = getBridgeToken();
-    if (bridgeToken) {
-      return { token: bridgeToken, kind: "bridge" };
-    }
-  }
-
-  const loginToken = getToken();
-  if (loginToken) {
-    return { token: loginToken, kind: "login" };
-  }
-
-  return { token: null, kind: null };
 }
 
 export { resolveBridgeRedirectPath };

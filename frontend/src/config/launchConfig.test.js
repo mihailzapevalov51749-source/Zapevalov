@@ -27,7 +27,8 @@ const LAUNCH_MATRIX = [
     frontendPort: 5174,
     envFile: ".env.template",
     backendUrl: "http://127.0.0.1:8011",
-    artifactOutDir: "dist-template",
+    artifactOutDir: ".build-staging/template",
+    runtimeFrontendSlot: "current/frontend",
   },
   {
     mode: "client",
@@ -62,14 +63,26 @@ describe("multi-frontend launch matrix", () => {
     }
   });
 
-  it("exposes TEMPLATE artifact preview script and outDir", () => {
+  it("exposes TEMPLATE staging build and external runtime slot config", () => {
     const packageJson = JSON.parse(readFrontendFile("package.json"));
     const viteConfig = readFrontendFile("vite.config.js");
+    const manifest = readFileSync(
+      join(frontendRoot, "..", "scripts/dev-stack/manifest.yaml"),
+      "utf8",
+    );
     const template = LAUNCH_MATRIX.find((item) => item.mode === "template");
 
     assert.equal(typeof packageJson.scripts[template.previewScript], "string");
     assert.match(packageJson.scripts[template.previewScript], /--mode template/);
-    assert.match(viteConfig, new RegExp(`${template.mode}:\\s*"${template.artifactOutDir}"`));
+    assert.match(
+      viteConfig,
+      new RegExp(`${template.mode}:\\s*"${template.artifactOutDir.replace("/", "\\/")}"`),
+    );
+    assert.match(manifest, /template_runtime_root:\s+\.\.\/runtime\/template/);
+    assert.match(
+      manifest,
+      new RegExp(`runtime_frontend_slot:\\s+${template.runtimeFrontendSlot}`),
+    );
   });
 
   it("loads isolated backend URLs per vite mode", () => {

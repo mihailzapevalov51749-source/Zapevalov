@@ -7,15 +7,41 @@ const FRONTEND_PORT_BY_MODE = {
   client: 5175,
 };
 
-/** WI-RUNTIME-ISOLATION-02: isolated artifact output per environment mode. */
-const ARTIFACT_OUT_DIR_BY_MODE = {
-  template: "dist-template",
+/** WI-RUNTIME-ISOLATION-03B: build staging inside DEV workspace only. */
+const BUILD_STAGING_OUT_DIR_BY_MODE = {
+  template: ".build-staging/template",
 };
 
+const templateRuntimeFrontend = String(
+  process.env.YASNOPRO_TEMPLATE_RUNTIME_FRONTEND || "",
+).trim();
+
+function resolvePlatformApiChunk(id) {
+  const normalized = String(id).replace(/\\/g, "/");
+  if (normalized.includes("node_modules/axios")) {
+    return "platform-api";
+  }
+  if (
+    normalized.includes("/src/config/apiConfig")
+    || normalized.includes("/src/api/")
+    || normalized.includes("/src/modules/designer/api/platformApiClient")
+  ) {
+    return "platform-api";
+  }
+  return undefined;
+}
+
 // https://vite.dev/config/
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command, isPreview }) => {
   const port = FRONTEND_PORT_BY_MODE[mode] ?? FRONTEND_PORT_BY_MODE.development;
-  const artifactOutDir = ARTIFACT_OUT_DIR_BY_MODE[mode];
+  const stagingOutDir = BUILD_STAGING_OUT_DIR_BY_MODE[mode];
+
+  let outDir;
+  if (command === "build" && stagingOutDir) {
+    outDir = stagingOutDir;
+  } else if (isPreview && mode === "template" && templateRuntimeFrontend) {
+    outDir = templateRuntimeFrontend;
+  }
 
   return {
     plugins: [react()],
@@ -23,7 +49,19 @@ export default defineConfig(({ mode }) => {
       port,
       strictPort: true,
     },
-    build: artifactOutDir ? { outDir: artifactOutDir, emptyOutDir: true } : undefined,
+    build: outDir
+      ? {
+          outDir,
+          emptyOutDir: command === "build",
+          rollupOptions: {
+            output: {
+              manualChunks(id) {
+                return resolvePlatformApiChunk(id);
+              },
+            },
+          },
+        }
+      : undefined,
     preview: {
       port,
       strictPort: true,

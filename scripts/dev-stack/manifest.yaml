@@ -14,6 +14,7 @@ paths:
   frontend_node_modules: frontend/node_modules
   run_dir: .run
   logs_dir: logs
+  template_runtime_root: ../runtime/template
 
 backend_launch:
   module: app.main:app
@@ -52,8 +53,8 @@ environments:
       port: 5174
       npm_script: preview:template
       vite_mode: template
-      runtime: artifact
-      artifact_dir: dist-template
+      runtime: external_artifact
+      runtime_frontend_slot: current/frontend
       service: template-frontend
       log_file: template-frontend.log
 

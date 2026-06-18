@@ -1,8 +1,7 @@
 import axios from "axios";
 
 import { getToken, logout } from "../../../api/authApi";
-import { getRuntimeAuthToken } from "../../../api/sessionBridgeApi";
-import { recordApiActivity } from "../../../shared/userActivity/userActivityTracker";
+import { getRuntimeAuthToken } from "../../../api/runtimeAuthToken.js";
 
 import { API_BASE_URL } from "../../../config/apiConfig.js";
 
@@ -20,8 +19,6 @@ platformApiClient.interceptors.request.use((config) => {
     config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
   }
-
-  recordApiActivity();
 
   return config;
 });

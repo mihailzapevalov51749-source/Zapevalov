@@ -16,6 +16,7 @@ node_modules/
 # Build
 dist/
 dist-template/
+frontend/.build-staging/
 build/
 
 # Local dev stack runtime (WI-20.1)
