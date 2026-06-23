@@ -14,10 +14,7 @@ RUNTIME_MODULE_KEYS_FOR_BACKFILL: frozenset[str] = frozenset(
 
 PLANNED_RUNTIME_MODULE_KEYS: frozenset[str] = frozenset(
     {
-        "runtime.documents",
-        "runtime.yasii",
-        "runtime.processes",
-        "runtime.org_structure",
+        "runtime.bpmn",
     }
 )
 

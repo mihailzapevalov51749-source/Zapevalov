@@ -126,6 +126,7 @@ def test_planned_modules_do_not_create_navigation_or_pages(db: Session) -> None:
         for item in PLATFORM_MODULE_SEED
         if item["status"] == PlatformModuleStatus.PLANNED
     }
+    assert planned_keys == {"runtime.bpmn"}
 
     before_nav_count = db.query(NavigationItem).count()
     before_planned_nav = (
@@ -201,10 +202,29 @@ def test_get_platform_modules_returns_catalog(client: TestClient, db: Session) -
     payload = response.json()
     assert isinstance(payload, list)
     keys = {item["module_key"] for item in payload}
+    active_or_planned = {
+        item["module_key"]
+        for item in payload
+        if item["status"] in {PlatformModuleStatus.ACTIVE, PlatformModuleStatus.PLANNED}
+    }
+    assert active_or_planned == {item["module_key"] for item in PLATFORM_MODULE_SEED}
     assert "runtime.chat" in keys
     assert "runtime.calendar" in keys
     assert "runtime.notifications" in keys
     assert "runtime.documents" in keys
+    assert "runtime.yasii" in keys
+    assert "runtime.bpmn" in keys
+    deprecated = {
+        item["module_key"]
+        for item in payload
+        if item["status"] == PlatformModuleStatus.DEPRECATED
+    }
+    assert "runtime.processes" not in active_or_planned
+    assert "runtime.org_structure" not in active_or_planned
+    if "runtime.processes" in keys:
+        assert "runtime.processes" in deprecated
+    if "runtime.org_structure" in keys:
+        assert "runtime.org_structure" in deprecated
 
     chat = next(item for item in payload if item["module_key"] == "runtime.chat")
     assert chat["entry_system_key"] == "runtime.chat"

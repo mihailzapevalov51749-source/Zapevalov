@@ -261,10 +261,7 @@ def test_planned_modules_do_not_require_manifests(db: Session) -> None:
     seed_platform_module_manifests(db, commit=False)
 
     planned_keys = {
-        "runtime.documents",
-        "runtime.yasii",
-        "runtime.processes",
-        "runtime.org_structure",
+        "runtime.bpmn",
     }
     manifests = (
         db.query(PlatformModuleManifest)
