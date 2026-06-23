@@ -4,7 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    require_runtime_actor,
+    resolve_runtime_actor_user_id,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+)
 from app.modules.calendar import crud, service
 from app.modules.calendar.schemas import (
     CalendarEventCreate,
@@ -27,14 +33,8 @@ router = APIRouter(
 )
 
 
-def get_current_user_id(current_user: User) -> int:
-    user_id = getattr(current_user, "id", None)
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Пользователь не авторизован",
-        )
-    return int(user_id)
+def get_current_user_id(current_user: RuntimeDesignerActor) -> int:
+    return resolve_runtime_actor_user_id(current_user)
 
 
 def get_tenant_event(
@@ -42,7 +42,7 @@ def get_tenant_event(
     *,
     tenant_id: int,
     event_id: int,
-    current_user: User,
+    current_user: RuntimeDesignerActor,
 ) -> tuple[int, object]:
     resolved_tenant_id = assert_user_has_calendar_tenant_access(
         db,
@@ -75,7 +75,7 @@ def list_events(
     participant_id: int | None = Query(default=None),
     search: str | None = Query(default=None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     resolved_tenant_id = assert_user_has_calendar_tenant_access(
         db,
@@ -100,7 +100,7 @@ def create_event(
     tenant_id: int,
     payload: CalendarEventCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     resolved_tenant_id = assert_user_has_calendar_tenant_access(
         db,
@@ -135,7 +135,7 @@ def get_event(
     tenant_id: int,
     event_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     _, event = get_tenant_event(
         db,
@@ -152,7 +152,7 @@ def update_event(
     event_id: int,
     payload: CalendarEventUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     _, event = get_tenant_event(
         db,
@@ -192,7 +192,7 @@ def delete_event(
     tenant_id: int,
     event_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     _, event = get_tenant_event(
         db,
@@ -218,7 +218,7 @@ def respond_to_event(
     event_id: int,
     payload: CalendarEventRespond,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     _, event = get_tenant_event(
         db,

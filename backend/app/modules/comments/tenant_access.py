@@ -8,6 +8,12 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.modules.comments.models import Comment
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    assert_runtime_actor_has_tenant_access,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+)
 from app.modules.files.document_access import collect_portal_ids_for_document_file
 from app.modules.platform.runtime.entities.models import RuntimeEntity
 from app.modules.tenant_users.membership_access import user_has_tenant_access
@@ -47,24 +53,31 @@ def resolve_runtime_entity_tenant_id(db: Session, entity_id: str) -> int | None:
 
 def _require_tenant_membership(
     db: Session,
-    current_user: User,
+    current_user: User | RuntimeDesignerActor,
     tenant_id: int,
 ) -> None:
-    if user_has_tenant_access(db, current_user, tenant_id):
-        return
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail=ENTITY_ACCESS_FORBIDDEN_DETAIL,
-    )
+    try:
+        assert_runtime_actor_has_tenant_access(db, current_user, tenant_id)
+    except HTTPException as exc:
+        if exc.status_code == status.HTTP_403_FORBIDDEN:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=ENTITY_ACCESS_FORBIDDEN_DETAIL,
+            ) from exc
+        raise
 
 
 def _require_any_portal_membership(
     db: Session,
-    current_user: User,
+    current_user: User | RuntimeDesignerActor,
     portal_ids: list[int],
 ) -> None:
-    if any(user_has_tenant_access(db, current_user, portal_id) for portal_id in portal_ids):
-        return
+    for portal_id in portal_ids:
+        try:
+            assert_runtime_actor_has_tenant_access(db, current_user, portal_id)
+            return
+        except HTTPException:
+            continue
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail=ENTITY_ACCESS_FORBIDDEN_DETAIL,
@@ -73,7 +86,7 @@ def _require_any_portal_membership(
 
 def assert_comment_entity_access(
     db: Session,
-    current_user: User,
+    current_user: User | RuntimeDesignerActor,
     *,
     entity_type: str,
     entity_id: str,
@@ -129,7 +142,7 @@ def assert_comment_entity_access(
 
 def assert_comment_row_access(
     db: Session,
-    current_user: User,
+    current_user: User | RuntimeDesignerActor,
     comment: Comment,
 ) -> None:
     assert_comment_entity_access(

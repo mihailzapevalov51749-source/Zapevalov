@@ -1,12 +1,5 @@
 import { API_BASE_URL } from "../../../config/apiConfig.js";
-
-function getAuthToken() {
-  return (
-    localStorage.getItem("token") ||
-    localStorage.getItem("access_token") ||
-    localStorage.getItem("authToken")
-  );
-}
+import { buildRuntimeAuthHeaders } from "../../../api/runtimeFetch.js";
 
 function normalizeFileId(file_id, fileId) {
   const value =
@@ -48,22 +41,12 @@ function normalizeErrorMessage(data, fallback = "Ошибка запроса") {
 }
 
 async function request(path, options = {}) {
-  const token = getAuthToken();
-
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
-
-    headers: {
+    headers: buildRuntimeAuthHeaders({
       "Content-Type": "application/json",
-
-      ...(token
-        ? {
-            Authorization: `Bearer ${token}`,
-          }
-        : {}),
-
       ...(options.headers || {}),
-    },
+    }),
   });
 
   if (!response.ok) {

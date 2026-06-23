@@ -7,7 +7,12 @@ from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    require_runtime_actor,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+)
 from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
     optional_runtime_bearer,
     resolve_login_user,
@@ -41,9 +46,9 @@ menu_settings_router = APIRouter(
 
 
 def _require_tenant_menu_editor(
-    current_user=Depends(require_designer_user),
+    current_actor=Depends(require_designer_user),
 ):
-    return current_user
+    return current_actor
 
 
 @menu_settings_router.get(
@@ -144,13 +149,13 @@ def put_user_menu_preference(
     payload: UserMenuPreferenceUpsert,
     db: Session = Depends(get_db),
     _tenant: int = Depends(require_tenant_membership),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     try:
         result = service.upsert_user_menu_preference(
             db,
             tenant_id=tenant_id,
-            user_id=service.actor_user_id(current_user),
+            user_id=service.actor_user_id(current_actor),
             item_key=item_key,
             payload=payload,
         )
@@ -170,12 +175,12 @@ def put_user_menu_preferences_bulk(
     payload: UserMenuPreferencesBulkUpsert,
     db: Session = Depends(get_db),
     _tenant: int = Depends(require_tenant_membership),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     preferences = service.bulk_upsert_user_menu_preferences(
         db,
         tenant_id=tenant_id,
-        user_id=service.actor_user_id(current_user),
+        user_id=service.actor_user_id(current_actor),
         preferences=payload.preferences,
     )
     db.commit()
@@ -190,11 +195,11 @@ def delete_user_menu_preferences(
     tenant_id: TenantIdPath,
     db: Session = Depends(get_db),
     _tenant: int = Depends(require_tenant_membership),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     service.reset_user_menu_preferences(
         db,
         tenant_id=tenant_id,
-        user_id=service.actor_user_id(current_user),
+        user_id=service.actor_user_id(current_actor),
     )
     db.commit()

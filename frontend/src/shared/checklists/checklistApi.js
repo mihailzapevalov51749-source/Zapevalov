@@ -1,15 +1,10 @@
 import { API_BASE_URL } from "../../config/apiConfig.js";
+import { buildRuntimeAuthHeaders } from "../../api/runtimeFetch.js";
 
 function getAuthHeaders() {
-  const token =
-    localStorage.getItem("token") ||
-    localStorage.getItem("access_token") ||
-    localStorage.getItem("authToken");
-
-  return {
+  return buildRuntimeAuthHeaders({
     "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
+  });
 }
 
 async function parseResponse(response) {

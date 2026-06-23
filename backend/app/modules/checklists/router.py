@@ -4,7 +4,12 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 
-from app.modules.auth.dependencies import get_current_user
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    require_runtime_actor,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+)
 from app.modules.checklists.models import ChecklistItem
 from app.modules.checklists.tenant_access import (
     assert_checklist_entity_access,
@@ -45,11 +50,11 @@ def get_items(
     entity_type: str,
     entity_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     assert_checklist_entity_access(
         db,
-        current_user,
+        current_actor,
         entity_type=entity_type,
         entity_id=entity_id,
     )
@@ -75,11 +80,11 @@ def get_items(
 def create_item(
     payload: ChecklistItemCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     assert_checklist_entity_access(
         db,
-        current_user,
+        current_actor,
         entity_type=payload.entity.type,
         entity_id=payload.entity.id,
     )
@@ -90,7 +95,7 @@ def create_item(
         entity_id=payload.entity.id,
         title=payload.title,
         position=payload.position,
-        created_by_id=current_user.id,
+        created_by_id=current_actor.id,
     )
 
     return item
@@ -104,7 +109,7 @@ def patch_item(
     item_id: int,
     payload: ChecklistItemUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     item = get_checklist_item_by_id(
         db,
@@ -117,7 +122,7 @@ def patch_item(
             detail="Checklist item not found",
         )
 
-    assert_checklist_row_access(db, current_user, item)
+    assert_checklist_row_access(db, current_actor, item)
 
     item = update_checklist_item(
         db,
@@ -125,7 +130,7 @@ def patch_item(
         title=payload.title,
         is_completed=payload.is_completed,
         position=payload.position,
-        completed_by_id=current_user.id,
+        completed_by_id=current_actor.id,
     )
 
     return item
@@ -137,13 +142,13 @@ def patch_item(
 def reorder_items(
     payload: ChecklistItemsReorder,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     if payload.ordered_ids:
         items = db.scalars(
             select(ChecklistItem).where(ChecklistItem.id.in_(payload.ordered_ids))
         ).all()
-        assert_checklist_reorder_access(db, current_user, list(items))
+        assert_checklist_reorder_access(db, current_actor, list(items))
 
     reorder_checklist_items(
         db,
@@ -161,7 +166,7 @@ def reorder_items(
 def remove_item(
     item_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     item = get_checklist_item_by_id(
         db,
@@ -174,7 +179,7 @@ def remove_item(
             detail="Checklist item not found",
         )
 
-    assert_checklist_row_access(db, current_user, item)
+    assert_checklist_row_access(db, current_actor, item)
 
     delete_checklist_item(
         db,

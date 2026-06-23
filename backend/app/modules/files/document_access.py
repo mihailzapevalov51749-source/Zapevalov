@@ -17,7 +17,13 @@ from app.modules.document_libraries.tenant_access import (
 )
 from app.modules.platform.runtime.entities.models import RuntimeEntity, RuntimeEntityValue
 from app.modules.platform.shared.enums import FieldType
-from app.modules.tenant_users.membership_access import user_has_tenant_access
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    assert_runtime_actor_has_tenant_access,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+    is_infrastructure_bridge_actor,
+)
 from app.modules.users.models import User
 
 DOCUMENT_FILE_FORBIDDEN_DETAIL = "Нет доступа к файлу"
@@ -126,9 +132,11 @@ def portal_ids_for_block_content_file(db: Session, file_name: str) -> list[int]:
 
 def user_has_chat_attachment_access(
     db: Session,
-    current_user: User,
+    current_user: User | RuntimeDesignerActor,
     file_name: str,
 ) -> bool:
+    if is_infrastructure_bridge_actor(current_user):
+        return False
     normalized_name = _normalized_storage_name(file_name)
     if not normalized_name:
         return False
@@ -158,7 +166,7 @@ def collect_portal_ids_for_document_file(db: Session, file_name: str) -> list[in
 
 def assert_document_file_access(
     db: Session,
-    current_user: User,
+    current_user: User | RuntimeDesignerActor,
     file_name: str,
 ) -> None:
     normalized_name = _normalized_storage_name(file_name)
@@ -185,10 +193,25 @@ def assert_document_file_access(
             detail="Файл библиотеки недоступен (orphan library)",
         )
 
-    if any(user_has_tenant_access(db, current_user, portal_id) for portal_id in portal_ids):
+    if any(
+        _runtime_actor_can_access_portal(db, current_user, portal_id)
+        for portal_id in portal_ids
+    ):
         return
 
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail=DOCUMENT_FILE_FORBIDDEN_DETAIL,
     )
+
+
+def _runtime_actor_can_access_portal(
+    db: Session,
+    current_user: User | RuntimeDesignerActor,
+    portal_id: int,
+) -> bool:
+    try:
+        assert_runtime_actor_has_tenant_access(db, current_user, portal_id)
+    except HTTPException:
+        return False
+    return True

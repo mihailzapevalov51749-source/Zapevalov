@@ -5,7 +5,12 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    require_runtime_actor,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+)
 from app.modules.document_libraries import schemas
 from app.modules.document_libraries import service_bridge
 from app.modules.platform.shared.dependencies import require_tenant_membership
@@ -36,10 +41,10 @@ def create_library(
     data: schemas.DocumentLibraryCreate,
     tenant_id: TenantIdPath,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
     _membership: int = Depends(require_tenant_membership),
 ):
-    return service_bridge.create_library(db, current_user, tenant_id, data)
+    return service_bridge.create_library(db, current_actor, tenant_id, data)
 
 
 @document_libraries_bridge_router.get(
@@ -49,10 +54,10 @@ def create_library(
 def list_libraries(
     tenant_id: TenantIdPath,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
     _membership: int = Depends(require_tenant_membership),
 ):
-    return service_bridge.list_libraries(db, current_user, tenant_id)
+    return service_bridge.list_libraries(db, current_actor, tenant_id)
 
 
 @document_libraries_bridge_router.post(
@@ -64,12 +69,12 @@ def create_folder(
     data: schemas.FolderCreate,
     tenant_id: TenantIdPath,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
     _membership: int = Depends(require_tenant_membership),
 ):
     return service_bridge.create_folder(
         db,
-        current_user,
+        current_actor,
         tenant_id,
         library_id,
         data,
@@ -85,12 +90,12 @@ def create_document(
     data: schemas.LibraryDocumentCreate,
     tenant_id: TenantIdPath,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
     _membership: int = Depends(require_tenant_membership),
 ):
     return service_bridge.create_document(
         db,
-        current_user,
+        current_actor,
         tenant_id,
         library_id,
         data,
@@ -107,12 +112,12 @@ def upload_document(
     file: UploadFile = File(...),
     parent_id: Optional[int] = Form(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
     _membership: int = Depends(require_tenant_membership),
 ):
     return service_bridge.upload_document(
         db,
-        current_user,
+        current_actor,
         tenant_id,
         library_id,
         file,
@@ -131,12 +136,12 @@ def get_documents_by_library(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
     _membership: int = Depends(require_tenant_membership),
 ):
     return service_bridge.get_documents_by_library(
         db,
-        current_user,
+        current_actor,
         tenant_id,
         library_id,
         parent_id=parent_id,
@@ -156,12 +161,12 @@ def search_documents(
     limit: int = Query(200, ge=1, le=500),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
     _membership: int = Depends(require_tenant_membership),
 ):
     return service_bridge.search_documents(
         db,
-        current_user,
+        current_actor,
         tenant_id,
         library_id,
         query=query,
@@ -179,12 +184,12 @@ def get_document_by_file_key(
     file_key: str,
     tenant_id: TenantIdPath,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
     _membership: int = Depends(require_tenant_membership),
 ):
     return service_bridge.get_document_by_file_key(
         db,
-        current_user,
+        current_actor,
         tenant_id,
         library_id,
         file_key,
@@ -200,12 +205,12 @@ def get_document_by_id(
     document_id: int,
     tenant_id: TenantIdPath,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
     _membership: int = Depends(require_tenant_membership),
 ):
     return service_bridge.get_document_by_id(
         db,
-        current_user,
+        current_actor,
         tenant_id,
         library_id,
         document_id,
@@ -221,19 +226,19 @@ def delete_document(
     tenant_id: TenantIdPath,
     mode: str = Query("folder_only"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
     _membership: int = Depends(require_tenant_membership),
 ):
     service_bridge.get_document_by_id(
         db,
-        current_user,
+        current_actor,
         tenant_id,
         library_id,
         document_id,
     )
     return service_bridge.delete_document(
         db,
-        current_user,
+        current_actor,
         tenant_id,
         document_id,
         mode,
@@ -250,19 +255,19 @@ def rename_document(
     data: schemas.RenameDocumentRequest,
     tenant_id: TenantIdPath,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
     _membership: int = Depends(require_tenant_membership),
 ):
     service_bridge.get_document_by_id(
         db,
-        current_user,
+        current_actor,
         tenant_id,
         library_id,
         document_id,
     )
     return service_bridge.rename_document(
         db,
-        current_user,
+        current_actor,
         tenant_id,
         document_id,
         data.title,
@@ -279,19 +284,19 @@ def move_document(
     data: schemas.MoveDocumentRequest,
     tenant_id: TenantIdPath,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
     _membership: int = Depends(require_tenant_membership),
 ):
     service_bridge.get_document_by_id(
         db,
-        current_user,
+        current_actor,
         tenant_id,
         library_id,
         document_id,
     )
     return service_bridge.move_document(
         db,
-        current_user,
+        current_actor,
         tenant_id,
         document_id,
         data.parent_id,
@@ -303,12 +308,12 @@ def download_document(
     document_id: int,
     tenant_id: TenantIdPath,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
     _membership: int = Depends(require_tenant_membership),
 ):
     file_path, download_name = service_bridge.download_document(
         db,
-        current_user,
+        current_actor,
         tenant_id,
         document_id,
     )

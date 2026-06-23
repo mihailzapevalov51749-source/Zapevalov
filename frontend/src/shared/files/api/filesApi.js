@@ -1,4 +1,6 @@
 import { API_BASE_URL } from "../../../config/apiConfig.js";
+import { buildRuntimeAuthHeaders } from "../../../api/runtimeFetch.js";
+import { getRuntimeAuthToken } from "../../../api/runtimeAuthToken.js";
 
 function normalizeProtectedFilePath(fileUrlOrPath) {
   const raw = String(fileUrlOrPath || "").trim();
@@ -47,7 +49,7 @@ export async function fetchProtectedFileBlobUrl(fileUrlOrPath) {
     throw new Error("Некорректный путь к защищённому файлу");
   }
 
-  const token = getAuthToken();
+  const { token } = getRuntimeAuthToken();
   const response = await fetch(`${API_BASE_URL}${normalizedPath}`, {
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -110,14 +112,6 @@ export function resolvePublicStaticUploadPath(fileUrl) {
   return normalizedUrl;
 }
 
-function getAuthToken() {
-  return (
-    localStorage.getItem("token") ||
-    localStorage.getItem("access_token") ||
-    localStorage.getItem("authToken")
-  );
-}
-
 export async function uploadFile({
   file,
   endpoint = "/files/upload",
@@ -126,7 +120,7 @@ export async function uploadFile({
     throw new Error("Файл не выбран");
   }
 
-  const token = getAuthToken();
+  const { token } = getRuntimeAuthToken();
 
   const formData = new FormData();
 
@@ -136,15 +130,9 @@ export async function uploadFile({
     `${API_BASE_URL}${endpoint}`,
     {
       method: "POST",
-
       headers: {
-        ...(token
-          ? {
-              Authorization: `Bearer ${token}`,
-            }
-          : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-
       body: formData,
     }
   );

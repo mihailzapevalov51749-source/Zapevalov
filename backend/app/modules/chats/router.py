@@ -2,7 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    require_runtime_actor,
+    resolve_runtime_actor_user_id,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+)
 from app.modules.chats import crud, service
 from app.modules.chats.dependencies import ensure_chat_admin
 from app.modules.chats.schemas import (
@@ -46,16 +52,8 @@ router = APIRouter(
 )
 
 
-def get_current_user_id(current_user) -> int:
-    user_id = getattr(current_user, "id", None)
-
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Пользователь не авторизован",
-        )
-
-    return user_id
+def get_current_user_id(current_user: RuntimeDesignerActor) -> int:
+    return resolve_runtime_actor_user_id(current_user)
 
 
 def ensure_chat_access(
@@ -92,7 +90,7 @@ def ensure_chat_access(
 def list_chats(
     search: str | None = Query(default=None),
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     user_id = get_current_user_id(current_user)
 
@@ -184,7 +182,7 @@ def search_chat_users(
     tenant_id: int = Query(..., ge=1),
     search: str | None = Query(default=None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     resolved_tenant_id = assert_user_has_chat_tenant_access(
         db,
@@ -217,7 +215,7 @@ def search_chat_users(
 def create_chat(
     payload: ChatCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     user_id = get_current_user_id(current_user)
     tenant_id = resolve_chat_tenant_id(db, current_user, payload.tenant_id)
@@ -254,7 +252,7 @@ def create_chat(
 def get_chat(
     chat_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     user_id = get_current_user_id(current_user)
 
@@ -270,7 +268,7 @@ def update_chat(
     chat_id: int,
     payload: ChatUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     user_id = get_current_user_id(current_user)
 
@@ -300,7 +298,7 @@ def update_chat(
 def delete_chat(
     chat_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     user_id = get_current_user_id(current_user)
 
@@ -324,7 +322,7 @@ def list_messages(
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     user_id = get_current_user_id(current_user)
 
@@ -358,7 +356,7 @@ def create_message(
     chat_id: int,
     payload: ChatMessageCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     user_id = get_current_user_id(current_user)
 
@@ -431,7 +429,7 @@ def update_message(
     message_id: int,
     payload: ChatMessageUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     user_id = get_current_user_id(current_user)
 
@@ -490,7 +488,7 @@ def update_message(
 def delete_message(
     message_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     user_id = get_current_user_id(current_user)
 
@@ -528,7 +526,7 @@ def add_reaction(
     message_id: int,
     payload: ChatReactionCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     user_id = get_current_user_id(current_user)
 
@@ -563,7 +561,7 @@ def remove_reaction(
     message_id: int,
     emoji: str,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     user_id = get_current_user_id(current_user)
 
@@ -598,7 +596,7 @@ def remove_reaction(
 def list_participants(
     chat_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     user_id = get_current_user_id(current_user)
 
@@ -620,7 +618,7 @@ def add_participant(
     chat_id: int,
     payload: ChatParticipantIn,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     user_id = get_current_user_id(current_user)
 
@@ -673,7 +671,7 @@ def update_participant(
     participant_user_id: int,
     payload: ChatParticipantUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     user_id = get_current_user_id(current_user)
 
@@ -728,7 +726,7 @@ def remove_participant(
     chat_id: int,
     participant_user_id: int,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     user_id = get_current_user_id(current_user)
 
@@ -762,7 +760,7 @@ def update_read_state(
     chat_id: int,
     payload: ChatReadStateUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     user_id = get_current_user_id(current_user)
 
@@ -795,7 +793,7 @@ def update_read_state(
 def get_or_create_direct_chat(
     payload: DirectChatCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     current_user_id = get_current_user_id(current_user)
 

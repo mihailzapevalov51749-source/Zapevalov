@@ -4,11 +4,16 @@ from fastapi import APIRouter, Depends, Path
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    require_runtime_actor,
+    resolve_runtime_actor_user_id,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+)
 from app.modules.platform.search import service
 from app.modules.platform.search.schemas import PlatformSearchRequest, PlatformSearchResponse
 from app.modules.platform.shared.dependencies import require_tenant_membership
-from app.modules.users.models import User
 
 TenantIdPath = Annotated[
     int,
@@ -30,11 +35,11 @@ def platform_search(
     payload: PlatformSearchRequest,
     db: Session = Depends(get_db),
     _tenant: int = Depends(require_tenant_membership),
-    user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return service.execute_platform_search(
         db,
         tenant_id=tenant_id,
-        user=user,
+        user=current_actor,
         payload=payload,
     )

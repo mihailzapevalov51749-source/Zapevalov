@@ -4,7 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, 
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    require_runtime_actor,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+)
 from app.modules.document_libraries import schemas
 from app.modules.document_libraries import service_bridge
 from app.modules.users.models import User
@@ -30,11 +35,11 @@ def _require_portal_id(portal_id: int | None = Query(None, alias="portal_id")) -
 def create_library(
     data: schemas.DocumentLibraryCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return service_bridge.create_library(
         db,
-        current_user,
+        current_actor,
         data.portal_id,
         data,
     )
@@ -44,9 +49,9 @@ def create_library(
 def get_libraries(
     portal_id: int = Depends(_require_portal_id),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
-    return service_bridge.list_libraries(db, current_user, portal_id)
+    return service_bridge.list_libraries(db, current_actor, portal_id)
 
 
 @router.post(
@@ -58,11 +63,11 @@ def create_folder(
     data: schemas.FolderCreate,
     portal_id: int = Depends(_require_portal_id),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return service_bridge.create_folder(
         db,
-        current_user,
+        current_actor,
         portal_id,
         library_id,
         data,
@@ -78,11 +83,11 @@ def create_document(
     data: schemas.LibraryDocumentCreate,
     portal_id: int = Depends(_require_portal_id),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return service_bridge.create_document(
         db,
-        current_user,
+        current_actor,
         portal_id,
         library_id,
         data,
@@ -99,11 +104,11 @@ def upload_document(
     file: UploadFile = File(...),
     parent_id: Optional[int] = Form(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return service_bridge.upload_document(
         db,
-        current_user,
+        current_actor,
         portal_id,
         library_id,
         file,
@@ -122,11 +127,11 @@ def get_documents_by_library(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return service_bridge.get_documents_by_library(
         db,
-        current_user,
+        current_actor,
         portal_id,
         library_id,
         parent_id=parent_id,
@@ -146,11 +151,11 @@ def search_documents(
     limit: int = Query(200, ge=1, le=500),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return service_bridge.search_documents(
         db,
-        current_user,
+        current_actor,
         portal_id,
         library_id,
         query=query,
@@ -168,11 +173,11 @@ def get_document_by_file_key(
     portal_id: int = Depends(_require_portal_id),
     library_id: int = Query(..., ge=1),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return service_bridge.get_document_by_file_key(
         db,
-        current_user,
+        current_actor,
         portal_id,
         library_id,
         file_key,
@@ -187,11 +192,11 @@ def get_document_by_id(
     document_id: int,
     portal_id: int = Depends(_require_portal_id),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return service_bridge.get_document_by_id_legacy(
         db,
-        current_user,
+        current_actor,
         portal_id,
         document_id,
     )
@@ -203,11 +208,11 @@ def delete_document(
     portal_id: int = Depends(_require_portal_id),
     mode: str = Query("folder_only"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return service_bridge.delete_document(
         db,
-        current_user,
+        current_actor,
         portal_id,
         document_id,
         mode,
@@ -223,11 +228,11 @@ def rename_document(
     data: schemas.RenameDocumentRequest,
     portal_id: int = Depends(_require_portal_id),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return service_bridge.rename_document(
         db,
-        current_user,
+        current_actor,
         portal_id,
         document_id,
         data.title,
@@ -243,11 +248,11 @@ def move_document(
     data: schemas.MoveDocumentRequest,
     portal_id: int = Depends(_require_portal_id),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return service_bridge.move_document(
         db,
-        current_user,
+        current_actor,
         portal_id,
         document_id,
         data.parent_id,

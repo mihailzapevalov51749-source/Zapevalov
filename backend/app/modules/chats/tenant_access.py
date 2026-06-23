@@ -6,6 +6,13 @@ from fastapi import HTTPException, status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    assert_runtime_actor_has_tenant_access,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+    is_infrastructure_bridge_actor,
+)
 from app.modules.tenant_users.membership_access import user_has_tenant_access
 from app.modules.users.models import User
 
@@ -17,23 +24,10 @@ CHAT_TENANT_REQUIRED_DETAIL = "tenant_id обязателен для чата к
 
 def assert_user_has_chat_tenant_access(
     db: Session,
-    current_user: User,
+    current_user: User | RuntimeDesignerActor,
     tenant_id: int,
 ) -> int:
-    normalized_tenant_id = int(tenant_id)
-    if normalized_tenant_id <= 0:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Некорректный tenant_id",
-        )
-
-    if user_has_tenant_access(db, current_user, normalized_tenant_id):
-        return normalized_tenant_id
-
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail=CHAT_TENANT_FORBIDDEN_DETAIL,
-    )
+    return assert_runtime_actor_has_tenant_access(db, current_user, tenant_id)
 
 
 def resolve_chat_tenant_id(
@@ -106,7 +100,7 @@ def assert_participant_ids_belong_to_tenant(
 
 def assert_current_user_can_access_chat_tenant(
     db: Session,
-    current_user: User,
+    current_user: User | RuntimeDesignerActor,
     tenant_id: int | None,
 ) -> None:
     if tenant_id is None:

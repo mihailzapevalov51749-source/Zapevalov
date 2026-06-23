@@ -14,7 +14,12 @@ from app.modules.notifications.tenant_access import user_can_view_notification
 from app.modules.tenant_module_configurations.runtime.enforcement import (
     filter_notifications_by_enabled_categories,
 )
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+)
 from app.modules.users.models import User
+
+RuntimeNotificationActor = User | RuntimeDesignerActor
 
 
 class NotificationService:
@@ -126,7 +131,7 @@ class NotificationService:
     def get_user_notifications(
         db: Session,
         *,
-        current_user: User,
+        current_user: RuntimeNotificationActor,
         limit: int = 30,
         category: str | None = None,
         only_unread: bool = False,
@@ -175,7 +180,7 @@ class NotificationService:
         db: Session,
         *,
         notification_id: int,
-        current_user: User,
+        current_user: RuntimeNotificationActor,
     ):
         recipient = (
             db.query(NotificationRecipient)
@@ -207,7 +212,7 @@ class NotificationService:
     def mark_all_as_read(
         db: Session,
         *,
-        current_user: User,
+        current_user: RuntimeNotificationActor,
     ):
         now = datetime.utcnow()
 
@@ -238,7 +243,7 @@ class NotificationService:
     def get_unread_count(
         db: Session,
         *,
-        current_user: User,
+        current_user: RuntimeNotificationActor,
     ):
         rows = (
             db.query(NotificationRecipient)

@@ -1,4 +1,5 @@
 import { sendActivityHeartbeat } from "../../api/userActivityApi";
+import { getRuntimeAuthToken } from "../../api/runtimeAuthToken.js";
 
 const PRESENCE_HEARTBEAT_INTERVAL_MS = 30_000;
 const SIGNAL_MIN_INTERVAL_MS = 3_000;
@@ -46,7 +47,7 @@ async function flushHeartbeat() {
     return;
   }
 
-  const token = localStorage.getItem("token");
+  const { token } = getRuntimeAuthToken();
   if (!token) {
     return;
   }

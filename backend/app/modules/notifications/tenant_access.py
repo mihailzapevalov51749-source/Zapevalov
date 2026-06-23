@@ -10,6 +10,11 @@ from sqlalchemy.orm import Session
 from app.modules.comments.tenant_access import resolve_runtime_entity_tenant_id
 from app.modules.files.document_access import collect_portal_ids_for_document_file
 from app.modules.notifications.models import Notification
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+    infrastructure_bridge_actor_matches_tenant,
+    is_infrastructure_bridge_actor,
+)
 from app.modules.tenant_users.membership_access import user_has_tenant_access
 from app.modules.users.models import User
 
@@ -81,7 +86,7 @@ def resolve_notification_portal_ids(db: Session, notification: Notification) -> 
 
 def user_can_view_notification(
     db: Session,
-    current_user: User,
+    current_user: RuntimeDesignerActor,
     notification: Notification,
 ) -> bool:
     """
@@ -91,6 +96,11 @@ def user_can_view_notification(
     portal_ids = resolve_notification_portal_ids(db, notification)
     if not portal_ids:
         return True
+    if is_infrastructure_bridge_actor(current_user):
+        return any(
+            infrastructure_bridge_actor_matches_tenant(current_user, portal_id)
+            for portal_id in portal_ids
+        )
     return any(
         user_has_tenant_access(db, current_user, portal_id)
         for portal_id in portal_ids

@@ -1,13 +1,6 @@
 import { API_BASE_URL } from "../../../config/apiConfig.js";
-
-function getToken() {
-  return (
-    localStorage.getItem("token") ||
-    localStorage.getItem("access_token") ||
-    localStorage.getItem("authToken") ||
-    ""
-  );
-}
+import { buildRuntimeAuthHeaders } from "../../../api/runtimeFetch.js";
+import { getRuntimeAuthToken } from "../../../api/runtimeAuthToken.js";
 
 function buildQuery(params = {}) {
   const searchParams = new URLSearchParams();
@@ -24,14 +17,9 @@ function buildQuery(params = {}) {
 }
 
 async function request(path, options = {}) {
-  const token = getToken();
-
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
-    headers: {
-      ...(options.headers || {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: buildRuntimeAuthHeaders(options.headers || {}),
   });
 
   if (!response.ok) {
@@ -93,7 +81,7 @@ function normalizeUploadedFile(uploadedFile = {}) {
 }
 
 async function uploadChatFile(file) {
-  const token = getToken();
+  const { token } = getRuntimeAuthToken();
 
   const formData = new FormData();
   formData.append("file", file);

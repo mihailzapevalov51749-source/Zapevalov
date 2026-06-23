@@ -6,7 +6,12 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    require_runtime_actor,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+)
 from app.modules.files.document_access import assert_document_file_access
 from app.modules.users.models import User
 
@@ -33,7 +38,7 @@ ALLOWED_FILE_EXTENSIONS = ALLOWED_IMAGE_EXTENSIONS | ALLOWED_DOCUMENT_EXTENSIONS
 @router.post("/upload")
 async def upload_file(
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return await save_file(
         file=file,
@@ -47,7 +52,7 @@ async def upload_file(
 @router.post("/upload-icon")
 async def upload_icon(
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return await save_file(
         file=file,
@@ -61,7 +66,7 @@ async def upload_icon(
 @router.post("/upload-image")
 async def upload_image(
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return await save_file(
         file=file,
@@ -75,7 +80,7 @@ async def upload_image(
 @router.post("/upload-avatar")
 async def upload_avatar(
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return await save_file(
         file=file,
@@ -89,7 +94,7 @@ async def upload_avatar(
 @router.post("/upload-document")
 async def upload_document(
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return await save_file(
         file=file,
@@ -103,7 +108,7 @@ async def upload_document(
 @router.get("/icons/{file_name}")
 def get_icon(
     file_name: str,
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return get_file(ICONS_DIR, file_name)
 
@@ -111,7 +116,7 @@ def get_icon(
 @router.get("/images/{file_name}")
 def get_image(
     file_name: str,
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return get_file(IMAGES_DIR, file_name)
 
@@ -119,7 +124,7 @@ def get_image(
 @router.get("/avatars/{file_name}")
 def get_avatar(
     file_name: str,
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return get_file(AVATARS_DIR, file_name)
 
@@ -128,9 +133,9 @@ def get_avatar(
 def get_document(
     file_name: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
-    assert_document_file_access(db, current_user, file_name)
+    assert_document_file_access(db, current_actor, file_name)
     return get_file(DOCUMENTS_DIR, file_name)
 
 

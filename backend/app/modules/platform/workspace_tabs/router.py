@@ -6,7 +6,12 @@ from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    require_runtime_actor,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+)
 from app.modules.control_plane.platform_identity.session_bridge.bridge_session_jwt import (
     BridgeSessionJWTError,
     decode_bridge_session_token,
@@ -69,9 +74,9 @@ def list_workspace_tabs(
 def create_workspace_tab(
     payload: WorkspaceTabCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
-    return service.create_workspace_tab(db, current_user, payload)
+    return service.create_workspace_tab(db, current_actor, payload)
 
 
 @workspace_tabs_router.patch(
@@ -82,9 +87,9 @@ def update_workspace_tab(
     tab_id: TabIdPath,
     payload: WorkspaceTabUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
-    return service.update_workspace_tab(db, current_user, tab_id, payload)
+    return service.update_workspace_tab(db, current_actor, tab_id, payload)
 
 
 @workspace_tabs_router.delete(
@@ -94,9 +99,9 @@ def update_workspace_tab(
 def delete_workspace_tab(
     tab_id: TabIdPath,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
-    service.delete_workspace_tab(db, current_user, tab_id)
+    service.delete_workspace_tab(db, current_actor, tab_id)
 
 
 @workspace_tabs_router.post(
@@ -106,9 +111,9 @@ def delete_workspace_tab(
 def reorder_workspace_tabs(
     payload: WorkspaceTabReorder,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
-    return service.reorder_workspace_tabs(db, current_user, payload)
+    return service.reorder_workspace_tabs(db, current_actor, payload)
 
 
 @workspace_tabs_router.post(
@@ -118,6 +123,6 @@ def reorder_workspace_tabs(
 def open_workspace_tab(
     tab_id: TabIdPath,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
-    return service.open_workspace_tab(db, current_user, tab_id)
+    return service.open_workspace_tab(db, current_actor, tab_id)

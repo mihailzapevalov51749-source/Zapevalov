@@ -1,13 +1,5 @@
 import { API_BASE_URL } from "../../../config/apiConfig.js";
-
-function getToken() {
-  return (
-    localStorage.getItem("token") ||
-    localStorage.getItem("access_token") ||
-    localStorage.getItem("authToken") ||
-    ""
-  );
-}
+import { buildRuntimeAuthHeaders } from "../../../api/runtimeFetch.js";
 
 function buildQuery(params = {}) {
   const searchParams = new URLSearchParams();
@@ -22,15 +14,12 @@ function buildQuery(params = {}) {
 }
 
 async function request(path, options = {}) {
-  const token = getToken();
-
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
-    headers: {
+    headers: buildRuntimeAuthHeaders({
       "Content-Type": "application/json",
       ...(options.headers || {}),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    }),
   });
 
   if (!response.ok) {

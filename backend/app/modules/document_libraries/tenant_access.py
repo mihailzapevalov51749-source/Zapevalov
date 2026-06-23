@@ -5,9 +5,14 @@ from __future__ import annotations
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    assert_runtime_actor_has_tenant_access,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+)
 from app.modules.document_libraries.models import DocumentLibrary, LibraryDocument
 from app.modules.navigation.models import NavigationItem
-from app.modules.tenant_users.membership_access import user_has_tenant_access
 from app.modules.users.models import User
 
 LIBRARY_PORTAL_FORBIDDEN_DETAIL = "Библиотека недоступна в текущем tenant"
@@ -18,7 +23,7 @@ PORTAL_ACCESS_FORBIDDEN_DETAIL = "Нет доступа к компании"
 
 def assert_user_has_portal_access(
     db: Session,
-    current_user: User,
+    current_user: User | RuntimeDesignerActor,
     portal_id: int,
 ) -> None:
     normalized_portal_id = int(portal_id)
@@ -28,13 +33,15 @@ def assert_user_has_portal_access(
             detail="Некорректный tenant (portal)",
         )
 
-    if user_has_tenant_access(db, current_user, normalized_portal_id):
-        return
-
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail=PORTAL_ACCESS_FORBIDDEN_DETAIL,
-    )
+    try:
+        assert_runtime_actor_has_tenant_access(db, current_user, normalized_portal_id)
+    except HTTPException as exc:
+        if exc.status_code == status.HTTP_403_FORBIDDEN:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=PORTAL_ACCESS_FORBIDDEN_DETAIL,
+            ) from exc
+        raise
 
 
 def portal_ids_for_library(db: Session, library_id: int) -> list[int]:

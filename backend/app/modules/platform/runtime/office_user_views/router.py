@@ -5,7 +5,13 @@ from fastapi import APIRouter, Depends, Path, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    require_runtime_tenant_actor,
+    resolve_runtime_actor_user_id,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+)
 from app.modules.platform.runtime.office_user_views import service
 from app.modules.platform.runtime.office_user_views.schemas import (
     OfficeUserTableViewCreate,
@@ -14,7 +20,6 @@ from app.modules.platform.runtime.office_user_views.schemas import (
     OfficeUserTableViewUpdate,
 )
 from app.modules.platform.shared.dependencies import require_tenant_membership
-from app.modules.users.models import User
 
 TenantIdPath = Annotated[int, Path(..., ge=1)]
 ObjectTypeKeyPath = Annotated[str, Path(..., max_length=64)]
@@ -35,12 +40,12 @@ def list_office_user_table_views(
     object_type_key: ObjectTypeKeyPath,
     db: Session = Depends(get_db),
     _tenant: int = Depends(require_tenant_membership),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_tenant_actor),
 ):
     return service.list_user_table_views(
         db,
         tenant_id=tenant_id,
-        owner_user_id=service.actor_user_id(current_user),
+        owner_user_id=resolve_runtime_actor_user_id(current_actor),
         object_type_key=object_type_key,
     )
 
@@ -56,12 +61,12 @@ def create_office_user_table_view(
     payload: OfficeUserTableViewCreate,
     db: Session = Depends(get_db),
     _tenant: int = Depends(require_tenant_membership),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_tenant_actor),
 ):
     return service.create_user_table_view(
         db,
         tenant_id=tenant_id,
-        owner_user_id=service.actor_user_id(current_user),
+        owner_user_id=resolve_runtime_actor_user_id(current_actor),
         object_type_key=object_type_key,
         payload=payload,
     )
@@ -78,12 +83,12 @@ def update_office_user_table_view(
     payload: OfficeUserTableViewUpdate,
     db: Session = Depends(get_db),
     _tenant: int = Depends(require_tenant_membership),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_tenant_actor),
 ):
     return service.update_user_table_view(
         db,
         tenant_id=tenant_id,
-        owner_user_id=service.actor_user_id(current_user),
+        owner_user_id=resolve_runtime_actor_user_id(current_actor),
         object_type_key=object_type_key,
         view_id=view_id,
         payload=payload,
@@ -100,12 +105,12 @@ def delete_office_user_table_view(
     view_id: ViewIdPath,
     db: Session = Depends(get_db),
     _tenant: int = Depends(require_tenant_membership),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_tenant_actor),
 ):
     service.delete_user_table_view(
         db,
         tenant_id=tenant_id,
-        owner_user_id=service.actor_user_id(current_user),
+        owner_user_id=resolve_runtime_actor_user_id(current_actor),
         object_type_key=object_type_key,
         view_id=view_id,
     )

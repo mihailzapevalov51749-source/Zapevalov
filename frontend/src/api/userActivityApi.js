@@ -1,4 +1,5 @@
-import { getToken, logout as clearAuthToken } from "./authApi";
+import { logout as clearAuthToken } from "./authApi";
+import { getRuntimeAuthToken } from "./runtimeAuthToken.js";
 
 import { API_BASE_URL } from "../config/apiConfig.js";
 
@@ -13,7 +14,7 @@ export function getBrowserTimezone() {
 }
 
 function getAuthHeaders() {
-  const token = getToken();
+  const { token } = getRuntimeAuthToken();
   if (!token) {
     throw new Error("Токен отсутствует");
   }
@@ -61,7 +62,7 @@ export async function sendActivityHeartbeat(payload = {}) {
 }
 
 export async function closeActivitySession(payload = { reason: "logout" }) {
-  const token = getToken();
+  const { token } = getRuntimeAuthToken();
   if (!token) {
     return null;
   }

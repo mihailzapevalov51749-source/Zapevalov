@@ -7,8 +7,13 @@ import re
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    assert_runtime_actor_has_tenant_access,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+)
 from app.modules.platform.workspace_tabs.models import UserWorkspaceTab
-from app.modules.tenant_users.membership_access import user_has_tenant_access
 from app.modules.users.models import User
 
 WORKSPACE_TAB_TENANT_FORBIDDEN_DETAIL = "Нет доступа к компании для workspace tab"
@@ -57,7 +62,7 @@ def assert_tab_belongs_to_tenant(tab: UserWorkspaceTab, tenant_id: int) -> None:
 
 def assert_user_has_workspace_tab_tenant_access(
     db: Session,
-    current_user: User,
+    current_user: User | RuntimeDesignerActor,
     tenant_id: int | None,
 ) -> None:
     if tenant_id is None:
@@ -67,18 +72,20 @@ def assert_user_has_workspace_tab_tenant_access(
     if normalized_tenant_id <= 0:
         return
 
-    if user_has_tenant_access(db, current_user, normalized_tenant_id):
-        return
-
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN,
-        detail=WORKSPACE_TAB_TENANT_FORBIDDEN_DETAIL,
-    )
+    try:
+        assert_runtime_actor_has_tenant_access(db, current_user, normalized_tenant_id)
+    except HTTPException as exc:
+        if exc.status_code == status.HTTP_403_FORBIDDEN:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=WORKSPACE_TAB_TENANT_FORBIDDEN_DETAIL,
+            ) from exc
+        raise
 
 
 def user_can_access_workspace_tab_tenant(
     db: Session,
-    current_user: User,
+    current_user: User | RuntimeDesignerActor,
     tenant_id: int | None,
 ) -> bool:
     if tenant_id is None:
@@ -86,12 +93,16 @@ def user_can_access_workspace_tab_tenant(
     normalized_tenant_id = int(tenant_id)
     if normalized_tenant_id <= 0:
         return True
-    return user_has_tenant_access(db, current_user, normalized_tenant_id)
+    try:
+        assert_runtime_actor_has_tenant_access(db, current_user, normalized_tenant_id)
+    except HTTPException:
+        return False
+    return True
 
 
 def get_workspace_tab_for_user(
     db: Session,
-    current_user: User,
+    current_user: User | RuntimeDesignerActor,
     tab_id,
 ) -> UserWorkspaceTab | None:
     entity = (

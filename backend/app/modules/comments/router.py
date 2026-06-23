@@ -2,7 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    require_runtime_actor,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+)
 from app.modules.comments import service
 from app.modules.comments.constants import (
     ALLOWED_COMMENT_REACTIONS,
@@ -29,11 +34,11 @@ def list_comments(
     entity_type: str = Query(..., min_length=1, max_length=80),
     entity_id: str = Query(..., min_length=1, max_length=120),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     assert_comment_entity_access(
         db,
-        current_user,
+        current_actor,
         entity_type=entity_type,
         entity_id=entity_id,
     )
@@ -54,11 +59,11 @@ def list_comments(
 def create_comment(
     payload: CommentCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     assert_comment_entity_access(
         db,
-        current_user,
+        current_actor,
         entity_type=payload.entity_type,
         entity_id=payload.entity_id,
         file_id=payload.file_id,
@@ -86,7 +91,7 @@ def create_comment(
     return service.create_comment(
         db=db,
         payload=payload,
-        current_user=current_user,
+        current_user=current_actor,
     )
 
 
@@ -94,11 +99,11 @@ def create_comment(
 def create_system_comment(
     payload: SystemCommentCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     assert_comment_entity_access(
         db,
-        current_user,
+        current_actor,
         entity_type=payload.entity_type,
         entity_id=payload.entity_id,
         file_id=payload.file_id,
@@ -115,7 +120,7 @@ def update_comment(
     comment_id: int,
     payload: CommentUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     existing_comment = service.get_comment_by_id(
         db=db,
@@ -127,13 +132,13 @@ def update_comment(
             detail="Комментарий не найден",
         )
 
-    assert_comment_row_access(db, current_user, existing_comment)
+    assert_comment_row_access(db, current_actor, existing_comment)
 
     comment = service.update_comment(
         db=db,
         comment_id=comment_id,
         payload=payload,
-        current_user=current_user,
+        current_user=current_actor,
     )
 
     if not comment:
@@ -149,7 +154,7 @@ def update_comment(
 def delete_comment(
     comment_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     existing_comment = service.get_comment_by_id(
         db=db,
@@ -161,12 +166,12 @@ def delete_comment(
             detail="Комментарий не найден",
         )
 
-    assert_comment_row_access(db, current_user, existing_comment)
+    assert_comment_row_access(db, current_actor, existing_comment)
 
     result = service.delete_comment(
         db=db,
         comment_id=comment_id,
-        current_user=current_user,
+        current_user=current_actor,
     )
 
     if not result:
@@ -185,7 +190,7 @@ def toggle_comment_reaction(
     comment_id: int,
     payload: CommentReactionCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     if payload.emoji_key not in ALLOWED_COMMENT_REACTIONS:
         raise HTTPException(
@@ -204,13 +209,13 @@ def toggle_comment_reaction(
             detail="Комментарий не найден",
         )
 
-    assert_comment_row_access(db, current_user, comment)
+    assert_comment_row_access(db, current_actor, comment)
 
     return service.toggle_reaction(
         db=db,
         comment_id=comment_id,
         payload=payload,
-        current_user=current_user,
+        current_user=current_actor,
     )
 
 
@@ -219,7 +224,7 @@ def attach_uploaded_file_to_comment(
     comment_id: int,
     payload: dict,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     file_url = payload.get("file_url")
     file_name = payload.get("file_name")
@@ -240,7 +245,7 @@ def attach_uploaded_file_to_comment(
             detail="Комментарий не найден",
         )
 
-    assert_comment_row_access(db, current_user, existing_comment)
+    assert_comment_row_access(db, current_actor, existing_comment)
 
     comment = service.add_attachment(
         db=db,
@@ -249,7 +254,7 @@ def attach_uploaded_file_to_comment(
         file_name=file_name,
         file_type=payload.get("file_type"),
         file_size=payload.get("file_size"),
-        current_user=current_user,
+        current_user=current_actor,
     )
 
     if not comment:

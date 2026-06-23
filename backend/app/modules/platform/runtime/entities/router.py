@@ -5,7 +5,12 @@ from fastapi import APIRouter, Depends, Path, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    require_runtime_actor,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+)
 from app.modules.platform.runtime.entities import service
 from app.modules.users.models import User
 from app.modules.platform.runtime.entities.schemas import (
@@ -50,14 +55,14 @@ def create_entity(
     payload: EntityCreate,
     db: Session = Depends(get_db),
     _tenant: int = Depends(require_tenant_membership),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return service.create_entity(
         db,
         tenant_id,
         object_type_key,
         payload,
-        current_user=current_user,
+        current_user=current_actor,
     )
 
 
@@ -128,7 +133,7 @@ def delete_entity_with_scenario(
     payload: EntityDeleteRequest,
     db: Session = Depends(get_db),
     _tenant: int = Depends(require_tenant_membership),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return service.delete_entity_with_scenario(
         db,
@@ -136,7 +141,7 @@ def delete_entity_with_scenario(
         object_type_key,
         entity_id,
         payload,
-        current_user=current_user,
+        current_user=current_actor,
     )
 
 
@@ -150,12 +155,12 @@ def delete_entity(
     entity_id: EntityIdPath,
     db: Session = Depends(get_db),
     _tenant: int = Depends(require_tenant_membership),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     return service.delete_entity(
         db,
         tenant_id,
         object_type_key,
         entity_id,
-        current_user=current_user,
+        current_user=current_actor,
     )

@@ -1,19 +1,11 @@
-import { getToken } from "./authApi";
+import { buildRuntimeAuthHeaders, hasRuntimeAuthToken } from "./runtimeFetch.js";
 import {
   getApiErrorMessage,
   platformApiClient,
 } from "./authenticatedApiClient";
 
 function buildAuthHeaders() {
-  const token = getToken();
-
-  if (!token) {
-    return {};
-  }
-
-  return {
-    Authorization: `Bearer ${token}`,
-  };
+  return buildRuntimeAuthHeaders();
 }
 
 export async function getNavigationTree(portalId, options = {}) {
@@ -61,9 +53,7 @@ export async function updateNavigationItem(portalId, itemId, data) {
 }
 
 export async function deleteNavigationItem(portalId, itemId) {
-  const token = getToken();
-
-  if (!token) {
+  if (!hasRuntimeAuthToken()) {
     throw new Error("Требуется авторизация. Войдите в систему и повторите удаление.");
   }
 
