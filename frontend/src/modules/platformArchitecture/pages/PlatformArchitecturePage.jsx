@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 
 import { getApiErrorMessage } from "../../designer/api/platformApiClient";
 import {
@@ -8,6 +8,16 @@ import {
   useResolvedPageLayoutContract,
 } from "../../../shared/appShell/pageLayoutContract";
 import ArchitectureComponentDetailCard from "../components/ArchitectureComponentDetailCard";
+import ArchitectureDocumentModal from "../components/ArchitectureDocumentModal";
+import ArchitectureElementList from "../components/ArchitectureElementList";
+import ArchitectureRegistryOverview from "../components/ArchitectureRegistryOverview";
+import ArchitectureRegistryTabs from "../components/ArchitectureRegistryTabs";
+import {
+  ARCHITECTURE_REGISTRY_TABS,
+  DEFAULT_REGISTRY_TAB,
+  normalizeRegistrySearchParams,
+  resolveRegistryTab,
+} from "../config/architectureRegistryConfig";
 import * as platformArchitectureApi from "../api/platformArchitectureApi";
 
 import "./platformArchitecturePage.css";
@@ -21,49 +31,106 @@ export default function PlatformArchitecturePage() {
 
   const { tenantId } = useParams();
   const resolvedTenantId = Number(tenantId) || 1;
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [tree, setTree] = useState(null);
-  const [selectedKey, setSelectedKey] = useState(null);
+  const rawRegistry = searchParams.get("registry");
+  const activeRegistry = resolveRegistryTab(rawRegistry);
+  const selectedKey = searchParams.get("element") || null;
+
+  useEffect(() => {
+    const normalized = normalizeRegistrySearchParams(searchParams);
+    if (normalized) {
+      setSearchParams(normalized, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  const [overview, setOverview] = useState(null);
+  const [registryElements, setRegistryElements] = useState([]);
+  const [registryLabel, setRegistryLabel] = useState("");
   const [card, setCard] = useState(null);
-  const [loadingTree, setLoadingTree] = useState(true);
+  const [loadingOverview, setLoadingOverview] = useState(true);
+  const [loadingRegistry, setLoadingRegistry] = useState(false);
   const [loadingCard, setLoadingCard] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [documentModalOpen, setDocumentModalOpen] = useState(false);
+  const [documentData, setDocumentData] = useState(null);
+  const [documentError, setDocumentError] = useState(null);
+  const [openingDocument, setOpeningDocument] = useState(false);
   const [error, setError] = useState(null);
-  const [scanInfo, setScanInfo] = useState(null);
 
-  const loadTree = useCallback(async () => {
-    setLoadingTree(true);
+  const setRegistryParams = useCallback(
+    (registryKey, elementKey) => {
+      const next = new URLSearchParams(searchParams);
+      next.set("registry", registryKey);
+      if (elementKey) {
+        next.set("element", elementKey);
+      } else {
+        next.delete("element");
+      }
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
+  const handleRegistrySelect = useCallback(
+    (registryKey) => {
+      setRegistryParams(registryKey, null);
+    },
+    [setRegistryParams],
+  );
+
+  const loadOverview = useCallback(async () => {
+    setLoadingOverview(true);
     setError(null);
     try {
-      const data = await platformArchitectureApi.fetchArchitectureTree(resolvedTenantId);
-      setTree(data);
-      const firstNode = data?.categories?.[0]?.children?.[0];
-      if (firstNode) {
-        setSelectedKey((current) => current || firstNode.key);
+      const data = await platformArchitectureApi.fetchArchitectureRegistryOverview(resolvedTenantId);
+      setOverview(data);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, "Не удалось загрузить обзор реестров"));
+    } finally {
+      setLoadingOverview(false);
+    }
+  }, [resolvedTenantId]);
+
+  const loadRegistryElements = useCallback(async () => {
+    if (activeRegistry === DEFAULT_REGISTRY_TAB) {
+      setRegistryElements([]);
+      setRegistryLabel("");
+      return;
+    }
+
+    setLoadingRegistry(true);
+    setError(null);
+    try {
+      const data = await platformArchitectureApi.fetchArchitectureRegistryElements(
+        resolvedTenantId,
+        activeRegistry,
+      );
+      setRegistryElements(data?.elements ?? []);
+      setRegistryLabel(data?.registry_label ?? activeRegistry);
+
+      const hasSelected = (data?.elements ?? []).some((item) => item.key === selectedKey);
+      if (!hasSelected && data?.elements?.[0]?.key) {
+        setRegistryParams(activeRegistry, data.elements[0].key);
       }
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, "Не удалось загрузить дерево архитектуры"));
+      setError(getApiErrorMessage(requestError, "Не удалось загрузить реестр"));
+      setRegistryElements([]);
     } finally {
-      setLoadingTree(false);
+      setLoadingRegistry(false);
     }
-  }, [resolvedTenantId]);
-
-  const loadLatestScan = useCallback(async () => {
-    try {
-      const data = await platformArchitectureApi.fetchLatestArchitectureScan(resolvedTenantId);
-      setScanInfo(data?.scan ?? null);
-    } catch {
-      setScanInfo(null);
-    }
-  }, [resolvedTenantId]);
+  }, [activeRegistry, resolvedTenantId, selectedKey, setRegistryParams]);
 
   useEffect(() => {
-    loadTree();
-    loadLatestScan();
-  }, [loadTree, loadLatestScan]);
+    loadOverview();
+  }, [loadOverview]);
 
   useEffect(() => {
-    if (!selectedKey) {
+    loadRegistryElements();
+  }, [loadRegistryElements]);
+
+  useEffect(() => {
+    if (activeRegistry === DEFAULT_REGISTRY_TAB || !selectedKey) {
       setCard(null);
       return undefined;
     }
@@ -81,7 +148,7 @@ export default function PlatformArchitecturePage() {
       })
       .catch((requestError) => {
         if (!cancelled) {
-          setError(getApiErrorMessage(requestError, "Не удалось загрузить карточку компонента"));
+          setError(getApiErrorMessage(requestError, "Не удалось загрузить карточку элемента"));
           setCard(null);
         }
       })
@@ -94,17 +161,47 @@ export default function PlatformArchitecturePage() {
     return () => {
       cancelled = true;
     };
-  }, [resolvedTenantId, selectedKey]);
+  }, [resolvedTenantId, selectedKey, activeRegistry]);
 
-  const categories = useMemo(() => tree?.categories ?? [], [tree]);
+  const activeRegistryTitle = useMemo(
+    () => ARCHITECTURE_REGISTRY_TABS.find((tab) => tab.key === activeRegistry)?.title ?? activeRegistry,
+    [activeRegistry],
+  );
+
+  const handleOpenDocument = async () => {
+    setOpeningDocument(true);
+    setDocumentError(null);
+    setDocumentData(null);
+    setDocumentModalOpen(true);
+
+    try {
+      const data = await platformArchitectureApi.fetchArchitectureRegistryDocument(
+        resolvedTenantId,
+        activeRegistry,
+      );
+      setDocumentData(data);
+    } catch (requestError) {
+      setDocumentError(
+        getApiErrorMessage(requestError, "Не удалось открыть архитектурный документ"),
+      );
+    } finally {
+      setOpeningDocument(false);
+    }
+  };
+
+  const handleCloseDocument = () => {
+    setDocumentModalOpen(false);
+  };
 
   const handleScan = async () => {
     setScanning(true);
     setError(null);
     try {
-      const scan = await platformArchitectureApi.runArchitectureScan(resolvedTenantId);
-      setScanInfo(scan);
-      await loadTree();
+      await platformArchitectureApi.runArchitectureScan(resolvedTenantId);
+      await loadOverview();
+      if (activeRegistry !== DEFAULT_REGISTRY_TAB) {
+        await loadRegistryElements();
+      }
       if (selectedKey) {
         const refreshed = await platformArchitectureApi.fetchArchitectureComponent(
           resolvedTenantId,
@@ -121,72 +218,49 @@ export default function PlatformArchitecturePage() {
 
   return (
     <div className="platform-architecture">
-      <header className="platform-architecture__header">
-        <div>
-          <h1 className="platform-architecture__title">Архитектура платформы</h1>
-          <p className="platform-architecture__subtitle">
-            Навигатор по контурам, ядру и связям ЯсноПро — сначала понятные названия, затем технические детали.
-          </p>
-        </div>
-        <button
-          type="button"
-          className="platform-architecture__scan-btn"
-          onClick={handleScan}
-          disabled={scanning}
-        >
-          {scanning ? "Сканирование…" : "Запустить сканирование"}
-        </button>
-      </header>
+      <ArchitectureRegistryTabs
+        activeRegistry={activeRegistry}
+        onSelect={handleRegistrySelect}
+        onOpenDocument={handleOpenDocument}
+        openingDocument={openingDocument}
+        onScan={handleScan}
+        scanning={scanning}
+      />
 
-      {scanInfo?.scanner_version ? (
-        <p className="platform-architecture__status">
-          Последнее сканирование: v{scanInfo.scanner_version}
-          {scanInfo.finished_at ? ` · ${new Date(scanInfo.finished_at).toLocaleString("ru-RU")}` : ""}
-        </p>
-      ) : null}
+      <ArchitectureDocumentModal
+        open={documentModalOpen}
+        onClose={handleCloseDocument}
+        loading={openingDocument}
+        documentData={documentData}
+        errorMessage={documentError}
+        registryLabel={activeRegistryTitle}
+      />
 
-      {error ? <p className="platform-architecture__status platform-architecture__status--error">{error}</p> : null}
+      <div className="platform-architecture__canvas" data-page-canvas>
+        {error ? <p className="platform-architecture__status platform-architecture__status--error">{error}</p> : null}
 
-      {loadingTree ? (
-        <p className="platform-architecture__status">Загрузка дерева архитектуры…</p>
-      ) : (
-        <div className="platform-architecture__layout">
-          <nav className="platform-architecture__tree" aria-label="Дерево архитектуры">
-            {categories.map((category) => (
-              <section key={category.key} className="platform-architecture__category">
-                <h2 className="platform-architecture__category-title">{category.title}</h2>
-                <ul className="platform-architecture__nodes">
-                  {(category.children || []).map((node) => {
-                    const isActive = node.key === selectedKey;
-                    return (
-                      <li key={node.key}>
-                        <button
-                          type="button"
-                          className={`platform-architecture__node-btn${
-                            isActive ? " platform-architecture__node-btn--active" : ""
-                          }`}
-                          onClick={() => setSelectedKey(node.key)}
-                        >
-                          <span className="platform-architecture__node-title">{node.title}</span>
-                          <span className="platform-architecture__node-tech">{node.technical_name}</span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            ))}
-          </nav>
+        {activeRegistry === DEFAULT_REGISTRY_TAB ? (
+          <ArchitectureRegistryOverview overview={overview} loading={loadingOverview} />
+        ) : (
+          <div className="platform-architecture__layout">
+            <ArchitectureElementList
+              elements={registryElements}
+              selectedKey={selectedKey}
+              onSelect={(elementKey) => setRegistryParams(activeRegistry, elementKey)}
+              loading={loadingRegistry}
+              registryLabel={registryLabel || activeRegistryTitle}
+            />
 
-          <div>
-            {loadingCard ? (
-              <p className="platform-architecture__status">Загрузка карточки…</p>
-            ) : (
-              <ArchitectureComponentDetailCard card={card} />
-            )}
+            <div>
+              {loadingCard ? (
+                <p className="platform-architecture__status">Загрузка карточки…</p>
+              ) : (
+                <ArchitectureComponentDetailCard card={card} />
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

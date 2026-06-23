@@ -55,6 +55,7 @@ import {
   canShowPlatformEventJournalInStudio,
   canShowPlatformReleasesInStudio,
   canShowPlatformArchitectureInStudio,
+  filterArchitectureGovernanceStudioMenuItems,
   filterControlPlaneStudioMenuItems,
   filterPlatformStudioMenuItems,
 } from "../../../admin/access/adminAccess";
@@ -228,7 +229,7 @@ function buildDesignerMetaNavigation(tenantId, user) {
       mode: "designer",
       is_system: true,
       is_protected: true,
-      sort_order: 85,
+      sort_order: 87,
     },
     {
       id: "system-designer-platform-releases",
@@ -417,6 +418,7 @@ export default function DesignerShell() {
     );
     const merged = mergeDesignerSidebarNavigation(withSettings, navigation);
     let filtered = filterControlPlaneStudioMenuItems(merged);
+    filtered = filterArchitectureGovernanceStudioMenuItems(filtered);
     if (
       !canShowPlatformEventJournalInStudio({
         tenantId: resolvedPortalId,

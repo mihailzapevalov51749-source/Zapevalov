@@ -8,32 +8,16 @@ from app.modules.platform.architecture_navigator.constants import (
     ArchitectureComponentType,
 )
 from app.modules.platform.architecture_navigator.models import ArchitectureComponent, ArchitectureLink
+from app.modules.platform.architecture_navigator.registry_constants import (
+    COMPONENTS_REGISTRY_COMPONENT_KEYS,
+    INTERFACE_REGISTRY_COMPONENT_KEYS,
+)
 from app.modules.platform.architecture_navigator import service
 
 
-PLATFORM_COMPONENT_KEYS = {
-    "platform-modal",
-    "platform-page",
-    "platform-table",
-    "platform-form",
-    "platform-tree",
-    "platform-card",
-    "platform-tabs",
-    "platform-drawer",
-    "platform-toolbar",
-    "platform-notification",
-}
+PLATFORM_COMPONENT_KEYS = set(COMPONENTS_REGISTRY_COMPONENT_KEYS)
 
-PLATFORM_UI_ELEMENT_KEYS = {
-    "avatar",
-    "user-menu",
-    "settings-button",
-    "notification-bell",
-    "global-search",
-    "top-navigation",
-    "side-navigation",
-    "breadcrumbs",
-}
+PLATFORM_UI_ELEMENT_KEYS = set(INTERFACE_REGISTRY_COMPONENT_KEYS)
 
 
 def _catalog_by_key():
@@ -78,21 +62,20 @@ def test_platform_ui_categories_do_not_overlap():
 
 
 def test_catalog_links_reference_existing_keys():
-    keys = {row["component_key"] for row in CATALOG_COMPONENTS}
+    keys = {row["component_key"] for row in service._all_seed_rows()}
     for link in CATALOG_LINKS:
         assert link["from"] in keys, link
         assert link["to"] in keys, link
 
 
 def test_ensure_catalog_seeded_syncs_missing_components():
-    existing_keys = {"dev-environment"}
-    added_components: list[ArchitectureComponent] = []
+    existing_components: dict[str, ArchitectureComponent] = {}
     added_links: list[ArchitectureLink] = []
     commits: list[bool] = []
 
-    class _KeyQuery:
+    class _ComponentQuery:
         def all(self):
-            return [SimpleNamespace(component_key=key) for key in existing_keys]
+            return list(existing_components.values())
 
     class _LinkQuery:
         def all(self):
@@ -100,16 +83,15 @@ def test_ensure_catalog_seeded_syncs_missing_components():
 
     class _FakeSession:
         def query(self, model):
-            if model is ArchitectureComponent.component_key:
-                return _KeyQuery()
+            if model is ArchitectureComponent:
+                return _ComponentQuery()
             if model is ArchitectureLink:
                 return _LinkQuery()
             raise AssertionError(f"unexpected query model: {model}")
 
         def add(self, obj):
             if isinstance(obj, ArchitectureComponent):
-                added_components.append(obj)
-                existing_keys.add(obj.component_key)
+                existing_components[obj.component_key] = obj
             elif isinstance(obj, ArchitectureLink):
                 added_links.append(obj)
 
@@ -121,9 +103,10 @@ def test_ensure_catalog_seeded_syncs_missing_components():
 
     service.ensure_catalog_seeded(_FakeSession())
 
-    added_keys = {row.component_key for row in added_components}
+    added_keys = set(existing_components.keys())
     assert PLATFORM_COMPONENT_KEYS.issubset(added_keys)
     assert PLATFORM_UI_ELEMENT_KEYS.issubset(added_keys)
+    assert "release-scope" in added_keys
     assert len(added_links) == len(CATALOG_LINKS)
     assert commits == [True]
 

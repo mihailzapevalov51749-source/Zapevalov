@@ -1,0 +1,272 @@
+.platform-governance {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.platform-governance__canvas {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 20px 24px;
+}
+
+.platform-governance__status {
+  margin: 0;
+  color: var(--platform-text-secondary, #5f6368);
+}
+
+.platform-governance__status--error {
+  color: var(--platform-danger, #c62828);
+}
+
+.platform-governance__overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.platform-governance__card {
+  border: 1px solid var(--platform-border, #e0e0e0);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--platform-surface, #fff);
+}
+
+.platform-governance__card-title {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.platform-governance__card-value {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.platform-governance__card-caption,
+.platform-governance__muted {
+  margin: 8px 0 0;
+  color: var(--platform-text-secondary, #5f6368);
+}
+
+.platform-governance__stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 12px;
+  margin: 0;
+}
+
+.platform-governance__stats dt {
+  font-size: 12px;
+  color: var(--platform-text-secondary, #5f6368);
+}
+
+.platform-governance__stats dd {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.platform-governance__route,
+.platform-governance__release-active {
+  margin: 0;
+  font-size: 16px;
+}
+
+.platform-governance__link {
+  display: inline-block;
+  margin-top: 12px;
+  color: var(--platform-accent, #6a1b9a);
+  text-decoration: none;
+}
+
+.platform-governance__link:hover {
+  text-decoration: underline;
+}
+
+.platform-governance__layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  gap: 16px;
+  min-height: 420px;
+}
+
+.platform-governance__list,
+.platform-governance__detail {
+  border: 1px solid var(--platform-border, #e0e0e0);
+  border-radius: 12px;
+  background: var(--platform-surface, #fff);
+  padding: 16px;
+  min-height: 0;
+}
+
+.platform-governance__list-caption {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--platform-text-secondary, #5f6368);
+}
+
+.platform-governance__norm-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.platform-governance__norm-btn {
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.platform-governance__norm-btn:hover {
+  background: rgba(106, 27, 154, 0.06);
+}
+
+.platform-governance__norm-btn.is-active {
+  border-color: rgba(106, 27, 154, 0.35);
+  background: rgba(106, 27, 154, 0.08);
+}
+
+.platform-governance__norm-number,
+.platform-governance__adr-slug {
+  font-size: 12px;
+  color: var(--platform-text-secondary, #5f6368);
+}
+
+.platform-governance__adr-status {
+  font-size: 12px;
+  color: var(--platform-accent, #6a1b9a);
+}
+
+.platform-governance__detail-title {
+  margin: 0 0 12px;
+  font-size: 20px;
+}
+
+.platform-governance__badge {
+  display: inline-block;
+  margin: 0 0 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(106, 27, 154, 0.08);
+  font-size: 12px;
+}
+
+.platform-governance__section + .platform-governance__section {
+  margin-top: 16px;
+}
+
+.platform-governance__section h2,
+.platform-governance__section h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.platform-governance__section p {
+  margin: 0;
+}
+
+.platform-governance__fields {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+
+.platform-governance__fields dt {
+  font-size: 12px;
+  color: var(--platform-text-secondary, #5f6368);
+}
+
+.platform-governance__fields dd {
+  margin: 0;
+}
+
+.platform-governance__chip-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.platform-governance__chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.05);
+  font-size: 13px;
+}
+
+.platform-governance__delivery {
+  max-width: 920px;
+}
+
+.platform-governance__route-chain {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.platform-governance__route-step {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.platform-governance__route-node {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 140px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(106, 27, 154, 0.25);
+  background: rgba(106, 27, 154, 0.06);
+  font-weight: 600;
+}
+
+.platform-governance__route-arrow {
+  color: var(--platform-text-secondary, #5f6368);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.platform-governance__phase-list {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 10px;
+}
+
+.platform-governance__phase-list li {
+  display: grid;
+  gap: 4px;
+}
+
+.platform-governance__link-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+@media (max-width: 960px) {
+  .platform-governance__layout {
+    grid-template-columns: 1fr;
+  }
+}

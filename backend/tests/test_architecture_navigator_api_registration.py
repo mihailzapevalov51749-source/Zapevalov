@@ -13,6 +13,7 @@ os.environ.setdefault("YASNOPRO_ENV", "DEV")
 EXPECTED_PATHS = {
     "/dev/architecture/tree": {"get"},
     "/dev/architecture/component/{component_id}": {"get"},
+    "/dev/architecture/registries/{registry_key}/document": {"get"},
     "/dev/architecture/scan": {"post"},
     "/dev/architecture/scan/latest": {"get"},
 }

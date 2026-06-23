@@ -68,6 +68,9 @@ from app.modules.platform.designer.router import router as platform_designer_rou
 from app.modules.platform.architecture_navigator.bootstrap import (
     register_architecture_navigator_routes,
 )
+from app.modules.platform.architecture_governance.bootstrap import (
+    register_architecture_governance_routes,
+)
 from app.modules.platform.search.router import platform_search_router
 from app.modules.platform.runtime.router import router as platform_runtime_router
 from app.modules.platform.workspace_tabs.router import workspace_tabs_router
@@ -209,6 +212,7 @@ app.include_router(platform_event_journal_router)
 # PLATFORM DESIGNER
 app.include_router(platform_designer_router)
 register_architecture_navigator_routes(app)
+register_architecture_governance_routes(app)
 
 # PLATFORM RUNTIME (published metadata catalog)
 app.include_router(platform_runtime_router)

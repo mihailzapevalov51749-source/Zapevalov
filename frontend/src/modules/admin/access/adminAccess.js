@@ -110,6 +110,18 @@ export function canShowPlatformArchitectureInStudio({ tenantId, tenantType } = {
   return canShowControlPlaneStudioMenuEntry({ tenantId, tenantType });
 }
 
+export function canShowPlatformArchitectureGovernanceInStudio(params = {}) {
+  return canShowPlatformArchitectureInStudio(params);
+}
+
+export function isPlatformArchitectureGovernanceStudioMenuItem(item) {
+  const route = String(item?.route || item?.path || item?.url || "").trim();
+  return (
+    route.includes("/architecture-governance")
+    || String(item?.id || "") === "system-designer-architecture-governance"
+  );
+}
+
 export function isPlatformArchitectureStudioMenuItem(item) {
   const route = String(item?.route || item?.path || item?.url || "").trim();
   return (
@@ -127,6 +139,19 @@ export function isLegacyPlatformDashboardStudioMenuItem(item) {
   );
 }
 
+export function filterArchitectureGovernanceStudioMenuItems(items) {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+
+  return items
+    .filter((item) => !isPlatformArchitectureGovernanceStudioMenuItem(item))
+    .map((item) => ({
+      ...item,
+      children: filterArchitectureGovernanceStudioMenuItems(item.children),
+    }));
+}
+
 export function filterPlatformStudioMenuItems(items) {
   if (!Array.isArray(items)) {
     return [];
@@ -136,8 +161,9 @@ export function filterPlatformStudioMenuItems(items) {
     .filter(
       (item) =>
         !isPlatformEventJournalStudioMenuItem(item)
-        && !isPlatformReleasesStudioMenuItem(item)
+        &&         !isPlatformReleasesStudioMenuItem(item)
         && !isPlatformArchitectureStudioMenuItem(item)
+        && !isPlatformArchitectureGovernanceStudioMenuItem(item)
         && !isLegacyPlatformDashboardStudioMenuItem(item),
     )
     .map((item) => ({

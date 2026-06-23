@@ -7,7 +7,6 @@ import pytest
 
 from app.modules.platform.architecture_navigator import service
 from app.modules.platform.architecture_navigator.models import ArchitectureComponent
-from app.modules.platform.architecture_navigator.schemas import ArchitectureFindingSummary
 
 
 def _component(**overrides):
@@ -66,16 +65,10 @@ def test_get_component_card_handles_missing_scan(monkeypatch):
             return _Query()
 
     monkeypatch.setattr(service, "ensure_catalog_seeded", lambda _db: None)
-    monkeypatch.setattr(service, "_component_map", lambda _db: {component.component_key: component})
-    monkeypatch.setattr(service, "_linked_items", lambda *_args, **_kwargs: [])
-    monkeypatch.setattr(service, "_decision_items", lambda *_args, **_kwargs: [])
-    monkeypatch.setattr(service, "_restriction_items", lambda *_args, **_kwargs: [])
-    monkeypatch.setattr(service, "_finding_summary_for_component", lambda *_args, **_kwargs: ArchitectureFindingSummary())
-    monkeypatch.setattr(service, "_sources_for_component", lambda *_args, **_kwargs: ["Catalog Seed"])
-
     card = service.get_component_card(_FakeSession(), "dev-environment")
     assert card.key == "dev-environment"
     assert card.last_scan.scan_id is None
+    assert card.backend_files == []
 
 
 class _ComponentQuery:
@@ -100,7 +93,7 @@ class _ComponentQuery:
         "platform-modal",
         "platform-page",
         "avatar",
-        "notification-bell",
+        "notification-center",
     ],
 )
 def test_get_component_card_seed_keys(component_key, monkeypatch):
@@ -124,12 +117,6 @@ def test_get_component_card_seed_keys(component_key, monkeypatch):
             return _ScanQuery()
 
     monkeypatch.setattr(service, "ensure_catalog_seeded", lambda _db: None)
-    monkeypatch.setattr(service, "_component_map", lambda _db: rows)
-    monkeypatch.setattr(service, "_linked_items", lambda *_args, **_kwargs: [])
-    monkeypatch.setattr(service, "_decision_items", lambda *_args, **_kwargs: [])
-    monkeypatch.setattr(service, "_restriction_items", lambda *_args, **_kwargs: [])
-    monkeypatch.setattr(service, "_finding_summary_for_component", lambda *_args, **_kwargs: ArchitectureFindingSummary())
-    monkeypatch.setattr(service, "_sources_for_component", lambda *_args, **_kwargs: ["Catalog Seed"])
 
     card = service.get_component_card(_FakeSession(), component_key)
     assert card.key == component_key

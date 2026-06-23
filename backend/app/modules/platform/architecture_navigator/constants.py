@@ -17,6 +17,7 @@ class ArchitectureComponentType(str, Enum):
     ARCHITECTURE_DECISION = "architecture_decision"
     ARCHITECTURE_RESTRICTION = "architecture_restriction"
     DEVIATION = "deviation"
+    CONFIGURATION = "configuration"
 
 
 class ArchitectureLinkType(str, Enum):
@@ -33,6 +34,8 @@ class ArchitectureFindingKind(str, Enum):
     DEPENDENCY = "dependency"
     DOCUMENT = "document"
     RULE = "rule"
+    BACKEND_FILE = "backend_file"
+    FRONTEND_FILE = "frontend_file"
 
 
 class ArchitectureSourceKind(str, Enum):
@@ -45,7 +48,7 @@ class ArchitectureSourceKind(str, Enum):
     CATALOG_SEED = "catalog_seed"
 
 
-SCANNER_VERSION = "1.0.0"
+SCANNER_VERSION = "1.3.0"
 
 CATEGORY_LABELS: dict[str, str] = {
     "contours": "Контуры",
@@ -87,4 +90,5 @@ COMPONENT_TYPE_LABELS: dict[str, str] = {
     ArchitectureComponentType.ARCHITECTURE_DECISION.value: "Архитектурное решение",
     ArchitectureComponentType.ARCHITECTURE_RESTRICTION.value: "Архитектурный запрет",
     ArchitectureComponentType.DEVIATION.value: "Отклонение",
+    ArchitectureComponentType.CONFIGURATION.value: "Конфигурация",
 }

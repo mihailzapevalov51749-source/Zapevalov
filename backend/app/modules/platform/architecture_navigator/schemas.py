@@ -60,19 +60,10 @@ class ArchitectureComponentCard(BaseModel):
     key: str
     title: str
     technical_name: str
-    component_type: str
-    category_key: str
-    category_label: str
     description: str | None = None
     purpose: str | None = None
-    place_in_architecture: ArchitecturePlaceInTree
-    uses: list[ArchitectureRelatedItem] = Field(default_factory=list)
-    used_by: list[ArchitectureRelatedItem] = Field(default_factory=list)
-    data: list[ArchitectureRelatedItem] = Field(default_factory=list)
-    decisions: list[ArchitectureRelatedItem] = Field(default_factory=list)
-    restrictions: list[ArchitectureRelatedItem] = Field(default_factory=list)
-    findings: ArchitectureFindingSummary = Field(default_factory=ArchitectureFindingSummary)
-    sources: list[str] = Field(default_factory=list)
+    backend_files: list[str] = Field(default_factory=list)
+    frontend_files: list[str] = Field(default_factory=list)
     last_scan: ArchitectureScanInfo = Field(default_factory=ArchitectureScanInfo)
 
 
@@ -82,6 +73,8 @@ class ArchitectureScanSummary(BaseModel):
     frontend_routes: int = 0
     architecture_documents: int = 0
     cursor_rules: int = 0
+    backend_files: int = 0
+    frontend_files: int = 0
     components: int = 0
 
 
@@ -98,6 +91,56 @@ class ArchitectureScanResponse(BaseModel):
 class ArchitectureLatestScanResponse(BaseModel):
     scan: ArchitectureScanResponse | None = None
     global_findings: ArchitectureFindingSummary = Field(default_factory=ArchitectureFindingSummary)
+
+
+class ArchitectureRegistryListItem(BaseModel):
+    key: str
+    title: str
+    element_count: int = 0
+
+
+class ArchitectureRegistryElementItem(BaseModel):
+    id: int
+    key: str
+    title: str
+    technical_name: str
+    component_type: str
+    element_status: str
+    sort_order: int = 0
+
+
+class ArchitectureRegistryElementsResponse(BaseModel):
+    registry_key: str
+    registry_label: str
+    elements: list[ArchitectureRegistryElementItem] = Field(default_factory=list)
+
+
+class ArchitectureRegistryOverviewResponse(BaseModel):
+    registries: list[ArchitectureRegistryListItem] = Field(default_factory=list)
+    total_elements: int = 0
+    last_scan: ArchitectureScanInfo = Field(default_factory=ArchitectureScanInfo)
+    global_findings: ArchitectureFindingSummary = Field(default_factory=ArchitectureFindingSummary)
+
+
+class ArchitectureRegistryDocumentResponse(BaseModel):
+    registry_key: str
+    registry_label: str
+    document_path: str
+    document_title: str
+    content: str
+    updated_at: datetime | None = None
+
+
+class ArchitectureFileOwnerResponse(BaseModel):
+    file_path: str
+    primary_owner: str
+    registry: str
+    ownership_class: str
+    related_elements: list[str] = Field(default_factory=list)
+    reason: str
+    confidence: str
+    side: str = ""
+    rel_path: str = ""
 
 
 ArchitectureTreeNode.model_rebuild()

@@ -48,6 +48,7 @@ import DesignerWorkspaceDetailPage from "./modules/designer/pages/DesignerWorksp
 import PlatformEventJournalPage from "./modules/platformDashboard/pages/PlatformEventJournalPage";
 import PlatformReleasesPage from "./modules/platformReleases/pages/PlatformReleasesPage";
 import PlatformArchitecturePage from "./modules/platformArchitecture/pages/PlatformArchitecturePage";
+import ArchitectureGovernanceLegacyRedirect from "./modules/platformArchitecture/pages/ArchitectureGovernanceLegacyRedirect";
 import PlatformStudioSectionGuard, {
   PlatformStudioLegacyRedirect,
 } from "./modules/platformDashboard/pages/PlatformStudioSectionGuard";
@@ -307,6 +308,14 @@ export default function App() {
             element={
               <PlatformStudioSectionGuard>
                 <PlatformArchitecturePage />
+              </PlatformStudioSectionGuard>
+            }
+          />
+          <Route
+            path="architecture-governance"
+            element={
+              <PlatformStudioSectionGuard>
+                <ArchitectureGovernanceLegacyRedirect />
               </PlatformStudioSectionGuard>
             }
           />

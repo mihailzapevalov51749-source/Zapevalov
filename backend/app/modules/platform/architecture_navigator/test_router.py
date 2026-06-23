@@ -15,6 +15,7 @@ from app.modules.platform.architecture_navigator.router import router
 from app.modules.platform.architecture_navigator.schemas import (
     ArchitectureComponentCard,
     ArchitectureLatestScanResponse,
+    ArchitectureRegistryDocumentResponse,
     ArchitectureScanResponse,
     ArchitectureTreeCategory,
     ArchitectureTreeNode,
@@ -67,10 +68,6 @@ def test_architecture_component_endpoint(monkeypatch):
         key="control-plane",
         title="Контур управления платформой",
         technical_name="Control Plane",
-        component_type="contour",
-        category_key="contours",
-        category_label="Контур",
-        place_in_architecture={"path": [], "children": []},
         last_scan={"scan_id": None, "scanned_at": None, "scanner_version": None},
     )
     monkeypatch.setattr(service, "get_component_card", lambda *_args, **_kwargs: card)
@@ -107,3 +104,22 @@ def test_architecture_scan_endpoints(monkeypatch):
     latest_resp = client.get("/dev/architecture/scan/latest?tenant_id=1")
     assert latest_resp.status_code == 200
     assert latest_resp.json()["scan"]["scanner_version"] == "1.0.0"
+
+
+def test_architecture_registry_document_endpoint(monkeypatch):
+    app = _build_app()
+    client = TestClient(app)
+    document = ArchitectureRegistryDocumentResponse(
+        registry_key="core",
+        registry_label="Ядро",
+        document_path="docs/architecture/YASNOPRO_CORE_ARCHITECTURE.md",
+        document_title="Ядро платформы",
+        content="# Ядро платформы\n",
+        updated_at=datetime.utcnow(),
+    )
+    monkeypatch.setattr(service, "get_registry_document", lambda registry_key: document)
+    response = client.get("/dev/architecture/registries/core/document?tenant_id=1")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["registry_key"] == "core"
+    assert payload["document_path"].endswith("YASNOPRO_CORE_ARCHITECTURE.md")

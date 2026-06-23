@@ -5,8 +5,10 @@ import {
   canAccessControlPlane,
   canShowControlPlaneStudioMenuEntry,
   canShowPlatformArchitectureInStudio,
+  filterArchitectureGovernanceStudioMenuItems,
   filterControlPlaneStudioMenuItems,
   filterPlatformStudioMenuItems,
+  isPlatformArchitectureGovernanceStudioMenuItem,
   isPlatformArchitectureStudioMenuItem,
 } from "./adminAccess.js";
 
@@ -105,6 +107,31 @@ describe("canShowPlatformArchitectureInStudio", () => {
   });
 });
 
+describe("filterArchitectureGovernanceStudioMenuItems", () => {
+  it("always removes architecture governance menu item from tree", () => {
+    const filtered = filterArchitectureGovernanceStudioMenuItems([
+      { id: "objects", title: "Объекты" },
+      {
+        id: "system-designer-architecture-governance",
+        title: "Архитектурное управление",
+        route: "/designer/tenant/1/architecture-governance",
+      },
+    ]);
+
+    assert.equal(filtered.length, 1);
+    assert.equal(filtered[0].id, "objects");
+  });
+
+  it("detects architecture governance menu item by route", () => {
+    assert.equal(
+      isPlatformArchitectureGovernanceStudioMenuItem({
+        route: "/designer/tenant/1/architecture-governance",
+      }),
+      true,
+    );
+  });
+});
+
 describe("filterPlatformStudioMenuItems", () => {
   it("removes platform architecture menu item from tree", () => {
     const filtered = filterPlatformStudioMenuItems([
@@ -113,6 +140,20 @@ describe("filterPlatformStudioMenuItems", () => {
         id: "system-designer-platform-architecture",
         title: "Архитектура платформы",
         route: "/designer/tenant/1/platform-architecture",
+      },
+    ]);
+
+    assert.equal(filtered.length, 1);
+    assert.equal(filtered[0].id, "objects");
+  });
+
+  it("removes architecture governance menu item from tree", () => {
+    const filtered = filterPlatformStudioMenuItems([
+      { id: "objects", title: "Объекты" },
+      {
+        id: "system-designer-architecture-governance",
+        title: "Архитектурное управление",
+        route: "/designer/tenant/1/architecture-governance",
       },
     ]);
 
