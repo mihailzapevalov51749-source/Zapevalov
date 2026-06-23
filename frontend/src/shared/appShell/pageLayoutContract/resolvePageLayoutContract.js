@@ -75,6 +75,10 @@ function mapDescriptorPageType(descriptor, location) {
     return PAGE_LAYOUT_PAGE_TYPE.STUDIO_SECTION;
   }
 
+  if (pathname.includes("/architecture-governance")) {
+    return PAGE_LAYOUT_PAGE_TYPE.STUDIO_SECTION;
+  }
+
 
 
   if (pathname.match(/\/designer\/tenant\/\d+\/platform(?:\/|$)/)) {
