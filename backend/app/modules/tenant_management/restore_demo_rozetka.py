@@ -89,7 +89,9 @@ def _count_portals(db: Session) -> int:
 
 
 def _inspect_backup_hint() -> str:
-    repo_root = Path(__file__).resolve().parents[4]
+    from app.modules.platform_event_journal.dev_journal_database import resolve_dev_workspace_root
+
+    repo_root = resolve_dev_workspace_root()
     candidates = sorted((repo_root / "backups").glob("*.dump"))
     if not candidates:
         return "No .dump backups found under backups/"
