@@ -411,7 +411,8 @@ class TestPlatformReleaseReviewPipeline:
             headers=_auth_headers(reviewer),
         )
         assert publish.status_code == 200, publish.text
-        assert publish.json()["release"]["status"] == "published_to_template"
+        assert publish.json()["orchestrator"]["status"] == "in_progress"
+        assert publish.json()["orchestrator"]["current_phase"] == "version_pinned"
 
         _cleanup_release_artifacts(db, created["id"])
         db.commit()
@@ -490,7 +491,6 @@ class TestPlatformReleaseReviewPipeline:
             f"platform-release-changes-requested-dev-{release_id}",
             f"platform-release-resubmitted-{release_id}",
             f"platform-release-approved-{release_id}",
-            f"platform-release-published-template-{release_id}",
             f"platform-release-offered-tenants-{release_id}",
             f"tenant-update-applied-{client_portal.id}-{offer_id}",
         }

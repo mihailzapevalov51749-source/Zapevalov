@@ -24,8 +24,11 @@ from app.modules.platform_event_journal.tenant_audit_constants import (
     TenantEventCode,
 )
 from app.modules.platform_build_registry import service as build_registry_service
+from app.modules.platform_publish_orchestrator.schemas import publish_result_to_out
+from app.modules.platform_publish_orchestrator.service import run_template_publish
 from app.modules.platform_deployment_registry import service as deployment_registry_service
 from app.modules.platform_deployment_registry.constants import (
+    PlatformDeploymentKind,
     PlatformDeploymentTargetEnvironmentType,
 )
 from app.modules.platform_deployment_registry.models import PlatformDeployment
@@ -48,6 +51,25 @@ from app.modules.platform_release_package_registry.governance import (
     set_governance,
 )
 from app.modules.platform_release_package_registry.models import PlatformReleasePackage
+from app.modules.platform_release_provenance.digest import compute_package_digest
+from app.modules.platform_release_provenance.manifest import (
+    attach_package_provenance_to_manifest,
+    build_code_layer_manifest,
+)
+from app.modules.platform_release_scope.scope import (
+    attach_release_scope_to_manifest,
+    build_included_changes_from_release_changes,
+    build_included_modules_from_bom,
+    get_release_scope,
+    is_scope_editable,
+    set_release_scope,
+)
+from app.modules.platform_release_diff import (
+    attach_release_diff_to_manifest,
+    compare_dev_template,
+    validate_architectural_element_selection,
+)
+from app.modules.platform_release_scope.scope import build_scope_proof
 from app.modules.platform_release.schemas import (
     ApplyUpdateResult,
     OfferToTenantsResult,
@@ -284,6 +306,69 @@ def _build_package_manifest(payload: PlatformReleaseCreate, *, source_tenant_id:
     }
 
 
+def _finalize_package_manifest_with_provenance(
+    manifest: dict[str, object],
+    *,
+    package_key: str,
+    platform_version: str,
+    build: PlatformCodeBuild,
+    module_bom_json: dict[str, object],
+    actor_user_id: int | None = None,
+    preserve_release_scope: bool = False,
+) -> dict[str, object]:
+    code_layer = build_code_layer_manifest(build)
+    package_digest = compute_package_digest(
+        package_key=package_key,
+        platform_version=platform_version,
+        code_layer=code_layer,
+        module_bom_json=module_bom_json,
+    )
+    enriched = attach_package_provenance_to_manifest(
+        manifest,
+        package_key=package_key,
+        platform_version=platform_version,
+        code_layer=code_layer,
+        module_bom_json=module_bom_json,
+        package_digest=package_digest,
+    )
+    if preserve_release_scope and isinstance(manifest.get("release_scope"), dict):
+        scope = dict(manifest["release_scope"])
+        scope["scope_proof"] = build_scope_proof(scope)
+        enriched["release_scope"] = scope
+        return enriched
+
+    changes_raw = enriched.get("changes")
+    changes_list = changes_raw if isinstance(changes_raw, list) else []
+    return attach_release_scope_to_manifest(
+        enriched,
+        included_changes=build_included_changes_from_release_changes(changes_list),
+        included_modules=build_included_modules_from_bom(module_bom_json),
+        actor_user_id=actor_user_id,
+    )
+
+
+def _sync_editable_release_scope_from_changes(
+    package: PlatformReleasePackage,
+    *,
+    changes: list[object],
+    module_bom_json: dict[str, object],
+    actor_user_id: int | None,
+) -> None:
+    if not is_scope_editable(package):
+        return
+    scope = get_release_scope(package)
+    scope["included_changes"] = build_included_changes_from_release_changes(changes)
+    scope["included_modules"] = build_included_modules_from_bom(module_bom_json)
+    scope["scope_proof"] = build_scope_proof(scope)
+    if scope["included_changes"] or scope["included_modules"]:
+        from app.modules.platform_release_scope.constants import ReleaseScopeStatus
+
+        scope["scope_status"] = ReleaseScopeStatus.SCOPE_DEFINED.value
+        if actor_user_id is not None:
+            scope["defined_by"] = int(actor_user_id)
+    set_release_scope(package, scope)
+
+
 def _build_build_manifest(
     payload: PlatformReleaseCreate,
     *,
@@ -367,6 +452,12 @@ def create_platform_release(
             detail="DEV tenant не найден",
         )
 
+    diff = compare_dev_template(db)
+    validate_architectural_element_selection(
+        diff,
+        payload.selected_architectural_elements,
+    )
+
     version = _resolve_next_release_version(db)
     build_key = _next_artifact_key("BLD")
     package_key = _next_artifact_key("PKG")
@@ -387,13 +478,26 @@ def create_platform_release(
     build_registry_service.start_build(db, build_id=build.id)
     build = build_registry_service.mark_succeeded(db, build_id=build.id)
 
+    module_bom_json = _build_module_bom_from_changes(payload.changes)
+    package_manifest_json = _finalize_package_manifest_with_provenance(
+        attach_release_diff_to_manifest(
+            _build_package_manifest(payload, source_tenant_id=dev_tenant_id),
+            diff=diff,
+            selected_architectural_elements=payload.selected_architectural_elements,
+        ),
+        package_key=package_key,
+        platform_version=version,
+        build=build,
+        module_bom_json=module_bom_json,
+        actor_user_id=actor.id if actor.id else None,
+    )
     package = package_registry_service.create_release_package(
         db,
         package_key=package_key,
         build_id=build.id,
         platform_version=version,
-        package_manifest_json=_build_package_manifest(payload, source_tenant_id=dev_tenant_id),
-        module_bom_json=_build_module_bom_from_changes(payload.changes),
+        package_manifest_json=package_manifest_json,
+        module_bom_json=module_bom_json,
         actor=actor,
     )
     package.release_notes = payload.description
@@ -443,9 +547,30 @@ def update_platform_release(
             }
             for item in payload.changes
         ]
-        package.module_bom_json = _build_module_bom_from_changes(payload.changes)
+        module_bom_json = _build_module_bom_from_changes(payload.changes)
+        package.module_bom_json = module_bom_json
+    else:
+        module_bom_json = (
+            package.module_bom_json if isinstance(package.module_bom_json, dict) else {}
+        )
 
-    package.package_manifest_json = manifest
+    build = db.query(PlatformCodeBuild).filter(PlatformCodeBuild.id == package.build_id).one()
+    package.package_manifest_json = _finalize_package_manifest_with_provenance(
+        manifest,
+        package_key=package.package_key,
+        platform_version=package.platform_version,
+        build=build,
+        module_bom_json=module_bom_json,
+        actor_user_id=actor.id if actor.id else None,
+        preserve_release_scope=True,
+    )
+    if payload.changes is not None:
+        _sync_editable_release_scope_from_changes(
+            package,
+            changes=list(payload.changes),
+            module_bom_json=module_bom_json,
+            actor_user_id=actor.id if actor.id else None,
+        )
     db.commit()
     db.refresh(package)
     return _serialize_package_release_out(db, package)
@@ -638,91 +763,36 @@ def publish_release_to_template(
     release_id: int,
     actor: User,
 ) -> PublishToTemplateResult:
-    assert_reviewer_action(actor)
-    package = package_registry_service.get_release_package(db, release_id)
-    governance_status = get_review_status(package)
-    if governance_status != PlatformReleaseStatus.APPROVED_BY_PLATFORM.value:
+    package, orchestrator_result = run_template_publish(
+        db,
+        release_id=release_id,
+        actor=actor,
+    )
+    if orchestrator_result.status.value == "failed":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Release must be approved by platform before publishing to template.",
+            detail={
+                "message": "Publish orchestrator failed",
+                "errors": orchestrator_result.errors,
+                "current_phase": orchestrator_result.current_phase.value,
+            },
         )
 
-    template_tenant_id = resolve_template_tenant_id(db)
-    if template_tenant_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Эталонный tenant (TEMPLATE) не найден",
-        )
-    package = package_registry_service.get_release_package(db, release_id)
-    if package.status != "ready":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Release package must be ready before publishing to template.",
-        )
-    package = package_registry_service.publish_package(db, package_id=package.id)
-    deployment = deployment_registry_service.create_deployment(
-        db,
-        deployment_key=_next_artifact_key("DPL"),
-        release_package_id=package.id,
-        target_environment_type=PlatformDeploymentTargetEnvironmentType.TEMPLATE.value,
-        target_tenant_id=template_tenant_id,
-        deployment_manifest_json={
-            "created_via": "platform_releases_api_adapter",
-            "schema_revision": (
-                package.package_manifest_json.get("schema_revision")
-                if isinstance(package.package_manifest_json, dict)
-                else None
-            ),
-        },
-        actor=None,
+    template_tenant_id = (
+        db.query(PlatformDeployment)
+        .filter(PlatformDeployment.id == orchestrator_result.deployment_id)
+        .one()
+        .target_tenant_id
+        if orchestrator_result.deployment_id is not None
+        else resolve_template_tenant_id(db)
     )
-    deployment = deployment_registry_service.start_deployment(db, deployment_id=deployment.id)
-    deployment = deployment_registry_service.mark_succeeded(db, deployment_id=deployment.id)
-    set_governance(
-        package,
-        {
-            "review_status": PlatformReleaseStatus.PUBLISHED_TO_TEMPLATE.value,
-            "offered_at": None,
-            "offered_by": None,
-        },
-    )
-    db.commit()
-    db.refresh(package)
     release_out = _serialize_package_release_out(db, package)
 
-    record_platform_event(
-        db,
-        event_code=PlatformEventCode.TEMPLATE_PUBLISHED.value,
-        event_category=PlatformEventCategory.TEMPLATE.value,
-        title=f"Релиз {release_out.version} опубликован в эталон",
-        description=(
-            f"Релиз «{release_out.title}» опубликован в platform_template "
-            f"(tenant_id={template_tenant_id}) через deployment {deployment.deployment_key}. "
-            "Клиентские tenants не обновлены."
-        ),
-        actor_user=actor,
-        target_type="platform_release_package",
-        target_id=package.id,
-        target_name=release_out.title,
-        company_id=template_tenant_id,
-        metadata={
-            "release_version": release_out.version,
-            "template_tenant_id": template_tenant_id,
-            "changes_count": len(release_out.changes),
-            "deployment_id": deployment.id,
-            "deployment_key": deployment.deployment_key,
-        },
-        slug=f"platform-release-published-template-{package.id}",
-        commit=False,
-    )
-
-    db.commit()
-    db.refresh(package)
-
     return PublishToTemplateResult(
-        release=_serialize_package_release_out(db, package),
+        release=release_out,
         template_tenant_id=template_tenant_id,
         template_version=release_out.version,
+        orchestrator=publish_result_to_out(orchestrator_result),
     )
 
 
@@ -852,6 +922,7 @@ def apply_tenant_update(
         db,
         deployment_key=_next_artifact_key("DPL"),
         release_package_id=package.id,
+        deployment_kind=PlatformDeploymentKind.COMPANY_UPDATE.value,
         target_environment_type=PlatformDeploymentTargetEnvironmentType.CLIENT.value,
         target_tenant_id=tenant_id,
         previous_platform_version=previous_version,

@@ -150,7 +150,7 @@ export default function PlatformReleaseReviewPage() {
     setIsListLoading(true);
     setListError("");
     try {
-      const items = await platformReleasesApi.listPlatformReviewQueue();
+      const items = await platformReleasesApi.listPlatformReleases();
       setReleases(items);
       if (!selectedId && items.length > 0) {
         setSelectedId(items[0].id);

@@ -24,6 +24,14 @@ from app.modules.platform_release.schemas import (
     ReviewCommentPayload,
     ReviewCommentRequiredPayload,
 )
+from app.modules.platform_release_dirty_check import service as dirty_check_service
+from app.modules.platform_release_dirty_check.schemas import DirtyDevCheckResultOut
+from app.modules.platform_release_scope import service as release_scope_service
+from app.modules.platform_release_scope.schemas import (
+    ReleaseScopeOut,
+    ReleaseScopeStatusTransitionOut,
+    ReleaseScopeUpsert,
+)
 from app.modules.users.models import User
 
 router = APIRouter(
@@ -73,6 +81,84 @@ def list_release_modules_endpoint(
 ):
     service.get_platform_release(db, release_id)
     return service.list_release_modules_from_package(db, release_id)
+
+
+@router.post("/{release_id}/dirty-dev-check", response_model=DirtyDevCheckResultOut)
+def run_dirty_dev_check_endpoint(
+    release_id: int,
+    db: Session = Depends(get_db),
+    _developer: User = Depends(require_release_developer),
+):
+    return dirty_check_service.run_dirty_check_for_release(db, release_id)
+
+
+@router.get("/{release_id}/scope", response_model=ReleaseScopeOut)
+def get_release_scope_endpoint(
+    release_id: int,
+    db: Session = Depends(get_db),
+    _developer: User = Depends(require_release_developer),
+):
+    return release_scope_service.get_release_scope_for_package(db, release_id)
+
+
+@router.put("/{release_id}/scope", response_model=ReleaseScopeOut)
+def upsert_release_scope_endpoint(
+    release_id: int,
+    payload: ReleaseScopeUpsert,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_release_developer),
+):
+    return release_scope_service.upsert_release_scope(
+        db,
+        release_id=release_id,
+        payload=payload,
+        actor=current_user,
+    )
+
+
+@router.post("/{release_id}/scope/recompute-proof", response_model=ReleaseScopeOut)
+def recompute_release_scope_proof_endpoint(
+    release_id: int,
+    db: Session = Depends(get_db),
+    _developer: User = Depends(require_release_developer),
+):
+    return release_scope_service.recompute_scope_proof(db, release_id=release_id)
+
+
+@router.post("/{release_id}/scope/mark-reviewed", response_model=ReleaseScopeStatusTransitionOut)
+def mark_release_scope_reviewed_endpoint(
+    release_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_platform_reviewer),
+):
+    scope = release_scope_service.mark_scope_reviewed(
+        db,
+        release_id=release_id,
+        actor=current_user,
+    )
+    return ReleaseScopeStatusTransitionOut(
+        release_id=release_id,
+        scope_status=scope.scope_status,
+        scope=scope,
+    )
+
+
+@router.post("/{release_id}/scope/approve", response_model=ReleaseScopeStatusTransitionOut)
+def approve_release_scope_endpoint(
+    release_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_platform_reviewer),
+):
+    scope = release_scope_service.approve_release_scope(
+        db,
+        release_id=release_id,
+        actor=current_user,
+    )
+    return ReleaseScopeStatusTransitionOut(
+        release_id=release_id,
+        scope_status=scope.scope_status,
+        scope=scope,
+    )
 
 
 @router.get("/{release_id}", response_model=PlatformReleaseOut)

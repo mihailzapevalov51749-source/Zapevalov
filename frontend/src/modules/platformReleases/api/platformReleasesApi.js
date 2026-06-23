@@ -2,6 +2,11 @@ import { platformApiClient, getApiErrorMessage } from "../../designer/api/platfo
 
 const RELEASES_BASE = "/platform/releases";
 
+export async function compareDevTemplate() {
+  const { data } = await platformApiClient.post(`${RELEASES_BASE}/compare-dev-template`);
+  return data;
+}
+
 export async function listPlatformReleases() {
   const { data } = await platformApiClient.get(RELEASES_BASE);
   return Array.isArray(data) ? data : [];

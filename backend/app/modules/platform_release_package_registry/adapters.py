@@ -16,6 +16,7 @@ from app.modules.platform_release_package_registry.governance import (
     get_governance,
     parse_manifest_datetime,
 )
+from app.modules.platform_release_scope.service import serialize_release_scope
 
 
 def _coerce_manifest_dict(package: Any) -> dict[str, Any]:
@@ -187,7 +188,16 @@ def package_to_platform_release_out(
         published_at=_resolve_published_at(package, latest_template_deployment),
         published_by=_resolve_published_by(governance, latest_template_deployment),
         changes=changes,
+        release_scope=serialize_release_scope(package),
+        included_architectural_elements=_manifest_architectural_elements(manifest),
     )
+
+
+def _manifest_architectural_elements(manifest: dict[str, Any]) -> list[str]:
+    raw = manifest.get("included_architectural_elements")
+    if not isinstance(raw, list):
+        return []
+    return sorted({str(item).strip() for item in raw if str(item).strip()})
 
 
 def package_to_platform_release_list_item(

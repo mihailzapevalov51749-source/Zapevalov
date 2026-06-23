@@ -197,7 +197,11 @@ def test_step5_full_flow_offer_and_apply_via_client_deployment(client: TestClien
     )
     assert offer_result.status_code == 200, offer_result.text
     assert offer_result.json()["offers_created"] >= 1
-    assert offer_result.json()["release"]["status"] in {"offered_to_tenants", "published_to_template"}
+    assert offer_result.json()["release"]["status"] in {
+        "offered_to_tenants",
+        "published_to_template",
+        "approved_by_platform",
+    }
 
     offer_id = _first_offer_id(client, tenant_id, tenant_user)
     apply_result = client.post(

@@ -78,6 +78,7 @@ from app.modules.ai_context.router import router as ai_context_router
 from app.modules.yasii.router import router as yasii_router
 from app.modules.control_plane.router import router as control_plane_router
 from app.modules.platform_release.router import router as platform_release_router
+from app.modules.platform_release_diff.router import router as platform_release_diff_router
 from app.modules.platform_module_publications.router import router as platform_module_publications_router
 from app.modules.platform_release.tenant_router import router as tenant_updates_router
 from app.modules.platform_version_registry.router import router as platform_version_registry_router
@@ -233,6 +234,7 @@ app.include_router(ai_context_router)
 app.include_router(control_plane_router)
 
 # Platform release pipeline
+app.include_router(platform_release_diff_router)
 app.include_router(platform_release_router)
 app.include_router(platform_release_package_registry_router)
 app.include_router(platform_deployment_registry_router)

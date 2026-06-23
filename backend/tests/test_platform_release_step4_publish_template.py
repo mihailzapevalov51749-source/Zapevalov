@@ -155,12 +155,12 @@ def test_publish_to_template_uses_package_and_deployment_runtime(client: TestCli
     )
     assert publish.status_code == 200, publish.text
     body = publish.json()
-    assert body["release"]["status"] == "published_to_template"
+    assert body["orchestrator"]["status"] == "in_progress"
+    assert body["orchestrator"]["current_phase"] == "version_pinned"
+    assert body["orchestrator"]["materialized_release_id"] == "release-999"
 
     package = db.query(PlatformReleasePackage).filter(PlatformReleasePackage.id == release_id).one()
     assert package.status == "published"
-    governance = package.package_manifest_json.get("governance") or {}
-    assert governance.get("review_status") == "published_to_template"
 
     deployment = (
         db.query(PlatformDeployment)
@@ -169,24 +169,26 @@ def test_publish_to_template_uses_package_and_deployment_runtime(client: TestCli
         .first()
     )
     assert deployment is not None
-    assert deployment.status == "succeeded"
+    assert deployment.status == "planned"
+    assert deployment.deployment_kind == "template_publish"
     assert deployment.target_environment_type == "template"
+    orchestrator_manifest = (deployment.deployment_manifest_json or {}).get("publish_orchestrator") or {}
+    assert orchestrator_manifest.get("current_phase") == "version_pinned"
+    assert orchestrator_manifest.get("extension_points", {}).get("pin_version") == "completed"
+    assert deployment.deployment_manifest_json.get("verify_proof", {}).get("status") == "passed"
+    assert deployment.deployment_manifest_json.get("activation_status") == "activated"
+    assert deployment.deployment_manifest_json.get("activated_release_id") == "release-999"
+    assert deployment.deployment_manifest_json.get("version_pin_status") == "pinned"
+    assert deployment.deployment_manifest_json.get("materialized_release_id") == "release-999"
 
-    env_row = (
+    template_tenant_id = resolve_template_tenant_id(db)
+    env_version = (
         db.query(PlatformEnvironmentVersion)
-        .filter(PlatformEnvironmentVersion.tenant_id == deployment.target_tenant_id)
+        .filter(PlatformEnvironmentVersion.tenant_id == template_tenant_id)
         .one_or_none()
     )
-    assert env_row is not None
-    assert env_row.platform_version == package.platform_version
-
-    history_rows = (
-        db.query(PlatformVersionHistory)
-        .filter(PlatformVersionHistory.tenant_id == deployment.target_tenant_id)
-        .all()
-    )
-    assert len(history_rows) >= 1
-    assert any(row.platform_version == package.platform_version for row in history_rows)
+    assert env_version is not None
+    assert env_version.platform_version == package.platform_version
 
     _cleanup_package_dependencies(db, release_id)
     db.commit()

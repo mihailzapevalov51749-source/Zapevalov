@@ -6,10 +6,12 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.modules.platform_publish_orchestrator.schemas import PublishOrchestratorResultOut
 from app.modules.platform_release.constants import (
     ReleaseChangeType,
     ReleaseRiskLevel,
 )
+from app.modules.platform_release_scope.schemas import ReleaseScopeOut
 
 
 class ReleaseChangeCreate(BaseModel):
@@ -46,6 +48,7 @@ class PlatformReleaseCreate(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     description: str | None = None
     changes: list[ReleaseChangeCreate] = Field(default_factory=list)
+    selected_architectural_elements: list[str] = Field(default_factory=lambda: ["entity-engine"])
 
 
 class PlatformReleaseUpdate(BaseModel):
@@ -84,6 +87,8 @@ class PlatformReleaseOut(BaseModel):
     published_at: datetime | None = None
     published_by: int | None = None
     changes: list[ReleaseChangeOut] = Field(default_factory=list)
+    release_scope: ReleaseScopeOut | None = None
+    included_architectural_elements: list[str] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
 
@@ -136,6 +141,7 @@ class PublishToTemplateResult(BaseModel):
     release: PlatformReleaseOut
     template_tenant_id: int
     template_version: str
+    orchestrator: PublishOrchestratorResultOut | None = None
 
 
 class OfferToTenantsResult(BaseModel):
