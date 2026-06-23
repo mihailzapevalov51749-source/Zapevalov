@@ -14,6 +14,8 @@ from sqlalchemy.engine import Engine
 logger = logging.getLogger(__name__)
 
 LEGACY_DATABASE_NAME = "portal_constructor_v2"
+"""Monolithic pre-split database — read-only legacy / migration source; never a working contour DB."""
+
 ALLOWED_APP_ENVS = frozenset({"DEV", "TEMPLATE", "CLIENT"})
 SKIP_ENV_VAR = "YASNOPRO_SKIP_ENVIRONMENT_GUARD"
 
@@ -50,6 +52,10 @@ ENVIRONMENT_MATRIX: dict[str, EnvironmentExpectation] = {
         app_env_aliases=frozenset({"CLIENT", "DEMO_CLIENT"}),
     ),
 }
+
+WORKING_DATABASE_NAMES = frozenset(
+    expectation.database for expectation in ENVIRONMENT_MATRIX.values()
+)
 
 _ALIAS_TO_CANONICAL: dict[str, str] = {
     alias.upper(): canonical
@@ -116,7 +122,8 @@ def validate_legacy_database_blocked(*, app_env: str, database_name: str) -> Non
     if database_name == LEGACY_DATABASE_NAME and app_env in ALLOWED_APP_ENVS:
         raise EnvironmentGuardError(
             "Environment Guard failed:\n"
-            f"Legacy database {LEGACY_DATABASE_NAME} is not allowed for isolated environments."
+            f"Legacy database {LEGACY_DATABASE_NAME} is not allowed for isolated environments.\n"
+            "Use scripts/dev-stack/manifest.yaml (yasnopro_dev / yasnopro_template / yasnopro_client)."
         )
 
 

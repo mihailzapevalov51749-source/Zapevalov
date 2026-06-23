@@ -4,6 +4,8 @@
 
 Источник истины по портам и сервисам: `manifest.yaml`.
 
+**DATABASE_URL (WI-INFRA-CONFIG-001):** рабочие контуры получают имя БД только из `manifest.yaml` → `dev_stack.py`. Файл `platform/.env` **не** задаёт `DATABASE_URL`. Legacy `portal_constructor_v2` запрещена для DEV/TEMPLATE/CLIENT (Environment Guard). См. `docs/architecture/adr/ADR-INFRA-001-legacy-database-isolation.md`.
+
 ## Требования
 
 - `backend/.venv` (зависимости backend)
@@ -11,7 +13,7 @@
 - PostgreSQL на `localhost:5434` (см. `docker-compose.yml`)
 - Изолированные БД: `yasnopro_dev`, `yasnopro_template`, `yasnopro_client`
 
-## Команды
+## Команды (весь stack)
 
 Из корня репозитория:
 
@@ -20,6 +22,34 @@
 .\scripts\dev-stack\dev-stack.ps1 stop
 .\scripts\dev-stack\dev-stack.ps1 status
 ```
+
+## Команды (одна среда = backend + frontend)
+
+WI-RT-015A — lifecycle по среде:
+
+```powershell
+python scripts/dev-stack/dev_stack.py start dev
+python scripts/dev-stack/dev_stack.py stop dev
+python scripts/dev-stack/dev_stack.py status dev
+
+python scripts/dev-stack/dev_stack.py start template
+python scripts/dev-stack/dev_stack.py stop template
+python scripts/dev-stack/dev_stack.py status template
+
+python scripts/dev-stack/dev_stack.py start client
+python scripts/dev-stack/dev_stack.py stop client
+python scripts/dev-stack/dev_stack.py status client
+```
+
+PowerShell wrapper:
+
+```powershell
+.\scripts\dev-stack\dev-stack.ps1 start template
+.\scripts\dev-stack\dev-stack.ps1 status dev
+```
+
+`start <env>` запускает только отсутствующие сервисы среды (backend, затем frontend).
+`stop <env>` останавливает **только PID из `.run/`** для сервисов этой среды (без `Stop-Process python/node` глобально).
 
 Прямой вызов Python (опционально):
 

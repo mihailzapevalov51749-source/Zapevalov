@@ -42,9 +42,11 @@ def list_platform_environments_endpoint(
 )
 def mint_platform_environment_bridge_ticket_endpoint(
     portal_id: int,
+    db: Session = Depends(get_db),
     principal=Depends(require_platform_owner_principal),
 ):
     return mint_template_environment_bridge_ticket(
+        db,
         principal=principal,
         portal_id=portal_id,
     )

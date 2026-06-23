@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
 
 from app.modules.control_plane.platform_environments.platform_environment_launch_service import (
     PlatformEnvironmentLaunchForbidden,
@@ -12,6 +13,9 @@ from app.modules.control_plane.platform_environments.platform_environment_launch
 from app.modules.control_plane.platform_environments.schemas import (
     PlatformEnvironmentBridgeTicketResponse,
 )
+from app.modules.control_plane.platform_identity.principal.owner_profile import (
+    enrich_platform_principal_owner_profile,
+)
 from app.modules.control_plane.platform_identity.principal.types import PlatformPrincipal
 from app.modules.control_plane.platform_identity.session_bridge.issuer import (
     mint_bridge_ticket,
@@ -19,6 +23,7 @@ from app.modules.control_plane.platform_identity.session_bridge.issuer import (
 
 
 def mint_template_environment_bridge_ticket(
+    db: Session,
     *,
     principal: PlatformPrincipal,
     portal_id: int,
@@ -36,8 +41,10 @@ def mint_template_environment_bridge_ticket(
             detail=str(exc),
         ) from exc
 
+    enriched_principal = enrich_platform_principal_owner_profile(db, principal)
+
     ticket = mint_bridge_ticket(
-        principal,
+        enriched_principal,
         portal_id=launch.portal_id,
         database_name=launch.database_name,
         tenant_code=launch.tenant_code,

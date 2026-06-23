@@ -7,6 +7,8 @@ from sqlalchemy import or_, func
 from docx import Document
 from openpyxl import Workbook
 
+from app.core.runtime_paths import get_backend_root, get_uploads_dir
+
 from app.modules.document_libraries import repository
 from app.modules.pages.models import Page
 from app.modules.navigation.models import NavigationItem
@@ -15,8 +17,8 @@ from app.modules.tenant_management.tenant_write_policy import (
 )
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
-UPLOADS_DIR = BASE_DIR / "uploads"
+BASE_DIR = get_backend_root()
+UPLOADS_DIR = get_uploads_dir()
 DOCUMENTS_DIR = UPLOADS_DIR / "documents"
 
 DOCUMENTS_DIR.mkdir(parents=True, exist_ok=True)

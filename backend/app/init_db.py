@@ -199,8 +199,13 @@ def ensure_platform_dashboard_analysis_columns():
 
 
 def ensure_platform_dashboard_initialized():
+    from app.core.runtime_paths import is_dev_filesystem_scan_enabled
     from app.db.session import SessionLocal
     from app.modules.platform_dashboard.models import PlatformComponent
+
+    if not is_dev_filesystem_scan_enabled():
+        return
+
     from app.modules.platform_dashboard.yasii_sync import ensure_yasii_track_loaded
     from app.modules.platform_dashboard_analyzer.refresh import (
         build_scan_context,

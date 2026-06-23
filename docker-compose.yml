@@ -1,3 +1,7 @@
+# LEGACY REFERENCE ONLY (WI-INFRA-CONFIG-001).
+# Production PostgreSQL: container yasnopro_pg_prod, data E:\YasnoPro\data\postgres.
+# Working contours use yasnopro_dev / yasnopro_template / yasnopro_client via dev-stack manifest.
+# POSTGRES_DB below is the historical init name — not used by DEV/TEMPLATE/CLIENT backends.
 services:
   db:
     image: postgres:15

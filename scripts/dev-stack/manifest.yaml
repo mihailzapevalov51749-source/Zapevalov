@@ -1,4 +1,7 @@
-# Local dev stack manifest — single source of truth for WI-20.1.
+# Local dev stack manifest — single source of truth for WI-20.1 / WI-INFRA-CONFIG-001.
+# DATABASE assignment for DEV / TEMPLATE / CLIENT: environments.*.backend.database below.
+# dev_stack.py builds DATABASE_URL from this file — not from platform/.env.
+# Legacy portal_constructor_v2 is forbidden for working contours (Environment Guard).
 # Ports align with PLATFORM_ENVIRONMENT_LAUNCH_PORTS / vite.config.js / ENVIRONMENT_MATRIX.
 
 postgres:
@@ -10,11 +13,14 @@ postgres:
 paths:
   backend_dir: backend
   frontend_dir: frontend
+  suite_root: ..
   backend_venv: backend/.venv
   frontend_node_modules: frontend/node_modules
   run_dir: .run
   logs_dir: logs
   template_runtime_root: ../runtime/template
+  client_runtime_root: ../runtime/client
+  runtime_mounts: mounts
 
 backend_launch:
   module: app.main:app
@@ -49,6 +55,8 @@ environments:
       database: yasnopro_template
       service: template-backend
       log_file: template-backend.log
+      runtime: external_artifact
+      runtime_backend_slot: current/backend
     frontend:
       port: 5174
       npm_script: preview:template
@@ -65,9 +73,13 @@ environments:
       database: yasnopro_client
       service: client-backend
       log_file: client-backend.log
+      runtime: external_artifact
+      runtime_backend_slot: current/backend
     frontend:
       port: 5175
-      npm_script: dev:client
+      npm_script: preview:client
       vite_mode: client
+      runtime: external_artifact
+      runtime_frontend_slot: current/frontend
       service: client-frontend
       log_file: client-frontend.log

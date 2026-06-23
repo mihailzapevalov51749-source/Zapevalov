@@ -113,6 +113,13 @@ def test_validate_legacy_database_blocked() -> None:
         validate_database_url_match(app_env="DEV", database_url=legacy_url)
 
 
+@pytest.mark.parametrize("app_env", ["DEV", "TEMPLATE", "CLIENT"])
+def test_validate_legacy_database_blocked_all_contours(app_env: str) -> None:
+    legacy_url = f"postgresql://portal_user:portal_pass@localhost:5434/{LEGACY_DATABASE_NAME}"
+    with pytest.raises(EnvironmentGuardError, match="Legacy database"):
+        validate_database_url_match(app_env=app_env, database_url=legacy_url)
+
+
 def test_validate_portal_identity_positive() -> None:
     engine = create_engine("sqlite:///:memory:")
     portal_id, environment_role = validate_portal_identity(

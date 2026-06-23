@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
+from app.core.runtime_paths import get_uploads_dir
 from app.db.session import get_db
 from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
     require_runtime_actor,
@@ -17,8 +18,7 @@ from app.modules.users.models import User
 
 router = APIRouter(prefix="/files", tags=["Files"])
 
-BACKEND_DIR = Path(__file__).resolve().parents[3]
-UPLOADS_DIR = BACKEND_DIR / "uploads"
+UPLOADS_DIR = get_uploads_dir()
 
 ICONS_DIR = UPLOADS_DIR / "icons"
 IMAGES_DIR = UPLOADS_DIR / "images"

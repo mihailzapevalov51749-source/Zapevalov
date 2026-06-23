@@ -1,20 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Build TEMPLATE frontend and promote unified TEMPLATE runtime release.
-
-.DESCRIPTION
-  WI-RUNTIME-ISOLATION-03B + WI-RT-014C unified release:
-  frontend/src -> build -> frontend/.build-staging/template
-    -> ../runtime/template/releases/release-NNN/frontend
-    + forward-copy backend/ from current release when present
-    -> junction ../runtime/template/current -> release-NNN
-
-.PARAMETER SwitchToRelease
-  Rollback/switch only: repoint current junction to an existing release id.
-
-.PARAMETER ListReleases
-  List available release folders.
+  Build CLIENT frontend and promote unified CLIENT runtime release.
 #>
 param(
     [string]$SwitchToRelease = "",
@@ -30,28 +17,29 @@ $ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = (Resolve-Path (Join-Path $ScriptDir "..\..")).Path
-. (Join-Path $ScriptDir "_template_runtime_common.ps1")
+. (Join-Path $ScriptDir "_physical_runtime_common.ps1")
 
+$kind = Get-PhysicalRuntimeKindConfig -RuntimeKind client
 $FrontendDir = Join-Path $RepoRoot "frontend"
-$StagingDir = Join-Path $FrontendDir ".build-staging\template"
+$StagingDir = Join-Path $FrontendDir ".build-staging\client"
 $ViteBin = Join-Path $FrontendDir "node_modules\vite\bin\vite.js"
-$Paths = Get-TemplateRuntimePaths -RepoRoot $RepoRoot
+$Paths = Get-PhysicalRuntimePaths -RepoRoot $RepoRoot -RuntimeKind client
 
-Ensure-TemplateReleasesLayout -Paths $Paths
+Ensure-PhysicalReleasesLayout -Paths $Paths
 
 if ($ListReleases) {
-    Get-TemplateReleaseIds -ReleasesDir $Paths.ReleasesDir | ForEach-Object { $_.Name }
+    Get-PhysicalReleaseIds -ReleasesDir $Paths.ReleasesDir | ForEach-Object { $_.Name }
     exit 0
 }
 
 if ($SwitchToRelease) {
-    $releasePath = Join-Path $Paths.ReleasesDir $SwitchToRelease
-    if (-not (Test-Path -LiteralPath $releasePath)) {
+    $targetReleaseDir = Join-Path $Paths.ReleasesDir $SwitchToRelease
+    if (-not (Test-Path -LiteralPath $targetReleaseDir)) {
         throw "Release not found: $SwitchToRelease"
     }
-    Assert-UnifiedReleaseArtifacts -ReleasePath $releasePath -CurrentLink $Paths.CurrentLink
-    Set-TemplateCurrentJunction -CurrentLink $Paths.CurrentLink -ReleasePath $releasePath
-    Assert-UnifiedReleaseArtifacts -ReleasePath $releasePath -CurrentLink $Paths.CurrentLink
+    Assert-UnifiedReleaseArtifacts -ReleasePath $targetReleaseDir -CurrentLink $Paths.CurrentLink
+    Set-PhysicalCurrentJunction -CurrentLink $Paths.CurrentLink -ReleasePath $targetReleaseDir -RuntimeLabel $kind.Label
+    Assert-UnifiedReleaseArtifacts -ReleasePath $targetReleaseDir -CurrentLink $Paths.CurrentLink
     Write-Output "Switched current -> $SwitchToRelease"
     exit 0
 }
@@ -62,9 +50,9 @@ if (-not (Test-Path -LiteralPath $ViteBin)) {
 
 Push-Location $FrontendDir
 try {
-    & node $ViteBin build --mode template
+    & node $ViteBin build --mode client
     if ($LASTEXITCODE -ne 0) {
-        throw "vite build --mode template failed with exit code $LASTEXITCODE"
+        throw "vite build --mode client failed with exit code $LASTEXITCODE"
     }
 }
 finally {
@@ -75,22 +63,21 @@ if (-not (Test-Path -LiteralPath (Join-Path $StagingDir "index.html"))) {
     throw "Build staging output missing: $StagingDir\index.html"
 }
 
-$releaseId = Get-NextTemplateReleaseId -ReleasesDir $Paths.ReleasesDir
-$releasePath = Join-Path $Paths.ReleasesDir $releaseId
-$releaseFrontend = Join-Path $releasePath "frontend"
-$releaseBackend = Join-Path $releasePath "backend"
+$targetReleaseId = Get-NextPhysicalReleaseId -ReleasesDir $Paths.ReleasesDir
+$targetReleaseDir = Join-Path $Paths.ReleasesDir $targetReleaseId
+$releaseFrontend = Join-Path $targetReleaseDir "frontend"
+$releaseBackend = Join-Path $targetReleaseDir "backend"
 
 New-Item -ItemType Directory -Force -Path $releaseFrontend | Out-Null
 Copy-Item -Path (Join-Path $StagingDir "*") -Destination $releaseFrontend -Recurse -Force
 
 $currentBackend = Join-Path $Paths.CurrentLink "backend"
-$backendFingerprint = $null
 if (Test-Path -LiteralPath (Join-Path $currentBackend "app\main.py")) {
-    Copy-TemplateArtifactTree -SourceDir $currentBackend -DestinationDir $releaseBackend
+    Copy-PhysicalArtifactTree -SourceDir $currentBackend -DestinationDir $releaseBackend
     $backendFingerprint = Invoke-BackendRuntimeFingerprint -RepoRoot $RepoRoot -BackendRoot $releaseBackend -AsJson
 }
 else {
-    Write-Warning "No backend artifact in current release; promote backend after frontend with promote_template_backend.ps1"
+    Write-Warning "No backend artifact in current release; promote backend after frontend with promote_client_backend.ps1"
     $backendFingerprint = [ordered]@{
         version               = "1"
         hash                  = ""
@@ -104,11 +91,11 @@ if (-not $gitCommit) {
     throw "Unable to resolve git commit for $RepoRoot"
 }
 
-$slotKey = Resolve-PhysicalRuntimeSlotKey -RuntimeKind template -RuntimeSlotKey $RuntimeSlotKey
+$slotKey = Resolve-PhysicalRuntimeSlotKey -RuntimeKind client -RuntimeSlotKey $RuntimeSlotKey
 
 Write-UnifiedReleaseManifest `
-    -ManifestReleaseDir $releasePath `
-    -ManifestReleaseId $releaseId `
+    -ManifestReleaseDir $targetReleaseDir `
+    -ManifestReleaseId $targetReleaseId `
     -GitCommit $gitCommit `
     -FrontendDigest $frontendDigest `
     -BackendFingerprint $backendFingerprint `
@@ -118,13 +105,13 @@ Write-UnifiedReleaseManifest `
     -BuildId $BuildId `
     -BuildKey $BuildKey
 
-Set-TemplateCurrentJunction -CurrentLink $Paths.CurrentLink -ReleasePath $releasePath
+Set-PhysicalCurrentJunction -CurrentLink $Paths.CurrentLink -ReleasePath $targetReleaseDir -RuntimeLabel $kind.Label
 
 if (Test-Path -LiteralPath (Join-Path $releaseBackend "app\main.py")) {
-    Assert-UnifiedReleaseArtifacts -ReleasePath $releasePath -CurrentLink $Paths.CurrentLink
+    Assert-UnifiedReleaseArtifacts -ReleasePath $targetReleaseDir -CurrentLink $Paths.CurrentLink
 }
 
-Write-Output "Promoted $releaseId"
+Write-Output "Promoted $targetReleaseId"
 Write-Output "Runtime frontend: $(Join-Path $Paths.CurrentLink 'frontend')"
 if ($backendFingerprint.hash) {
     Write-Output "Runtime backend: $(Join-Path $Paths.CurrentLink 'backend')"

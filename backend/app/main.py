@@ -1,4 +1,4 @@
-from pathlib import Path
+from app.core.runtime_paths import UPLOADS_DIR, get_uploads_dir
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -132,8 +132,7 @@ from app.modules.platform.designer.object_types.models import (  # noqa: F401
 )
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-UPLOADS_DIR = BASE_DIR / "uploads"
+UPLOADS_DIR = get_uploads_dir()
 
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 

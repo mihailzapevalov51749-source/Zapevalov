@@ -14,12 +14,22 @@
 
 .EXAMPLE
   .\scripts\dev-stack\dev-stack.ps1 status
+
+.EXAMPLE
+  .\scripts\dev-stack\dev-stack.ps1 start template
+
+.EXAMPLE
+  .\scripts\dev-stack\dev-stack.ps1 stop dev
 #>
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("start", "stop", "status")]
-    [string]$Command = "status"
+    [ValidateSet("start", "stop", "status", "restart")]
+    [string]$Command = "status",
+
+    [Parameter(Position = 1)]
+    [ValidateSet("dev", "template", "client")]
+    [string]$Environment
 )
 
 $ErrorActionPreference = "Stop"
@@ -36,5 +46,11 @@ else {
     $Python = "python"
 }
 
-& $Python $PythonScript $Command --repo-root $RepoRoot
+$pythonArgs = @($Command)
+if ($Environment) {
+    $pythonArgs += $Environment
+}
+$pythonArgs += @("--repo-root", $RepoRoot)
+
+& $Python $PythonScript @pythonArgs
 exit $LASTEXITCODE

@@ -1,13 +1,13 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  Build TEMPLATE frontend and promote unified TEMPLATE runtime release.
+  Stage monorepo backend and promote unified TEMPLATE runtime release.
 
 .DESCRIPTION
-  WI-RUNTIME-ISOLATION-03B + WI-RT-014C unified release:
-  frontend/src -> build -> frontend/.build-staging/template
-    -> ../runtime/template/releases/release-NNN/frontend
-    + forward-copy backend/ from current release when present
+  WI-RT-014C:
+  backend/app -> backend/.build-staging/template/backend
+    -> ../runtime/template/releases/release-NNN/backend
+    + forward-copy frontend/ from current release (unified release policy)
     -> junction ../runtime/template/current -> release-NNN
 
 .PARAMETER SwitchToRelease
@@ -32,10 +32,8 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = (Resolve-Path (Join-Path $ScriptDir "..\..")).Path
 . (Join-Path $ScriptDir "_template_runtime_common.ps1")
 
-$FrontendDir = Join-Path $RepoRoot "frontend"
-$StagingDir = Join-Path $FrontendDir ".build-staging\template"
-$ViteBin = Join-Path $FrontendDir "node_modules\vite\bin\vite.js"
 $Paths = Get-TemplateRuntimePaths -RepoRoot $RepoRoot
+$StagingBackendDir = Join-Path $RepoRoot "backend\.build-staging\template\backend"
 
 Ensure-TemplateReleasesLayout -Paths $Paths
 
@@ -56,48 +54,27 @@ if ($SwitchToRelease) {
     exit 0
 }
 
-if (-not (Test-Path -LiteralPath $ViteBin)) {
-    throw "Vite not found. Run npm install in frontend/ first."
+$currentFrontend = Join-Path $Paths.CurrentLink "frontend"
+if (-not (Test-Path -LiteralPath (Join-Path $currentFrontend "index.html"))) {
+    throw @"
+Unified release requires frontend artifact in current release.
+Run first:
+  .\scripts\runtime\promote_template_frontend.ps1
+"@
 }
 
-Push-Location $FrontendDir
-try {
-    & node $ViteBin build --mode template
-    if ($LASTEXITCODE -ne 0) {
-        throw "vite build --mode template failed with exit code $LASTEXITCODE"
-    }
-}
-finally {
-    Pop-Location
-}
-
-if (-not (Test-Path -LiteralPath (Join-Path $StagingDir "index.html"))) {
-    throw "Build staging output missing: $StagingDir\index.html"
-}
+Build-BackendRuntimeStaging -RepoRoot $RepoRoot -StagingBackendDir $StagingBackendDir
 
 $releaseId = Get-NextTemplateReleaseId -ReleasesDir $Paths.ReleasesDir
 $releasePath = Join-Path $Paths.ReleasesDir $releaseId
-$releaseFrontend = Join-Path $releasePath "frontend"
 $releaseBackend = Join-Path $releasePath "backend"
+$releaseFrontend = Join-Path $releasePath "frontend"
 
-New-Item -ItemType Directory -Force -Path $releaseFrontend | Out-Null
-Copy-Item -Path (Join-Path $StagingDir "*") -Destination $releaseFrontend -Recurse -Force
+New-Item -ItemType Directory -Force -Path $releaseBackend | Out-Null
+Copy-Item -Path (Join-Path $StagingBackendDir "*") -Destination $releaseBackend -Recurse -Force
+Copy-TemplateArtifactTree -SourceDir $currentFrontend -DestinationDir $releaseFrontend
 
-$currentBackend = Join-Path $Paths.CurrentLink "backend"
-$backendFingerprint = $null
-if (Test-Path -LiteralPath (Join-Path $currentBackend "app\main.py")) {
-    Copy-TemplateArtifactTree -SourceDir $currentBackend -DestinationDir $releaseBackend
-    $backendFingerprint = Invoke-BackendRuntimeFingerprint -RepoRoot $RepoRoot -BackendRoot $releaseBackend -AsJson
-}
-else {
-    Write-Warning "No backend artifact in current release; promote backend after frontend with promote_template_backend.ps1"
-    $backendFingerprint = [ordered]@{
-        version               = "1"
-        hash                  = ""
-        production_file_count = 0
-    }
-}
-
+$backendFingerprint = Invoke-BackendRuntimeFingerprint -RepoRoot $RepoRoot -BackendRoot $releaseBackend -AsJson
 $frontendDigest = Get-FrontendBundleDigest -FrontendArtifactDir $releaseFrontend
 $gitCommit = (& git -C $RepoRoot rev-parse HEAD).Trim()
 if (-not $gitCommit) {
@@ -119,15 +96,10 @@ Write-UnifiedReleaseManifest `
     -BuildKey $BuildKey
 
 Set-TemplateCurrentJunction -CurrentLink $Paths.CurrentLink -ReleasePath $releasePath
-
-if (Test-Path -LiteralPath (Join-Path $releaseBackend "app\main.py")) {
-    Assert-UnifiedReleaseArtifacts -ReleasePath $releasePath -CurrentLink $Paths.CurrentLink
-}
+Assert-UnifiedReleaseArtifacts -ReleasePath $releasePath -CurrentLink $Paths.CurrentLink
 
 Write-Output "Promoted $releaseId"
+Write-Output "Runtime backend: $(Join-Path $Paths.CurrentLink 'backend')"
 Write-Output "Runtime frontend: $(Join-Path $Paths.CurrentLink 'frontend')"
-if ($backendFingerprint.hash) {
-    Write-Output "Runtime backend: $(Join-Path $Paths.CurrentLink 'backend')"
-    Write-Output "Backend fingerprint: $($backendFingerprint.hash)"
-}
+Write-Output "Backend fingerprint: $($backendFingerprint.hash)"
 Write-Output "Manifest: $(Join-Path $Paths.CurrentLink 'manifest.json')"

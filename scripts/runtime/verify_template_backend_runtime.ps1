@@ -6,7 +6,7 @@ $RepoRoot = (Resolve-Path (Join-Path $ScriptDir "..\..")).Path
 . (Join-Path $ScriptDir "_template_runtime_common.ps1")
 
 try {
-    $result = Invoke-TemplateRuntimeVerification -RepoRoot $RepoRoot -Scope full
+    $result = Invoke-TemplateRuntimeVerification -RepoRoot $RepoRoot -Scope backend
 }
 catch {
     Write-Error $_.Exception.Message
@@ -14,10 +14,8 @@ catch {
     exit 1
 }
 
-$indexPath = Join-Path $result.CurrentLink "frontend\index.html"
-Write-Output "TEMPLATE runtime verification passed"
+Write-Output "TEMPLATE backend runtime verification passed"
 Write-Output "current=$($result.CurrentLink)"
-Write-Output "manifest=$($result.ManifestPath)"
-Write-Output "frontend=$indexPath"
 Write-Output "backend=$($result.BackendRoot)"
+Write-Output "manifest=$($result.ManifestPath)"
 exit 0
