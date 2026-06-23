@@ -10,10 +10,15 @@ const FRONTEND_PORT_BY_MODE = {
 /** WI-RUNTIME-ISOLATION-03B: build staging inside DEV workspace only. */
 const BUILD_STAGING_OUT_DIR_BY_MODE = {
   template: ".build-staging/template",
+  client: ".build-staging/client",
 };
 
 const templateRuntimeFrontend = String(
   process.env.YASNOPRO_TEMPLATE_RUNTIME_FRONTEND || "",
+).trim();
+
+const clientRuntimeFrontend = String(
+  process.env.YASNOPRO_CLIENT_RUNTIME_FRONTEND || "",
 ).trim();
 
 function resolvePlatformApiChunk(id) {
@@ -41,6 +46,8 @@ export default defineConfig(({ mode, command, isPreview }) => {
     outDir = stagingOutDir;
   } else if (isPreview && mode === "template" && templateRuntimeFrontend) {
     outDir = templateRuntimeFrontend;
+  } else if (isPreview && mode === "client" && clientRuntimeFrontend) {
+    outDir = clientRuntimeFrontend;
   }
 
   return {
