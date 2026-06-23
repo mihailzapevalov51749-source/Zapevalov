@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.modules.control_plane.platform_identity.session_bridge.bridge_owner_profile import (
+    enrich_bridge_principal_owner_profile,
+)
 from app.modules.control_plane.platform_identity.session_bridge.bridge_principal import (
     BridgePrincipal,
     build_bridge_principal,
@@ -39,7 +42,9 @@ def exchange_bridge_ticket(payload: BridgeExchangeRequest) -> BridgeExchangeResp
             detail=result.status or "Недействительный bridge ticket",
         )
 
-    principal = build_bridge_principal(result.claims)
+    principal = enrich_bridge_principal_owner_profile(
+        build_bridge_principal(result.claims),
+    )
     access_token = create_bridge_session_token(principal)
     return build_bridge_exchange_response(principal, access_token)
 
@@ -48,4 +53,5 @@ def exchange_bridge_ticket(payload: BridgeExchangeRequest) -> BridgeExchangeResp
 def get_bridge_session_me(
     principal: BridgePrincipal = Depends(get_current_bridge_principal),
 ) -> BridgeMeResponse:
-    return build_bridge_me_response(principal)
+    enriched = enrich_bridge_principal_owner_profile(principal)
+    return build_bridge_me_response(enriched)

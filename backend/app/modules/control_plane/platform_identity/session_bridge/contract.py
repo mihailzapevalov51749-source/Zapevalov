@@ -24,6 +24,10 @@ class BridgeClaims:
     expires_at: datetime
     auth_source: str | None = None
     environment_key: str | None = None
+    owner_email: str | None = None
+    owner_display_name: str | None = None
+    owner_phone: str | None = None
+    owner_avatar_url: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -39,6 +43,14 @@ class BridgeClaims:
         }
         if self.environment_key:
             payload["environment_key"] = self.environment_key
+        if self.owner_email:
+            payload["owner_email"] = self.owner_email
+        if self.owner_display_name:
+            payload["owner_display_name"] = self.owner_display_name
+        if self.owner_phone:
+            payload["owner_phone"] = self.owner_phone
+        if self.owner_avatar_url:
+            payload["owner_avatar_url"] = self.owner_avatar_url
         return payload
 
 

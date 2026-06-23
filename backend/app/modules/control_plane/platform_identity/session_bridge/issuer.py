@@ -28,6 +28,10 @@ CLAIM_PORTAL_ID = "portal_id"
 CLAIM_DATABASE_NAME = "database_name"
 CLAIM_TENANT_CODE = "tenant_code"
 CLAIM_ENVIRONMENT_KEY = "environment_key"
+CLAIM_OWNER_EMAIL = "owner_email"
+CLAIM_OWNER_DISPLAY_NAME = "owner_display_name"
+CLAIM_OWNER_PHONE = "owner_phone"
+CLAIM_OWNER_AVATAR_URL = "owner_avatar_url"
 
 
 def _utc_now() -> datetime:
@@ -52,6 +56,14 @@ def _claims_to_jwt_payload(claims: BridgeClaims) -> dict:
         payload[BRIDGE_CLAIM_AUTH_SOURCE] = claims.auth_source
     if claims.environment_key:
         payload[CLAIM_ENVIRONMENT_KEY] = claims.environment_key
+    if claims.owner_email:
+        payload[CLAIM_OWNER_EMAIL] = claims.owner_email
+    if claims.owner_display_name:
+        payload[CLAIM_OWNER_DISPLAY_NAME] = claims.owner_display_name
+    if claims.owner_phone:
+        payload[CLAIM_OWNER_PHONE] = claims.owner_phone
+    if claims.owner_avatar_url:
+        payload[CLAIM_OWNER_AVATAR_URL] = claims.owner_avatar_url
     return payload
 
 
@@ -95,6 +107,10 @@ def mint_bridge_ticket(
         expires_at=expires_at,
         auth_source=auth_source,
         environment_key=normalized_environment_key,
+        owner_email=str(platform_principal.email or "").strip() or None,
+        owner_display_name=str(platform_principal.display_name or "").strip() or None,
+        owner_phone=str(platform_principal.phone or "").strip() or None,
+        owner_avatar_url=str(platform_principal.avatar_url or "").strip() or None,
     )
 
     token = jwt.encode(

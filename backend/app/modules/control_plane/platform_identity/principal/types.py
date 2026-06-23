@@ -22,6 +22,8 @@ class PlatformPrincipal:
     platform_role: str
     email: str
     display_name: str | None = None
+    phone: str | None = None
+    avatar_url: str | None = None
 
     @property
     def principal_type(self) -> str:
@@ -45,6 +47,8 @@ class PlatformPrincipal:
             extra={
                 "email": self.email,
                 "display_name": self.display_name,
+                "phone": self.phone,
+                "avatar_url": self.avatar_url,
             },
         )
 

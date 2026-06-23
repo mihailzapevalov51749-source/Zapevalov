@@ -21,9 +21,6 @@ from app.modules.control_plane.platform_identity.session_bridge.bridge_principal
 from app.modules.control_plane.platform_identity.session_bridge.issuer import (
     mint_bridge_ticket as issuer_mint,
 )
-from app.modules.control_plane.platform_identity.session_bridge.response_builders import (
-    BRIDGE_DISPLAY_NAME_PLATFORM_OWNER,
-)
 
 
 @pytest.fixture()
@@ -69,7 +66,8 @@ def test_template_bridge_exchange_identity_flags(platform_principal) -> None:
     assert body["is_infrastructure_superadmin"] is True
     assert body["is_platform_owner"] is True
     assert body["effective_role"] == "superadmin"
-    assert body["display_name"] == BRIDGE_DISPLAY_NAME_PLATFORM_OWNER
+    assert body["display_name"] == "Owner"
+    assert body["email"] == "owner@platform.test"
 
 
 def test_client_bridge_exchange_preserves_company_context_without_infra(platform_principal) -> None:

@@ -25,6 +25,9 @@ from app.modules.document_libraries.bridge_router import (
 )
 
 from app.modules.auth.router import router as auth_router
+from app.modules.control_plane.platform_identity.profile_router import (
+    router as platform_identity_profile_router,
+)
 from app.modules.control_plane.platform_identity.session_bridge.router import (
     router as session_bridge_router,
 )
@@ -159,6 +162,7 @@ for _uploads_subdir in ("icons", "images", "avatars"):
 # AUTH
 app.include_router(auth_router)
 app.include_router(session_bridge_router)
+app.include_router(platform_identity_profile_router)
 app.include_router(users_router)
 
 # PORTALS

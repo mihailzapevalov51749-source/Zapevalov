@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from sqlalchemy.orm import Session
+
+from app.modules.control_plane.platform_identity.principal.owner_profile import (
+    enrich_platform_principal_owner_profile,
+)
 from app.modules.control_plane.platform_identity.principal.types import PlatformPrincipal
 from app.modules.control_plane.platform_identity.session_bridge.catalog_target import (
     resolve_bridge_target_from_catalog,
@@ -23,8 +28,9 @@ def mint_catalog_bridge_ticket(
     portal_id: int,
 ) -> BridgeTicketMintResponse:
     database_name, tenant_code = resolve_bridge_target_from_catalog(db, portal_id=portal_id)
+    enriched_principal = enrich_platform_principal_owner_profile(db, principal)
     ticket = mint_bridge_ticket(
-        principal,
+        enriched_principal,
         portal_id=portal_id,
         database_name=database_name,
         tenant_code=tenant_code,

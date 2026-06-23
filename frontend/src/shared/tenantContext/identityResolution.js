@@ -16,6 +16,10 @@ export function isTenantMemberIdentity(user) {
 export function resolveDisplayRoleLabel(user) {
   if (!user) return "user";
 
+  if (user.is_bridge_session) {
+    return "";
+  }
+
   const effectiveRole = String(user.effective_role || "").trim().toLowerCase();
   if (effectiveRole) {
     return effectiveRole;

@@ -52,6 +52,8 @@ class PrincipalFactory:
             platform_role=PLATFORM_ROLE_OWNER,
             email=identity.email,
             display_name=identity.full_name or user.full_name,
+            phone=identity.phone,
+            avatar_url=identity.avatar_url,
         )
     @staticmethod
     def _build_tenant_principal(db: Session, user: User) -> TenantPrincipal:

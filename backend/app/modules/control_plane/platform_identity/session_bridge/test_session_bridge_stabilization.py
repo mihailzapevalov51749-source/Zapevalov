@@ -164,4 +164,4 @@ def test_bridge_me_preserves_portal_context_after_exchange(platform_principal) -
     assert body["is_infrastructure_superadmin"] is True
     assert body["is_platform_owner"] is True
     assert body["effective_role"] == "superadmin"
-    assert body["display_name"] == "Platform Owner"
+    assert body["display_name"] == "Owner"

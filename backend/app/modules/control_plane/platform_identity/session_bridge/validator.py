@@ -16,6 +16,10 @@ from app.modules.control_plane.platform_identity.session_bridge.contract import 
 from app.modules.control_plane.platform_identity.session_bridge.issuer import (
     CLAIM_DATABASE_NAME,
     CLAIM_ENVIRONMENT_KEY,
+    CLAIM_OWNER_DISPLAY_NAME,
+    CLAIM_OWNER_EMAIL,
+    CLAIM_OWNER_PHONE,
+    CLAIM_OWNER_AVATAR_URL,
     CLAIM_PLATFORM_IDENTITY_ID,
     CLAIM_PLATFORM_ROLE,
     CLAIM_PORTAL_ID,
@@ -62,6 +66,11 @@ def _parse_claims(payload: dict) -> BridgeClaims:
         else None
     )
 
+    owner_email_raw = payload.get(CLAIM_OWNER_EMAIL)
+    owner_display_name_raw = payload.get(CLAIM_OWNER_DISPLAY_NAME)
+    owner_phone_raw = payload.get(CLAIM_OWNER_PHONE)
+    owner_avatar_url_raw = payload.get(CLAIM_OWNER_AVATAR_URL)
+
     return BridgeClaims(
         ticket_id=uuid.UUID(str(ticket_id_raw)),
         platform_identity_id=uuid.UUID(str(identity_raw)),
@@ -77,6 +86,26 @@ def _parse_claims(payload: dict) -> BridgeClaims:
             else None
         ),
         environment_key=environment_key,
+        owner_email=(
+            str(owner_email_raw).strip()
+            if owner_email_raw is not None and str(owner_email_raw).strip()
+            else None
+        ),
+        owner_display_name=(
+            str(owner_display_name_raw).strip()
+            if owner_display_name_raw is not None and str(owner_display_name_raw).strip()
+            else None
+        ),
+        owner_phone=(
+            str(owner_phone_raw).strip()
+            if owner_phone_raw is not None and str(owner_phone_raw).strip()
+            else None
+        ),
+        owner_avatar_url=(
+            str(owner_avatar_url_raw).strip()
+            if owner_avatar_url_raw is not None and str(owner_avatar_url_raw).strip()
+            else None
+        ),
     )
 
 

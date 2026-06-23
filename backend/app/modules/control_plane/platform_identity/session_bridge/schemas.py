@@ -32,7 +32,10 @@ class BridgeExchangeResponse(BaseModel):
     is_platform_owner: bool = False
     effective_role: str | None = None
     display_name: str | None = None
+    full_name: str | None = None
     email: str | None = None
+    phone: str | None = None
+    avatar_url: str | None = None
 
 
 class BridgeMeResponse(BaseModel):
@@ -48,4 +51,7 @@ class BridgeMeResponse(BaseModel):
     is_platform_owner: bool = False
     effective_role: str | None = None
     display_name: str | None = None
+    full_name: str | None = None
     email: str | None = None
+    phone: str | None = None
+    avatar_url: str | None = None

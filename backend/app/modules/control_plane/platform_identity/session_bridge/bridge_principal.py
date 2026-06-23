@@ -25,6 +25,10 @@ class BridgePrincipal:
     tenant_code: str
     ticket_id: uuid.UUID
     environment_key: str | None = None
+    owner_email: str | None = None
+    owner_display_name: str | None = None
+    owner_phone: str | None = None
+    owner_avatar_url: str | None = None
 
     @property
     def principal_type(self) -> str:
@@ -62,6 +66,10 @@ class BridgePrincipal:
             "ticket_id": str(self.ticket_id),
             "environment_key": self.environment_key,
             "is_infrastructure_superadmin": self.is_infrastructure_superadmin,
+            "owner_email": self.owner_email,
+            "owner_display_name": self.owner_display_name,
+            "owner_phone": self.owner_phone,
+            "owner_avatar_url": self.owner_avatar_url,
         }
 
 
@@ -75,4 +83,8 @@ def build_bridge_principal(claims: BridgeClaims) -> BridgePrincipal:
         tenant_code=claims.tenant_code,
         ticket_id=claims.ticket_id,
         environment_key=claims.environment_key,
+        owner_email=claims.owner_email,
+        owner_display_name=claims.owner_display_name,
+        owner_phone=claims.owner_phone,
+        owner_avatar_url=claims.owner_avatar_url,
     )

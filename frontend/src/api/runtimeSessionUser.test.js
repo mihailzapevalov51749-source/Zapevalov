@@ -29,14 +29,20 @@ describe("runtimeSessionUser mapping", () => {
       is_platform_owner: true,
       effective_role: "superadmin",
       role: "superadmin",
-      name: "Platform Owner",
-      full_name: "Platform Owner",
+      name: "Михаил Запевалов",
+      full_name: "Михаил Запевалов",
+      email: "zmn8@ya.ru",
+      phone: "89959987006",
+      avatar_url: "https://cdn.example/owner.png",
       portal_id: 2,
       database_name: "yasnopro_template",
     });
 
-    assert.equal(mapped.full_name, "Platform Owner");
-    assert.equal(mapped.name, "Platform Owner");
+    assert.equal(mapped.full_name, "Михаил Запевалов");
+    assert.equal(mapped.name, "Михаил Запевалов");
+    assert.equal(mapped.email, "zmn8@ya.ru");
+    assert.equal(mapped.phone, "89959987006");
+    assert.equal(mapped.avatar_url, "https://cdn.example/owner.png");
   });
 
   it("TEMPLATE bridge user allows Studio and Administration", () => {
@@ -46,12 +52,13 @@ describe("runtimeSessionUser mapping", () => {
       is_platform_owner: true,
       effective_role: "superadmin",
       role: "superadmin",
-      name: "Platform Owner",
+      name: "Михаил Запевалов",
+      full_name: "Михаил Запевалов",
       portal_id: 2,
       database_name: "yasnopro_template",
     };
 
-    assert.equal(user.name, "Platform Owner");
+    assert.equal(user.name, "Михаил Запевалов");
     assert.equal(canAccessTenantDesigner(user), true);
     assert.equal(canAccessTenantAdministration(user), true);
   });

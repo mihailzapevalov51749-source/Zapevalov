@@ -23,6 +23,16 @@ export {
 
 export { getRuntimeAuthToken } from "./runtimeAuthToken.js";
 
+export const FORBIDDEN_BRIDGE_DISPLAY_LABELS = new Set(["Platform Owner"]);
+
+export function sanitizeBridgeDisplayName(value) {
+  const normalized = String(value || "").trim();
+  if (!normalized || FORBIDDEN_BRIDGE_DISPLAY_LABELS.has(normalized)) {
+    return undefined;
+  }
+  return normalized;
+}
+
 export function clearBridgeSession() {
   clearBridgeSessionStorage();
 }
@@ -34,10 +44,15 @@ export function normalizeBridgeSessionUser(payload) {
 
   const portalId = Number(payload.portal_id);
   const isInfrastructureSuperadmin = Boolean(payload.is_infrastructure_superadmin);
+  const isPlatformOwner = Boolean(payload.is_platform_owner);
   const effectiveRole = String(payload.effective_role || "").trim().toLowerCase();
   const roleName = isInfrastructureSuperadmin
     ? effectiveRole || "superadmin"
     : "";
+
+  const resolvedDisplayName = sanitizeBridgeDisplayName(
+    payload.display_name || payload.full_name || payload.name,
+  );
 
   return {
     principal_type: String(payload.principal_type || "bridge"),
@@ -52,16 +67,12 @@ export function normalizeBridgeSessionUser(payload) {
     ticket_id: payload.ticket_id ? String(payload.ticket_id) : undefined,
     is_bridge_session: true,
     is_infrastructure_superadmin: isInfrastructureSuperadmin,
-    is_platform_owner: Boolean(payload.is_platform_owner),
+    is_platform_owner: isPlatformOwner,
     role: roleName || undefined,
     effective_role: effectiveRole || undefined,
-    name:
-      String(payload.display_name || payload.name || "").trim() ||
-      (isInfrastructureSuperadmin ? "Platform Owner" : undefined),
-    full_name:
-      String(payload.display_name || payload.full_name || payload.name || "").trim() ||
-      (isInfrastructureSuperadmin ? "Platform Owner" : undefined),
-    email: payload.email ? String(payload.email) : undefined,
+    profile_source: "session_bridge_context",
+    name: resolvedDisplayName,
+    full_name: resolvedDisplayName,
   };
 }
 
@@ -98,7 +109,26 @@ function persistBridgeExchangeResult(data, redirectPath = null) {
 
   const bridgeUser = normalizeBridgeSessionUser(data);
   localStorage.setItem("currentUser", JSON.stringify(bridgeUser));
+  hydrateBridgeSessionUserFromIdentityStore().catch(() => {});
   return bridgeUser;
+}
+
+export async function hydrateBridgeSessionUserFromIdentityStore() {
+  const { getPlatformIdentityMe, mapPlatformIdentityProfileToRuntimeUser } =
+    await import("./platformIdentityProfileApi.js");
+  const bridgeContext = normalizeBridgeSessionUser(
+    getBridgeSessionContext() || {},
+  );
+  if (!bridgeContext) {
+    return null;
+  }
+  const profile = await getPlatformIdentityMe();
+  const runtimeUser = mapPlatformIdentityProfileToRuntimeUser(profile, {
+    ...bridgeContext,
+    is_bridge_session: true,
+  });
+  localStorage.setItem("currentUser", JSON.stringify(runtimeUser));
+  return runtimeUser;
 }
 
 export async function exchangeBridgeTicket(bridgeTicket, options = {}) {
@@ -167,6 +197,11 @@ export async function getBridgeMe() {
     redirect_path: getBridgeSessionContext()?.redirect_path || null,
   });
   localStorage.setItem("currentUser", JSON.stringify(bridgeUser));
+  try {
+    await hydrateBridgeSessionUserFromIdentityStore();
+  } catch {
+    // profile hydration is best-effort; runtimeSessionUser refetches on open
+  }
   return bridgeUser;
 }
 

@@ -22,6 +22,10 @@ CLAIM_DATABASE_NAME = "database_name"
 CLAIM_TENANT_CODE = "tenant_code"
 CLAIM_TICKET_ID = "ticket_id"
 CLAIM_ENVIRONMENT_KEY = "environment_key"
+CLAIM_OWNER_EMAIL = "owner_email"
+CLAIM_OWNER_DISPLAY_NAME = "owner_display_name"
+CLAIM_OWNER_PHONE = "owner_phone"
+CLAIM_OWNER_AVATAR_URL = "owner_avatar_url"
 
 
 def get_bridge_session_signing_key() -> str:

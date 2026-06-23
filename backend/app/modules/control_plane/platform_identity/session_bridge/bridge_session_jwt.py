@@ -24,6 +24,10 @@ from app.modules.control_plane.platform_identity.session_bridge.bridge_session_t
     CLAIM_PRINCIPAL_TYPE,
     CLAIM_TENANT_CODE,
     CLAIM_TICKET_ID,
+    CLAIM_OWNER_EMAIL,
+    CLAIM_OWNER_DISPLAY_NAME,
+    CLAIM_OWNER_PHONE,
+    CLAIM_OWNER_AVATAR_URL,
     DEFAULT_BRIDGE_SESSION_TTL_SECONDS,
     get_bridge_session_signing_key,
 )
@@ -63,6 +67,14 @@ def create_bridge_session_token(
     }
     if principal.environment_key:
         payload[CLAIM_ENVIRONMENT_KEY] = principal.environment_key
+    if principal.owner_email:
+        payload[CLAIM_OWNER_EMAIL] = principal.owner_email
+    if principal.owner_display_name:
+        payload[CLAIM_OWNER_DISPLAY_NAME] = principal.owner_display_name
+    if principal.owner_phone:
+        payload[CLAIM_OWNER_PHONE] = principal.owner_phone
+    if principal.owner_avatar_url:
+        payload[CLAIM_OWNER_AVATAR_URL] = principal.owner_avatar_url
     return jwt.encode(payload, get_bridge_session_signing_key(), algorithm=BRIDGE_ALGORITHM)
 
 
@@ -96,6 +108,11 @@ def decode_bridge_session_token(token: str) -> BridgePrincipal:
         else None
     )
 
+    owner_email_raw = payload.get(CLAIM_OWNER_EMAIL)
+    owner_display_name_raw = payload.get(CLAIM_OWNER_DISPLAY_NAME)
+    owner_phone_raw = payload.get(CLAIM_OWNER_PHONE)
+    owner_avatar_url_raw = payload.get(CLAIM_OWNER_AVATAR_URL)
+
     return BridgePrincipal(
         platform_identity_id=platform_identity_id,
         platform_role=str(payload[CLAIM_PLATFORM_ROLE]),
@@ -104,4 +121,24 @@ def decode_bridge_session_token(token: str) -> BridgePrincipal:
         tenant_code=str(payload[CLAIM_TENANT_CODE]),
         ticket_id=ticket_id,
         environment_key=environment_key,
+        owner_email=(
+            str(owner_email_raw).strip()
+            if owner_email_raw is not None and str(owner_email_raw).strip()
+            else None
+        ),
+        owner_display_name=(
+            str(owner_display_name_raw).strip()
+            if owner_display_name_raw is not None and str(owner_display_name_raw).strip()
+            else None
+        ),
+        owner_phone=(
+            str(owner_phone_raw).strip()
+            if owner_phone_raw is not None and str(owner_phone_raw).strip()
+            else None
+        ),
+        owner_avatar_url=(
+            str(owner_avatar_url_raw).strip()
+            if owner_avatar_url_raw is not None and str(owner_avatar_url_raw).strip()
+            else None
+        ),
     )

@@ -6,6 +6,10 @@ import {
   isBridgeSessionUser,
   normalizeBridgeSessionUser,
 } from "./sessionBridgeApi.js";
+import {
+  getPlatformIdentityMe,
+  mapPlatformIdentityProfileToRuntimeUser,
+} from "./platformIdentityProfileApi.js";
 import { getStoredCurrentUser } from "../modules/designer/constants/designerRoles.js";
 
 function resolveRuntimeDisplayName(user) {
@@ -35,12 +39,26 @@ export function mapRuntimeUserForHeader(user) {
     full_name: displayName,
     name: displayName,
     email: user.email || "",
+    phone: user.phone || "",
+    avatar_url: user.avatar_url || user.avatar || "",
   };
+}
+
+async function loadBridgeRuntimeSessionUser() {
+  const bridgeContext = await getBridgeMe();
+  const profile = await getPlatformIdentityMe();
+  return mapRuntimeUserForHeader(
+    mapPlatformIdentityProfileToRuntimeUser(profile, {
+      ...bridgeContext,
+      is_bridge_session: true,
+    }),
+  );
 }
 
 /**
  * Load runtime user for header/profile.
- * Bridge session bypasses tenant/login /users/me endpoints.
+ * Bridge session: access context from /auth/session-bridge/me,
+ * profile fields from /platform-identity/me (single SoT).
  *
  * @param {{ tenantId?: number | null }} [options]
  * @returns {Promise<object | null>}
@@ -52,14 +70,22 @@ export async function loadRuntimeSessionUser({ tenantId = null } = {}) {
 
   if (hasActiveBridgeSession()) {
     try {
-      const bridgeUser = await getBridgeMe();
-      return mapRuntimeUserForHeader(bridgeUser);
+      return await loadBridgeRuntimeSessionUser();
     } catch {
       const stored = getStoredCurrentUser();
       if (isBridgeSessionUser(stored)) {
-        return mapRuntimeUserForHeader(
-          normalizeBridgeSessionUser(stored) || stored,
-        );
+        const bridgeContext = normalizeBridgeSessionUser(stored) || stored;
+        try {
+          const profile = await getPlatformIdentityMe();
+          return mapRuntimeUserForHeader(
+            mapPlatformIdentityProfileToRuntimeUser(profile, {
+              ...bridgeContext,
+              is_bridge_session: true,
+            }),
+          );
+        } catch {
+          return mapRuntimeUserForHeader(bridgeContext);
+        }
       }
     }
   }

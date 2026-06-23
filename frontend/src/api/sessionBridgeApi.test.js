@@ -55,15 +55,68 @@ describe("sessionBridgeApi", () => {
       is_platform_owner: true,
       effective_role: "superadmin",
       ticket_id: "22222222-2222-2222-2222-222222222222",
+      display_name: "Михаил Запевалов",
+      full_name: "Михаил Запевалов",
+      email: "zmn8@ya.ru",
+      phone: "89959987006",
+      avatar_url: "https://cdn.example/owner.png",
     });
 
     assert.equal(user.is_infrastructure_superadmin, true);
     assert.equal(user.is_platform_owner, true);
     assert.equal(user.role, "superadmin");
     assert.equal(user.effective_role, "superadmin");
-    assert.equal(user.name, "Platform Owner");
-    assert.equal(user.full_name, "Platform Owner");
+    assert.equal(user.name, "Михаил Запевалов");
+    assert.equal(user.full_name, "Михаил Запевалов");
+    assert.equal(user.email, "zmn8@ya.ru");
+    assert.equal(user.phone, "89959987006");
+    assert.equal(user.avatar_url, "https://cdn.example/owner.png");
     assert.equal(user.environment_key, "TEMPLATE");
+  });
+
+  it("strips forbidden Platform Owner display label from bridge profile", () => {
+    const user = normalizeBridgeSessionUser({
+      principal_type: "bridge",
+      platform_identity_id: "11111111-1111-1111-1111-111111111111",
+      platform_role: "platform_owner",
+      portal_id: 2,
+      tenant_code: "platform_template",
+      database_name: "yasnopro_template",
+      environment_key: "TEMPLATE",
+      is_infrastructure_superadmin: true,
+      is_platform_owner: true,
+      effective_role: "superadmin",
+      display_name: "Platform Owner",
+      full_name: "Platform Owner",
+      email: "zmn8@ya.ru",
+      phone: "89959987006",
+    });
+
+    assert.equal(user.name, undefined);
+    assert.equal(user.full_name, undefined);
+    assert.equal(user.email, "zmn8@ya.ru");
+    assert.equal(user.phone, "89959987006");
+  });
+
+  it("does not synthesize Platform Owner label when profile fields are absent", () => {
+    const user = normalizeBridgeSessionUser({
+      principal_type: "bridge",
+      platform_identity_id: "11111111-1111-1111-1111-111111111111",
+      platform_role: "platform_owner",
+      portal_id: 2,
+      tenant_code: "platform_template",
+      database_name: "yasnopro_template",
+      environment_key: "TEMPLATE",
+      is_infrastructure_superadmin: true,
+      is_platform_owner: true,
+      effective_role: "superadmin",
+      ticket_id: "22222222-2222-2222-2222-222222222222",
+    });
+
+    assert.equal(user.name, undefined);
+    assert.equal(user.full_name, undefined);
+    assert.equal(user.email, undefined);
+    assert.equal(user.phone, undefined);
   });
 
   it("does not grant infrastructure superadmin for client bridge owner", () => {

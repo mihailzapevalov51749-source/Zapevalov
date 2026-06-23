@@ -686,14 +686,16 @@ export default function ProfileSidePanel({
                   <span style={styles.accountLabel}>Статус</span>
                   <span style={styles.statusValue}>
                     <span style={styles.onlineDot} />
-                    {user.is_active ? "Активен" : "Отключён"}
+                    {user.is_active === false ? "Отключён" : "Активен"}
                   </span>
                 </div>
 
-                <div style={styles.accountRow}>
-                  <span style={styles.accountLabel}>Роль</span>
-                  <span style={styles.accountValue}>{roleName}</span>
-                </div>
+                {roleName ? (
+                  <div style={styles.accountRow}>
+                    <span style={styles.accountLabel}>Роль</span>
+                    <span style={styles.accountValue}>{roleName}</span>
+                  </div>
+                ) : null}
 
                 {roleDescription && (
                   <div

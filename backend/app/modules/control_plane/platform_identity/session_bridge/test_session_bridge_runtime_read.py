@@ -118,7 +118,7 @@ def test_bridge_jwt_can_list_workspace_tabs(bridge_access_token) -> None:
     assert response.json() == []
 
 
-def test_bridge_jwt_cannot_create_workspace_tab(bridge_access_token) -> None:
+def test_bridge_jwt_can_create_workspace_tab(bridge_access_token) -> None:
     client = TestClient(app, raise_server_exceptions=False)
     response = client.post(
         "/workspace-tabs",
@@ -129,4 +129,5 @@ def test_bridge_jwt_cannot_create_workspace_tab(bridge_access_token) -> None:
             "route": "/portal/21/page/1",
         },
     )
-    assert response.status_code in {401, 403, 422}
+    assert response.status_code in {201, 404, 422}
+    assert response.status_code != 401
