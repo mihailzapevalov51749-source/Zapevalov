@@ -2,7 +2,12 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    require_runtime_actor,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+)
 from app.modules.users.models import User
 
 from .tenant_access import assert_note_entity_access
@@ -21,11 +26,11 @@ def get_note(
     entity_type: str = Query(..., min_length=1, max_length=80),
     entity_id: str = Query(..., min_length=1, max_length=120),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     assert_note_entity_access(
         db,
-        current_user,
+        current_actor,
         entity_type=entity_type,
         entity_id=entity_id,
     )
@@ -44,11 +49,11 @@ def get_note(
 def upsert_note(
     payload: NoteUpsert,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     assert_note_entity_access(
         db,
-        current_user,
+        current_actor,
         entity_type=payload.entity_type,
         entity_id=payload.entity_id,
     )
@@ -85,11 +90,11 @@ def upsert_note(
 def publish_note(
     payload: NotePublish,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     assert_note_entity_access(
         db,
-        current_user,
+        current_actor,
         entity_type=payload.entity_type,
         entity_id=payload.entity_id,
     )
@@ -97,7 +102,7 @@ def publish_note(
     return publish_note_with_mentions(
         db=db,
         payload=payload,
-        current_user=current_user,
+        current_actor=current_actor,
     )
 
 
@@ -106,11 +111,11 @@ def delete_note(
     entity_type: str = Query(..., min_length=1, max_length=80),
     entity_id: str = Query(..., min_length=1, max_length=120),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ):
     assert_note_entity_access(
         db,
-        current_user,
+        current_actor,
         entity_type=entity_type,
         entity_id=entity_id,
     )
