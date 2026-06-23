@@ -8,8 +8,6 @@ from fastapi import APIRouter, Depends, HTTPException, Path, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
-from app.modules.control_plane.dependencies import require_platform_admin
 from app.modules.platform.shared.dependencies import require_tenant_membership
 from app.modules.tenant_module_configurations.runtime.cache import (
     list_runtime_configuration_cache_diagnostics,
@@ -21,6 +19,7 @@ from app.modules.tenant_module_configurations.runtime.schemas import (
 from app.modules.tenant_module_configurations.runtime.service import (
     get_runtime_module_configuration,
 )
+from app.modules.control_plane.dependencies import require_platform_admin
 from app.modules.users.models import User
 
 TenantIdPath = Annotated[int, Path(..., ge=1)]
@@ -45,7 +44,6 @@ def get_runtime_module_configuration_endpoint(
     module_key: ModuleKeyPath,
     db: Session = Depends(get_db),
     _tenant: int = Depends(require_tenant_membership),
-    _current_user: User = Depends(get_current_user),
 ):
     try:
         return get_runtime_module_configuration(

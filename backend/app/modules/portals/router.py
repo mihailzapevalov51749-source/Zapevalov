@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.control_plane.platform_identity.session_bridge.runtime_read_access import (
+    require_portal_runtime_read,
+)
 from app.modules.control_plane.dependencies import require_platform_admin
 from app.modules.portals.dependencies import (
     require_portal_profile_manage_access,
@@ -162,9 +164,8 @@ def list_portals(
 
 @router.get("/{portal_id}/environment", response_model=TenantEnvironmentRead)
 def get_portal_environment(
-    portal_id: int,
+    portal_id: int = Depends(require_portal_runtime_read),
     db: Session = Depends(get_db),
-    _user=Depends(get_current_user),
 ):
     portal = service.get_portal(db, portal_id)
     if portal is None:
