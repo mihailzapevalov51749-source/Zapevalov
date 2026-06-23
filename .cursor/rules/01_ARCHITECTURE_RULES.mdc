@@ -1,0 +1,140 @@
+---
+description: ЯсноПро — архитектурные инварианты (идентификация, tenant, защита, удаление)
+alwaysApply: true
+---
+
+# ЯсноПро — Architecture Rules
+
+Обязательные инварианты для анализа, проектирования, реализации и ревью. Нарушение — блокер для завершения задачи.
+
+## Источники идентификации
+
+**Запрещено** использовать как `id`, `key`, routing key, identifier, deletion marker, protection marker:
+
+```text
+name
+title
+short_name
+display_name
+caption
+label
+```
+
+**Разрешено** только для идентификации и защиты:
+
+```text
+id
+key
+code              # технический стабильный ключ tenant/сущности, не display label
+type
+object_type_key
+tenant_id
+portal_id
+is_protected
+environment_role
+tenant_type
+```
+
+### Правило разделения display vs technical
+
+| Категория | Поля | Поведение |
+|-----------|------|-----------|
+| Display | `name`, `title`, `short_name`, `description`, `caption`, `label` | Редактируемые, UI, локализация |
+| Technical | `id`, `key`, `code`, `tenant_type`, `environment_role`, `is_protected` | Стабильные, не меняются через формы общих настроек |
+
+**Пример ошибки (запрещено):** защита demo tenant через `code == 'ooo_rozetka'`, если `code` редактируется как «краткое название».
+
+**Пример правильно:** `is_protected=true`, `environment_role=DEMO_CLIENT`, стабильный `code=ooo_rozetka` вне UI-редактирования.
+
+## Source of Truth
+
+- Не дублировать бизнес-логику в UI, скриптах, тестах и «временных» helper'ах, если источник истины уже есть в backend/service layer.
+- Не создавать параллельные registry/catalog без явной причины и синхронизации.
+- UI читает API; API читает service; service читает models/БД. Не обходить слой «для скорости».
+
+## Tenant Architecture
+
+Источник истины для пользователей tenant:
+
+```text
+Global User     → users
+Membership      → tenant_user_memberships
+Profile         → tenant_user_profiles
+```
+
+- Platform users (`platform_users`) — привязка к платформе, не замена global user.
+- Tenant identity — `portals` + стабильные технические поля, не display name.
+
+## Tenant Protection
+
+**Запрещено** определять защиту tenant через:
+
+```text
+name
+title
+short_name
+code как display value
+любое редактируемое поле UI
+```
+
+**Разрешено** только:
+
+```text
+id                    # системные константы (DEV, TEMPLATE)
+is_protected
+environment_role      # DEV, TEMPLATE, DEMO_CLIENT, …
+tenant_type
+```
+
+Защищённые tenant по умолчанию:
+
+```text
+DEV (Корпоративный портал)
+Platform Template
+ООО Розетка (DEMO_CLIENT)
+официальные demo-данные, явно помеченные is_protected
+```
+
+Protected tenant **нельзя**: delete, archive, cleanup, reset, hard delete.
+
+## Delete Policy
+
+Для tenant и users в штатных сценариях:
+
+```text
+archive first
+soft delete first
+```
+
+Hard delete / purge / CASCADE — **только** при:
+
+```text
+explicit confirm (--confirm, confirm=True)
+special env flag (например YASNOPRO_ALLOW_TENANT_HARD_DELETE=1)
+dry-run до destructive операции
+```
+
+**Запрещено** в обычных cleanup/reset/test teardown:
+
+```text
+DELETE FROM portals
+db.delete(portal) без guard
+cleanup по name/code/title
+массовое удаление без Data Impact Audit
+```
+
+## Cleanup и тестовые данные
+
+- Cleanup скрипты и pytest fixtures **не удаляют** protected tenant.
+- Тестовые tenant/users создаются с явными префиксами и убираются после теста (archive или guarded purge).
+- Не оставлять leak tenant: `test_`, `debug_`, `tmp_`, `sandbox_`, `Leak Tenant`, `MVP Test`.
+
+## Новые сущности и дубли
+
+Перед добавлением сущности/таблицы/endpoint:
+
+1. Есть ли уже сущность с той же ролью?
+2. Можно ли расширить существующую модель?
+3. Не нарушает ли это Source of Truth?
+
+Запрещено создавать дубли логики «на время задачи» без плана удаления.

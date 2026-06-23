@@ -1,0 +1,92 @@
+---
+description: Task-Local Test Data Ownership — фиксация и удаление тестовых данных по ID в рамках задачи
+alwaysApply: true
+---
+
+# Task-Local Test Data Ownership
+
+## Принцип
+
+```text
+Создал → зафиксировал ID → проверил → удалил по ID → подтвердил отсутствие → только тогда Cleanup PASSED
+```
+
+Агент отвечает за тестовые данные, созданные **в текущей задаче**. Общий cleanup-script или поиск по шаблонам имени **не заменяют** удаление по конкретным id/key.
+
+## Обязательные шаги
+
+### 1. Фиксация при создании
+
+Сразу вести списки (в ходе задачи, в отчёте):
+
+```text
+created_build_ids / created_package_ids / created_deployment_ids
+created_release_ids / created_offer_ids
+created_user_ids / created_tenant_ids / …
+```
+
+### 2. Удаление после проверки
+
+Удалять **только зафиксированные** сущности — по id/key, не по шаблону имени.
+
+Production-like DEV данные (релизы, пакеты, деплойменты, offers, версии) удалять **сразу после успешного теста**, не переносить в следующую задачу.
+
+### 3. Верификация
+
+Для каждой сущности: `создано` / `удалено` / `не найдено после удаления`.
+
+### 4. UI verification
+
+Проверить отсутствие в UI: релизы, пакеты, обновления, страницы, объекты, компании.
+
+## Формат Test Data Audit (обязательный)
+
+```markdown
+## Created Records
+Build: …
+Package: …
+Deployment: …
+Release: …
+Offer: …
+Tenant: …
+User: …
+
+## Deleted Records
+(те же поля с id)
+
+## Verification
+Все созданные записи удалены: yes/no
+
+## UI Verification
+Видны ли тестовые сущности в интерфейсе: yes/no
+```
+
+## Запрещено
+
+Писать `Cleanup status: PASSED`, если:
+
+- в UI остались тестовые сущности задачи;
+- удаление не подтверждено по id;
+- есть созданные записи без подтверждения удаления.
+
+## Автоматический FAILED (задача не закрывается)
+
+Если выполняется **хотя бы одно** условие:
+
+```text
+Cleanup status = PARTIAL
+
+или
+
+UI Verification = NOT PERFORMED
+
+или
+
+в системе остались Test* / Step* / Review* / Count* (релизы, компании, пакеты)
+```
+
+→ задача **FAILED**, статус DONE запрещён.
+
+## Связь
+
+Дополняет `03_QUALITY_CONTROL.mdc` (§3 Test Data Audit, §4 Cleanup Audit). При конфликте — **это правило строже** для task-local данных.

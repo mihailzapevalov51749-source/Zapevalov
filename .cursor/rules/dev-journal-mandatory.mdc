@@ -1,0 +1,166 @@
+---
+description: Mandatory DEV tenant journal entry after every significant work item
+alwaysApply: true
+---
+
+# DEV Journal Mandatory Gate
+
+После **каждого значимого Work Item** агент **обязан** создать запись в **DEV tenant journal** (не platform audit journal).
+
+Запрещено завершать отчёт фразами вроде «DEV Journal: готово к записи» или «по подтверждению» **без фактической записи в БД**.
+
+## Когда запись обязательна
+
+DEV Journal обязателен, если агент:
+
+```text
+изменил код
+изменил документацию
+изменил тесты
+изменил архитектурные документы
+создал новый файл проекта
+изменил правила проекта
+```
+
+Запись в DEV Journal **разрешена** Cursor и Codex даже при узком scope задачи, включая задачи, где меняется только документация или правила.
+
+DEV Journal **не считается изменением пользовательских данных**. Это инфраструктура разработки платформы и audit trail выполненного Work Item.
+
+## Когда запись не создаётся
+
+DEV Journal не создаётся только если:
+
+```text
+задача была исключительно аудитом
+задача была исключительно чтением файлов
+изменения в проект не вносились
+```
+
+Во всех остальных случаях запись обязательна.
+
+## Источник истины
+
+| Компонент | Путь |
+|-----------|------|
+| Writer | `record_cursor_dev_event()` → `record_dev_development_event()` |
+| Structured WI | `create_work_item_journal_entry()` in `work_item_journal.py` |
+| DEV tenant | `resolve_dev_tenant_portal_id()` → portal with `tenant_type=DEV` |
+| Таблица | `platform_event_journal_entries` |
+| Scope/kind | `scope=tenant`, `journal_kind=dev_development` |
+
+## Обязательная команда после WI
+
+Из `backend/`:
+
+```powershell
+python scripts/dev_journal_create_entry.py `
+  --slug <english-kebab-slug> `
+  --title "<русский заголовок>" `
+  --summary "<что сделано: действия, 1-3 предложения>" `
+  --result "<результат: последствия действий, не повторяет summary>" `
+  --platform-impact "<влияние на платформу>" `
+  --root-cause "<почему была задача>" `
+  --changed-file path/to/file1 `
+  --changed-file path/to/file2 `
+  --tests "<что прогнано>" `
+  --manual-smoke "PASS / NOT PERFORMED — reason"
+```
+
+Или backfill batch: `python scripts/backfill_dev_journal_work_items.py`
+
+## Обязательные поля записи
+
+```text
+slug
+title
+summary
+changed_files
+tests
+manual_smoke
+```
+
+## Правило текста
+
+`summary` отвечает на вопрос **«Что сделано?»** и содержит действия:
+
+```text
+Создан документ
+Добавлен API
+Исправлен маршрут
+Реализована проверка
+Обновлены тесты
+```
+
+`result` отвечает на вопрос **«Что изменилось в результате?»** и содержит последствия:
+
+```text
+Появился единый источник описания данных платформы
+Архитектурные проверки теперь могут опираться на документ DATA-001
+Пользовательский сценарий больше не прерывается ошибкой
+```
+
+Запрещено дублировать действие в результате.
+
+Плохо:
+
+```text
+Что сделано:
+Created YASNOPRO_PLATFORM_DATA.md
+
+Результат:
+Created YASNOPRO_PLATFORM_DATA.md
+```
+
+Хорошо:
+
+```text
+Что сделано:
+Создан документ YASNOPRO_PLATFORM_DATA.md. Описаны 11 категорий данных.
+
+Результат:
+Появился единый источник описания данных платформы. Архитектурные проверки теперь могут опираться на документ DATA-001.
+```
+
+Если manual smoke не выполнен:
+
+```text
+Manual smoke: NOT PERFORMED
+Reason: ...
+```
+
+Запись **всё равно создаётся**.
+
+## Idempotency
+
+- Slug уникален (`platform_event_journal_entries.slug`)
+- Повторный slug → skip (не дублировать)
+- Перед create проверить: `python scripts/audit_dev_journal_entries.py`
+
+## Completion gate
+
+Work Item **не DONE**, если:
+
+1. `Fix implemented = YES` и есть Changed Files, но **нет** journal entry с slug WI
+2. В отчёте нет `journal entry id=... slug=... tenant_id=...`
+3. Агент не запустил `dev_journal_create_entry.py` или эквивалент
+
+## Секция отчёта (обязательная)
+
+```markdown
+## DEV Journal
+
+| Поле | Значение |
+|------|----------|
+| Created | yes/no |
+| id | … |
+| slug | … |
+| tenant_id | … (DEV tenant) |
+| journal_kind | dev_development |
+| Command | dev_journal_create_entry.py … |
+```
+
+## Запрещено
+
+- Писать только текст DEV Journal в chat без записи в БД
+- Писать в platform audit journal вместо DEV tenant development journal
+- Удалять реальные journal entries при cleanup (только `test-*` slugs)

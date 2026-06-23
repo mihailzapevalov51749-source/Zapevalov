@@ -1,0 +1,21 @@
+---
+description: Единое именование YASII / ЯСИИ — запрет смешанной кириллицы и латиницы
+alwaysApply: true
+---
+
+# YASII / ЯСИИ Naming Rule
+
+Use only these spellings for the platform AI employee:
+
+- **YASII** — English name (code, identifiers, technical docs, API, file names)
+- **ЯСИИ** — Russian name (user-facing Russian text, Russian docs)
+
+**Forbidden:** `ЯСII` (Cyrillic «ЯС» + Latin «II»). This mixed script looks like a typo.
+
+When writing or editing project text:
+
+- Russian prose → **ЯСИИ**
+- English/technical identifiers → **YASII**
+- Never introduce `ЯСII` or other mixed-script variants
+
+Apply in: UI, Dashboard, README, architecture docs, roadmap, work items, analyzer descriptions, comments, tests, seed data.

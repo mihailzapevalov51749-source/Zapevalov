@@ -1,0 +1,38 @@
+---
+description: Tenant home page routing must use Home Page Resolver, never hardcoded page/1
+globs:
+  - frontend/src/**/*.js
+  - frontend/src/**/*.jsx
+  - frontend/src/**/*.ts
+  - frontend/src/**/*.tsx
+alwaysApply: false
+---
+
+# Tenant Home Page Resolver Rule
+
+In **tenant context**, never use `pageId = 1` or `/portal/{tenantId}/page/1` as a default home page, fallback route, or emergency redirect.
+
+## Allowed
+
+- `resolvePortalHomePagePath(portalId, { strict: true })` — async entry / navigation
+- `resolvePortalHomePageId` / `resolvePortalHomePageIdStrict` — when page id is required
+- `resolveTenantRuntimeEntryPath(tenantId)` — login, app mode, minimize fallbacks
+- `peekTenantRuntimeEntryPath(tenantId)` — sync read of stored path or cached home only
+- Stored runtime path via `getStoredRuntimePath` when `pathBelongsToTenant`
+
+## Forbidden in tenant context
+
+- `buildDefaultRuntimePath` returning hardcoded `/page/1`
+- `window.open(\`/portal/${id}/page/1\`)`
+- `return 1` as default home page id for arbitrary tenants
+- New `DEFAULT_*_PAGE_ID = 1` constants for tenant navigation
+
+## Exception
+
+`/portal/1/page/1` is valid **only** when tenant `1` home page was resolved via API/cache and page `1` is that tenant's actual home.
+
+## Reference
+
+- Resolver: `frontend/src/portal/utils/resolvePortalHomePage.js`
+- Entry path: `frontend/src/shared/tenantContext/resolveTenantRuntimeEntryPath.js`
+- Open company: `frontend/src/portal/utils/openCompanyInOffice.js`

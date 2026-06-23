@@ -1,0 +1,171 @@
+---
+description: YASII Dashboard Completion Gate — WI не DONE без refresh и проверки Dashboard
+alwaysApply: true
+---
+
+# YASII Dashboard Completion Gate
+
+Любой **YASII work item** (`P?_-W??` из `yasii_catalog.py`) считается **завершённым** только после прохождения **Dashboard Completion Gate**.
+
+**Запрещено** объявлять WI **DONE**, переходить к следующему WI или закрывать governance-sync по WI, если gate не пройден.
+
+## Статусы
+
+| Статус | Условие |
+|--------|---------|
+| **DONE** | Код + analyzer + Dashboard refresh + проверки ниже |
+| **CODE DONE, DASHBOARD BLOCKED** | Код/analyzer готовы, но refresh не выполнен или проверки не прошли |
+
+При **CODE DONE, DASHBOARD BLOCKED**:
+
+- не писать «WI DONE»;
+- **не начинать** следующий WI;
+- в отчёте указать manual action и точную команду refresh.
+
+---
+
+## Официальный refresh (единственный полный способ)
+
+**Источник истины:** `refresh_platform_dashboard()` в `backend/app/modules/platform_dashboard_analyzer/refresh.py`  
+→ внутри вызывает `sync_yasii_track()` (`yasii_sync.py`) → `db.commit()`.
+
+| Способ | Использование |
+|--------|----------------|
+| **CLI (обязательно для агента)** | После реализации WI, из `backend/` |
+| **HTTP** | `POST /platform-dashboard/refresh` (`platform_dashboard/router.py`, auth) |
+| **UI** | Кнопка «Обновить Dashboard» → `refreshPlatformDashboard()` → тот же POST + reload stages |
+
+`GET /platform-dashboard/stages` пересчитывает `embedded_ai_tracks` и карточку этапа, но **не заменяет** полный refresh для статусов `platform_tasks`.
+
+**Не создавать** новые refresh-механизмы. **Не** считать WI закрытым только по коду или analyzer.
+
+### CLI-шаблон (подставить `WI_KEY`, например `P1-W06`)
+
+```powershell
+cd backend
+python -m pytest app/modules/platform_dashboard_analyzer/test_yasii_checks.py -q
+python -c "
+from app.db.session import SessionLocal
+from app.modules.platform_dashboard_analyzer.refresh import refresh_platform_dashboard, build_scan_context
+from app.modules.platform_dashboard_analyzer.yasii_checks import run_yasii_check_for_item
+from app.modules.platform_dashboard.yasii_catalog import YASII_WORK_ITEMS, YASII_IMPLEMENTATION_STAGE_SLUG, work_items_by_stage
+from app.modules.platform_dashboard.yasii_sync import (
+    YASII_TASK_KIND, compute_embedded_ai_rollups, compute_item_list_readiness,
+    classify_track_work_items, parse_yasii_task_meta,
+)
+from app.modules.platform_dashboard.models import PlatformImplementationStage, PlatformTask
+
+WI_KEY = 'P1-W06'
+
+db = SessionLocal()
+try:
+    refresh_platform_dashboard(db)
+    db.commit()
+    ctx = build_scan_context()
+    item = next(i for i in YASII_WORK_ITEMS if i.key == WI_KEY)
+    check_ok = run_yasii_check_for_item(item, ctx)
+    rollups = compute_embedded_ai_rollups(ctx)
+    done = {i.key for i in YASII_WORK_ITEMS if run_yasii_check_for_item(i, ctx)}
+    p1 = compute_item_list_readiness(work_items_by_stage('yasii-core-foundation'), done)
+    ace_cur, ace_next = classify_track_work_items('ace', done)
+    stage = db.query(PlatformImplementationStage).filter_by(slug=YASII_IMPLEMENTATION_STAGE_SLUG).one()
+    task = None
+    for t in db.query(PlatformTask).filter_by(stage_id=stage.id).all():
+        m = parse_yasii_task_meta(t.description)
+        if m.get('kind') == YASII_TASK_KIND and m.get('key') == WI_KEY:
+            task = {'status': t.status, 'analyzer_passed': m.get('analyzer_passed')}
+    print('analyzer', check_ok, 'task', task)
+    print('phase1_readiness', p1, 'container', rollups.container_readiness)
+    print('ace', rollups.ace.readiness, rollups.ace.checks_passed, rollups.ace.checks_total, ace_cur[:2])
+    print('yasii_track', rollups.yasii.readiness, rollups.yasii.checks_passed, rollups.yasii.checks_total)
+finally:
+    db.close()
+"
+```
+
+---
+
+## Обязательные проверки после refresh
+
+### 1. Analyzer
+
+- `run_yasii_check("<analyzer_check_id>")` → **True** на `build_scan_context()`
+- Evidence-файл существует на диске: `yasii_checks._backend_file` → `repo_root/backend/app/<path>`
+
+### 2. БД — текущий WI
+
+Таблица **`platform_tasks`**, stage **`ai-native-layer`**, meta `kind=yasii_work_item`:
+
+- `status` = **`done`**
+- `analyzer_passed` = **`true`** (в JSON `description`)
+
+### 3. Rollups
+
+`compute_embedded_ai_rollups(ctx)`:
+
+- ACE / YASII track: `readiness`, `checks_passed` / `checks_total`, `current_tasks`, `next_tasks`
+- **Container** readiness = все 74 WI (`compute_container_readiness`)
+
+**Важно:** «Phase 1 N%» = `compute_item_list_readiness(work_items_by_stage("yasii-core-foundation"), done_keys)` — это **не** поле «Общая готовность» на карточке этапа (там container %).
+
+### 4. Следующий WI
+
+Сверить с `depends_on` / `enables` в `yasii_catalog.py` и `ace_current` / track `current_tasks`.
+
+---
+
+## Признаки успешного refresh
+
+Все пункты обязательны:
+
+1. Refresh завершился без ошибки, был `commit`.
+2. Analyzer check текущего WI = **True**.
+3. `platform_tasks[WI].status` = **done**, `analyzer_passed` = **true**.
+4. `checks_passed` / readiness сдвинулись в ожидаемую сторону (если применимо).
+5. `current_tasks` указывает на **следующий** WI (не на закрытый).
+
+---
+
+## Стоп-условия
+
+Остановиться, не объявлять WI DONE, не начинать следующий WI, если:
+
+- shell/API refresh недоступен или упал;
+- analyzer check = False;
+- задача WI в БД ≠ `done`;
+- `analyzer_passed` ≠ true;
+- метрики после refresh не соответствуют ожиданию по catalog.
+
+---
+
+## Обязательная секция отчёта
+
+В конце каждого WI-промта агент **обязан** выдать:
+
+```markdown
+## Dashboard Completion Gate
+
+| Проверка | Результат |
+|----------|-----------|
+| Refresh | да/нет (CLI / API / blocked) |
+| Analyzer `<check_id>` | pass / fail |
+| DB task status | … |
+| DB analyzer_passed | … |
+| Phase 1 readiness | N% |
+| Container readiness | N% |
+| ACE track | N%, checks A/B, current: … |
+| YASII track | N%, checks A/B |
+| Следующий WI | … |
+
+**Вердикт:** DONE | CODE DONE, DASHBOARD BLOCKED  
+**Следующий WI разрешён:** да / нет
+```
+
+---
+
+## Ссылки в коде
+
+- Catalog: `backend/app/modules/platform_dashboard/yasii_catalog.py`
+- Checks: `backend/app/modules/platform_dashboard_analyzer/yasii_checks.py`
+- Sync: `backend/app/modules/platform_dashboard/yasii_sync.py`
+- Тест регрессии: `backend/app/modules/platform_dashboard_analyzer/test_yasii_checks.py`

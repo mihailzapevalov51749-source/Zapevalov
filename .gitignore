@@ -2,13 +2,24 @@
 __pycache__/
 *.pyc
 .venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.cache
+*.sqlite
+*.db
+
+# Local env
+.env
 
 # Uploads
 backend/uploads/
 uploads/
 
 # Cursor
-.cursor/
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 
 # Node
 node_modules/
@@ -17,8 +28,26 @@ node_modules/
 dist/
 dist-template/
 frontend/.build-staging/
+backend/.build-staging/
 build/
 
 # Local dev stack runtime (WI-20.1)
 .run/
 logs/
+*.log
+*.tmp
+
+# Local audit/test outputs
+backend/_*.txt
+backend/_*.json
+backend/audit_*.json
+backend/audit_*.txt
+backend/test_output*.txt
+backend/tmp_*.json
+backend/verify_*.txt
+backend/napravleniya_*.json
+backend/scripts/_tmp_*.json
+backend/scripts/*_out.json
+backend/scripts/*_stdout.txt
+backend/scripts/*_run.txt
+frontend/_*.mjs

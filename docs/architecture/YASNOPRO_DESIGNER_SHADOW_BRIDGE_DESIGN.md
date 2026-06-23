@@ -42,7 +42,7 @@ Bridge не:
   "collapsed": false,
   "navigation": [],
   "header": {
-    "title": "Типы объектов",
+    "title": "Объекты",
     "subtitle": "Режим аналитика",
     "modeActions": [],
     "pageActions": []

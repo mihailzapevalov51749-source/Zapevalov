@@ -231,7 +231,7 @@ API должен быть:
 
 | API | Назначение |
 |---|---|
-| /object-types | типы объектов |
+| /object-types | объекты (конструктор; technical route) |
 | /fields | поля |
 | /entities | объекты |
 | /relations | связи |

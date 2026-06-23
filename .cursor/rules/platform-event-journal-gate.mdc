@@ -1,0 +1,132 @@
+# Platform Event Journal Gate
+
+После **успешного завершения** любой задачи Cursor, связанной с платформой ЯсноПро, агент **обязан** создать запись в **Журнале событий**.
+
+Если задача отменена, заблокирована или не завершена — запись **не создавать**.
+
+Журнал событий — **официальная история развития платформы** в DEV Studio.
+
+---
+
+## Единый механизм записи
+
+**Источник истины:** `record_platform_event_journal_entry()` в  
+`backend/app/modules/platform_event_journal/service.py`
+
+| Способ | Использование |
+|--------|----------------|
+| **Python (предпочтительно для агента)** | Импорт сервиса + `SessionLocal` + `commit=True` |
+| **CLI** | `python backend/scripts/record_platform_event_journal_entry.py --title "..." --description "..."` |
+| **HTTP** | `POST /platform-event-journal/entries` (auth) |
+
+**Запрещено** создавать записи журнала через Dashboard activities, owner history, Историю/Направления или другие обходные пути.
+
+---
+
+## Когда создавать запись
+
+Создавать **только после** того, как:
+
+1. Код изменён и проверен (сборка/тесты по задаче — если применимо)
+2. Задача считается успешно завершённой
+3. Известны финальные формулировки названия и описания
+
+Не создавать запись:
+
+- в начале задачи;
+- при частичном прогрессе;
+- при отмене или блокировке;
+- для Dashboard refresh / readiness / analyzer sync.
+
+---
+
+## Формат записи
+
+| Поле | Требование |
+|------|------------|
+| **title** | Краткий результат задачи |
+| **event_type** | `development` / `fix` / `audit` / `architecture` / `template_transfer` / `publish` |
+| **description** | Что сделано и зачем (1–3 предложения) |
+| **status** | `done` (или `completed`) |
+| **author** | `Cursor` |
+| **slug** | Уникальный kebab-case slug для идемпотентности |
+
+---
+
+## CLI-шаблон
+
+```powershell
+cd backend
+python scripts/record_platform_event_journal_entry.py `
+  --title "Краткое название результата" `
+  --description "Что изменено и зачем." `
+  --event-type architecture `
+  --status done `
+  --slug unique-task-slug
+```
+
+---
+
+## Python-шаблон (в конце WI)
+
+```python
+from app.db.session import SessionLocal
+from app.modules.platform_event_journal.service import record_platform_event_journal_entry
+
+db = SessionLocal()
+try:
+    record_platform_event_journal_entry(
+        db,
+        title="Краткое название результата",
+        description="Что изменено и зачем.",
+        event_type="architecture",
+        status="done",
+        author="Cursor",
+        slug="unique-task-slug",
+        commit=True,
+    )
+finally:
+    db.close()
+```
+
+Повторный вызов с тем же `slug` — no-op (без дубликата).
+
+---
+
+## Типы событий
+
+| value | UI label |
+|-------|----------|
+| `development` | Разработка |
+| `fix` | Исправление |
+| `audit` | Аудит |
+| `architecture` | Архитектурное решение |
+| `template_transfer` | Передача в Template |
+| `publish` | Публикация |
+
+---
+
+## Обязательная секция отчёта
+
+В конце каждой **платформенной** задачи агент добавляет:
+
+```markdown
+## Platform Event Journal
+
+| Проверка | Результат |
+|----------|-----------|
+| Задача завершена успешно | да / нет |
+| Запись создана | да / нет / уже существовала |
+| slug | … |
+| title | … |
+| event_type | … |
+```
+
+---
+
+## Ссылки
+
+- Service: `backend/app/modules/platform_event_journal/service.py`
+- API: `backend/app/modules/platform_event_journal/router.py`
+- UI: `frontend/src/modules/platformDashboard/pages/PlatformEventJournalPage.jsx`
+- Seed: `backend/app/modules/platform_event_journal/seed.py`

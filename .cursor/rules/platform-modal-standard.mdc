@@ -1,0 +1,78 @@
+---
+description: Platform Modal Standard — обязательный стек для панелей настроек
+alwaysApply: true
+---
+
+# Platform Modal Standard (ЯсноПро)
+
+## Запрет
+
+**Нельзя** создавать кастомные `position: fixed` / popover / fixed-card модалки для панелей настроек.
+
+Все новые панели настроек, модалки конфигурации и карточки настроек должны использовать **Platform Modal Standard**:
+
+```text
+PlatformModal (+ usePlatformModalLayout внутри)
+  или
+PlatformModalShell + usePlatformModalLayout (custom header, тот же persist/drag/resize)
+```
+
+Исключение — только если в задаче **явно** разрешён другой механизм.
+
+## Обязательное поведение
+
+| Возможность | Требование |
+|-------------|------------|
+| Drag | За header (`data-platform-modal-drag-handle`), при `canCustomizeLayout` |
+| Resize | E / S / SE handles из `PlatformModalShell` |
+| Persist | `saveModalBounds(modalKey)` при любом закрытии и unmount |
+| Restore | `loadModalBounds(modalKey)` при открытии |
+| Минимум | 320×300 px |
+| Максимум | viewport − 24px (см. `getViewportMetrics`) |
+
+## Уникальный modalKey
+
+Каждая панель — свой ключ в `localStorage`, например:
+
+```text
+object_table_view_settings_panel
+object_table_view_filters_panel
+```
+
+## Custom header (reference UX)
+
+Если стандартный header PlatformModal лишний:
+
+- `hideHeader` + `transparentBackdrop` (если нужен клик сквозь overlay)
+- Custom header **внутри** children
+- Drag: `PlatformModal` с function children → `{ startDrag, headerCursor }`
+
+```jsx
+<PlatformModal hideHeader canCustomizeLayout modalKey="..." ...>
+  {({ startDrag, headerCursor }) => (
+    <header onMouseDown={canCustomizeLayout ? startDrag : undefined} data-platform-modal-drag-handle>
+      ...
+    </header>
+  )}
+</PlatformModal>
+```
+
+## Checklist перед merge
+
+```text
+[ ] drag работает (canCustomizeLayout=true в режиме редактирования)
+[ ] resize работает
+[ ] bounds сохраняются в localStorage
+[ ] bounds восстанавливаются при повторном открытии
+[ ] закрытие через Save сохраняет bounds
+[ ] закрытие через Esc сохраняет bounds
+[ ] unmount сохраняет bounds
+[ ] есть уникальный modalKey
+[ ] нет position:fixed/z-index/top/left на корне панели настроек
+```
+
+## Ссылки
+
+- `frontend/src/shared/platformModal/PlatformModal.jsx`
+- `frontend/src/shared/platformModal/usePlatformModalLayout.js`
+- `docs/architecture/YASNOPRO_PLATFORM_MODAL_STANDARD.md`

@@ -1,0 +1,314 @@
+---
+description: ЯсноПро — обязательный аудит перед завершением любой задачи
+alwaysApply: true
+---
+
+# ЯсноПро — Quality Control
+
+Перед статусом «задача завершена» агент **обязан** пройти аудиты ниже и включить результаты в отчёт. Пропуск — задача не завершена.
+
+## 1. Architecture Audit
+
+Проверить и явно ответить в отчёте:
+
+| Вопрос | Pass / Fail |
+|--------|-------------|
+| Source of Truth сохранён? | |
+| Нет дублирования логики? | |
+| Новые сущности обоснованы? | |
+| Нет нарушения tenant/user архитектуры? | |
+| Display-поля не используются как id/key/protection? | |
+
+При Fail — исправить или задокументировать blocker, не закрывать задачу.
+
+## 2. Data Impact Audit
+
+Обязателен при любом изменении данных (скрипты, миграции, restore, cleanup, seed):
+
+```text
+Tables affected:
+Rows before:
+Rows after:
+Rows created:
+Rows updated:
+Rows deleted:
+Protected rows touched:
+Destructive operation: none | archive | hard delete (with confirm + flag)
+```
+
+Сначала **dry-run**, затем execute только с явным подтверждением.
+
+## 3. Test Data Audit
+
+**Обязательный формат:** `task-local-test-data-ownership.mdc` (Created Records / Deleted Records / Verification / UI Verification).
+
+Проверить отсутствие мусорных записей:
+
+```text
+Test Tenant / Leak Tenant / MVP Test / Debug Tenant / Sandbox Tenant
+```
+
+Префиксы и маркеры для поиска:
+
+```text
+test_
+debug_
+tmp_
+sandbox_
+Leak Tenant
+MVP Test
+pytest
+@test.local
+```
+
+Если найдены — удалить или полностью очистить до завершения задачи. Архивирование без исчезновения из UI **не достаточно** (см. §4 Cleanup Audit).
+
+## 4. Cleanup Audit
+
+После выполнения тестов необходимо определить:
+
+```text
+Какие записи были созданы во время тестирования.
+```
+
+Проверять:
+
+```text
+tenant
+users
+memberships
+profiles
+pages
+objects
+processes
+workspaces
+settings
+journals
+attachments
+```
+
+### Обязательное правило
+
+Cleanup считается завершённым только если одновременно выполнены все условия:
+
+```text
+1. Все тестовые данные удалены или очищены.
+
+2. Тестовые данные не отображаются в пользовательском интерфейсе.
+
+3. Demo Environment Audit показывает чистую среду.
+```
+
+Если хотя бы одно условие не выполнено:
+
+```text
+Cleanup считается НЕ завершённым.
+```
+
+### Архивирование не считается Cleanup
+
+Следующие действия:
+
+```text
+ARCHIVED
+DISABLED
+INACTIVE
+HIDDEN
+SOFT DELETE
+```
+
+не считаются очисткой автоматически.
+
+Cursor обязан проверить:
+
+```text
+Видит ли пользователь эти записи через UI.
+```
+
+Если записи отображаются:
+
+```text
+Компании
+Пользователи
+Объекты
+Процессы
+Рабочие пространства
+```
+
+то Cleanup считается проваленным.
+
+### Demo Environment Audit
+
+Перед завершением задачи Cursor обязан выполнить аудит демонстрационной среды.
+
+Проверить:
+
+```text
+Control Plane → Компании
+Control Plane → Пользователи
+Control Plane → Глобальные пользователи
+Control Plane → Роли
+```
+
+а также другие затронутые сущности.
+
+### Для демонстрационной среды допускаются только утверждённые данные
+
+Например:
+
+```text
+DEV
+Platform Template
+ООО Розетка
+Утверждённые demo tenant
+Утверждённые demo users
+Утверждённые demo процессы
+```
+
+Тестовые данные не допускаются.
+
+### Test Data Leak Audit
+
+Перед завершением задачи Cursor обязан проверить наличие:
+
+```text
+Test Tenant
+Leak Tenant
+Debug Tenant
+Sandbox Tenant
+QA Tenant
+MVP Test
+```
+
+а также шаблонов:
+
+```text
+test_
+tmp_
+debug_
+sandbox_
+qa_
+demo_test_
+```
+
+### Если обнаружены тестовые данные
+
+Cursor обязан:
+
+```text
+1. Показать список найденных записей.
+
+2. Показать источник их создания.
+
+3. Выполнить cleanup.
+
+4. Повторно выполнить аудит.
+
+5. Подтвердить отсутствие утечек.
+```
+
+### Финальный отчёт Cleanup Audit
+
+Обязательный формат:
+
+```text
+Cleanup Audit
+
+Test records created:
+Test records removed:
+Remaining test records:
+Visible in UI:
+Cleanup status:
+```
+
+### Успешный Cleanup
+
+Допустим только результат:
+
+```text
+Remaining test records: 0
+
+Visible in UI: no
+
+Cleanup status: PASSED
+```
+
+Любой другой результат означает:
+
+```text
+Cleanup status: FAILED
+```
+
+и задача не может считаться завершённой.
+
+### Автоматический FAILED (задача не закрывается)
+
+Если выполняется **хотя бы одно** условие:
+
+```text
+Cleanup status = PARTIAL
+
+или
+
+UI Verification = NOT PERFORMED
+
+или
+
+остались Test* / Step* / Review* / Count* (компании, релизы, пакеты, review queue)
+```
+
+→ задача **FAILED**, статус DONE запрещён. См. также `task-local-test-data-ownership.mdc`.
+
+**Исключения (не трогать при cleanup):**
+
+```text
+DEV
+Platform Template
+ООО Розетка
+официальные демо-данные с is_protected / environment_role
+```
+
+Hard delete tenant — только с dry-run, `YASNOPRO_ALLOW_TENANT_HARD_DELETE=1` и явным confirm. Protected tenant в cleanup dry-run → candidates = 0.
+
+## 5. Demo Readiness Audit
+
+Перед завершением задать вопрос:
+
+```text
+Если Михаил покажет это через неделю на демонстрации,
+будет ли это выглядеть профессионально?
+```
+
+| Ответ | Действие |
+|-------|----------|
+| да | Можно закрывать после остальных аудитов |
+| нет | Задача не завершена: убрать мусор, восстановить demo, доделать UX |
+
+Признаки «нет»: тестовые компании в Control Plane, битые названия, пустые экраны, leak users, пропавшие demo tenant.
+
+## 6. Обязательные секции финального отчёта
+
+Минимум:
+
+```markdown
+## Architecture Audit
+## Data Impact Audit        # если затрагивались данные
+## Cleanup Audit             # если выполнялись тесты или скрипты с данными
+## Tests
+## Manual Smoke
+## DEV Journal              # для значимых WI
+## Success Criteria
+```
+
+Для YASII WI дополнительно: **Dashboard Completion Gate** (`yasii-dashboard-gate.mdc`).
+
+## 7. Стоп-условия
+
+Не объявлять задачу DONE, если:
+
+- Architecture Audit = Fail без исправления
+- Data Impact Audit не выполнен при изменении данных
+- Test Data Audit нашёл leak в demo-среде или Cleanup Audit = FAILED
+- Demo Readiness = нет
+- DEV Journal не создан (для значимых WI)
+- Destructive op без dry-run и confirm

@@ -1,0 +1,84 @@
+Задача проекта:
+Мы строим ЯсноПро — AI-native Object-centric Business Platform (AOBP).
+
+По-русски:
+ЯсноПро — это AI-ориентированная объектно-центричная бизнес-платформа.
+
+Архитектурные документы находятся в:
+
+docs/architecture/
+
+Перед любыми изменениями кода обязательно прочитай архитектурные документы.
+
+Порядок чтения:
+- YASNOPRO_PLATFORM_CORE.md
+- YASNOPRO_ENTITY_MODEL.md
+- YASNOPRO_STATE_MODEL.md
+- YASNOPRO_VIEW_ENGINE_MODEL.md
+- YASNOPRO_RUNTIME_DESIGNER_MODEL.md
+- YASNOPRO_RUNTIME_PERSONALIZATION_MODEL.md
+- YASNOPRO_RELATION_ENGINE_MODEL.md
+- YASNOPRO_EVENT_ENGINE_MODEL.md
+- YASNOPRO_AI_CONTEXT_MODEL.md
+- YASNOPRO_PLATFORM_IMPLEMENTATION_ROADMAP.md
+- YASNOPRO_TECHNICAL_ARCHITECTURE.md
+
+Твои обязанности:
+
+1. Находить архитектурные нарушения.
+2. Находить смешение ответственностей.
+3. Находить скрытую синхронизацию состояния.
+4. Находить места, где:
+   - View смешивается с Entity;
+   - Runtime смешивается с Designer;
+   - View Template смешивается с Runtime Representation;
+   - Runtime Personalization смешивается с Designer Configuration;
+   - Representation смешивается с View;
+   - Layout смешивается с бизнес-логикой;
+   - Table используется как источник истины.
+5. Предупреждать ДО изменения архитектурно-критичного поведения.
+6. Объяснять, какой архитектурный слой затрагивается.
+7. Предпочитать маленькие безопасные изменения.
+8. Никогда не делать большие неконтролируемые рефакторинги.
+9. Никогда не менять UX-поведение молча.
+10. Соблюдать:
+    - владение состоянием;
+    - границы движков;
+    - границы модулей;
+    - слои платформы;
+    - разделение Designer Configuration и Runtime Personalization.
+
+Критические правила платформы:
+
+- Universal Table — это View Engine, а не источник данных.
+- Entity Layer — источник истины.
+- Representation != View.
+- View Template != Runtime Representation.
+- Tabs != Representations.
+- Runtime != Designer.
+- Runtime Personalization != Designer Configuration.
+- Layout Engine != Entity Layer.
+- Event Engine отвечает за историю.
+- Relation Engine отвечает за граф связей.
+- AI Context Engine отвечает за смысловое понимание.
+- Designer создаёт рамки, ограничения и правила.
+- Runtime users создают рабочую среду внутри этих рамок.
+- Personal runtime state нельзя хранить внутри system View Templates.
+
+Правила разработки:
+
+1 bug = 1 patch = 1 commit.
+
+Перед реализацией любой задачи:
+- объясни, какой слой затрагивается;
+- объясни риски;
+- объясни совместимость с архитектурой;
+- укажи, это изменение Designer Configuration или Runtime Personalization;
+- укажи owner состояния.
+
+Если есть неопределённость:
+НЕ переписывай код.
+Сначала задай уточняющий вопрос.
+
+Цель:
+Преобразовать текущий ЯсноПро в масштабируемую AI-native Object-centric Business Platform без поломки текущего рабочего поведения.

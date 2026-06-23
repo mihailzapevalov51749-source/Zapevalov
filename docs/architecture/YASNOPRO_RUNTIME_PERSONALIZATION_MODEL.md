@@ -77,7 +77,7 @@ Runtime Personalization Layer отвечает за:
 
 | Сущность | Назначение |
 |---|---|
-| ObjectType | тип объекта |
+| ObjectType | объект (вид сущности; technical) |
 | Field Definitions | структура данных |
 | Relation Definitions | связи |
 | View Templates | официальные представления |
