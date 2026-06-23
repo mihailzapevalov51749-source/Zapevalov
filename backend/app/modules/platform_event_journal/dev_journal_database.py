@@ -12,9 +12,23 @@ from urllib.parse import urlparse
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.core.runtime_paths import (
+    get_backend_root,
+    resolve_dotenv_path,
+    try_dev_monorepo_root,
+)
+
 MANIFEST_RELATIVE_PATH = Path("scripts") / "dev-stack" / "manifest.yaml"
 DEV_ENVIRONMENT_KEY = "DEV"
 LEGACY_CURSOR_DATABASE_NAME = "portal_constructor_v2"
+"""Legacy monolithic DB name — used only for guard/backfill scripts, never for journal writes."""
+
+
+def resolve_dev_workspace_root() -> Path:
+    mono = try_dev_monorepo_root()
+    if mono is not None:
+        return mono
+    return get_backend_root().parent
 
 
 class DevJournalDatabaseMismatchError(RuntimeError):
@@ -39,7 +53,7 @@ class DevJournalDatabaseMismatchError(RuntimeError):
 
 
 def resolve_repo_root() -> Path:
-    return Path(__file__).resolve().parents[4]
+    return resolve_dev_workspace_root()
 
 
 _dotenv_loaded = False
@@ -51,33 +65,50 @@ def _ensure_dotenv_loaded() -> None:
         return
     from dotenv import load_dotenv
 
-    env_path = resolve_repo_root() / ".env"
-    if env_path.is_file():
-        load_dotenv(env_path)
+    explicit = resolve_dotenv_path()
+    if explicit is not None and explicit.is_file():
+        load_dotenv(explicit, override=False)
+        _dotenv_loaded = True
+        return
+
+    mono = try_dev_monorepo_root()
+    if mono is not None:
+        legacy = mono / ".env"
+        if legacy.is_file():
+            load_dotenv(legacy, override=False)
     _dotenv_loaded = True
 
 
 def read_dotenv_database_url(repo_root: Path | None = None) -> str | None:
-    env_path = (repo_root or resolve_repo_root()) / ".env"
-    if not env_path.is_file():
-        return None
-    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
+    _ = repo_root
+    explicit = resolve_dotenv_path()
+    candidates: list[Path] = []
+    if explicit is not None:
+        candidates.append(explicit)
+    mono = try_dev_monorepo_root()
+    if mono is not None:
+        candidates.append(mono / ".env")
+    for env_path in candidates:
+        if not env_path.is_file():
             continue
-        key, value = line.split("=", 1)
-        if key.strip() != "DATABASE_URL":
-            continue
-        token = value.strip().strip('"').strip("'")
-        return token or None
+        for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            if key.strip() != "DATABASE_URL":
+                continue
+            token = value.strip().strip('"').strip("'")
+            return token or None
     return None
 
 
 def resolve_guard_database_url() -> str | None:
-    """Database URL used for DEV journal write guard.
+    """Return process or repo ``DATABASE_URL`` for optional explicit-target checks.
 
-    Process ``DATABASE_URL`` wins when explicitly set (e.g. backfill runner).
-    Otherwise fall back to repo ``.env`` so Cursor legacy DB is still blocked.
+    DEV Journal writers connect via ``resolve_dev_journal_database_url()`` (manifest SoT).
+    This helper is used by ``assert_dev_journal_database_target()`` when a caller passes
+    or implies a concrete URL to validate — not by ``open_dev_journal_db_session()``.
     """
     process_url = os.getenv("DATABASE_URL")
     if process_url:
@@ -90,7 +121,7 @@ def resolve_guard_database_url() -> str | None:
 
 
 def resolve_dev_stack_manifest_path(repo_root: Path | None = None) -> Path:
-    root = repo_root or resolve_repo_root()
+    root = repo_root or resolve_dev_workspace_root()
     return root / MANIFEST_RELATIVE_PATH
 
 
@@ -207,7 +238,11 @@ def assert_dev_journal_database_target(
     *,
     manifest: dict[str, Any] | None = None,
 ) -> str:
-    """Return expected DEV database name or raise when target URL is not DEV manifest DB."""
+    """Return expected DEV database name or raise when *actual_database_url* is not DEV manifest DB.
+
+    Used when a script explicitly targets a database URL (e.g. backfill source validation).
+    ``open_dev_journal_db_session()`` does not call this — it always uses manifest URL.
+    """
     expected_database = resolve_dev_database_name(manifest)
     actual_url = actual_database_url if actual_database_url is not None else resolve_configured_database_url()
     if actual_url:
@@ -239,15 +274,12 @@ def create_dev_journal_session_factory(
 def open_dev_journal_db_session(
     manifest: dict[str, Any] | None = None,
 ) -> Iterator[Session]:
-    """Open a SQLAlchemy session bound to DEV manifest database."""
-    manifest_data = manifest or load_dev_stack_manifest()
-    expected_database = resolve_dev_database_name(manifest_data)
-    configured_url = resolve_configured_database_url()
-    if configured_url:
-        actual_database = extract_database_name(configured_url)
-        if actual_database and actual_database != expected_database:
-            raise DevJournalDatabaseMismatchError(expected_database, actual_database)
+    """Open a SQLAlchemy session bound to DEV manifest database (``yasnopro_dev``).
 
+    Source of truth: ``scripts/dev-stack/manifest.yaml`` → ``environments.DEV.backend.database``.
+    Process ``DATABASE_URL`` / repo ``.env`` are **not** used for the connection.
+    """
+    manifest_data = manifest or load_dev_stack_manifest()
     session_factory = create_dev_journal_session_factory(manifest_data)
     session = session_factory()
     try:

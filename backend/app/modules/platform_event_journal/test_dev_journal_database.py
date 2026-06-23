@@ -55,11 +55,11 @@ def test_open_dev_journal_db_session_uses_manifest_database(monkeypatch):
     assert database_name == "yasnopro_dev"
 
 
-def test_open_dev_journal_db_session_blocks_wrong_env_database(monkeypatch):
+def test_open_dev_journal_db_session_uses_manifest_when_env_is_legacy(monkeypatch):
     monkeypatch.setenv(
         "DATABASE_URL",
         "postgresql://portal_user:portal_pass@localhost:5434/portal_constructor_v2",
     )
-    with pytest.raises(DevJournalDatabaseMismatchError):
-        with open_dev_journal_db_session():
-            pass
+    with open_dev_journal_db_session() as session:
+        database_name = session.bind.url.database  # type: ignore[union-attr]
+    assert database_name == "yasnopro_dev"

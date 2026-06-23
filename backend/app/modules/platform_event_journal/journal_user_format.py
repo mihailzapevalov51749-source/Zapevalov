@@ -128,8 +128,16 @@ def _default_result_for_work_item(work_item_type: str | None, summary: str) -> s
     if normalized == "cleanup":
         return "Среда приведена в порядок для демонстрации и эксплуатации."
     if normalized in {"ui_improvement", PlatformEventJournalType.UX_IMPROVEMENT.value}:
-        return summary.strip() or "Интерфейс стал понятнее для пользователей."
-    return summary.strip() or "Изменение успешно внедрено."
+        return "Интерфейс стал понятнее для пользователей."
+    if normalized == "architecture":
+        return "Архитектурные правила и реализация стали согласованнее."
+    return "Изменение успешно внедрено."
+
+
+def _ensure_distinct_result(what_done: str, result: str, work_item_type: str | None) -> str:
+    if result.strip().lower() != what_done.strip().lower():
+        return result
+    return _default_result_for_work_item(work_item_type, what_done)
 
 
 def _default_impact_for_work_item(work_item_type: str | None, summary: str) -> str:
@@ -155,7 +163,11 @@ def build_user_facing_description(
     platform_impact: str | None = None,
 ) -> str:
     what_done = str(summary or "").strip() or "Выполнена доработка платформы."
-    resolved_result = str(result or "").strip() or _default_result_for_work_item(work_item_type, what_done)
+    resolved_result = _ensure_distinct_result(
+        what_done,
+        str(result or "").strip() or _default_result_for_work_item(work_item_type, what_done),
+        work_item_type,
+    )
     resolved_impact = str(platform_impact or "").strip() or _default_impact_for_work_item(
         work_item_type,
         what_done,

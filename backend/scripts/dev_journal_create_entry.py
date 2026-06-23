@@ -5,6 +5,7 @@ Usage (from backend/):
     --slug disable-user-personal-left-menu-editing \\
     --title "Отключено пользовательское редактирование левого меню" \\
     --summary "User больше не редактирует левое меню; только tenant-level settings." \\
+    --result "Левое меню больше не ломается из-за runtime personalization." \\
     --root-cause "User personalization layer давала регрессии DnD и reset." \\
     --changed-file frontend/src/layouts/PortalLayout.jsx \\
     --tests "menuSettingsPermissions.test.js pass" \\
@@ -37,6 +38,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--slug", required=True)
     parser.add_argument("--title", required=True)
     parser.add_argument("--summary", required=True)
+    parser.add_argument("--result", default="")
+    parser.add_argument("--platform-impact", default="")
     parser.add_argument("--work-item-type", default="development")
     parser.add_argument("--root-cause", default="")
     parser.add_argument("--changed-file", action="append", default=[])
@@ -60,6 +63,8 @@ def main() -> None:
         slug=args.slug.strip(),
         title=args.title.strip(),
         summary=args.summary.strip(),
+        result=args.result.strip() or None,
+        platform_impact=args.platform_impact.strip() or None,
         work_item_type=args.work_item_type.strip(),
         root_cause=args.root_cause.strip() or None,
         changed_files=[item.strip() for item in args.changed_file if str(item).strip()],

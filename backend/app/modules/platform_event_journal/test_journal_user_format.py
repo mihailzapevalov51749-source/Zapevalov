@@ -34,6 +34,30 @@ def test_build_user_facing_description_for_types():
     assert "Переход между режимами работает корректно." in bug_fix
 
 
+def test_default_result_does_not_duplicate_summary():
+    user_text = build_user_facing_description(
+        summary="Создан документ YASNOPRO_PLATFORM_DATA.md.",
+        work_item_type="architecture",
+    )
+
+    assert "Что сделано:\nСоздан документ YASNOPRO_PLATFORM_DATA.md." in user_text
+    assert (
+        "Результат:\nСоздан документ YASNOPRO_PLATFORM_DATA.md."
+        not in user_text
+    )
+    assert "Результат:\nАрхитектурные правила и реализация стали согласованнее." in user_text
+
+
+def test_explicit_result_matching_summary_is_replaced():
+    user_text = build_user_facing_description(
+        summary="Создан документ YASNOPRO_PLATFORM_DATA.md.",
+        result="Создан документ YASNOPRO_PLATFORM_DATA.md.",
+        work_item_type="development",
+    )
+
+    assert "Результат:\nИзменение успешно внедрено." in user_text
+
+
 def test_work_item_description_is_user_facing_only():
     payload = WorkItemJournalPayload(
         slug="journal-formatting-standard",
