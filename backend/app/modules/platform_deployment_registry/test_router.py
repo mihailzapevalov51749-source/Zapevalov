@@ -25,6 +25,7 @@ def _deployment(status_value: str = "planned"):
         id=1,
         deployment_key="DPL-20260616-0001",
         release_package_id=10,
+        deployment_kind="template_publish",
         target_environment_type="template",
         target_environment_id=None,
         target_tenant_id=None,

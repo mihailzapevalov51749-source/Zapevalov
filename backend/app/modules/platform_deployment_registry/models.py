@@ -9,6 +9,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 
 from app.db.base import Base
 from app.modules.platform_deployment_registry.constants import (
+    PlatformDeploymentKind,
     PlatformDeploymentStatus,
 )
 
@@ -35,6 +36,12 @@ class PlatformDeployment(Base):
         index=True,
     )
     target_environment_type = Column(String(32), nullable=False, index=True)
+    deployment_kind = Column(
+        String(32),
+        nullable=False,
+        default=PlatformDeploymentKind.TEMPLATE_PUBLISH.value,
+        index=True,
+    )
     target_environment_id = Column(String(64), nullable=True)
     target_tenant_id = Column(Integer, ForeignKey("portals.id", ondelete="SET NULL"), nullable=True, index=True)
 

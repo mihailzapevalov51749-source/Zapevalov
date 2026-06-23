@@ -27,6 +27,7 @@ def _deployment(status: str) -> SimpleNamespace:
         id=200,
         deployment_key="DPL-20260616-0001",
         release_package_id=10,
+        deployment_kind="template_publish",
         target_environment_type="template",
         target_tenant_id=501,
         target_platform_version="1.2.3",
@@ -37,12 +38,38 @@ def _deployment(status: str) -> SimpleNamespace:
         started_at=None,
         finished_at=None,
         failure_reason=None,
+        deployment_manifest_json={},
     )
+
+
+def _patch_verify_passed(monkeypatch) -> None:
+    from app.modules.platform_release_provenance.types import VerifyResult
+
+    passed = VerifyResult(
+        status="passed",
+        build_match=True,
+        package_match=True,
+        manifest_match=True,
+        runtime_match=True,
+        drift_detected=False,
+    )
+    monkeypatch.setattr(
+        service,
+        "run_deployment_verify_gate",
+        lambda _db, _dep: passed,
+    )
+    monkeypatch.setattr(service, "record_deployment_verify_audit", lambda *_a, **_k: None)
+    monkeypatch.setattr(service, "record_deployment_lifecycle_audit", lambda *_a, **_k: None)
+
+
+def _patch_lifecycle_audit_only(monkeypatch) -> None:
+    monkeypatch.setattr(service, "record_deployment_lifecycle_audit", lambda *_a, **_k: None)
 
 
 def test_start_succeed_failed_cancel_allowed_transitions(monkeypatch):
     db = DummyDb()
     writes: list[dict] = []
+    _patch_verify_passed(monkeypatch)
 
     planned = _deployment(PlatformDeploymentStatus.PLANNED.value)
     monkeypatch.setattr(service, "get_deployment", lambda _db, _id: planned)
@@ -106,6 +133,7 @@ def test_mark_succeeded_is_not_reapplied(monkeypatch):
     db = DummyDb()
     running = _deployment(PlatformDeploymentStatus.RUNNING.value)
     writes_count = {"value": 0}
+    _patch_verify_passed(monkeypatch)
 
     def _record(*_args, **_kwargs):
         writes_count["value"] += 1
@@ -124,6 +152,7 @@ def test_mark_succeeded_is_not_reapplied(monkeypatch):
 
 def test_failed_and_cancelled_do_not_touch_environment_write_path(monkeypatch):
     db = DummyDb()
+    _patch_lifecycle_audit_only(monkeypatch)
 
     def _should_not_call(*_args, **_kwargs):
         raise AssertionError("record_environment_version must not be called")

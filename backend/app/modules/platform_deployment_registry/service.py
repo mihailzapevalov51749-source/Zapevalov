@@ -13,9 +13,24 @@ from app.modules.platform_deployment_registry.constants import (
     PlatformDeploymentStatus,
     PlatformDeploymentTargetEnvironmentType,
 )
+from app.modules.platform_deployment_registry.deployment_audit import record_deployment_lifecycle_audit
+from app.modules.platform_deployment_registry.deployment_kind import (
+    enrich_deployment_manifest,
+    infer_deployment_kind,
+    normalize_deployment_kind,
+    validate_deployment_kind_contract,
+)
 from app.modules.platform_deployment_registry.models import PlatformDeployment
 from app.modules.platform_release_package_registry.constants import PlatformReleasePackageStatus
 from app.modules.platform_release_package_registry.models import PlatformReleasePackage
+from app.modules.platform_release_provenance.verify_gate import (
+    attach_verify_proof,
+    build_verify_proof,
+    deployment_verify_passed,
+    record_deployment_verify_audit,
+    resolve_verify_failure_reason,
+    run_deployment_verify_gate,
+)
 from app.modules.platform_version_registry import service as platform_version_service
 from app.modules.users.models import User
 
@@ -34,6 +49,7 @@ def list_deployments(
     *,
     status_filter: str | None = None,
     target_environment_type_filter: str | None = None,
+    deployment_kind_filter: str | None = None,
 ) -> list[PlatformDeployment]:
     query = db.query(PlatformDeployment).order_by(
         PlatformDeployment.created_at.desc(),
@@ -45,6 +61,10 @@ def list_deployments(
         query = query.filter(
             PlatformDeployment.target_environment_type
             == target_environment_type_filter.strip().lower()
+        )
+    if deployment_kind_filter:
+        query = query.filter(
+            PlatformDeployment.deployment_kind == normalize_deployment_kind(deployment_kind_filter)
         )
     return query.all()
 
@@ -69,6 +89,7 @@ def create_deployment(
     deployment_key: str,
     release_package_id: int,
     target_environment_type: str,
+    deployment_kind: str | None = None,
     target_environment_id: str | None = None,
     target_tenant_id: int | None = None,
     target_schema_revision: str | None = None,
@@ -101,6 +122,25 @@ def create_deployment(
             detail="Deployment можно создать только из published release package",
         )
 
+    resolved_kind = normalize_deployment_kind(deployment_kind) if deployment_kind else infer_deployment_kind(
+        target_environment_type=normalized_target_type,
+        deployment_manifest_json=deployment_manifest_json,
+        previous_release_package_id=previous_release_package_id,
+    )
+    validate_deployment_kind_contract(
+        deployment_kind=resolved_kind,
+        target_environment_type=normalized_target_type,
+        target_tenant_id=target_tenant_id,
+        previous_release_package_id=previous_release_package_id,
+    )
+    enriched_manifest = enrich_deployment_manifest(
+        db,
+        deployment_kind=resolved_kind,
+        target_tenant_id=target_tenant_id,
+        deployment_manifest_json=deployment_manifest_json,
+        previous_release_package_id=previous_release_package_id,
+    )
+
     existing = (
         db.query(PlatformDeployment)
         .filter(PlatformDeployment.deployment_key == normalized_key)
@@ -113,13 +153,14 @@ def create_deployment(
         )
 
     target_schema_value = target_schema_revision or _extract_schema_revision(
-        deployment_manifest_json or {},
+        enriched_manifest,
         release_package.package_manifest_json if isinstance(release_package.package_manifest_json, dict) else {},
     )
     deployment = PlatformDeployment(
         deployment_key=normalized_key,
         release_package_id=release_package_id,
         target_environment_type=normalized_target_type,
+        deployment_kind=resolved_kind,
         target_environment_id=target_environment_id,
         target_tenant_id=target_tenant_id,
         status=PlatformDeploymentStatus.PLANNED.value,
@@ -127,7 +168,7 @@ def create_deployment(
         target_schema_revision=target_schema_value,
         previous_platform_version=previous_platform_version,
         previous_release_package_id=previous_release_package_id,
-        deployment_manifest_json=dict(deployment_manifest_json or {}),
+        deployment_manifest_json=enriched_manifest,
         created_by=actor.id if actor and actor.id else None,
     )
     db.add(deployment)
@@ -146,6 +187,7 @@ def start_deployment(db: Session, *, deployment_id: int) -> PlatformDeployment:
     deployment.status = PlatformDeploymentStatus.RUNNING.value
     deployment.started_at = datetime.utcnow()
     deployment.failure_reason = None
+    record_deployment_lifecycle_audit(db, deployment=deployment, phase="started")
     db.commit()
     db.refresh(deployment)
     return deployment
@@ -158,6 +200,49 @@ def mark_succeeded(db: Session, *, deployment_id: int) -> PlatformDeployment:
         allowed_from={PlatformDeploymentStatus.RUNNING.value},
         action="mark_succeeded",
     )
+
+    verify_result = run_deployment_verify_gate(db, deployment)
+    verify_proof = build_verify_proof(verify_result)
+    attach_verify_proof(deployment, verify_proof)
+
+    if not deployment_verify_passed(verify_result):
+        failure_reason = resolve_verify_failure_reason(verify_result)
+        record_deployment_verify_audit(
+            db,
+            deployment=deployment,
+            verify_result=verify_result,
+            verify_proof=verify_proof,
+            passed=False,
+        )
+        record_deployment_lifecycle_audit(
+            db,
+            deployment=deployment,
+            phase="failed",
+            failure_reason=failure_reason,
+        )
+        deployment.status = PlatformDeploymentStatus.FAILED.value
+        deployment.finished_at = datetime.utcnow()
+        deployment.failure_reason = failure_reason
+        db.commit()
+        db.refresh(deployment)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "message": "Deployment verify gate failed",
+                "failure_reason": failure_reason,
+                "verify_status": verify_result.status,
+                "drift_detected": verify_result.drift_detected,
+            },
+        )
+
+    record_deployment_verify_audit(
+        db,
+        deployment=deployment,
+        verify_result=verify_result,
+        verify_proof=verify_proof,
+        passed=True,
+    )
+
     now = datetime.utcnow()
     deployment.status = PlatformDeploymentStatus.SUCCEEDED.value
     deployment.finished_at = now
@@ -167,6 +252,7 @@ def mark_succeeded(db: Session, *, deployment_id: int) -> PlatformDeployment:
         deployment=deployment,
         succeeded_at=now,
     )
+    record_deployment_lifecycle_audit(db, deployment=deployment, phase="succeeded")
     db.commit()
     db.refresh(deployment)
     return deployment
@@ -193,6 +279,12 @@ def mark_failed(
     deployment.status = PlatformDeploymentStatus.FAILED.value
     deployment.finished_at = datetime.utcnow()
     deployment.failure_reason = reason
+    record_deployment_lifecycle_audit(
+        db,
+        deployment=deployment,
+        phase="failed",
+        failure_reason=reason,
+    )
     db.commit()
     db.refresh(deployment)
     return deployment

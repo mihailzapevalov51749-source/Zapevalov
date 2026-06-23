@@ -12,6 +12,7 @@ class DeploymentResponse(BaseModel):
     id: int
     deployment_key: str
     release_package_id: int
+    deployment_kind: str
     target_environment_type: str
     target_environment_id: str | None = None
     target_tenant_id: int | None = None
@@ -33,6 +34,7 @@ class DeploymentResponse(BaseModel):
 class CreateDeploymentRequest(BaseModel):
     deployment_key: str = Field(min_length=1, max_length=32)
     release_package_id: int
+    deployment_kind: str | None = Field(default=None, max_length=32)
     target_environment_type: str = Field(min_length=1, max_length=32)
     target_environment_id: str | None = Field(default=None, max_length=64)
     target_tenant_id: int | None = None

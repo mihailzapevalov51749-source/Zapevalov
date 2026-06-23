@@ -25,6 +25,7 @@ router = APIRouter(
 def list_deployments_endpoint(
     status: str | None = Query(default=None),
     target_environment_type: str | None = Query(default=None),
+    deployment_kind: str | None = Query(default=None),
     db: Session = Depends(get_db),
     _admin: User = Depends(require_platform_admin),
 ):
@@ -32,6 +33,7 @@ def list_deployments_endpoint(
         db,
         status_filter=status,
         target_environment_type_filter=target_environment_type,
+        deployment_kind_filter=deployment_kind,
     )
 
 
@@ -54,6 +56,7 @@ def create_deployment_endpoint(
         db,
         deployment_key=payload.deployment_key,
         release_package_id=payload.release_package_id,
+        deployment_kind=payload.deployment_kind,
         target_environment_type=payload.target_environment_type,
         target_environment_id=payload.target_environment_id,
         target_tenant_id=payload.target_tenant_id,

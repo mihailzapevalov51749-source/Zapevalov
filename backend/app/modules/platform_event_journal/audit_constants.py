@@ -59,10 +59,40 @@ class PlatformEventCode(str, Enum):
     TEMPLATE_VERSION_CREATED = "template_version_created"
     TEMPLATE_PUBLISHED = "template_published"
     TEMPLATE_UPDATE_SENT = "template_update_sent"
+    TEMPLATE_MATERIALIZATION_STARTED = "template_materialization_started"
+    TEMPLATE_MATERIALIZATION_SUCCEEDED = "template_materialization_succeeded"
+    TEMPLATE_MATERIALIZATION_FAILED = "template_materialization_failed"
+    TEMPLATE_VERIFY_STARTED = "template_verify_started"
+    TEMPLATE_VERIFY_PASSED = "template_verify_passed"
+    TEMPLATE_VERIFY_FAILED = "template_verify_failed"
+    TEMPLATE_ACTIVATION_STARTED = "template_activation_started"
+    TEMPLATE_ACTIVATION_SUCCEEDED = "template_activation_succeeded"
+    TEMPLATE_ACTIVATION_FAILED = "template_activation_failed"
+    TEMPLATE_VERSION_UPDATED = "template_version_updated"
+    PLATFORM_ENVIRONMENT_VERSION_UPDATED = "platform_environment_version_updated"
 
     RELEASE_REVIEW_STARTED = "release_review_started"
     RELEASE_APPROVED = "release_approved"
     RELEASE_CHANGES_REQUESTED = "release_changes_requested"
+
+    DEPLOYMENT_VERIFY_PASSED = "deployment_verify_passed"
+    DEPLOYMENT_VERIFY_FAILED = "deployment_verify_failed"
+
+    TEMPLATE_PUBLISH_STARTED = "template_publish_started"
+    TEMPLATE_PUBLISH_SUCCEEDED = "template_publish_succeeded"
+    TEMPLATE_PUBLISH_FAILED = "template_publish_failed"
+    COMPANY_UPDATE_STARTED = "company_update_started"
+    COMPANY_UPDATE_SUCCEEDED = "company_update_succeeded"
+    COMPANY_UPDATE_FAILED = "company_update_failed"
+    PROVISION_BASELINE_STARTED = "provision_baseline_started"
+    PROVISION_BASELINE_SUCCEEDED = "provision_baseline_succeeded"
+    PROVISION_BASELINE_FAILED = "provision_baseline_failed"
+    ROLLBACK_STARTED = "rollback_started"
+    ROLLBACK_SUCCEEDED = "rollback_succeeded"
+    ROLLBACK_FAILED = "rollback_failed"
+    DEV_DEPLOY_STARTED = "dev_deploy_started"
+    DEV_DEPLOY_SUCCEEDED = "dev_deploy_succeeded"
+    DEV_DEPLOY_FAILED = "dev_deploy_failed"
 
     BOOTSTRAP_OWNER_CREATED = "bootstrap_owner_created"
     BOOTSTRAP_OWNER_USED = "bootstrap_owner_used"
@@ -128,9 +158,37 @@ PLATFORM_EVENT_CODE_LABELS: dict[str, str] = {
     PlatformEventCode.TEMPLATE_VERSION_CREATED.value: "Создание версии шаблона",
     PlatformEventCode.TEMPLATE_PUBLISHED.value: "Публикация шаблона",
     PlatformEventCode.TEMPLATE_UPDATE_SENT.value: "Отправка обновления шаблона",
+    PlatformEventCode.TEMPLATE_MATERIALIZATION_STARTED.value: "Материализация эталона: начата",
+    PlatformEventCode.TEMPLATE_MATERIALIZATION_SUCCEEDED.value: "Материализация эталона: успешно",
+    PlatformEventCode.TEMPLATE_MATERIALIZATION_FAILED.value: "Материализация эталона: ошибка",
+    PlatformEventCode.TEMPLATE_VERIFY_STARTED.value: "Проверка версии эталона: начата",
+    PlatformEventCode.TEMPLATE_VERIFY_PASSED.value: "Проверка версии эталона: успешно",
+    PlatformEventCode.TEMPLATE_VERIFY_FAILED.value: "Проверка версии эталона: ошибка",
+    PlatformEventCode.TEMPLATE_ACTIVATION_STARTED.value: "Активация эталона: начата",
+    PlatformEventCode.TEMPLATE_ACTIVATION_SUCCEEDED.value: "Активация эталона: успешно",
+    PlatformEventCode.TEMPLATE_ACTIVATION_FAILED.value: "Активация эталона: ошибка",
+    PlatformEventCode.TEMPLATE_VERSION_UPDATED.value: "Версия эталона обновлена",
+    PlatformEventCode.PLATFORM_ENVIRONMENT_VERSION_UPDATED.value: "Обновление platform_environment_versions",
     PlatformEventCode.RELEASE_REVIEW_STARTED.value: "Проверка релиза начата",
     PlatformEventCode.RELEASE_APPROVED.value: "Релиз принят Platform",
     PlatformEventCode.RELEASE_CHANGES_REQUESTED.value: "Релиз возвращён на доработку",
+    PlatformEventCode.DEPLOYMENT_VERIFY_PASSED.value: "Deployment verify gate пройден",
+    PlatformEventCode.DEPLOYMENT_VERIFY_FAILED.value: "Deployment verify gate не пройден",
+    PlatformEventCode.TEMPLATE_PUBLISH_STARTED.value: "Публикация в эталон: deployment запущен",
+    PlatformEventCode.TEMPLATE_PUBLISH_SUCCEEDED.value: "Публикация в эталон: deployment завершён",
+    PlatformEventCode.TEMPLATE_PUBLISH_FAILED.value: "Публикация в эталон: deployment не выполнен",
+    PlatformEventCode.COMPANY_UPDATE_STARTED.value: "Обновление компании: deployment запущен",
+    PlatformEventCode.COMPANY_UPDATE_SUCCEEDED.value: "Обновление компании: deployment завершён",
+    PlatformEventCode.COMPANY_UPDATE_FAILED.value: "Обновление компании: deployment не выполнен",
+    PlatformEventCode.PROVISION_BASELINE_STARTED.value: "Provision baseline: deployment запущен",
+    PlatformEventCode.PROVISION_BASELINE_SUCCEEDED.value: "Provision baseline: deployment завершён",
+    PlatformEventCode.PROVISION_BASELINE_FAILED.value: "Provision baseline: deployment не выполнен",
+    PlatformEventCode.ROLLBACK_STARTED.value: "Rollback: deployment запущен",
+    PlatformEventCode.ROLLBACK_SUCCEEDED.value: "Rollback: deployment завершён",
+    PlatformEventCode.ROLLBACK_FAILED.value: "Rollback: deployment не выполнен",
+    PlatformEventCode.DEV_DEPLOY_STARTED.value: "DEV deploy: deployment запущен",
+    PlatformEventCode.DEV_DEPLOY_SUCCEEDED.value: "DEV deploy: deployment завершён",
+    PlatformEventCode.DEV_DEPLOY_FAILED.value: "DEV deploy: deployment не выполнен",
     PlatformEventCode.BOOTSTRAP_OWNER_CREATED.value: "Создание Bootstrap Owner",
     PlatformEventCode.BOOTSTRAP_OWNER_USED.value: "Вход Bootstrap Owner",
     PlatformEventCode.BOOTSTRAP_OWNER_DISABLED.value: "Отключение Bootstrap Owner",
