@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "../config/apiConfig.js";
 
-import { clearBridgeSessionStorage } from "./bridgeSessionContext.js";
+import { clearBridgeSessionStorage, hasActiveBridgeSession } from "./bridgeSessionContext.js";
 
 const TOKEN_KEY = "token";
 const LEGACY_TOKEN_KEY = "access_token";
@@ -201,16 +201,26 @@ export function normalizeCurrentUser(data) {
   return {
     ...data,
     is_platform_owner: Boolean(data.is_platform_owner ?? data.isPlatformOwner),
+    is_infrastructure_superadmin: Boolean(
+      data.is_infrastructure_superadmin ?? data.isInfrastructureSuperadmin,
+    ),
   };
 }
 
 export async function getMe() {
+  if (hasActiveBridgeSession()) {
+    const { getBridgeMe } = await import("./sessionBridgeApi.js");
+    return normalizeCurrentUser(await getBridgeMe());
+  }
+
   const response = await fetch(`${API_BASE_URL}/users/me`, {
     headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
-    logout();
+    if (!hasActiveBridgeSession()) {
+      logout();
+    }
     throw new Error("Пользователь не авторизован");
   }
 

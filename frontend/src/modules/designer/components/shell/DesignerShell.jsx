@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { getTenantMe } from "../../../../api/tenantMeApi";
+import { loadRuntimeSessionUser } from "../../../../api/runtimeSessionUser.js";
+import { hasActiveBridgeSession } from "../../../../api/bridgeSessionContext.js";
 import CreateMenuItemModal from "../../../../modules/navigation/components/CreateMenuItemModal";
 import NavigationDeleteDialogs from "../../../../modules/navigation/components/NavigationDeleteDialogs";
 import { canManageNavigationMenu } from "../../constants/designerRoles";
@@ -565,7 +567,14 @@ export default function DesignerShell() {
 
   const loadHeaderUser = useCallback(async () => {
     try {
-      const data = await getTenantMe(resolvedPortalId);
+      const data = hasActiveBridgeSession()
+        ? await loadRuntimeSessionUser({ tenantId: resolvedPortalId })
+        : await getTenantMe(resolvedPortalId);
+
+      if (!data) {
+        throw new Error("header user unavailable");
+      }
+
       setHeaderUser({
         ...data,
         avatar_settings: normalizeAvatarSettings(data.avatar_settings),
@@ -1003,6 +1012,14 @@ export default function DesignerShell() {
     activeDesignerObjectId,
   ]);
 
+  const effectiveShellUser = headerUser ?? user;
+  const designerOutletContext = useMemo(
+    () => ({
+      user: effectiveShellUser,
+    }),
+    [effectiveShellUser],
+  );
+
   return (
     <>
       <ShellLayoutModeProvider mode={SHELL_LAYOUT_MODE.EMBEDDED}>
@@ -1037,7 +1054,7 @@ export default function DesignerShell() {
                   boxSizing: "border-box",
                 }}
               >
-                <Outlet />
+                <Outlet context={designerOutletContext} />
               </div>
             </YasiiSurfaceContextProvider>
           }

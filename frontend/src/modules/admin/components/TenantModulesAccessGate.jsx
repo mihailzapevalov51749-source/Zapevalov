@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
 
-import { getMe, normalizeCurrentUser } from "../../../api/authApi";
+import { normalizeCurrentUser } from "../../../api/authApi";
 import { canReadTenantModules } from "../access/adminAccess";
+import { loadTenantAdminSessionUser } from "../access/loadTenantAdminSessionUser";
 import AdminModulesPage from "../modules/AdminModulesPage";
 
 export default function TenantModulesAccessGate({ children }) {
@@ -18,7 +19,7 @@ export default function TenantModulesAccessGate({ children }) {
 
     async function loadUser() {
       try {
-        const data = await getMe();
+        const data = await loadTenantAdminSessionUser(outletContext?.user ?? null);
         if (isMounted) {
           setUser(data);
         }
