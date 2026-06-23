@@ -22,8 +22,7 @@ RUNTIME_MODULE_KEYS = frozenset(
         "runtime.notifications",
         "runtime.documents",
         "runtime.yasii",
-        "runtime.processes",
-        "runtime.org_structure",
+        "runtime.bpmn",
     }
 )
 
