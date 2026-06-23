@@ -6,16 +6,16 @@ import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.modules.platform_dashboard_analyzer.paths import get_repo_root
+from app.core.runtime_paths import get_app_root
 
 ANALYZER_VERSION = "1"
 
 ANALYZER_FINGERPRINT_FILES = (
-    "backend/app/modules/platform_dashboard_analyzer/stage_works.py",
-    "backend/app/modules/platform_dashboard_analyzer/analyzer.py",
-    "backend/app/modules/platform_dashboard_analyzer/backend_scan.py",
-    "backend/app/modules/platform_dashboard_analyzer/frontend_scan.py",
-    "backend/app/modules/platform_dashboard_analyzer/doc_reader.py",
+    "modules/platform_dashboard_analyzer/stage_works.py",
+    "modules/platform_dashboard_analyzer/analyzer.py",
+    "modules/platform_dashboard_analyzer/backend_scan.py",
+    "modules/platform_dashboard_analyzer/frontend_scan.py",
+    "modules/platform_dashboard_analyzer/doc_reader.py",
 )
 
 
@@ -25,8 +25,8 @@ class AnalyzerFingerprint:
     hash: str
 
 
-def compute_analyzer_fingerprint(repo_root: Path | None = None) -> AnalyzerFingerprint:
-    root = repo_root or get_repo_root()
+def compute_analyzer_fingerprint(app_root: Path | None = None) -> AnalyzerFingerprint:
+    root = app_root or get_app_root()
     digest = hashlib.sha256()
 
     for rel in ANALYZER_FINGERPRINT_FILES:

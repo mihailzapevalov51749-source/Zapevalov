@@ -30,10 +30,19 @@ class ArchitectureDocSnapshot:
 
 @dataclass
 class ScanContext:
-    repo_root: Path
+    app_root: Path
     backend: BackendScanResult
     frontend: FrontendScanResult
     docs: ArchitectureDocSnapshot
+    filesystem_scan_enabled: bool = False
+    dev_monorepo_root: Path | None = None
+
+    @property
+    def repo_root(self) -> Path:
+        """DEV-only compatibility for legacy analyzers referencing monorepo layout."""
+        if self.dev_monorepo_root is not None:
+            return self.dev_monorepo_root
+        return self.app_root.parent
 
 
 @dataclass

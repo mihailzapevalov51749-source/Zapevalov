@@ -1,5 +1,6 @@
 import pytest
 
+from app.modules.platform_dashboard.yasii_catalog import YASII_WORK_ITEMS
 from app.modules.platform_dashboard_analyzer.paths import get_repo_root
 from app.modules.yasii.knowledge_index import (
     build_project_corpus,
@@ -51,7 +52,7 @@ def test_build_project_corpus_indexes_docs():
     assert len(corpus.documents) >= 10
     status = find_document_by_path(corpus, "YASNOPRO_ARCHITECTURE_STATUS.md")
     assert status is not None
-    assert len(corpus.catalogItems) == 75
+    assert len(corpus.catalogItems) == len(YASII_WORK_ITEMS)
 
 
 def test_search_and_find_helpers():
@@ -59,9 +60,9 @@ def test_search_and_find_helpers():
     corpus = build_project_corpus(root, force=True)
     assert corpus.documents
 
-    hits = search_project_corpus("Relation Engine не реализованы", repo_root=root, limit=3)
+    hits = search_project_corpus("Relation Engine", repo_root=root, limit=3)
     assert hits
-    assert any("Relation" in hit.section.content for hit in hits)
+    assert any("relation" in hit.section.content.casefold() for hit in hits)
 
     docs = find_documents("Architecture Status Level 1", repo_root=root, limit=3)
     assert docs

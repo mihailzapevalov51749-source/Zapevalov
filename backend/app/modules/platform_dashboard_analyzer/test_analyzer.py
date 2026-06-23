@@ -1,3 +1,4 @@
+from pathlib import Path
 from types import SimpleNamespace
 
 from app.modules.platform_dashboard_analyzer.analyzer import analyze_components, analyze_stages
@@ -41,7 +42,7 @@ from app.modules.platform_dashboard_analyzer.types import ScanContext
 
 def test_analyze_components_uses_evidence_weights():
     ctx = ScanContext(
-        repo_root=None,  # type: ignore[arg-type]
+        app_root=Path("/tmp/app"),
         backend=SimpleNamespace(
             module_paths={"modules/platform/designer/object_types"},
             router_markers={"object_types"},
@@ -75,7 +76,7 @@ def test_analyze_components_uses_evidence_weights():
 
 def test_analyze_stages_reads_migration_map_without_components():
     ctx = ScanContext(
-        repo_root=None,  # type: ignore[arg-type]
+        app_root=Path("/tmp/app"),
         backend=SimpleNamespace(
             module_paths=set(),
             router_markers=set(),
@@ -112,7 +113,7 @@ def test_analyze_stages_reads_migration_map_without_components():
 
 def test_ai_native_stage_readiness_is_zero_without_implementation():
     ctx = ScanContext(
-        repo_root=None,  # type: ignore[arg-type]
+        app_root=Path("/tmp/app"),
         backend=SimpleNamespace(
             module_paths=set(),
             router_markers=set(),
@@ -169,7 +170,7 @@ def test_relation_field_type_stage_marks_contract_done_when_implemented():
 
 def test_relation_field_type_stage_readiness_is_zero_without_implementation():
     ctx = ScanContext(
-        repo_root=None,  # type: ignore[arg-type]
+        app_root=Path("/tmp/app"),
         backend=SimpleNamespace(
             module_paths=set(),
             router_markers=set(),

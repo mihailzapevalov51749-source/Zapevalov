@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from app.core.runtime_paths import get_dev_docs_architecture_dir, get_dev_frontend_src_dir
 from app.modules.platform_dashboard.yasii_catalog import (
     MVP_STAGE_SLUGS,
     MVP_WORK_ITEM_KEYS,
@@ -16,7 +17,12 @@ from app.modules.platform_dashboard_analyzer.types import ScanContext
 
 
 def _repo_docs_path(ctx: ScanContext, name: str) -> Path:
-    return ctx.repo_root / "docs" / "architecture" / name
+    docs = get_dev_docs_architecture_dir()
+    if docs is None and ctx.dev_monorepo_root is not None:
+        docs = ctx.dev_monorepo_root / "docs" / "architecture"
+    if docs is None:
+        return Path("__missing_docs__") / name
+    return docs / name
 
 
 def _yasii_module(ctx: ScanContext) -> bool:
@@ -34,7 +40,7 @@ def _backend_file(ctx: ScanContext, relative: str) -> bool:
         return True
     if any(path.endswith(normalized) for path in ctx.backend.file_contents):
         return True
-    disk_path = ctx.repo_root / "backend" / "app" / normalized
+    disk_path = ctx.app_root / normalized
     return disk_path.is_file()
 
 
@@ -53,7 +59,7 @@ def _backend_file_text(ctx: ScanContext, relative: str) -> str:
     for path, content in ctx.backend.file_contents.items():
         if path.endswith(normalized):
             return content
-    disk_path = ctx.repo_root / "backend" / "app" / normalized
+    disk_path = ctx.app_root / normalized
     if disk_path.is_file():
         return disk_path.read_text(encoding="utf-8", errors="ignore")
     return ""
@@ -66,7 +72,14 @@ def _frontend_file_text(ctx: ScanContext, relative: str) -> str:
     for path, content in ctx.frontend.file_contents.items():
         if path.endswith(normalized):
             return content
-    disk_path = ctx.repo_root / "frontend" / "src" / normalized
+    if not ctx.filesystem_scan_enabled:
+        return ""
+    frontend_src = get_dev_frontend_src_dir()
+    if frontend_src is None and ctx.dev_monorepo_root is not None:
+        frontend_src = ctx.dev_monorepo_root / "frontend" / "src"
+    if frontend_src is None:
+        return ""
+    disk_path = frontend_src / normalized
     if disk_path.is_file():
         return disk_path.read_text(encoding="utf-8", errors="ignore")
     return ""
@@ -470,7 +483,14 @@ def _check_yasii_user_identity_integration(ctx: ScanContext) -> bool:
     runtime_text = _backend_file_text(ctx, "modules/yasii/runtime_demo_service.py")
     orchestrator_text = _backend_file_text(ctx, "modules/yasii/runtime_orchestrator.py")
     trace_text = _backend_file_text(ctx, "modules/yasii/pipeline_trace.py")
-    frontend_path = ctx.repo_root / "frontend" / "src" / "yasii" / "hostContextBuilders.js"
+    frontend_src = get_dev_frontend_src_dir()
+    if frontend_src is None and ctx.dev_monorepo_root is not None:
+        frontend_src = ctx.dev_monorepo_root / "frontend" / "src"
+    frontend_path = (
+        (frontend_src / "yasii" / "hostContextBuilders.js")
+        if frontend_src is not None
+        else Path("__missing_frontend__")
+    )
 
     if not (
         _file_defines_symbols(host_text, "userIdentity", "UserIdentity")

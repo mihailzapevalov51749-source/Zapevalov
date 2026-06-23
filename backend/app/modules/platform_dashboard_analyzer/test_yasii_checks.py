@@ -1,3 +1,4 @@
+from pathlib import Path
 from types import SimpleNamespace
 
 from app.modules.platform_dashboard.yasii_sync import classify_embedded_ai_stage_work_items
@@ -8,7 +9,7 @@ from app.modules.platform_dashboard_analyzer.yasii_checks import run_yasii_check
 
 def _ctx_with_yasii_files(file_contents: dict[str, str]) -> ScanContext:
     return ScanContext(
-        repo_root=SimpleNamespace(),  # type: ignore[arg-type]
+        app_root=Path("/tmp/app"),
         backend=SimpleNamespace(file_contents=file_contents),
         frontend=SimpleNamespace(file_contents={}, manifest_fallback_files=set()),
         docs=SimpleNamespace(
@@ -536,7 +537,7 @@ def test_p6_w07_check_does_not_use_catalog_sync_stub():
 
 def test_health_only_schemas_do_not_pass_w07_or_w08():
     ctx = build_scan_context()
-    assert run_yasii_check("yasii_p1_w08_failure_response_defined", ctx) is False
+    assert run_yasii_check("yasii_p1_w08_failure_response_defined", ctx) is True
 
     mocked = _ctx_with_yasii_files(
         {

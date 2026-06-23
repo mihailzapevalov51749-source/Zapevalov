@@ -1,8 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.modules.auth.dependencies import get_current_user
+from app.modules.control_plane.platform_identity.session_bridge.runtime_actor_access import (
+    require_runtime_actor,
+    resolve_runtime_actor_user_id,
+)
+from app.modules.control_plane.platform_identity.session_bridge.runtime_auth import (
+    RuntimeDesignerActor,
+)
 from app.modules.platform.shared.dependencies import require_tenant_membership
-from app.modules.users.models import User
 from app.modules.yasii.tenant_context import apply_server_identity_to_host_context
 
 from .handoff_service import HostContextValidationError, build_handoff_from_host_context
@@ -25,18 +30,19 @@ def ai_context_health():
 def ai_context_handoff(
     host: HostContext,
     tenant_id: int = Depends(require_tenant_membership),
-    current_user: User = Depends(get_current_user),
+    current_actor: RuntimeDesignerActor = Depends(require_runtime_actor),
 ) -> ACEHandoffResponse:
+    actor_user_id = resolve_runtime_actor_user_id(current_actor)
     try:
         trusted_host = apply_server_identity_to_host_context(
             host,
             tenant_id=tenant_id,
-            user_id=current_user.id,
+            user_id=actor_user_id,
         )
         handoff = build_handoff_from_host_context(
             trusted_host,
             tenant_id=tenant_id,
-            user_id=current_user.id,
+            user_id=actor_user_id,
         )
     except HostContextValidationError as exc:
         raise HTTPException(

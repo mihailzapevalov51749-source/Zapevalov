@@ -41,8 +41,8 @@ from app.modules.platform_dashboard.schemas import (
     parse_json_object,
 )
 from app.modules.platform_dashboard.yasii_catalog import YASII_IMPLEMENTATION_STAGE_SLUG
+from app.core.runtime_paths import get_app_root
 from app.modules.platform_dashboard_analyzer.fingerprint import compute_analyzer_fingerprint
-from app.modules.platform_dashboard_analyzer.paths import get_repo_root
 from app.modules.quality_issues.constants import QualityIssueStatus
 from app.modules.quality_issues.models import QualityIssue
 
@@ -64,8 +64,8 @@ def ensure_dashboard_meta(db: Session) -> PlatformDashboardMeta:
     return meta
 
 
-def build_dashboard_freshness(db: Session, repo_root=None) -> PlatformDashboardFreshnessRead:
-    fingerprint = compute_analyzer_fingerprint(repo_root or get_repo_root())
+def build_dashboard_freshness(db: Session, app_root=None) -> PlatformDashboardFreshnessRead:
+    fingerprint = compute_analyzer_fingerprint(app_root or get_app_root())
     meta = get_dashboard_meta(db)
     stored_hash = meta.analyzer_hash if meta else None
     refreshed_at = meta.refreshed_at if meta else None

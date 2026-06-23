@@ -44,9 +44,21 @@ from app.modules.platform_dashboard_analyzer.fingerprint import compute_analyzer
 
 from app.modules.platform_dashboard_analyzer.frontend_scan import scan_frontend
 
-from app.modules.platform_dashboard_analyzer.paths import get_backend_dir, get_frontend_dir, get_repo_root
+from app.core.runtime_paths import (
+    get_app_root,
+    get_dev_docs_architecture_dir,
+    get_dev_frontend_src_dir,
+    is_dev_filesystem_scan_enabled,
+    try_dev_monorepo_root,
+)
+from app.modules.platform_dashboard_analyzer.paths import get_backend_dir, get_frontend_dir
 
-from app.modules.platform_dashboard_analyzer.types import RefreshResult, ScanContext
+from app.modules.platform_dashboard_analyzer.types import (
+    ArchitectureDocSnapshot,
+    FrontendScanResult,
+    RefreshResult,
+    ScanContext,
+)
 from app.modules.platform_dashboard.yasii_catalog import YASII_IMPLEMENTATION_STAGE_SLUG
 from app.modules.platform_dashboard.yasii_sync import sync_yasii_track
 
@@ -60,20 +72,27 @@ from app.modules.quality_issues.models import QualityIssue
 
 
 
-def build_scan_context(repo_root=None) -> ScanContext:
+def build_scan_context(app_root=None, repo_root=None) -> ScanContext:
+    """Build analyzer scan context. Full monorepo FS scan runs only in DEV contour."""
+    _ = repo_root  # legacy kwarg; ignored — use app_root / DEV detection
+    root = app_root or get_app_root()
+    mono = try_dev_monorepo_root() if is_dev_filesystem_scan_enabled() else None
+    fs_enabled = mono is not None
 
-    root = repo_root or get_repo_root()
+    frontend_dir = get_dev_frontend_src_dir() if fs_enabled else None
+    docs = (
+        read_architecture_docs(mono)
+        if fs_enabled and get_dev_docs_architecture_dir() is not None
+        else ArchitectureDocSnapshot()
+    )
 
     return ScanContext(
-
-        repo_root=root,
-
-        backend=scan_backend(get_backend_dir(root)),
-
-        frontend=scan_frontend(get_frontend_dir(root)),
-
-        docs=read_architecture_docs(root),
-
+        app_root=root,
+        backend=scan_backend(get_backend_dir()),
+        frontend=scan_frontend(frontend_dir) if frontend_dir else FrontendScanResult(),
+        docs=docs,
+        filesystem_scan_enabled=fs_enabled,
+        dev_monorepo_root=mono,
     )
 
 
@@ -6460,9 +6479,15 @@ def _collect_stage_work_changes(
 
 
 
-def refresh_platform_dashboard(db: Session, repo_root=None, initiated_by=None) -> RefreshResult:
+def refresh_platform_dashboard(db: Session, app_root=None, initiated_by=None, repo_root=None) -> RefreshResult:
 
-    ctx = build_scan_context(repo_root)
+    _ = repo_root
+    if not is_dev_filesystem_scan_enabled():
+        raise RuntimeError(
+            "refresh_platform_dashboard is DEV-only: TEMPLATE/CLIENT must not run monorepo filesystem scan."
+        )
+
+    ctx = build_scan_context(app_root)
 
     now = utc_now()
 

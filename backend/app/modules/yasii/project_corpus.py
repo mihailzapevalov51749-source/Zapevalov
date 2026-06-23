@@ -14,7 +14,11 @@ from app.modules.platform_dashboard.yasii_catalog import (
     YASII_WORK_ITEMS,
     YasiiWorkItemDefinition,
 )
-from app.modules.platform_dashboard_analyzer.paths import get_repo_root
+from app.core.runtime_paths import (
+    get_app_root,
+    get_dev_docs_dirs,
+    is_dev_filesystem_scan_enabled,
+)
 
 PROJECT_CORPUS_SCHEMA_VERSION = "0.1.0"
 MAX_SECTION_CONTENT_CHARS = 2400
@@ -181,9 +185,9 @@ def load_markdown_document(path: Path, repo_root: Path) -> KnowledgeDocument | N
     )
 
 
-def _discover_markdown_paths(repo_root: Path) -> list[Path]:
+def _discover_markdown_paths() -> list[Path]:
     paths: list[Path] = []
-    for base in (repo_root / "docs", repo_root / "docs" / "architecture"):
+    for base in get_dev_docs_dirs():
         if not base.is_dir():
             continue
         paths.extend(sorted(base.rglob("*.md")))
@@ -249,7 +253,10 @@ def load_runtime_metadata() -> list[dict[str, str]]:
 
 
 def build_knowledge_corpus(repo_root: Path | None = None) -> KnowledgeCorpus:
-    root = repo_root or get_repo_root()
+    _ = repo_root
+    from app.core.runtime_paths import try_dev_monorepo_root
+
+    mono_root = try_dev_monorepo_root() if is_dev_filesystem_scan_enabled() else None
     documents: list[KnowledgeDocument] = []
     seen_paths: set[str] = set()
 
@@ -301,15 +308,16 @@ def build_knowledge_corpus(repo_root: Path | None = None) -> KnowledgeCorpus:
     )
     documents.append(tasks_doc)
 
-    for path in _discover_markdown_paths(root):
-        rel = str(path.relative_to(root)).replace("\\", "/")
-        if rel in seen_paths:
-            continue
-        doc = load_markdown_document(path, root)
-        if doc is None:
-            continue
-        documents.append(doc)
-        seen_paths.add(rel)
+    if mono_root is not None:
+        for path in _discover_markdown_paths():
+            rel = str(path.relative_to(mono_root)).replace("\\", "/")
+            if rel in seen_paths:
+                continue
+            doc = load_markdown_document(path, mono_root)
+            if doc is None:
+                continue
+            documents.append(doc)
+            seen_paths.add(rel)
 
     return KnowledgeCorpus(
         documents=documents,

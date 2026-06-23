@@ -8,7 +8,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from app.modules.platform_dashboard.yasii_catalog import YASII_WORK_ITEMS
-from app.modules.platform_dashboard_analyzer.paths import get_repo_root
+from app.core.runtime_paths import get_app_root, get_dev_docs_dirs, is_dev_filesystem_scan_enabled
 from app.modules.yasii.project_corpus import (
     KnowledgeCorpus,
     KnowledgeDocument,
@@ -26,18 +26,16 @@ _corpus_cache: KnowledgeCorpus | None = None
 _corpus_cache_key: tuple[float, float, int] | None = None
 
 
-def _corpus_invalidation_key(repo_root: Path) -> tuple[float, float, int]:
+def _corpus_invalidation_key() -> tuple[float, float, int]:
     max_doc_mtime = 0.0
-    for base in (repo_root / "docs", repo_root / "docs" / "architecture"):
-        if not base.is_dir():
-            continue
+    for base in get_dev_docs_dirs():
         for path in base.rglob("*.md"):
             try:
                 max_doc_mtime = max(max_doc_mtime, path.stat().st_mtime)
             except OSError:
                 continue
     catalog_path = (
-        repo_root / "backend" / "app" / "modules" / "platform_dashboard" / "yasii_catalog.py"
+        get_app_root() / "modules" / "platform_dashboard" / "yasii_catalog.py"
     )
     try:
         catalog_mtime = catalog_path.stat().st_mtime if catalog_path.is_file() else 0.0
@@ -93,12 +91,12 @@ def clear_project_corpus_cache() -> None:
 
 def build_project_corpus(repo_root: Path | None = None, *, force: bool = False) -> KnowledgeCorpus:
     global _corpus_cache, _corpus_cache_key
-    root = repo_root or get_repo_root()
-    cache_key = _corpus_invalidation_key(root)
+    _ = repo_root
+    cache_key = _corpus_invalidation_key()
     if not force and _corpus_cache is not None and _corpus_cache_key == cache_key:
         return _corpus_cache
-    corpus = build_knowledge_corpus(root)
-    if repo_root is None or repo_root.resolve() == get_repo_root().resolve():
+    corpus = build_knowledge_corpus()
+    if is_dev_filesystem_scan_enabled():
         _corpus_cache = corpus
         _corpus_cache_key = cache_key
     return corpus

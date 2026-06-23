@@ -10,6 +10,8 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from app.core.runtime_paths import get_yasii_store_dir
+
 MEMORY_GRAPH_SCHEMA_VERSION = "0.1.0"
 MEMORY_GRAPH_DATA_DIR_ENV = "YASII_MEMORY_GRAPH_DIR"
 
@@ -56,7 +58,10 @@ def _memory_root() -> Path:
         if env_path:
             root = Path(env_path)
         else:
-            root = Path(__file__).resolve().parents[3] / "data" / "yasii_memory_graph"
+            root = get_yasii_store_dir(
+                "yasii_memory_graph",
+                env_var=MEMORY_GRAPH_DATA_DIR_ENV,
+            )
     root.mkdir(parents=True, exist_ok=True)
     return root
 
